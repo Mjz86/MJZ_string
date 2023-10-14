@@ -385,7 +385,7 @@ int main() {
       std::make_shared<std::map<std::string, timer_info>>();
   {
     Scoped_speed_Timer time_r("total");
-    for (size_t i{}; i < 10000000; i++) {
+    for (size_t i{}; i < 100000; i++) {
       for (int j{}; j < 128; j++) {
         test_mstr_vs_sstr(map_ptr, "hi mom ;)",
                           "allocation large string i am nesssery allocation large string i am nessseryallocation large string i am nesssery allocation large string i am nesssery", j);
