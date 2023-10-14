@@ -868,8 +868,13 @@ mjz_Str& mjz_Str::operator=(mjz_Str&& rval) noexcept {
 }
 
 mjz_Str& mjz_Str::operator=(const char* cstr) {
-  if (cstr) {
-    copy(cstr, (size_t)strlen(cstr));
+    operator()(cstr);
+  // (this->*update_event_F_p)(); //depated
+  return *this;
+}
+mjz_Str& mjz_Str::operator()(const char* other, size_t size_len) {
+  if (other) {
+    copy(other, size_len);
   } else {
     invalidate();
   }

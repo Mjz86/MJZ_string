@@ -337,36 +337,60 @@ int main7() {
   std::cout << "4. : \"" << mystr2 << "\"\n";
   return 0;
 }
-std::shared_ptr<std::map<std::string, timer_info>> map_ptr ;
-const char* const _timer_sign = "_timer_";
-int main() {
- map_ptr = std::make_shared<std::map<std::string, timer_info>>();
-  for (size_t i{}; i < 1000000; i++) {
-    Scoped_speed_Timer timer("timer_");
-    timer.set_list(map_ptr);
-    timer(_timer_sign);
-    timer("allocation");
-    mjz_Str my_str("hi mom ;)");
-    timer("deallocation");
-    mjz_Str::replace_with_new_str(my_str);
-    timer("allocation large");
-    my_str("allocation large string i am nesssery");
-    timer("deallocation large");
-    mjz_Str::replace_with_new_str(my_str);
 
-    timer("std allocation");
-    std::string my_strtd("hi mom ;)");
-    timer("std deallocation");
-    my_strtd.~basic_string();
-    new (&my_strtd) std::string();
-    timer("std allocation large");
-    my_strtd = ("allocation large string i am nesssery");
-    timer("std deallocation large");
-    my_strtd.~basic_string();
-    new (&my_strtd) std::string();
-    timer("timer_");
-  
- 
+const char* const _timer_sign = "_timer_";
+void test_mstr_vs_sstr(
+    std::shared_ptr<std::map<std::string, timer_info>> map_ptr,
+    const char* const c_str_small = "hi mom ;)",
+    const char* const c_str_large = "allocation large string i am nesssery",
+    size_t size_of_large=37) {
+  Scoped_speed_Timer timer("timer_");
+  timer.set_list(map_ptr);
+  timer(_timer_sign);
+  timer("mjz alloc");
+  mjz_Str my_str(c_str_small);
+  timer("mjz dealloc");
+  my_str.~mjz_Str();
+  timer("mjz alloc large");
+  new (&my_str) mjz_Str(c_str_large, size_of_large);
+  timer("mjz dealloc large");
+  my_str.~mjz_Str();
+  timer("mjz alloc base");
+  new (&my_str) mjz_Str();
+  timer("mjz dealloc base");
+  my_str.~mjz_Str();
+  timer("mjz alloc base");
+  new (&my_str) mjz_Str();
+
+
+  timer("std alloc");
+  std::string my_strtd(c_str_small);
+  timer("std dealloc");
+  my_strtd.~basic_string();
+  timer("std alloc large");
+  new (&my_strtd) std::string(c_str_large, size_of_large);
+  timer("std dealloc large");
+  my_strtd.~basic_string();
+  timer("std alloc base");
+  new (&my_strtd) std::string();
+  timer("std dealloc base");
+  my_strtd.~basic_string();
+  timer("std alloc base");
+  new (&my_strtd) std::string();
+  timer("timer_");
+    }
+
+int main() {
+  std::shared_ptr<std::map<std::string, timer_info>> map_ptr =
+      std::make_shared<std::map<std::string, timer_info>>();
+  {
+    Scoped_speed_Timer time_r("total");
+    for (size_t i{}; i < 10000000; i++) {
+      for (int j{}; j < 128; j++) {
+        test_mstr_vs_sstr(map_ptr, "hi mom ;)",
+                          "allocation large string i am nesssery allocation large string i am nessseryallocation large string i am nesssery allocation large string i am nesssery", j);
+      }
+    }
   }
   std::cout << sizeof(mjz_Str) << " vs " << sizeof(std::string) << " \n";
  std::cout << Scoped_speed_Timer::show_analisis(map_ptr, _timer_sign);

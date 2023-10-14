@@ -21,11 +21,11 @@ class speed_Timer {
   std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
 };
 struct timer_info {
-  double Time_ms;
+  double Time_ns;
   double atempt_num;
 };
 inline bool operator<(const timer_info& rhs, const timer_info& lhs) {
-  return (rhs.Time_ms / rhs.atempt_num) < (lhs.Time_ms / lhs.atempt_num);
+  return (rhs.Time_ns / rhs.atempt_num) < (lhs.Time_ns / lhs.atempt_num);
 }
 enum timer_cmd : uint8_t {
   NONE = 0,
@@ -47,16 +47,16 @@ class Scoped_speed_Timer {
     return *this;
   }
   void Stop(timer_cmd cmd_ = timer_cmd::NONE) {
+    double time = m_Timer.Elapsednano();
     if ((stoped && !(cmd_ & timer_cmd::Force_log)) ||
         !!(cmd_ & timer_cmd::just_Stop))
       goto return_;
     if (m_uomp) {
       timer_info& ti_ = (*m_uomp)[m_Name];
       ti_.atempt_num++;
-      ti_.Time_ms += m_Timer.ElapsedMillis();
+      ti_.Time_ns += time;
     } else {
-      double time = m_Timer.ElapsedMillis();
-      std::cout << "[TIMER] " << m_Name << " - " << time << "ms\n";
+      std::cout << "[TIMER] " << m_Name << " - " << time << "ns\n";
     }
   return_:
     if (!(cmd_ & timer_cmd::NO_Stop)) stoped = 1;
@@ -75,19 +75,18 @@ class Scoped_speed_Timer {
           cmpr_fnction = operator_less_than) {
     std::string ret_str;
     auto& _timer_info = (*map_ptr)[timer_signuchure_name];
-    double time_defult = _timer_info.Time_ms / _timer_info.atempt_num;
+    double time_defult = _timer_info.Time_ns / _timer_info.atempt_num;
 
     std::vector<std::pair<std::string, timer_info>> vect_analis(
         map_ptr->size());
     {
       size_t i{};
       for (auto& obj : *map_ptr) {
-        obj.second.Time_ms =
-            (obj.second.Time_ms) - (obj.second.atempt_num * time_defult);
+        if (obj.first != timer_signuchure_name)
+        obj.second.Time_ns =
+            (obj.second.Time_ns) - (obj.second.atempt_num * time_defult);
 
-        obj.second.Time_ms = static_cast<double>(
-            static_cast<uint64_t>(obj.second.Time_ms * 1000ULL) /
-            1000ULL);
+        obj.second.Time_ns = static_cast<double>(static_cast<uint64_t>(obj.second.Time_ns ));
 
         vect_analis[i++] = obj;
       }
@@ -95,18 +94,18 @@ class Scoped_speed_Timer {
       i = 0;
       double time_token_total{};
       for (auto& obj : vect_analis) {
-        double time_token = (obj.second.Time_ms) / obj.second.atempt_num;
+        double time_token = (obj.second.Time_ns) / obj.second.atempt_num;
         ret_str +=std::to_string( ++i);
         ret_str += ". ";
         ret_str += obj.first;
         ret_str += ":";
         ret_str += std::to_string(time_token);
-        ret_str += " ms (";
-        ret_str += std::to_string(obj.second.Time_ms);
+        ret_str += " ns (";
+        ret_str += std::to_string(obj.second.Time_ns);
         ret_str += " / ";
         ret_str += std::to_string(obj.second.atempt_num);
         ret_str += ")\n";
-        obj.second.Time_ms = time_token;
+        obj.second.Time_ns = time_token;
         time_token_total += time_token;
         obj.second.atempt_num = 1;
       }
@@ -117,7 +116,7 @@ class Scoped_speed_Timer {
         ret_str += ". ";
         ret_str += obj.first;
         ret_str += ":";
-        ret_str += std::to_string((obj.second.Time_ms) / time_token_total);
+        ret_str += std::to_string((obj.second.Time_ns) / time_token_total);
         ret_str += " %\n";
       }
     }

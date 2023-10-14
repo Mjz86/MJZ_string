@@ -311,7 +311,7 @@ class mjz_Str : public if_virtual_then_virtual Stream {  //
   if (!did_drived_mjz_Str_DATA_storage_Obj_ptr_set) return ::free(ptr);
   return get_free_alloc_function()(ptr);
   }
-  static constexpr int64_t stack_buffer_size = 16;
+  static constexpr int64_t stack_buffer_size = 64;
   class stack_str_buf {
     bool STR_is_in_stack{};
    public:
@@ -700,10 +700,13 @@ class mjz_Str : public if_virtual_then_virtual Stream {  //
     this->operator=(other);
     return *this;
   };
+
   inline if_virtual_then_virtual mjz_Str& operator()(const char* other) {
-    this->operator=(other);
+    operator()(other, (size_t)strlen(other));
     return *this;
   };
+  inline if_virtual_then_virtual mjz_Str& operator()(const char* other,
+                                                     size_t size_len);
   inline if_virtual_then_virtual mjz_Str& operator()(mjz_Str&& other) {
     this->operator=(std::move(other));
     return *this;
