@@ -27,6 +27,7 @@ a fast alternative to std::string.<br>
 14. std dealloc:0.744398 ns (9528300.000000 / 12800000.000000)<br>
 <br><br>
     percentage of the time token:<br>
+    <p>
 1. std alloc large:20.331976 %<br>
 2. mjz alloc large:19.364901 %<br>
 3. std dealloc large:10.888172 %<br>
@@ -41,5 +42,6 @@ a fast alternative to std::string.<br>
 12. timer_:2.108029 %<br>
 13. std alloc:1.219400 %<br>
 14. std dealloc:0.134453 %<br>
+</p>
  <br>
  <br>
