@@ -9,6 +9,8 @@ a fast alternative to std::string.
  static allocation (max 16 char (can you change at compile time /code)).
  modular .
  and more... .
+ this test is from the example on my 2core laptop :(
+ (note i am a student 16yo)
  1. std alloc large:112.567617 ns (1440865500.000000 / 12800000.000000)
 2. mjz alloc large:107.213422 ns (1372331800.000000 / 12800000.000000)
 3. std dealloc large:60.282164 ns (771611700.000000 / 12800000.000000)
