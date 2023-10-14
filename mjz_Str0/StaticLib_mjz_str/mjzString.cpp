@@ -3,7 +3,7 @@
 #include "pch.h"
 //
 #include "mjzString.hpp"
-
+my_data_randomizer_union my_data_randomizer_uni;
 #ifndef Arduino
 
 namespace mjz_ard {
@@ -139,13 +139,12 @@ char GET_CHAR_from_int(uint8_t intager_in, bool is_upper_case) {
 }
 char* b_U_lltoa(uint64_t value, char* BFR_buffer, int radix, bool is_signed,
                 bool force_neg, bool is_upper_case) {
-  bool IS_NEGITIVE__ = (is_signed && (*((long long*)&value) < 0) &&
-                        ((radix == 10) || force_neg));
+  bool IS_NEGITIVE__ =
+      (is_signed && (*((int64_t*)&value) < 0) && ((radix == 10) || force_neg));
 
   if (IS_NEGITIVE__) {
-    *((long long*)&value) =
-        ((-1) *
-         (*((long long*)&value)));  // use a positive insted of the - sign
+    *((int64_t*)&value) =
+        ((-1) * (*((int64_t*)&value)));  // use a positive insted of the - sign
   }
 
   char buffer[200]{};
@@ -221,8 +220,8 @@ uint8_t get_num_from_char(uint8_t in_CHAR_, bool* to_neg) {
   }
 }
 
-long long mjz_pow_UINT(uint32_t base, uint32_t power_Of_base) {
-  long long ret_val = 1;
+int64_t mjz_pow_UINT(uint32_t base, uint32_t power_Of_base) {
+  int64_t ret_val = 1;
 
   for (uint32_t i{}; i < power_Of_base; i++) {
     ret_val *= base;
@@ -305,7 +304,7 @@ long long C_STR_to_LL(const char* buffer, uint8_t buffer_len, int radix,
     }
   }
 
-  long long my_ret_value_{};
+  int64_t my_ret_value_{};
   WHILE_Index_for_buffer = WHILE_Index_for_int_buf;
   size_t while_2_i_max = (size_t)WHILE_Index_for_int_buf + 1;
   WHILE_Index_for_int_buf = 0;
@@ -463,7 +462,7 @@ mjz_Str::mjz_Str(mjz_Str&& rval) noexcept
   // update_event_F_p = &mjz_Str::update_event;//depated
 
   if (rval.stack_obj_buf.get()) {
-    rval.free(rval.buffer);
+    rval.free_pv(rval.buffer);
   }
 
   rval.buffer = NULL;
@@ -576,11 +575,11 @@ When a virtual function is called directly or indirectly from a constructor or
    from a destructor, including during the construction or destruction of the
    class’s non-static data members,    and the object to which the call applies is
    the    object (call it x) under construction or destruction, the function called
-   is    the    final overrider in the constructor’s or destructor’s class and not one
-   overriding it in a more-derived class.    If the virtual function call uses an
-   explicit class member access (5.2.5)    and the object expression refers to the
-   complete object of x or one of that object’s base class subobjects but not x or
-   one of its base class subobjects,    the behavior is undefined.
+   is    the    final overrider in the constructor’s or destructor’s class and not
+   one    overriding it in a more-derived class.    If the virtual function call uses
+   an    explicit class member access (5.2.5)    and the object expression refers to
+   the    complete object of x or one of that object’s base class subobjects but not x
+   or    one of its base class subobjects,    the behavior is undefined.
    
 You can find this recommendation in many sources, including Scott Meyers'
 Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item 9:
@@ -637,9 +636,9 @@ Your answer could be quite nice if you worked it over a little bit. First, in
    would    be problematic even without useInt() being virtual, but just because
    you    let ip    point to a member of Der, i.e. Der::theInt. So, it doesn't
    illustrate the    point.    Why don't you just override useInt in Der and access
-   theInt from there,    or even    better access some heap allocated resource which
-   has already been    deleted? I    think would be much nicer. –    Elmar Zander    Apr
-   5, 2022 at 12:57
+   theInt from there,    or even    better access some heap allocated resource
+   which    has already been    deleted? I    think would be much nicer. –    Elmar
+   Zander    Apr    5, 2022 at 12:57
    
    
    
@@ -660,7 +659,7 @@ inline void mjz_Str::init(void) {
 
 void mjz_Str::invalidate(void) {
   if (!buffer) goto _end__;
-  free(buffer);
+  free_pv(buffer);
   stack_obj_buf.set(0);
   buffer = NULL;
 _end__:
@@ -670,14 +669,14 @@ _end__:
 }
 
 bool mjz_Str::reserve(size_t size_, bool just_size) {
-  long long different_of_size_and_cap = (long long)size_ - (long long)capacity;
+  int64_t different_of_size_and_cap = (int64_t)size_ - (int64_t)capacity;
   if (just_size || different_of_size_and_cap < 0) goto ignored_stack;
   if (size_ < stack_buffer_size) {
-    size_ = stack_buffer_size - 1;
+    size_ = stack_buffer_size;
   } else {
-    long long minimumcapadd = min_macro_(capacity / 5, stack_buffer_size);
+    int64_t minimumcapadd = min_macro_(capacity / 5, stack_buffer_size);
     size_ +=
-        (size_t)(static_cast<long long>(5) * (different_of_size_and_cap < 5) +
+        (size_t)(static_cast<int64_t>(5) * (different_of_size_and_cap < 5) +
                  minimumcapadd * (different_of_size_and_cap < minimumcapadd));
   }
 ignored_stack:
@@ -716,21 +715,20 @@ bool mjz_Str::realloc_helper_is_in_stack(void* ptr) {
   return (stack_obj_buf.get() || stack_obj_buf.stack_buffer == (char*)ptr);
 }
 
-void* mjz_Str::realloc(void* ptr, size_t new_size) {
+void* mjz_Str::realloc_pv(void* ptr, size_t new_size) {
   bool ptr_is_in_stack = realloc_helper_is_in_stack(ptr);
   bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr));  //(buffer == ptr);
-  bool ptr_Can_set_to_stack = (new_size <= stack_buffer_size);
-
+  bool ptr_Can_set_to_stack = (new_size <= (stack_buffer_size + 1));
   if (ptr_Can_set_to_stack) {
     if (ptr_is_buffer) {
-      unsigned long the__length = length();
+      size_t the__length = length();
 
       if (the__length)
         memmove(stack_obj_buf.stack_buffer, ptr,
                 min_macro_(the__length, stack_buffer_size));
 
-      free(ptr);  // because  of my custom free  0 and stack_buffer are  ignored
-                  // and i reset STR_is_in_stack in next line
+      free_pv(ptr);  // because  of my custom free  0 and stack_buffer are
+                     // ignored and i reset STR_is_in_stack in next line
     }
 
     stack_obj_buf.set(1);
@@ -738,12 +736,12 @@ void* mjz_Str::realloc(void* ptr, size_t new_size) {
   }
 
   if (ptr_is_in_stack) {
-    free(ptr);  // mjz_Str::free shoud  care about ptr val
-    ptr = ::malloc(new_size);
+    free_pv(ptr);  // mjz_Str::free shoud  care about ptr val
+    ptr = this->realloc(0,new_size);
     if (!ptr) {
       return 0;
     }
-    unsigned long the__length = length();
+    size_t the__length = length();
 
     if (the__length) {
       memmove(ptr, stack_obj_buf.stack_buffer,
@@ -754,9 +752,9 @@ void* mjz_Str::realloc(void* ptr, size_t new_size) {
     return ptr;
   }
 
-  return ::realloc(ptr, new_size);
+  return this->realloc(ptr, new_size);
 }
-void mjz_Str::free(void*& ptr) {
+void mjz_Str::free_pv(void*& ptr) {
   if (stack_obj_buf.get() || stack_obj_buf.stack_buffer == ptr) {
     ptr = 0;
     stack_obj_buf.set(0);
@@ -764,24 +762,24 @@ void mjz_Str::free(void*& ptr) {
   }
 
   if (ptr) {
-    ::free(ptr);
+    this->free(ptr);
   }
 
   ptr = 0;
 }
-void mjz_Str::free(void* const& ptr) {
+void mjz_Str::free_pv(void* const& ptr) {
   if (!!stack_obj_buf.get() || !!(stack_obj_buf.stack_buffer == ptr)) {
     stack_obj_buf.set(0);
     return;
   }
 
   if (ptr) {
-    ::free(ptr);
+    this->free(ptr);
   }
 }
 bool mjz_Str::changeBuffer(size_t maxStrLen) {
   char* newbuffer{};
-  newbuffer = (char*)realloc(buffer, maxStrLen + 1);
+  newbuffer = (char*)realloc_pv(buffer, maxStrLen + 1);
 
   if (newbuffer) {
     buffer = newbuffer;
@@ -827,13 +825,13 @@ mjz_Str& mjz_Str::copy(const __FlashStringHelper* pstr, size_t length) {
 
 void mjz_Str::move(mjz_Str& rhs) {
   if (this != &rhs) {
-    free(buffer);
+    free_pv(buffer);
     stack_obj_buf = rhs.stack_obj_buf;
     buffer =
         (rhs.stack_obj_buf.get() ? stack_obj_buf.stack_buffer : rhs.buffer);
 
     if (rhs.stack_obj_buf.get()) {
-      rhs.free(rhs.buffer);
+      rhs.free_pv(rhs.buffer);
     }
 
     len = rhs.len;
@@ -1294,13 +1292,11 @@ bool mjz_Str::endsWith(const mjz_Str& s2) const {
 /*********************************************/
 
 char mjz_Str::charAt(size_t loc) const {
-  if (loc < 0) loc += len;
   // // (this->*update_event_F_p)(); //depated
   return operator[](loc);
 }
 
 void mjz_Str::setCharAt(size_t loc, char c) {
-  if (loc < 0) loc += len;
   if (loc < len) {
     buffer[loc] = c;
   }
@@ -1310,12 +1306,12 @@ void mjz_Str::setCharAt(size_t loc, char c) {
 
 char mjz_Str::charAt(int64_t loc) const {
   // // (this->*update_event_F_p)(); //depated
-  if (loc < 0) loc += len;
+  loc = signed_index_to_unsigned(loc);
   return operator[](loc);
 }
 
 void mjz_Str::setCharAt(int64_t loc, char c) {
-  if (loc < 0) loc += len;
+  loc = signed_index_to_unsigned(loc);
   if ((size_t)loc < len) {
     buffer[loc] = c;
   }
@@ -1348,7 +1344,7 @@ char mjz_Str::operator[](size_t index) const {
 
 char& mjz_Str::operator[](int64_t index) {
   if (index < 0) {
-    index += len;
+    index = signed_index_to_unsigned(index);
   }
 
   static char dummy_writable_char;
@@ -1365,7 +1361,7 @@ char& mjz_Str::operator[](int64_t index) {
 
 char mjz_Str::operator[](int64_t index) const {
   if (index < 0) {
-    index += len;
+    index = signed_index_to_unsigned(index);
   }
 
   if ((size_t)index >= len || !buffer) {
@@ -1488,26 +1484,49 @@ int64_t mjz_Str::lastIndexOf(const mjz_Str& s2, size_t fromIndex) const {
 }
 
 mjz_Str mjz_Str::substring(size_t left, size_t right) const {
+  const char* c_str_out{};
+  size_t len_out{};
+  if (!substring_give_ptr(left, right, c_str_out, len_out)) return mjz_Str();
+  mjz_Str out;
+
+  out.copy(c_str_out, len_out);
+  // // (this->*update_event_F_p)(); //depated
+  return out;
+}
+size_t mjz_Str::signed_index_to_unsigned(int64_t input) const {
+  if (0 <= input) {
+    return input;
+  }
+  return input + length();
+}
+const char* mjz_Str::substring_give_ptr(int64_t left, int64_t right,
+                                        const char*& c_str_out,
+                                        size_t& len_out) const {
+  return substring_give_ptr(signed_index_to_unsigned(left),
+                            signed_index_to_unsigned(right), c_str_out,
+                            len_out);
+}
+const char* mjz_Str::substring_give_ptrULL(size_t left, size_t right,
+                                           const char*& c_str_out,
+                                           size_t& len_out) const {
   if (left > right) {
     size_t temp = right;
     right = left;
     left = temp;
   }
-
-  mjz_Str out;
-
   if (left >= len) {
     // // (this->*update_event_F_p)(); //depated
-    return out;
+    len_out = 0;
+    return (c_str_out = 0);
   }
 
   if (right > len) {
     right = len;
   }
 
-  out.copy(buffer + left, right - left);
-  // // (this->*update_event_F_p)(); //depated
-  return out;
+  c_str_out = buffer + left;
+  len_out = right - left;
+  return c_str_out;
 }
 
 /*********************************************/
@@ -1663,12 +1682,12 @@ mjz_Str::iterator mjz_Str::erase(iterator first, iterator last) {
   remove(index_first, index_last - index_first);
   return first;
 }
-mjz_Str& mjz_Str::erase_from_f_to_l(long first, long last) {
-  if (first < 0) first += length();
-  if (last < 0) last += length();
+mjz_Str& mjz_Str::erase_from_f_to_l(size_t first, size_t last) {
+  first = signed_index_to_unsigned(first);
+  last = signed_index_to_unsigned(last);
   if ((last <= first) || (first < 0) || (last < 0) || (length() < last))
     return *this;
-  remove(first, static_cast<size_t>(last) - first);
+  remove(first, last - first);
   return *this;
 }
 
@@ -1949,75 +1968,7 @@ char*& mjz_Str::buffer_ref() {
 }
 
 void str_helper__op_shift_input_(mjz_Str& rhs, mjz_Str& CIN) {
-  size_t len_cin = CIN.length();
-  register char* bfr = new char[len_cin + 1];
-  register uint8_t is_reinterpreted{};
-  constexpr uint8_t is_reinterpreted_and_is_int = 2;
-  register uint8_t value_reinterpreted_and_is_int{};
-  register size_t i{0};
-  register int64_t j{-1};
-
-  for (;; i++) {
-    j++;  // j shall never be negetive
-
-    if ((long long)j >= (long long)len_cin) {
-      bfr[i] = 0;
-      break;
-    }
-
-    uint8_t is_reinterpreted_do_not_forbid{};
-    bfr[i] = CIN[j];
-
-    if (is_reinterpreted == is_reinterpreted_and_is_int) {
-      int8_t vlal_bf = rhs.char_to_int_for_string(bfr[i]);
-
-      if (vlal_bf == -1) {
-        char bfffr = bfr[i];
-        bfr[i] = value_reinterpreted_and_is_int;
-        i++;
-        bfr[i] = bfffr;
-        is_reinterpreted = 0;
-      } else {
-        value_reinterpreted_and_is_int *= 10;
-        value_reinterpreted_and_is_int += vlal_bf;
-        i--;
-        continue;
-      }
-    } else if (is_reinterpreted == 1) {
-      int8_t vlal_bf = rhs.char_to_int_for_string(bfr[i]);
-
-      if (vlal_bf == -1) {
-        is_reinterpreted = 0;
-
-        if (!rhs.char_to_char_for_reinterpret(bfr[i])) {
-          i--;
-          continue;
-        } else {
-          is_reinterpreted_do_not_forbid = 1;
-        }
-      } else {
-        value_reinterpreted_and_is_int = vlal_bf;
-        is_reinterpreted = is_reinterpreted_and_is_int;
-        i--;
-        continue;
-      }
-    } else if (rhs.drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char ==
-               bfr[i]) {
-      bfr[i] = '\0';
-      i--;
-      is_reinterpreted = 1;
-      continue;
-    }
-
-    if (!is_reinterpreted_do_not_forbid && !(bfr[i] == 0) &&
-        rhs.is_forbiden(bfr[i])) {
-      bfr[i] = '\0';
-      break;
-    }
-  }
-
-  rhs += bfr;
-  delete[] bfr;
+  helper__op_shift_input_(rhs, CIN, rhs);
 }
 
 const mjz_Str& helper__op_shift_input_(const mjz_Str& rhs, const mjz_Str& CIN,
@@ -2025,19 +1976,18 @@ const mjz_Str& helper__op_shift_input_(const mjz_Str& rhs, const mjz_Str& CIN,
   if (CIN.is_blank()) return CIN;
   //
   const char* CIN_c_str = CIN.c_str();
-  register size_t CURunt_index_{};
+  size_t CURunt_index_{};
   size_t my_bfr_obj_length = CIN.length() + 4;
   mjz_Str my_bfr_obj =
       mjz_Str::create_mjz_Str_char_array(my_bfr_obj_length + 5, 0, 1);
-  register char* bfr = (char*)my_bfr_obj;  // char bfr[2050];
-  register uint8_t is_reinterpreted{};
+  char* bfr = (char*)my_bfr_obj;  // char bfr[2050];
+  uint8_t is_reinterpreted{};
   constexpr uint8_t is_reinterpreted_and_is_int = 2;
-  register uint8_t value_reinterpreted_and_is_int{};
+  uint8_t value_reinterpreted_and_is_int{};
   auto& reinterpret_char_char_ref =
       rhs.drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
 
-  auto continue_event_is_reinterpreted_and_is_int =
-      [&](register uint16_t& i) -> bool {
+  auto continue_event_is_reinterpreted_and_is_int = [&](uint16_t& i) -> bool {
     if (bfr[i] == reinterpret_char_char_ref) {
       bfr[i] = value_reinterpreted_and_is_int;
       is_reinterpreted = 0;
@@ -2060,8 +2010,7 @@ const mjz_Str& helper__op_shift_input_(const mjz_Str& rhs, const mjz_Str& CIN,
     return 0;
   };
   auto continue_event_is_reinterpreted =
-      [&](register uint16_t& i,
-          uint8_t& is_reinterpreted_do_not_forbid) -> bool {
+      [&](uint16_t& i, uint8_t& is_reinterpreted_do_not_forbid) -> bool {
     int8_t vlal_bf = rhs.char_to_int_for_string(bfr[i]);
 
     if (vlal_bf == -1) {
@@ -2082,7 +2031,7 @@ const mjz_Str& helper__op_shift_input_(const mjz_Str& rhs, const mjz_Str& CIN,
     return 0;
   };
 
-  for (register uint16_t i{0}; i < my_bfr_obj_length - 3; i++) {
+  for (uint16_t i{0}; i < my_bfr_obj_length - 3; i++) {
     uint8_t is_reinterpreted_do_not_forbid{};
     bfr[i] = CIN_c_str[CURunt_index_];
     CURunt_index_++;
@@ -2242,8 +2191,8 @@ size_t mjz_Str::read(uint8_t* buf, size_t size_) {
   return size_;
 }
 void mjz_Str::flush() {}
-void mjz_Str::begin(unsigned long h) {}
-void mjz_Str::begin(unsigned long baudrate, uint16_t config) {}
+void mjz_Str::begin(unsigned long) {}
+void mjz_Str::begin(unsigned long, uint16_t) {}
 // void mjz_Str::end() {}
 
 mjz_Str& mjz_Str::ULL_LL_to_str_add(uint64_t value, int radix, bool is_signed,
@@ -2458,33 +2407,33 @@ mjz_Str mjz_Str::operator--(int) {
   return tmp;
 }
 
-unsigned long mjz_Str::UN_ORDERED_compare(const mjz_Str& s) const {
+size_t mjz_Str::UN_ORDERED_compare(const mjz_Str& s) const {
   return UN_ORDERED_compare(s.buffer, s.len);
 }
 
-unsigned long mjz_Str::UN_ORDERED_compare(const char* s, size_t s_len) const {
+size_t mjz_Str::UN_ORDERED_compare(const char* s, size_t s_len) const {
   const unsigned char* ucs_ = (const unsigned char*)s;
   const unsigned char* ucbuffer_ = (const unsigned char*)this->buffer;
 
-  unsigned long number_of_not_right{};
-  mjz_Str my_num_buffer = create_mjz_Str_char_array(
-      static_cast<unsigned long long>(2) * 256 * sizeof(unsigned long));
-  unsigned long* NUMBER_OF_EACH_char_array[2] = {
-      ((unsigned long*)my_num_buffer.buffer_ref()),
-      ((unsigned long*)my_num_buffer.buffer_ref() + 256)};
+  size_t number_of_not_right{};
+  mjz_Str my_num_buffer =
+      create_mjz_Str_char_array(static_cast<size_t>(2) * 256 * sizeof(size_t));
+  size_t* NUMBER_OF_EACH_char_array[2] = {
+      ((size_t*)my_num_buffer.buffer_ref()),
+      ((size_t*)my_num_buffer.buffer_ref() + 256)};
 
-  for (unsigned long i{}; i < s_len; i++) {
+  for (size_t i{}; i < s_len; i++) {
     NUMBER_OF_EACH_char_array[0][ucs_[i]]++;
   }
 
-  for (unsigned long i{}; i < this->length(); i++) {
+  for (size_t i{}; i < this->length(); i++) {
     NUMBER_OF_EACH_char_array[1][ucbuffer_[i]]++;
   }
 
-  for (unsigned long i{}; i < 256; i++) {
+  for (size_t i{}; i < 256; i++) {
     number_of_not_right +=
-        (size_t)abs((long long)NUMBER_OF_EACH_char_array[1][i] -
-                    (long long)NUMBER_OF_EACH_char_array[0][i]);
+        (size_t)abs((int64_t)NUMBER_OF_EACH_char_array[1][i] -
+                    (int64_t)NUMBER_OF_EACH_char_array[0][i]);
   }
 
   return number_of_not_right;
@@ -2590,17 +2539,17 @@ void Set_nth_bit_andret32(void* data, uint64_t nthbt,
                           bool set_to) {  // set_to is a bool
   uint64_t& data_in_array = ((uint64_t*)data)[nthbt / 32];
   const uint8_t ofset = nthbt % 32;
-  data_in_array &= static_cast<unsigned long long>(0) << ofset;
+  data_in_array &= static_cast<uint64_t>(0) << ofset;
 
   if (set_to) {
-    data_in_array |= (static_cast<unsigned long long>(1) << ofset);
+    data_in_array |= (static_cast<uint64_t>(1) << ofset);
   }
 }
 bool Get_nth_bit_andret32(const void* data,
                           uint64_t nthbt) {  // set_to is a bool
   uint64_t data_in_array = ((uint64_t*)data)[nthbt / 32];
   const uint8_t ofset = nthbt % 32;
-  data_in_array &= static_cast<unsigned long long>(1) << ofset;
+  data_in_array &= static_cast<uint64_t>(1) << ofset;
 
   if (data_in_array) {
     return 1;
@@ -2611,7 +2560,7 @@ bool Get_nth_bit_andret32(const void* data,
 void tgl_nth_bit_andret32(void* data, uint64_t nthbt) {  // set_to is a bool
   uint64_t* data_in_array = ((uint64_t*)data) + (nthbt / 32);
   const uint8_t ofset = nthbt % 32;
-  *data_in_array ^= (static_cast<unsigned long long>(1) << ofset);
+  *data_in_array ^= (static_cast<uint64_t>(1) << ofset);
 }
 
 void Set_nth_bit_andret8(void* data, uint64_t nthbt,
@@ -2701,7 +2650,7 @@ size_t mjz_Str::print(long n, int base) {
 
     return printNumber(n, 10);
   } else {
-    return printNumber(n, base);
+    return printNumber(n, static_cast<uint8_t>(base));
   }
 }
 
@@ -2709,7 +2658,7 @@ size_t mjz_Str::print(unsigned long n, int base) {
   if (base == 0) {
     return write(n);
   } else {
-    return printNumber(n, base);
+    return printNumber(n, static_cast<uint8_t>(base));
   }
 }
 
@@ -2725,7 +2674,7 @@ size_t mjz_Str::print(long long n, int base) {
 
     return printULLNumber(n, 10);
   } else {
-    return printULLNumber(n, base);
+    return printULLNumber(n, static_cast<uint8_t>(base));
   }
 }
 
@@ -2733,7 +2682,7 @@ size_t mjz_Str::print(unsigned long long n, int base) {
   if (base == 0) {
     return write(n);
   } else {
-    return printULLNumber(n, base);
+    return printULLNumber(n, static_cast<uint8_t>(base));
   }
 }
 
@@ -2893,7 +2842,7 @@ size_t mjz_Str::printULLNumber(unsigned long long n64, uint8_t base) {
     // 16 bit math loop to do remainder. (note buffer is filled reverse)
     for (uint8_t j = 0; j < innerLoops; j++) {
       uint16_t qq = r / base;
-      buf[i++] = r - qq * base;
+      buf[i++] = static_cast<char>(r - qq * base);
       r = qq;
     }
   }
@@ -2902,7 +2851,7 @@ size_t mjz_Str::printULLNumber(unsigned long long n64, uint8_t base) {
 
   while (n16 > 0) {
     uint16_t qq = n16 / base;
-    buf[i++] = n16 - qq * base;
+    buf[i++] = static_cast<char>(n16 - qq * base);
     n16 = qq;
   }
 
@@ -3213,9 +3162,8 @@ mjz_Str mjz_Str::readmjz_Str() {
           }
           return ret;
     */
-  mjz_Str ret;
-  ret = *this;
-  this->operator=(empty_STRING_C_STR);
+  mjz_Str ret = std::move(*this);  // be carefull
+  new (this) mjz_Str;              // be carefull
   return ret;
 }
 

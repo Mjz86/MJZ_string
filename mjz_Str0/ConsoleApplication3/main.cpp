@@ -13,19 +13,14 @@ void print(const char* input) { std::cout << input; }
 class mjz_Str_dir_test_class : public mjz_Str {
  public:
   virtual void* realloc(void* ptr, size_t new_size) override {
-    void* retval_ = mjz_Str::realloc(ptr, new_size);
-    bool bufr__is_in_stack = realloc_helper_is_in_stack(retval_);
-    ::printf("\n\n mjz_Str_dir_test_class realloces %s \n\n",
-             bufr__is_in_stack ? " in stack " : " in buffer ");
+    void* retval_ = ::realloc(ptr, new_size);
+    ::printf("\n\n mjz_Str_dir_test_class realloces in heap %d bytes ",
+             (int)new_size);
     return retval_;
   }
-  virtual void free(void*& ptr) override {
-    mjz_Str::free(ptr);
-    ::print("\n\n mjz_Str_dir_test_class frees and free to 0 \n\n");
-    return;
-  }
-  virtual void free(void* const& ptr) override {
-    mjz_Str::free(ptr);
+  
+  virtual void free(void* ptr) override {
+    ::free(ptr);
     ::print("\n\n mjz_Str_dir_test_class frees \n\n");
     return;
   }
@@ -184,7 +179,8 @@ int main2() {
   double ms_prop2 = (double)(timeSinceEpochMillisec() - strtms2) / it_num;
   std::cout << "\nend  in " << ms_prop2 << " ms per op \n ";
 
-  std::cout << "\n class is  " << ms_prop2 - ms_prop << " ms faster per op \n ";
+  std::cout << "\n class is  " << (100 * ms_prop / ms_prop2)
+            << "%  slower per op \n ";
 
   return 0;
 }
@@ -210,12 +206,12 @@ long loop() {
   std::cout << (mystr = "enter a sentence : \n");
   std::cin >> mystr();
   std::vector<mjz_Str> my_words(10);
-  unsigned int word_count{};
-  int index_of_first_char_of_word{};
-  int index_of_first_space_after_previos{};
+  size_t word_count{};
+  int64_t index_of_first_char_of_word{};
+  int64_t index_of_first_space_after_previos{};
   bool DO_break{};
   while (!DO_break) {
-    index_of_first_space_after_previos = [&]() -> int {
+    index_of_first_space_after_previos = [&]() -> int64_t {
       std::vector<int64_t> my_list_of_spacers = {
           mystr.indexOf(' ', index_of_first_char_of_word),
           mystr.indexOf('\n', index_of_first_char_of_word),
@@ -223,7 +219,7 @@ long loop() {
           mystr.indexOf(',', index_of_first_char_of_word),
           mystr.indexOf('.', index_of_first_char_of_word)};
 
-      auto it = std::max(my_list_of_spacers.begin(),  // chose the biggest
+      auto& it = std::max(my_list_of_spacers.begin(),  // chose the biggest
                          my_list_of_spacers.end() - 1, [](auto& a, auto& b) {
                            bool re_bol{};
                            if (*a == -1)
@@ -254,8 +250,9 @@ long loop() {
     std::cout << obj;
     std::cout << "\n\r";
   }
-  auto it_ =
-      std::max(my_words.begin(), my_words.begin() + (word_count - 1),
+  auto &it_ = std::max(
+      my_words.begin(),
+      my_words.begin() + ((size_t)word_count - 1),
                [](auto& a, auto& b) { return b->length() > a->length(); });
   std::cout << "\n\r in words : \"" << *it_
             << "\" is the longest \n heare is the revese order of  them :\"";
@@ -286,9 +283,7 @@ long loop() {
 
   return mystr()([&](auto THis_) -> int {
     mjz_Str& mystr = *THis_;
-    mystr =
-        "exiting enter some natural number to exit note that size of string is "
-        ":";
+    mystr ="exiting enter some natural number to exit note that size of string \nis \n:"_m_str;
     mystr += sizeof(mjz_Str);
     mystr += " \n";
     mystr.change_reinterpret_char_char('\1');
@@ -310,7 +305,7 @@ int main00() {
   return 0;
 }
 
-int main() {
+int main79() {
   main2();
   if (mjz_Str("hello there i biult a cmd app  press any word to start\n")(
           [&](mjz_Str* this_) -> bool {
@@ -342,7 +337,43 @@ int main7() {
   std::cout << "4. : \"" << mystr2 << "\"\n";
   return 0;
 }
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
+std::shared_ptr<std::map<std::string, timer_info>> map_ptr ;
+const char* const _timer_sign = "_timer_";
+int main() {
+ map_ptr = std::make_shared<std::map<std::string, timer_info>>();
+  for (size_t i{}; i < 1000000; i++) {
+    Scoped_speed_Timer timer("timer_");
+    timer.set_list(map_ptr);
+    timer(_timer_sign);
+    timer("allocation");
+    mjz_Str my_str("hi mom ;)");
+    timer("deallocation");
+    mjz_Str::replace_with_new_str(my_str);
+    timer("allocation large");
+    my_str("allocation large string i am nesssery");
+    timer("deallocation large");
+    mjz_Str::replace_with_new_str(my_str);
+
+    timer("std allocation");
+    std::string my_strtd("hi mom ;)");
+    timer("std deallocation");
+    my_strtd.~basic_string();
+    new (&my_strtd) std::string();
+    timer("std allocation large");
+    my_strtd = ("allocation large string i am nesssery");
+    timer("std deallocation large");
+    my_strtd.~basic_string();
+    new (&my_strtd) std::string();
+    timer("timer_");
+  
+ 
+  }
+  std::cout << sizeof(mjz_Str) << " vs " << sizeof(std::string) << " \n";
+ std::cout << Scoped_speed_Timer::show_analisis(map_ptr, _timer_sign);
+
+    return 0;
+    }
+    // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
 // Tips for Getting Started:

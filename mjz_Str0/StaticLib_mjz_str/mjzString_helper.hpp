@@ -21,12 +21,17 @@
 // #define Arduino
 
 // #define Arduino 1
-
+#include <chrono>
+#include <iostream>
 #include <type_traits>
 #include <cstring>
 #include <stdlib.h>
 #include <ctype.h>
 #include <vector>
+#include <iostream>
+#include <map>
+#include <string>
+#include <string_view>
 #include <cassert>
 #include <stdint.h>
 #include <float.h>
@@ -51,9 +56,10 @@ int sprintf_alt_(char* const buffer_for_print,size_t size_of_msg, const char* co
   uint32_t my_data_randomizer;
   double my_data_randomizer_d;
 };
+  extern my_data_randomizer_union my_data_randomizer_uni;
  template <typename... T>
 uint32_t esp_random(T... arggs) {
-  static my_data_randomizer_union my_data_randomizer_uni;
+
   ++my_data_randomizer_uni.my_data_randomizer_d;
 my_data_randomizer_uni.my_data_randomizer_d *=
     my_data_randomizer_uni.my_data_randomizer_u;
