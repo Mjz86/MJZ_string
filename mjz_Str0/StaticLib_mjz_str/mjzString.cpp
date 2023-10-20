@@ -199,8 +199,10 @@ mjz_Str ULL_LL_to_str(uint64_t value, int radix, bool is_signed,
                       bool force_neg) {
   mjz_Str ret_var;
   ret_var.reserve(70, 1);
-  ret_var.addto_length((uint64_t)strlen(b_U_lltoa(value, (char*)ret_var, radix,
-                                                  is_signed, force_neg)),
+auto ptr_ =b_U_lltoa(value, (char*)ret_var, radix,
+                                                  is_signed, force_neg);
+if(!ptr_)return ret_var;
+  ret_var.addto_length((uint64_t)strlen(ptr_),
                        1);
   return ret_var;
 }
@@ -277,7 +279,7 @@ long long C_STR_to_LL(const char* buffer, uint8_t buffer_len, int radix,
       is_neg_bool = 1;
     } else if (buffer_for_number[WHILE_Index_for_int_buf] == 127) {
       volatile uint16_t HOLDER_does_not_do_any_thing = 0;
-      HOLDER_does_not_do_any_thing += HOLDER_does_not_do_any_thing;
+      HOLDER_does_not_do_any_thing += HOLDER_does_not_do_any_thing; //TODO: V2007 https://pvs-studio.com/en/docs/warnings/V2007/ This expression can be simplified. One of the operands in the '+=' operation equals 0x0. Probably it is a mistake.
     } else if (buffer_for_number[WHILE_Index_for_int_buf] >= radix) {
       *had_error = 1;
 
@@ -340,7 +342,7 @@ char* ultoa(uint32_t value, char* buffer, int radix) {
   return ulltoa((uint64_t)value, buffer, radix);
 }
 char* utoa(uint32_t value, char* buffer, int radix) {
-  return ulltoa((uint64_t)value, buffer, radix);
+  return ultoa(value, buffer, radix);
 }
 
 char* lltoa(long long value, char* buffer, int radix) {
@@ -420,22 +422,11 @@ void* mjz_Str::realloc_new_ns::operator new(size_t size_, void* where) {
   return ::realloc(where, size_);
 }
 
-mjz_Str::mjz_Str(const char* cstr) {
-  init();
-
-  if (cstr) {
-    copy(cstr, (size_t)strlen(cstr));
-  }
-
-  // (this->*update_event_F_p)(); //depated
-  // //(object_ptr->*pointer_name)(arguments)
-}
-
 mjz_Str::mjz_Str(const char* cstr, size_t length) {
   init();
 
   if (cstr) {
-    copy(cstr, length);
+    copy(cstr, length,1);
   }
 
   // (this->*update_event_F_p)(); //depated
@@ -462,7 +453,7 @@ mjz_Str::mjz_Str(mjz_Str&& rval) noexcept
   // update_event_F_p = &mjz_Str::update_event;//depated
 
   if (rval.stack_obj_buf.get()) {
-    rval.free_pv(rval.buffer);
+    rval.free_pv(rval.buffer,1);
   }
 
   rval.buffer = NULL;
@@ -555,7 +546,7 @@ mjz_Str::mjz_Str(double value, unsigned char decimalPlaces) {
 }
 
 mjz_Str::~mjz_Str(void) {
-  invalidate();
+  invalidate(1);
 }  // i  don't need to do this but this is explained in stackoverfllow . the
    // vtable of the drived free override gets destroyed when ~mjz_Str() gets
    // called so mjz_Str::free shoud be called and i do it explicitly  its not
@@ -576,10 +567,11 @@ When a virtual function is called directly or indirectly from a constructor or
    class’s non-static data members,    and the object to which the call applies is
    the    object (call it x) under construction or destruction, the function called
    is    the    final overrider in the constructor’s or destructor’s class and not
-   one    overriding it in a more-derived class.    If the virtual function call uses
-   an    explicit class member access (5.2.5)    and the object expression refers to
-   the    complete object of x or one of that object’s base class subobjects but not x
-   or    one of its base class subobjects,    the behavior is undefined.
+   one    overriding it in a more-derived class.    If the virtual function call
+   uses    an    explicit class member access (5.2.5)    and the object expression
+   refers to    the    complete object of x or one of that object’s base class
+   subobjects but not x    or    one of its base class subobjects,    the behavior is
+   undefined.
    
 You can find this recommendation in many sources, including Scott Meyers'
 Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item 9:
@@ -648,7 +640,7 @@ Your answer could be quite nice if you worked it over a little bit. First, in
 /* Memory Management */
 /*********************************************/
 
-inline void mjz_Str::init(void) {
+inline void mjz_Str::init(bool) {
   buffer = NULL;
   // update_event_F_p = &mjz_Str::update_event;//depated
   ;
@@ -657,9 +649,9 @@ inline void mjz_Str::init(void) {
   len = 0;
 }
 
-void mjz_Str::invalidate(void) {
+void mjz_Str::invalidate(bool constructor ) {
   if (!buffer) goto _end__;
-  free_pv(buffer);
+  free_pv(buffer, constructor);
   stack_obj_buf.set(0);
   buffer = NULL;
 _end__:
@@ -668,7 +660,7 @@ _end__:
   // (this->*update_event_F_p)(); //depated
 }
 
-bool mjz_Str::reserve(size_t size_, bool just_size) {
+bool mjz_Str::reserve(size_t size_, bool just_size, bool constructor) {
   int64_t different_of_size_and_cap = (int64_t)size_ - (int64_t)capacity;
   if (just_size || different_of_size_and_cap < 0) goto ignored_stack;
   if (size_ < stack_buffer_size) {
@@ -685,7 +677,7 @@ ignored_stack:
     return 1;
   }
 
-  if (changeBuffer(size_)) {
+  if (changeBuffer(size_, constructor)) {
     if (len == 0) {
       buffer[0] = 0;
     }
@@ -715,10 +707,12 @@ bool mjz_Str::realloc_helper_is_in_stack(void* ptr) {
   return (stack_obj_buf.get() || stack_obj_buf.stack_buffer == (char*)ptr);
 }
 
-void* mjz_Str::realloc_pv(void* ptr, size_t new_size) {
+void* mjz_Str::realloc_pv(void* ptr, size_t new_size, bool constructor) {
+
   bool ptr_is_in_stack = realloc_helper_is_in_stack(ptr);
   bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr));  //(buffer == ptr);
   bool ptr_Can_set_to_stack = (new_size <= (stack_buffer_size + 1));
+
   if (ptr_Can_set_to_stack) {
     if (ptr_is_buffer) {
       size_t the__length = length();
@@ -727,7 +721,9 @@ void* mjz_Str::realloc_pv(void* ptr, size_t new_size) {
         memmove(stack_obj_buf.stack_buffer, ptr,
                 min_macro_(the__length, stack_buffer_size));
 
-      free_pv(ptr);  // because  of my custom free  0 and stack_buffer are
+      free_pv(
+          ptr,
+          constructor);  // because  of my custom free  0 and stack_buffer are
                      // ignored and i reset STR_is_in_stack in next line
     }
 
@@ -736,8 +732,9 @@ void* mjz_Str::realloc_pv(void* ptr, size_t new_size) {
   }
 
   if (ptr_is_in_stack) {
-    free_pv(ptr);  // mjz_Str::free shoud  care about ptr val
-    ptr = this->realloc(0,new_size);
+    free_pv(ptr, constructor);  // mjz_Str::free shoud  care about ptr val
+    ptr = (constructor ? mjz_Str::realloc(ptr, new_size)
+                       : this->realloc(ptr, new_size));
     if (!ptr) {
       return 0;
     }
@@ -752,9 +749,10 @@ void* mjz_Str::realloc_pv(void* ptr, size_t new_size) {
     return ptr;
   }
 
-  return this->realloc(ptr, new_size);
+  return (constructor ? mjz_Str::realloc(ptr, new_size)
+                      : this->realloc(ptr, new_size));
 }
-void mjz_Str::free_pv(void*& ptr) {
+void mjz_Str::free_pv(void*& ptr, bool constructor) {
   if (stack_obj_buf.get() || stack_obj_buf.stack_buffer == ptr) {
     ptr = 0;
     stack_obj_buf.set(0);
@@ -762,24 +760,20 @@ void mjz_Str::free_pv(void*& ptr) {
   }
 
   if (ptr) {
-    this->free(ptr);
+    if (constructor)
+      mjz_Str::free(ptr);
+        else this->free(ptr);
   }
 
   ptr = 0;
 }
-void mjz_Str::free_pv(void* const& ptr) {
-  if (!!stack_obj_buf.get() || !!(stack_obj_buf.stack_buffer == ptr)) {
-    stack_obj_buf.set(0);
-    return;
-  }
-
-  if (ptr) {
-    this->free(ptr);
-  }
+void mjz_Str::free_pv(void* const& ptr, bool constructor) {
+  void* ptr_ = ptr;
+  free_pv(ptr_,constructor);
 }
-bool mjz_Str::changeBuffer(size_t maxStrLen) {
+bool mjz_Str::changeBuffer(size_t maxStrLen, bool constructor) {
   char* newbuffer{};
-  newbuffer = (char*)realloc_pv(buffer, maxStrLen + 1);
+  newbuffer = (char*)realloc_pv(buffer, maxStrLen + 1, constructor);
 
   if (newbuffer) {
     buffer = newbuffer;
@@ -796,8 +790,8 @@ bool mjz_Str::changeBuffer(size_t maxStrLen) {
 /* Copy and Move */
 /*********************************************/
 
-mjz_Str& mjz_Str::copy(const char* cstr, size_t length) {
-  if (reserve(length)) goto _Success_full_;
+mjz_Str& mjz_Str::copy(const char* cstr, size_t length,bool constructor) {
+  if (reserve(length,0,1)) goto _Success_full_;
   invalidate();
   // (this->*update_event_F_p)(); //depated
   return *this;
@@ -825,13 +819,13 @@ mjz_Str& mjz_Str::copy(const __FlashStringHelper* pstr, size_t length) {
 
 void mjz_Str::move(mjz_Str& rhs) {
   if (this != &rhs) {
-    free_pv(buffer);
+    free_pv(buffer,0);
     stack_obj_buf = rhs.stack_obj_buf;
     buffer =
         (rhs.stack_obj_buf.get() ? stack_obj_buf.stack_buffer : rhs.buffer);
 
     if (rhs.stack_obj_buf.get()) {
-      rhs.free_pv(rhs.buffer);
+      rhs.free_pv(rhs.buffer,0);
     }
 
     len = rhs.len;
@@ -868,7 +862,7 @@ mjz_Str& mjz_Str::operator=(mjz_Str&& rval) noexcept {
 }
 
 mjz_Str& mjz_Str::operator=(const char* cstr) {
-    operator()(cstr);
+  operator()(cstr);
   // (this->*update_event_F_p)(); //depated
   return *this;
 }
@@ -1217,7 +1211,7 @@ bool mjz_Str::equals(const mjz_Str& s2) const {
   return (len == s2.len && compareTo(s2) == 0);
 }
 
-bool mjz_Str::equals(const char* cstr) const {
+bool mjz_Str::equals(const char* cstr, size_t cstr_len) const {
   if (len == 0) {
     // // (this->*update_event_F_p)(); //depated
     return (cstr == NULL || *cstr == 0);
@@ -1227,9 +1221,9 @@ bool mjz_Str::equals(const char* cstr) const {
     // // (this->*update_event_F_p)(); //depated
     return buffer[0] == 0;
   }
-
+  if (cstr_len != length()) return 0;
   // // (this->*update_event_F_p)(); //depated
-  return MJZ_STRCMP(buffer, cstr) == 0;
+  return MJZ_STRnCMP(buffer, cstr, cstr_len) == 0;
 }
 
 bool mjz_Str::equalsIgnoreCase(const mjz_Str& s2) const {
@@ -1250,8 +1244,8 @@ bool mjz_Str::equalsIgnoreCase(const mjz_Str& s2) const {
 
   const char* p1 = buffer;
   const char* p2 = s2.buffer;
-
-  while (*p1) {
+  const char* end_p1 = buffer+length();
+  while (p1 < end_p1) {
     if (tolower(*p1++) != tolower(*p2++)) {
       // // (this->*update_event_F_p)(); //depated
       return false;
@@ -1412,7 +1406,8 @@ int64_t mjz_Str::indexOf(char ch, size_t fromIndex) const {
     return -1;
   }
 
-  const char* temp = strchr(buffer + fromIndex, ch);
+  const char* temp =
+      strchr(buffer + fromIndex, length()+ fromIndex, ch);
 
   if (temp == NULL) {
     return -1;
@@ -1424,19 +1419,25 @@ int64_t mjz_Str::indexOf(char ch, size_t fromIndex) const {
 int64_t mjz_Str::indexOf(const mjz_Str& s2) const { return indexOf(s2, 0); }
 
 int64_t mjz_Str::indexOf(const mjz_Str& s2, size_t fromIndex) const {
-  if (fromIndex >= len) {
-    return -1;
-  }
-
-  const char* found = strstr(buffer + fromIndex, s2.buffer);
-
-  if (found == NULL) {
-    return -1;
-  }
-
-  return (int64_t)(found - buffer);
+  return indexOf_cstr(s2.c_str(), s2.length(),  fromIndex);
 }
+int64_t mjz_Str::indexOf_cstr(const char* c_str_, size_t len_str,
+                              size_t fromIndex) const {
+  
+    if (fromIndex >= len) {
+      return -1;
+    }
 
+    const char* found =
+        strstr(buffer + fromIndex, length() - fromIndex, c_str_, len_str);
+
+    if (found == NULL) {
+      return -1;
+    }
+
+    return (int64_t)(found - buffer);
+  
+}
 int64_t mjz_Str::lastIndexOf(char theChar) const {
   return lastIndexOf(theChar, len - 1);
 }
@@ -1448,7 +1449,7 @@ int64_t mjz_Str::lastIndexOf(char ch, size_t fromIndex) const {
 
   char tempchar = buffer[fromIndex + 1];
   buffer[fromIndex + 1] = '\0';
-  char* temp = strrchr(buffer, ch);
+  char* temp = const_cast<char*>(strrchr(buffer, length(), ch));
   buffer[fromIndex + 1] = tempchar;
 
   if (temp == NULL) {
@@ -1462,8 +1463,11 @@ int64_t mjz_Str::lastIndexOf(const mjz_Str& s2) const {
   return lastIndexOf(s2, len - s2.len);
 }
 
-int64_t mjz_Str::lastIndexOf(const mjz_Str& s2, size_t fromIndex) const {
-  if (s2.len == 0 || len == 0 || s2.len > len) {
+
+
+int64_t mjz_Str::lastIndexOf_cstr(const char* cstr__, size_t length__,
+                                  size_t fromIndex) const {
+  if (length__ == 0 || len == 0 || length__ > len) {
     return -1;
   }
 
@@ -1473,8 +1477,8 @@ int64_t mjz_Str::lastIndexOf(const mjz_Str& s2, size_t fromIndex) const {
 
   int64_t found = -1;
 
-  for (char* p = buffer; p <= buffer + fromIndex; p++) {
-    p = strstr(p, s2.buffer);
+  for (const char* p = buffer; p <= buffer + fromIndex; p++) {
+    p = strstr(p, len, cstr__, length__);
 
     if (!p) {
       break;
@@ -1487,6 +1491,10 @@ int64_t mjz_Str::lastIndexOf(const mjz_Str& s2, size_t fromIndex) const {
 
   return found;
 }
+int64_t mjz_Str::lastIndexOf(const mjz_Str& s2, size_t fromIndex) const {
+  return lastIndexOf_cstr(s2.c_str(), s2.length(),
+                           fromIndex);
+    }
 
 mjz_Str mjz_Str::substring(size_t left, size_t right) const {
   const char* c_str_out{};
@@ -1507,7 +1515,7 @@ size_t mjz_Str::signed_index_to_unsigned(int64_t input) const {
 const char* mjz_Str::substring_give_ptr(int64_t left, int64_t right,
                                         const char*& c_str_out,
                                         size_t& len_out) const {
-  return substring_give_ptr(signed_index_to_unsigned(left),
+  return substring_give_ptrULL(signed_index_to_unsigned(left),
                             signed_index_to_unsigned(right), c_str_out,
                             len_out);
 }
@@ -1550,7 +1558,7 @@ mjz_Str& mjz_Str::insert(size_t pos, const char* s, size_t n) {
   buffer_str_ += substring(pos, length());
   return (*this = std::move(buffer_str_));
 }
-void mjz_Str::replace(char find, char replace) {
+void mjz_Str::replace(char find, char replace_) {
   if (!buffer) {
     // (this->*update_event_F_p)(); //depated
     return;
@@ -1558,84 +1566,16 @@ void mjz_Str::replace(char find, char replace) {
 
   for (char* p = buffer; *p; p++) {
     if (*p == find) {
-      *p = replace;
+      *p = replace_;
     }
   }
 
   // (this->*update_event_F_p)(); //depated
 }
-
-void mjz_Str::replace(const mjz_Str& find, const mjz_Str& replace) {
-  if (len == 0 || find.len == 0) {
-    // (this->*update_event_F_p)(); //depated
-    return;
-  }
-
-  int64_t diff = replace.len - find.len;
-  char* readFrom = buffer;
-  char* foundAt;
-
-  if (diff == 0) {
-    while ((foundAt = strstr(readFrom, find.buffer)) != NULL) {
-      memcpy(foundAt, replace.buffer, replace.len);
-      readFrom = foundAt + replace.len;
+// namespace mjz_ard
+void mjz_Str::replace(const mjz_Str& find, const mjz_Str& replace_) {
+  replace(find.c_str(), find.length(), replace_.c_str(), replace_.length());
     }
-  } else if (diff < 0) {
-    size_t size_ = len;  // compute size_ needed for result
-
-    while ((foundAt = strstr(readFrom, find.buffer)) != NULL) {
-      readFrom = foundAt + find.len;
-      diff = 0 - diff;
-      size_ -= diff;
-    }
-
-    if (size_ == len) {
-      // (this->*update_event_F_p)(); //depated
-      return;
-    }
-
-    int64_t index = len - 1;
-
-    while (index >= 0 && (index = lastIndexOf(find, index)) >= 0) {
-      readFrom = buffer + index + find.len;
-      memmove(readFrom - diff, readFrom, len - (readFrom - buffer));
-      len -= diff;
-      buffer[len] = 0;
-      memcpy(buffer + index, replace.buffer, replace.len);
-      index--;
-    }
-  } else {
-    size_t size_ = len;  // compute size_ needed for result
-
-    while ((foundAt = strstr(readFrom, find.buffer)) != NULL) {
-      readFrom = foundAt + find.len;
-      size_ += diff;
-    }
-
-    if (size_ == len) {
-      // (this->*update_event_F_p)(); //depated
-      return;
-    }
-
-    if (size_ > capacity && !changeBuffer(size_)) {
-      // (this->*update_event_F_p)(); //depated
-      return;  // XXX: tell user!
-    }
-
-    int64_t index = len - 1;
-
-    while (index >= 0 && (index = lastIndexOf(find, index)) >= 0) {
-      readFrom = buffer + index + find.len;
-      memmove(readFrom + diff, readFrom, len - (readFrom - buffer));
-      len += diff;
-      buffer[len] = 0;
-      memcpy(buffer + index, replace.buffer, replace.len);
-      index--;
-    }
-  }
-
-  // (this->*update_event_F_p)(); //depated
-}
 
 void mjz_Str::remove(size_t index) {
   // Pass the biggest integer as the count. The remove method
@@ -1690,7 +1630,7 @@ mjz_Str::iterator mjz_Str::erase(iterator first, iterator last) {
 mjz_Str& mjz_Str::erase_from_f_to_l(size_t first, size_t last) {
   first = signed_index_to_unsigned(first);
   last = signed_index_to_unsigned(last);
-  if ((last <= first) || (first < 0) || (last < 0) || (length() < last))
+  if ((last <= first)  ||  (length() < last))
     return *this;
   remove(first, last - first);
   return *this;
@@ -1964,11 +1904,11 @@ char*& mjz_Str::buffer_ref() {
   if (!capacity && !buffer) {
     return buffer;
   }
-  if ((len + 1) >= capacity) {
-    reserve(capacity + 5, 1);
+  if ( capacity<(len + 1)) {
+    reserve(capacity + 1, 1);
   }
 
-  buffer[len] = '\0';
+if(buffer)  buffer[len] = '\0';
   return buffer;
 }
 
@@ -1983,9 +1923,8 @@ const mjz_Str& helper__op_shift_input_(const mjz_Str& rhs, const mjz_Str& CIN,
   const char* CIN_c_str = CIN.c_str();
   size_t CURunt_index_{};
   size_t my_bfr_obj_length = CIN.length() + 4;
-  mjz_Str my_bfr_obj =
-      mjz_Str::create_mjz_Str_char_array(my_bfr_obj_length + 5, 0, 1);
-  char* bfr = (char*)my_bfr_obj;  // char bfr[2050];
+  malloc_wrpr my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
+  char* bfr = (char*)my_bfr_obj_ptr.get_ptr();  // char bfr[2050];
   uint8_t is_reinterpreted{};
   constexpr uint8_t is_reinterpreted_and_is_int = 2;
   uint8_t value_reinterpreted_and_is_int{};
@@ -2064,7 +2003,8 @@ const mjz_Str& helper__op_shift_input_(const mjz_Str& rhs, const mjz_Str& CIN,
   bfr[my_bfr_obj_length - 1] = '\0';
   bfr[my_bfr_obj_length - 2] = '\0';
   bfr[my_bfr_obj_length - 3] = '\0';
-  get_shift_op_s += (const char*)my_bfr_obj.c_str();
+  get_shift_op_s += (const char*)my_bfr_obj_ptr.get_ptr();
+
   return CIN;
 }
 
@@ -2209,8 +2149,9 @@ mjz_Str& mjz_Str::ULL_LL_to_str_rep(uint64_t value, int radix, bool is_signed,
                                     bool force_neg) {
   operator=(empty_STRING_C_STR);
   reserve(70, 1);
-  addto_length((size_t)strlen(
-                   b_U_lltoa(value, buffer_ref(), radix, is_signed, force_neg)),
+auto ptr_ =b_U_lltoa(value, buffer_ref(), radix, is_signed, force_neg);
+if(!ptr_) return *this;
+  addto_length((size_t)strlen(ptr_),
                1);
   return *this;
 }
@@ -2350,6 +2291,87 @@ mjz_Str mjz_Str::create_mjz_Str_2D_char_array(size_t size_col, size_t size_row,
   return my_buufer_;
 }
 
+void mjz_Str::replace(const char* find_cstr, size_t find_count,
+                      const char* replace_cstr, size_t replace_count) {
+  if (len == 0 || find_count == 0) {
+    // (this->*update_event_F_p)(); //depated
+    return;
+  }
+
+  int64_t diff = replace_count - find_count;
+  char* readFrom = C_str();
+   char* foundAt{};
+
+  if (diff == 0) {
+    while ((foundAt = const_cast<char*>(
+                strstr(readFrom, strlen(readFrom ),
+                       find_cstr, find_count))) !=
+           NULL) {
+      memcpy(foundAt, replace_cstr, replace_count);
+      readFrom = foundAt + replace_count;
+    }
+  } else if (diff < 0) {
+    size_t size_ = len;  // compute size_ needed for result
+
+    while ((foundAt = const_cast<char*>(strstr(readFrom, strlen(readFrom),
+                                               find_cstr, find_count))) !=
+           NULL) {
+      readFrom = foundAt + find_count;
+      diff = 0 - diff;
+      size_ -= diff;
+    }
+
+    if (size_ == len) {
+      // (this->*update_event_F_p)(); //depated
+      return;
+    }
+
+    int64_t index = len - 1;
+
+    while (index >= 0 &&
+           (index = lastIndexOf_cstr(find_cstr, find_count, index)) >= 0) {
+      readFrom = buffer + index + find_count;
+      memmove(readFrom - diff, readFrom, len - (readFrom - buffer));
+      len -= diff;
+      buffer[len] = 0;
+      memcpy(buffer + index, replace_cstr, replace_count);
+      index--;
+    }
+  } else {
+    size_t size_ = len;  // compute size_ needed for result
+
+    while ((foundAt = const_cast<char*>(strstr(readFrom, strlen(readFrom ),
+                             find_cstr,find_count))) != NULL) {
+      readFrom = foundAt + find_count;
+      size_ += diff;
+    }
+
+    if (size_ == len) {
+      // (this->*update_event_F_p)(); //depated
+      return;
+    }
+
+    if (size_ > capacity && !changeBuffer(size_,0)) {
+      // (this->*update_event_F_p)(); //depated
+      return;  // XXX: tell user!
+    }
+
+    int64_t index = len - 1;
+
+    while (index >= 0 &&
+           (index = lastIndexOf_cstr(find_cstr, find_count, index)) >= 0) {
+      readFrom = buffer + index + find_count;
+      memmove(readFrom + diff, readFrom, len - (readFrom - buffer));
+      len += diff;
+      buffer[len] = 0;
+      memcpy(buffer + index, replace_cstr, replace_count);
+      index--;
+    }
+  }
+
+  // (this->*update_event_F_p)(); //depated
+}
+
 mjz_Str& mjz_Str::operator-=(const mjz_Str& othr_) {
   int64_t index_of_remove = lastIndexOf(othr_);
 
@@ -2377,7 +2399,7 @@ mjz_Str& mjz_Str::operator*=(unsigned int number_of_it) {
     temperory_str += *this;
   }
 
-  *this = temperory_str;
+  *this = std::move(temperory_str);
   return *this;
 }
 mjz_Str mjz_Str::operator*(unsigned int number_of_it) {
@@ -2385,11 +2407,11 @@ mjz_Str mjz_Str::operator*(unsigned int number_of_it) {
   return lhs.operator*=(number_of_it);
 }
 mjz_Str& mjz_Str::operator/=(const mjz_Str& othr_) {
-  replace(othr_, "");
+  replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
   return *this;
 }
 mjz_Str& mjz_Str::operator/=(mjz_Str&& othr_) {
-  replace(othr_, "");
+  replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
   return *this;
 }
 
@@ -2498,7 +2520,7 @@ hash_sha_512 hash_msg_to_sha_512(const char* dev_passwoed,
 
 hash_sha_512 hash_msg_to_sha_512_n(const char* dev_passwoed,
                                    const size_t dev_passwoedLength, uint8_t n,
-                                   mjz_Str output_name) {  // intended  copy
+                                  const mjz_Str& output_name) {  // intended  copy
   if (n == 0) {
     return hash_msg_to_sha_512(dev_passwoed, dev_passwoedLength, output_name);
   }
@@ -2609,8 +2631,9 @@ bool get_random_chanch_bool(double chance_var) {
   return random_var <= chance_var;
 }
 
-std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr =
-    mjz_Str_DATA_storage_cls::create();
+std::shared_ptr<mjz_Str_DATA_storage_cls>
+    mjz_Str::main_mjz_Str_DATA_storage_Obj_ptr =
+        mjz_Str_DATA_storage_cls::create();
 
 std::shared_ptr<mjz_Str_DATA_storage_cls>&
 mjz_Str::drived_mjz_Str_DATA_storage_Obj_ptr_set() {

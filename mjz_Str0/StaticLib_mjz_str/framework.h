@@ -13,9 +13,9 @@ class speed_Timer {
                std::chrono::high_resolution_clock::now() - m_Start)
         .count();
   }
-  double Elapsed() { return Elapsed() * 0.001f * 0.001f * 0.001f; }
+  double Elapsed() { return Elapsednano() * 0.001f * 0.001f * 0.001f; }
 
-  double ElapsedMillis() { return Elapsednano() / 1000.0f; }
+  double ElapsedMillis() { return Elapsednano() / 1000.0f/1000.0f; }
 
  private:
   std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
@@ -24,7 +24,7 @@ struct timer_info {
   double Time_ns;
   double atempt_num;
 };
-inline bool operator<(const timer_info& rhs, const timer_info& lhs) {
+inline bool operator<( timer_info rhs,  timer_info lhs) {
   return (rhs.Time_ns / rhs.atempt_num) < (lhs.Time_ns / lhs.atempt_num);
 }
 enum timer_cmd : uint8_t {
@@ -36,10 +36,20 @@ enum timer_cmd : uint8_t {
 class Scoped_speed_Timer {
  public:
   void set_list(std::shared_ptr<std::map<std::string, timer_info>> vect_) {
-    m_uomp = vect_;
+    m_uomp = std::move(vect_);
   }
-  Scoped_speed_Timer(const std::string& name) : m_Name(name) {}
-  Scoped_speed_Timer& operator()(const std::string& name) {
+  Scoped_speed_Timer(const std::string& name,bool glob=1) : m_Name(name) {
+    if (glob) m_uomp = g_map;
+  }
+  Scoped_speed_Timer(const char* name, size_t size_, bool glob=1)
+      : m_Name(name, size_) {
+    if (glob) m_uomp = g_map;
+  }
+  Scoped_speed_Timer(const char* name, bool glob = 1)
+      : m_Name(name, strlen(name)) {
+    if (glob) m_uomp = g_map;
+  }
+  Scoped_speed_Timer& operator()(const std::string& name,bool nomatter=1) {
     Stop();
     stoped = 0;
     m_Name = name;
@@ -111,7 +121,7 @@ class Scoped_speed_Timer {
       }
       i = 0;
       time_token_total /= 100;
-      for (auto obj : vect_analis) {
+      for (auto &obj : vect_analis) {
         ret_str += std::to_string(++i);
         ret_str += ". ";
         ret_str += obj.first;
@@ -127,6 +137,7 @@ class Scoped_speed_Timer {
    Scoped_speed_Timer& operator=(const Scoped_speed_Timer& name) {
     (*this)(name.m_Name); 
     if (name.m_uomp) m_uomp = name.m_uomp;
+return *this;
        }
    Scoped_speed_Timer(const Scoped_speed_Timer& name){
     (*this)(name.m_Name); 
@@ -136,17 +147,27 @@ class Scoped_speed_Timer {
     (*this)(name.m_Name);
     m_Timer = name.m_Timer;
     if (name.m_uomp) m_uomp = name.m_uomp;
+return *this;
    }
    Scoped_speed_Timer(Scoped_speed_Timer&& name) noexcept {
     (*this)(name.m_Name);
     m_Timer = name.m_Timer;
     if (name.m_uomp) m_uomp = name.m_uomp;
    }
+static   inline void set_global_map(
+       std::shared_ptr<std::map<std::string, timer_info>> g_map_) {
+    g_map = g_map_;
+       }
+static inline std::shared_ptr<std::map<std::string, timer_info>>
+get_global_map() {
+   return g_map ;
+   }
  protected:
   bool stoped{};
   std::string m_Name;
+  static std::shared_ptr<std::map<std::string, timer_info>> g_map;
+  std::shared_ptr<std::map<std::string, timer_info>> m_uomp ;
   speed_Timer m_Timer;
-  std::shared_ptr<std::map<std::string, timer_info>> m_uomp;
 };
 class vr_Scoped_speed_Timer : public Scoped_speed_Timer {
   vr_Scoped_speed_Timer(const std::string& name) : Scoped_speed_Timer(name) {}

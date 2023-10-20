@@ -18,7 +18,7 @@ class mjz_Str_dir_test_class : public mjz_Str {
              (int)new_size);
     return retval_;
   }
-  
+
   virtual void free(void* ptr) override {
     ::free(ptr);
     ::print("\n\n mjz_Str_dir_test_class frees \n\n");
@@ -80,7 +80,7 @@ class mjz_Str_dir_test_class : public mjz_Str {
     return *this;
   }
   virtual ~mjz_Str_dir_test_class() {
-    free(buffer_ref());  // don't need to but the vtable of the
+    mjz_Str_dir_test_class::free(buffer_ref());  // don't need to but the vtable of the
     // mjz_Str_dir_test_class free gets destroyed when
     // ~mjz_Str() gets called so mjz_Str::free is called see
     //
@@ -167,7 +167,7 @@ int main2() {
   double ms_prop = (double)(strtms2 - strtms) / it_num;
   std::cout << "\nend  in " << ms_prop << " ms per op \n ";
   for (int k{}; k < it_num; k++) {
-    char* bfrnew = (new char[100 * 408]);
+    char* bfrnew = (new char[100 * 408]); //TODO: V819 https://pvs-studio.com/en/docs/warnings/V819/ Decreased performance. Memory is allocated and deleted multiple times inside the body of the loop. Consider moving memory allocation outside of the loop.
     for (long i{}; i < 100 * 408; i++) {
       bfrnew[i] = '0';
     }
@@ -205,7 +205,7 @@ long loop() {
   mystr.change_reinterpret_char_char('\1');
   std::cout << (mystr = "enter a sentence : \n");
   std::cin >> mystr();
-  std::vector<mjz_Str> my_words(10);
+  std::vector<std::pair<mjz_Str,size_t>> my_words(1);
   size_t word_count{};
   int64_t index_of_first_char_of_word{};
   int64_t index_of_first_space_after_previos{};
@@ -219,53 +219,47 @@ long loop() {
           mystr.indexOf(',', index_of_first_char_of_word),
           mystr.indexOf('.', index_of_first_char_of_word)};
 
-      auto& it = std::max(my_list_of_spacers.begin(),  // chose the biggest
-                         my_list_of_spacers.end() - 1, [](auto& a, auto& b) {
-                           bool re_bol{};
-                           if (*a == -1)
-                             re_bol = 1;  // chose b
-                           else if (*b == -1)
-                             re_bol = 0;  // chose a
-                           else {
-                             re_bol = !(*a < *b);  // chose the small one
-                           }
-                           return re_bol;
-                         });
-      return *it;
+      std::sort(my_list_of_spacers.begin(),  // chose the biggest
+                my_list_of_spacers.end() , [](const auto& a, const auto& b) {
+                  constexpr int max_int = (uint32_t)(-1) >> 1;
+                  return (a == -1 ? max_int : a) < (b == -1 ? max_int : b);
+                });
+      return *my_list_of_spacers.begin();
     }();
     if (index_of_first_space_after_previos == -1) {
       DO_break = 1;
-      my_words[word_count] = mystr.substring(index_of_first_char_of_word);
+      my_words.emplace( my_words.begin() + word_count,
+          std::make_pair(
+          mystr.substring(index_of_first_char_of_word), word_count));
     } else {
-      my_words[word_count] = mystr.substring(
-          index_of_first_char_of_word, index_of_first_space_after_previos);
+      my_words.emplace(
+          my_words.begin() + word_count
+          ,std::make_pair(mystr.substring(index_of_first_char_of_word,
+                                          index_of_first_space_after_previos),
+                          word_count));
     }
     index_of_first_char_of_word = index_of_first_space_after_previos + 1;
-    if (my_words[word_count++].is_blank()) {
-      --word_count;
+    if (my_words[word_count++].first.is_blank()) {
+       my_words.erase(my_words.begin()+(--word_count));
     }
   }
   std::cout << "number of words is : " << word_count << "\n\r";
   for (auto& obj : my_words) {
-    std::cout << obj;
+    std::cout << obj.first;
     std::cout << "\n\r";
   }
-  auto &it_ = std::max(
-      my_words.begin(),
-      my_words.begin() + ((size_t)word_count - 1),
-               [](auto& a, auto& b) { return b->length() > a->length(); });
-  std::cout << "\n\r in words : \"" << *it_
+
+  std::sort(my_words.begin(), my_words.end(), [](auto& a, auto& b) {
+    return b.first.length() < a.first.length();
+  });
+  std::cout << "\n\r in words : \"" << my_words.begin()->first
             << "\" is the longest \n heare is the revese order of  them :\"";
-  {
-    auto it = my_words.begin() + word_count - 1;
-    while (true) {
-      std::cout << *it;
-      if (it == my_words.begin()) {
-        break;
-      }
-      std::cout << " ";
-      --it;
-    }
+  std::sort(my_words.begin(), my_words.end(), [](auto& a, auto& b) {
+    return b.second < a.second;
+  });
+  for (auto& obj : my_words) {
+    std::cout << obj.first;
+    std::cout << " ";
   }
 
   std::cout << "\" \n what word do you want to replace \n";
@@ -275,15 +269,16 @@ long loop() {
   std::cin >> myrep_val;
   std::cout << " hear you go \n";
   for (auto& obj : my_words) {
-    if (obj == mystr) obj = myrep_val;
-    std::cout << obj << " ";
+    if (obj.first == mystr) obj.first = myrep_val;
+    std::cout << obj.first << " ";
   }
 
   std::cout << "\n";
 
-  return mystr()([&](auto THis_) -> int {
+  return mystr()([](auto THis_) -> int {
     mjz_Str& mystr = *THis_;
-    mystr ="exiting enter some natural number to exit note that size of string \nis \n:"_m_str;
+    mystr =
+        "exiting enter some natural number to exit note that size of string \nis \n:"_m_str;
     mystr += sizeof(mjz_Str);
     mystr += " \n";
     mystr.change_reinterpret_char_char('\1');
@@ -308,6 +303,7 @@ int main00() {
 int main79() {
   main2();
   if (mjz_Str("hello there i biult a cmd app  press any word to start\n")(
+
           [&](mjz_Str* this_) -> bool {
             mjz_Str& obj = *this_;
             obj.change_reinterpret_char_char('\1');
@@ -315,7 +311,7 @@ int main79() {
             std::cin >> obj();
             obj.change_reinterpret_char_char('\\');
             obj <<= mjz_Str(obj);
-            obj.replace(" ", "");
+            obj.replace(" ", 1, "", 0);
             obj.toLowerCase();
             if ((obj.is_blank())) return 0;
 
@@ -328,7 +324,7 @@ _end___:
   return 0;
 }
 int main7() {
-  mjz_Str mystr = ("hello there i biult a cmd app  press any word to start\n");
+  mjz_Str mystr("hello there i biult a cmd app  press any word to start\n");
   std::cout << "1. : \"" << mystr << "\"\n";
   std::cout << "2. : \"" << mystr.erase(5, 7) << "\"\n";
   mjz_Str mystr2;
@@ -340,12 +336,10 @@ int main7() {
 
 const char* const _timer_sign = "_timer_";
 void test_mstr_vs_sstr(
-    std::shared_ptr<std::map<std::string, timer_info>> map_ptr,
     const char* const c_str_small = "hi mom ;)",
     const char* const c_str_large = "allocation large string i am nesssery",
-    size_t size_of_large=37) {
+    size_t size_of_large = 37) {
   Scoped_speed_Timer timer("timer_");
-  timer.set_list(map_ptr);
   timer(_timer_sign);
   timer("mjz alloc");
   mjz_Str my_str(c_str_small);
@@ -362,7 +356,6 @@ void test_mstr_vs_sstr(
   timer("mjz alloc base");
   new (&my_str) mjz_Str();
 
-
   timer("std alloc");
   std::string my_strtd(c_str_small);
   timer("std dealloc");
@@ -377,27 +370,44 @@ void test_mstr_vs_sstr(
   my_strtd.~basic_string();
   timer("std alloc base");
   new (&my_strtd) std::string();
-  timer("timer_");
-    }
-
-int main() {
+  timer("timer_").Stop(timer_cmd::just_Stop);
+}
+const char* cstr_largeee =
+    "allocation large string i am nesssery allocation large string i "
+    "am nessseryallocation large string i am nesssery allocation large "
+    "string i am nesssery";
+int main786() {
   std::shared_ptr<std::map<std::string, timer_info>> map_ptr =
       std::make_shared<std::map<std::string, timer_info>>();
   {
-    Scoped_speed_Timer time_r("total");
-    for (size_t i{}; i < 100000; i++) {
+    Scoped_speed_Timer time_r("total", false);
+    time_r.set_global_map(map_ptr);
+    for (size_t i{}; i < 1000; i++) {
       for (int j{}; j < 128; j++) {
-        test_mstr_vs_sstr(map_ptr, "hi mom ;)",
-                          "allocation large string i am nesssery allocation large string i am nessseryallocation large string i am nesssery allocation large string i am nesssery", j);
+        test_mstr_vs_sstr("hi mom ;)",
+                          "allocation large string i am nesssery allocation "
+                          "large string i am nessseryallocation large string i "
+                          "am nesssery allocation large string i am nesssery",
+                          j);
       }
     }
   }
-  std::cout << sizeof(mjz_Str) << " vs " << sizeof(std::string) << " \n";
- std::cout << Scoped_speed_Timer::show_analisis(map_ptr, _timer_sign);
+  std::cout << "shredptr :" << sizeof(std::shared_ptr<mjz_Str_DATA_storage_cls>)
+            << "  mjzstr :" << sizeof(mjz_Str) << " vs \n std::str "
+            << sizeof(std::string) << " \n";
+  std::cout << Scoped_speed_Timer::show_analisis(map_ptr, _timer_sign);
+  std::this_thread::yield();
+  std::cin.get();
 
-    return 0;
+  return main79();
+}
+int main() {
+  
+    //return 0;
+    return main00();
+    
     }
-    // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
+// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
 // Tips for Getting Started:

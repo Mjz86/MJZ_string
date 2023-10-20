@@ -16,7 +16,7 @@
 #define MJZ_frm_stack_ovf_BITMASK_CHECK_ANY(x, mask) ((x) & (mask))
 
 
-#define min_macro_(_a, _b) (_a < _b ? _a : _b)
+#define min_macro_(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
 
 // #define Arduino
 
