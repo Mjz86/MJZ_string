@@ -81,7 +81,7 @@ class mjz_Str_dir_test_class : public mjz_Str {
   }
   virtual ~mjz_Str_dir_test_class() {
     mjz_Str_dir_test_class::free(
-        buffer_ref());  // don't need to but the vtable of the
+        m_buffer);  // don't need to but the vtable of the
     // mjz_Str_dir_test_class free gets destroyed when
     // ~mjz_Str() gets called so mjz_Str::free is called see
     //
@@ -412,16 +412,11 @@ int main786() {
 
   return main79();
 }
-const char* str___ = "abcdef";
 
 int main() {
-  mjz_str_view s(str___);
-  mjz_str st = s + "s.c_str()";
-  // st += s;
-  std::cout << st.c_str() << "||||||||" << s.c_str();
-  return 0;
 
-  return main00();
+
+  return main786();
 }
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
