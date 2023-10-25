@@ -68,25 +68,26 @@ class mjz_Str_dir_test_class : public mjz_Str {
     mjz_Str_dir_test_class_created();
   }
   operator mjz_Str() const {
-    ::print("\n\n mjz_Str_dir_test_class casted to   mjz_Str &&   \n\n");
+    ::print("\n\n mjz_Str_dir_test_class casted to mjz_Str && \n\n");
     return *this;
   }
   operator mjz_Str&() {
-    ::print("\n\n mjz_Str_dir_test_class casted to   mjz_Str &  \n\n");
+    ::print("\n\n mjz_Str_dir_test_class casted to mjz_Str & \n\n");
     return *this;
   }
   operator const mjz_Str&() const {
-    ::print("\n\n mjz_Str_dir_test_class casted to   mjz_Str C&  \n\n");
+    ::print("\n\n mjz_Str_dir_test_class casted to mjz_Str C& \n\n");
     return *this;
   }
   virtual ~mjz_Str_dir_test_class() {
-    mjz_Str_dir_test_class::free(buffer_ref());  // don't need to but the vtable of the
+    mjz_Str_dir_test_class::free(
+        buffer_ref());  // don't need to but the vtable of the
     // mjz_Str_dir_test_class free gets destroyed when
     // ~mjz_Str() gets called so mjz_Str::free is called see
     //
     /* https://stackoverflow.com/questions/41732051/when-is-a-vtable-destroy-in-c
 
-       Can I call a virtual function in the destructor of a base class?
+    Can I call a virtual function in the destructor of a base class?
 
     Calling virtual functions from destructors or constructors is a bad
     practice. See the standard (emphasis mine):
@@ -94,8 +95,8 @@ class mjz_Str_dir_test_class : public mjz_Str {
     12.7 Construction and destruction
     ....
     Member functions, including virtual functions (10.3),
-     can be called during construction or destruction (12.6.2).
-      When a virtual function is called directly or indirectly from a
+    can be called during construction or destruction (12.6.2).
+    When a virtual function is called directly or indirectly from a
     constructor or from a destructor, including during the construction or
     destruction of the class’s non-static data members, and the object to which
     the call applies is the object (call it x) under construction or
@@ -114,25 +115,25 @@ class mjz_Str_dir_test_class : public mjz_Str {
     C++ Coding Standards: 101 Rules, Guidelines, and Best Practices (49. Avoid
     calling virtual functions in constructors and destructors).
     */
-    buffer = 0;  // prevent mjz_Str::free after free because of if(buffer)
+    m_buffer = 0;  // prevent mjz_Str::free after free because of if(buffer)
     ::print("\n\n mjz_Str_dir_test_class destructs \n\n");
-  }  // after  this the ~mjz_Str() gets clled implicitly
+  }  // after this the ~mjz_Str() gets clled implicitly
   mjz_Str_dir_test_class(const mjz_Str_dir_test_class& other_) noexcept
       : mjz_Str(other_) {
-    ::print("\n\n mjz_Str_dir_test_class copies  and creates  \n\n");
+    ::print("\n\n mjz_Str_dir_test_class copies and creates \n\n");
   }
   mjz_Str_dir_test_class(mjz_Str_dir_test_class&& other_) noexcept
       : mjz_Str(std::move(other_)) {
-    ::print("\n\n mjz_Str_dir_test_class moves  and creates\n\n");
+    ::print("\n\n mjz_Str_dir_test_class moves and creates\n\n");
   }
   mjz_Str_dir_test_class& operator=(const mjz_Str_dir_test_class& other_) {
     *((mjz_Str*)this) = (other_);
-    ::print("\n\n mjz_Str_dir_test_class just copies     \n\n");
+    ::print("\n\n mjz_Str_dir_test_class just copies \n\n");
     return *this;
   }
   mjz_Str_dir_test_class& operator=(mjz_Str_dir_test_class&& other_) noexcept {
     *((mjz_Str*)this) = (std::move(other_));
-    ::print("\n\n mjz_Str_dir_test_class just moves   \n\n");
+    ::print("\n\n mjz_Str_dir_test_class just moves \n\n");
     return *this;
   }
 };
@@ -161,13 +162,18 @@ int main2() {
                                          ((j + i * mycolnum) / 36) % 2);
 
     // for (int i{}; i < mycolnum; i++)
-    //   std::cout << '\n' << i << ".th col : \"" << my2dar[i] << "\"  \n";
+    // std::cout << '\n' << i << ".th col : \"" << my2dar[i] << "\" \n";
   }
   uint64_t strtms2 = timeSinceEpochMillisec();
   double ms_prop = (double)(strtms2 - strtms) / it_num;
-  std::cout << "\nend  in " << ms_prop << " ms per op \n ";
+  std::cout << "\nend in " << ms_prop << " ms per op \n ";
   for (int k{}; k < it_num; k++) {
-    char* bfrnew = (new char[100 * 408]); //TODO: V819 https://pvs-studio.com/en/docs/warnings/V819/ Decreased performance. Memory is allocated and deleted multiple times inside the body of the loop. Consider moving memory allocation outside of the loop.
+    char* bfrnew = (new char[100 * 408]);  // TODO: V819
+    // https://pvs-studio.com/en/docs/warnings/V819/
+    // Decreased performance. Memory is allocated
+    // and deleted multiple times inside the body of
+    // the loop. Consider moving memory allocation
+    // outside of the loop.
     for (long i{}; i < 100 * 408; i++) {
       bfrnew[i] = '0';
     }
@@ -177,10 +183,10 @@ int main2() {
     delete[] bfrnew;
   }
   double ms_prop2 = (double)(timeSinceEpochMillisec() - strtms2) / it_num;
-  std::cout << "\nend  in " << ms_prop2 << " ms per op \n ";
+  std::cout << "\nend in " << ms_prop2 << " ms per op \n ";
 
-  std::cout << "\n class is  " << (100 * ms_prop / ms_prop2)
-            << "%  slower per op \n ";
+  std::cout << "\n class is " << (100 * ms_prop / ms_prop2)
+            << "% slower per op \n ";
 
   return 0;
 }
@@ -205,7 +211,8 @@ long loop() {
   mystr.change_reinterpret_char_char('\1');
   std::cout << (mystr = "enter a sentence : \n");
   std::cin >> mystr();
-  std::vector<std::pair<mjz_Str,size_t>> my_words(1);
+  std::vector<std::pair<mjz_Str, size_t>> my_words(1);
+
   size_t word_count{};
   int64_t index_of_first_char_of_word{};
   int64_t index_of_first_space_after_previos{};
@@ -219,28 +226,30 @@ long loop() {
           mystr.indexOf(',', index_of_first_char_of_word),
           mystr.indexOf('.', index_of_first_char_of_word)};
 
-      std::sort(my_list_of_spacers.begin(),  // chose the biggest
-                my_list_of_spacers.end() , [](const auto& a, const auto& b) {
-                  constexpr int max_int = (uint32_t)(-1) >> 1;
-                  return (a == -1 ? max_int : a) < (b == -1 ? max_int : b);
-                });
-      return *my_list_of_spacers.begin();
+      auto result_it = std::min_element(
+          my_list_of_spacers.begin(),  // chose the biggest
+          my_list_of_spacers.end(), [](const auto& a, const auto& b) {
+            constexpr int max_int = (uint32_t)(-1) >> 1;
+            return (a == -1 ? max_int : a) < (b == -1 ? max_int : b);
+          });
+      return *result_it;
     }();
     if (index_of_first_space_after_previos == -1) {
       DO_break = 1;
-      my_words.emplace( my_words.begin() + word_count,
-          std::make_pair(
-          mystr.substring(index_of_first_char_of_word), word_count));
+      my_words.emplace(
+          my_words.begin() + word_count,
+          std::make_pair(mystr.substring(index_of_first_char_of_word),
+                         word_count));
     } else {
       my_words.emplace(
-          my_words.begin() + word_count
-          ,std::make_pair(mystr.substring(index_of_first_char_of_word,
-                                          index_of_first_space_after_previos),
-                          word_count));
+          my_words.begin() + word_count,
+          std::make_pair(mystr.substring(index_of_first_char_of_word,
+                                         index_of_first_space_after_previos),
+                         word_count));
     }
     index_of_first_char_of_word = index_of_first_space_after_previos + 1;
     if (my_words[word_count++].first.is_blank()) {
-       my_words.erase(my_words.begin()+(--word_count));
+      my_words.erase(my_words.begin() + (--word_count));
     }
   }
   std::cout << "number of words is : " << word_count << "\n\r";
@@ -249,19 +258,21 @@ long loop() {
     std::cout << "\n\r";
   }
 
-  std::sort(my_words.begin(), my_words.end(), [](auto& a, auto& b) {
-    return b.first.length() < a.first.length();
-  });
-  std::cout << "\n\r in words : \"" << my_words.begin()->first
-            << "\" is the longest \n heare is the revese order of  them :\"";
-  std::sort(my_words.begin(), my_words.end(), [](auto& a, auto& b) {
-    return b.second < a.second;
-  });
+  std::cout << "\n\r in words : \""
+            << std::min_element(my_words.begin(), my_words.end(),
+                                [](auto& a, auto& b) {
+                                  return b.first.length() < a.first.length();
+                                })
+                   ->first
+            << "\" is the longest \n heare is the revese order of them :\"";
+  std::sort(my_words.begin(), my_words.end(),
+            [](auto& a, auto& b) { return b.second < a.second; });
   for (auto& obj : my_words) {
     std::cout << obj.first;
     std::cout << " ";
   }
-
+  std::sort(my_words.begin(), my_words.end(),
+            [](auto& a, auto& b) { return a.second < b.second; });
   std::cout << "\" \n what word do you want to replace \n";
   std::cin >> mystr();
   std::cout << " replace with what \n";
@@ -302,7 +313,7 @@ int main00() {
 
 int main79() {
   main2();
-  if (mjz_Str("hello there i biult a cmd app  press any word to start\n")(
+  if (mjz_Str("hello there i biult a cmd app press any word to start\n")(
 
           [&](mjz_Str* this_) -> bool {
             mjz_Str& obj = *this_;
@@ -324,7 +335,7 @@ _end___:
   return 0;
 }
 int main7() {
-  mjz_Str mystr("hello there i biult a cmd app  press any word to start\n");
+  mjz_Str mystr("hello there i biult a cmd app press any word to start\n");
   std::cout << "1. : \"" << mystr << "\"\n";
   std::cout << "2. : \"" << mystr.erase(5, 7) << "\"\n";
   mjz_Str mystr2;
@@ -393,29 +404,34 @@ int main786() {
     }
   }
   std::cout << "shredptr :" << sizeof(std::shared_ptr<mjz_Str_DATA_storage_cls>)
-            << "  mjzstr :" << sizeof(mjz_Str) << " vs \n std::str "
+            << " mjzstr :" << sizeof(mjz_Str) << " vs \n std::str "
             << sizeof(std::string) << " \n";
-  std::cout << Scoped_speed_Timer::show_analisis(map_ptr, _timer_sign);
+  std::cout << Scoped_speed_Timer::show_analysis(map_ptr, _timer_sign);
   std::this_thread::yield();
   std::cin.get();
 
   return main79();
 }
+const char* str___ = "abcdef";
+
 int main() {
-  
-    //return 0;
-    return main00();
-    
-    }
+  mjz_str_view s(str___);
+  mjz_str st = s + "s.c_str()";
+  // st += s;
+  std::cout << st.c_str() << "||||||||" << s.c_str();
+  return 0;
+
+  return main00();
+}
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
 // Tips for Getting Started:
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add
-//   Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project
-//   and select the .sln file
+// 1. Use the Solution Explorer window to add/manage files
+// 2. Use the Team Explorer window to connect to source control
+// 3. Use the Output window to see build output and other messages
+// 4. Use the Error List window to view errors
+// 5. Go to Project > Add New Item to create new code files, or Project > Add
+// Existing Item to add existing code files to the project
+// 6. In the future, to open this project again, go to File > Open > Project
+// and select the .sln file
