@@ -355,7 +355,7 @@ void *mjz_Str::realloc_new_ns::operator new(size_t size_, void *where) {
 mjz_Str::mjz_Str(const char *cstr, size_t length) {
   init();
   if (cstr) {
-    copy(cstr, length, 1);
+    copy(cstr, length, 1); //TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling the 'free' virtual function indirectly in the constructor may lead to unexpected result at runtime. Check lines: 'mjzString.cpp:358', 'mjzString.hpp:734'.
   }
   // (this->*update_event_F_p)(); //departed
 }
@@ -459,7 +459,7 @@ mjz_Str::mjz_Str(double value, unsigned char decimalPlaces) {
   // (this->*update_event_F_p)(); //departed
 }
 mjz_Str::~mjz_Str(void) {
-  invalidate(1);
+  invalidate(1); //TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling the 'free' virtual function indirectly in the destructor may lead to unexpected result at runtime. Check lines: 'mjzString.cpp:462', 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640', 'mjzString.hpp:734'.
 }  // i don't need to do this but this is explained in stackoverfllow . the
    // vtable of the drived free override gets destroyed when ~mjz_Str() gets
    // called so mjz_Str::free shoud be called and i do it explicitly its not

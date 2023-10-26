@@ -278,7 +278,10 @@ class iterator_template {
   }
 
   iterator_template(const iterator_template &p) : m_iterator(p.m_iterator) {}
-  iterator_template(iterator_template &&p)noexcept : m_iterator(p.m_iterator) {}
+  iterator_template(iterator_template &&p) noexcept
+      : m_iterator(p.m_iterator),
+        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
   iterator_template &operator=(Type *iter) {
     m_iterator = iter;
     throw_if_bad();
@@ -425,11 +428,11 @@ class basic_mjz_String {
   friend class mjz_Str;
 
  protected:  // the actual char array
-  char *m_buffer{};
+  char *m_buffer;
   // the array length minus one (for the '\0')
-  size_t m_capacity{};
+  size_t m_capacity;
   // the string length (not counting the '\0')
-  size_t m_length{};
+  size_t m_length;
   inline const char *begining_of_str_ptr() const { return m_buffer ; }
   inline const char *ending_of_str_ptr() const { return m_buffer + length(); }
 
@@ -443,12 +446,14 @@ class basic_mjz_String {
   static constexpr const char *empty_STRING_C_STR = "";
 
  public:
-  basic_mjz_String() = default;
+  basic_mjz_String()
+      : m_buffer(const_cast<char*>(empty_STRING_C_STR)), m_capacity(0), m_length(0) {
+  }
   basic_mjz_String(char *bfr, size_t cap, size_t len)
       : m_buffer(bfr), m_capacity(cap), m_length(len){};
   basic_mjz_String(const char *bfr, size_t cap, size_t len)
       : m_buffer(const_cast<char *>(bfr)), m_capacity(cap), m_length(len){};
-  virtual ~basic_mjz_String() = default;
+  virtual ~basic_mjz_String(){};
   basic_mjz_String(basic_mjz_String &&) = delete;
   basic_mjz_String(const basic_mjz_String &) = delete;
   basic_mjz_String(basic_mjz_String &) = delete;
@@ -458,8 +463,12 @@ class basic_mjz_String {
 
  public:
   inline size_t length(void) const { return m_length; }
+  inline size_t max_size() const { return m_capacity; }
   inline virtual char *&buffer_ref() = 0;
   virtual bool is_blank() const = 0;
+  bool empty() const {
+    return (!m_length || m_buffer == empty_STRING_C_STR || m_buffer == nullptr);
+  }
   inline virtual const char *buffer_ref() const { return m_buffer; }
   inline const char *c_str() const { return buffer_ref(); }
   inline const char *c_str() { return buffer_ref(); }
@@ -532,6 +541,7 @@ class basic_mjz_String {
   friend bool operator>=(const char *a, const basic_mjz_String &b) {
     return !(a < b);
   }
+
   if_virtual_then_virtual int64_t compareTo(const basic_mjz_String &s) const;
   if_virtual_then_virtual int64_t compareTo(const char *cstr) const;
   if_virtual_then_virtual bool equals(const char *cstr, size_t cstr_len) const;
@@ -1903,6 +1913,11 @@ class mjz_Str : public basic_mjz_String,
     return your__function_(this, args_frScnf...);
   }
 };
+/*
+please dont use mjz_str_view with temporary strings 
+if the string that it references goes out of scope (delete , ~obj , },free ,...)the string_view will have undefined behavior
+use this obj like a std::string_view  not like std::string
+*/
 class mjz_str_view : public basic_mjz_String {
  protected:
   char *&buffer_ref(void) { return m_buffer; }
@@ -1919,6 +1934,7 @@ class mjz_str_view : public basic_mjz_String {
      }
   inline const char *end_c_str() const { return c_str() + length(); }
  public:
+inline const char* data()const {return m_buffer;}
   mjz_str_view(const mjz_Str &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view(const char *cstr_, size_t len)
       : basic_mjz_String(cstr_, len, len) {}
@@ -1956,6 +1972,41 @@ class mjz_str_view : public basic_mjz_String {
   const_rev_iterator rbegin() const { return const_rev_iterator(end()); };
   const_rev_iterator rend() const { return const_rev_iterator(begin()); };
  public:
+  inline void remove_prefix(size_t n) {
+    m_buffer += n;
+    remove_suffix(n);
+  }
+  inline void remove_suffix(size_t n) {
+    m_length -= n;
+    m_capacity -= n;
+  }
+  friend void swap(mjz_str_view &lhs, mjz_str_view &rhs) {
+    lhs.swap( rhs);
+  }
+
+   void swap(mjz_str_view &rhs) { 
+       std::swap(m_length, rhs. m_length);
+    std::swap(m_capacity, rhs.m_capacity);
+    std::swap(m_buffer, rhs.m_buffer);
+  }
+    size_t copy(char* dest, size_t count, size_t pos = 0) const {
+    if (length() <= pos) return 0;
+    size_t  amuont= min( count, length() - pos);
+    memmove(dest, m_buffer + pos, amuont);
+    return amuont;
+       }
+    size_t copy(char *dest, size_t count, int64_t pos ) const {
+    return copy(dest, count, mjz_str_view::signed_index_to_unsigned(pos));
+   }
+ 
+
+
+
+
+
+
+
+
   friend StringSumHelper operator+(const StringSumHelper &lhs,
                                    const mjz_str_view &rhs);
   friend StringSumHelper operator+(StringSumHelper &&lhs,

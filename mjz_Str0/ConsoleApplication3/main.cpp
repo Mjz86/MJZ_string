@@ -384,7 +384,7 @@ void test_mstr_vs_sstr(
   timer("mjz_str_view");
 volatile  auto a ="god code"_sv;
   timer("~mjz_str_view");
-a.~mjz_str_view();
+a.~mjz_str_view(); //TODO: V749 https://pvs-studio.com/en/docs/warnings/V749/ Destructor of the 'a' object will be invoked a second time after leaving the object's scope.
   timer("timer_").Stop(timer_cmd::just_Stop);
 }
 const char* cstr_largeee =
@@ -408,6 +408,8 @@ int main786() {
     }
   }
   std::cout << "shredptr :" << sizeof(std::shared_ptr<mjz_Str_DATA_storage_cls>)
+            << "str view :" << sizeof(mjz_str_view)
+            << "shredptr :" << sizeof(std::shared_ptr<mjz_Str_DATA_storage_cls>)
             << " mjzstr :" << sizeof(mjz_Str) << " vs \n std::str "
             << sizeof(std::string) << " \n";
   std::cout << Scoped_speed_Timer::show_analysis(map_ptr, _timer_sign);
@@ -417,10 +419,21 @@ int main786() {
   return main79();
 }
 
-void string_out(mjz_str_view input) { std::cout << input; }
+void string_out(const mjz_str_view &input) { std::cout << input; }
 int main() {
-
-  return main786(); }
+  std::shared_ptr<std::map<std::string, timer_info>> map_ptr =
+      std::make_shared<std::map<std::string, timer_info>>();
+  Scoped_speed_Timer::set_global_map(map_ptr);
+  char arr[1000][10]{};
+  for (int i{}; i < 1000;i++) {
+    Scoped_speed_Timer tm(_timer_sign);
+    tm("str");
+    "abcdefg"_sv.copy(arr[i], 9);
+    tm(_timer_sign);
+  }
+  std::cout << Scoped_speed_Timer::show_analysis(map_ptr, _timer_sign);
+  std::cout << arr[0];
+  return 0; }
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
