@@ -162,6 +162,7 @@ class mjz_Str;
                              void C::A::foo(){ }
                              void C::B::foo(){ }
                              */
+
 template <int N>
 class mjz_RingBufferN {
  public:
@@ -241,9 +242,96 @@ class mjz_Str_DATA_storage_cls
   // mjz_Str_DATA_storage_cls() = default;
 };
 
+class malloc_wrapper {
+  malloc_wrapper &move(malloc_wrapper &otr) {
+    otr.dont_deallocation_on_free();
+    free();
+    m_data_ptr = otr.m_data_ptr;
+    m_cap_size = otr.m_cap_size;
+    return *this;
+  };
+  malloc_wrapper &move(void *data_ptr, size_t size_of_ptr) {
+    free();
+    if (size_of_ptr) {
+      m_data_ptr = data_ptr;
+      m_cap_size = size_of_ptr;
+    }
+    return *this;
+  };
+
+ protected:
+  void *m_data_ptr{};
+  size_t m_cap_size{};
+  bool m_DO_deallocate{1};
+
+ public:
+  inline malloc_wrapper(size_t size_of_ptr = 0) {
+    m_data_ptr = malloc(size_of_ptr);
+  };
+  inline malloc_wrapper(size_t size_of_ptr, int VAl_) {
+    m_data_ptr = malloc(size_of_ptr);
+    memset(VAl_);
+  };
+  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr) {
+    move(data_ptr, size_of_ptr);
+  }
+  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr, int VAl_) {
+    move(data_ptr, size_of_ptr).memset(VAl_);
+  }
+  inline malloc_wrapper &change_data_ptr(void *data_ptr, size_t size_of_ptr) {
+    return move(data_ptr, size_of_ptr);
+  }
+  inline malloc_wrapper &change_data_ptr(malloc_wrapper &&otr) {
+    return move(otr);
+  }
+  ~malloc_wrapper() { free(); }
+  malloc_wrapper(malloc_wrapper &) = delete;
+  inline malloc_wrapper(malloc_wrapper &&otr) noexcept { move(otr); }
+  malloc_wrapper(const malloc_wrapper &) = delete;
+  malloc_wrapper &operator=(malloc_wrapper &) = delete;
+  inline malloc_wrapper &operator=(malloc_wrapper &&otr) noexcept {
+    return move(otr);
+  };
+  malloc_wrapper &operator=(const malloc_wrapper &) = delete;
+  template <typename T>
+  inline T *get_ptr_as() {
+    return (T *)m_data_ptr;
+  }
+  inline void *get_ptr() { return m_data_ptr; }
+  inline size_t get_size() { return m_cap_size; }
+  void free() {
+    if (!m_DO_deallocate) goto __return_;
+    if (m_cap_size) ::free(m_data_ptr);
+  __return_:
+    m_data_ptr = 0;
+    m_cap_size = 0;
+  }
+  void *malloc(size_t size_of_ptr) {
+    free();
+    if (size_of_ptr) {
+      m_data_ptr = ::malloc(size_of_ptr);
+      if (m_data_ptr) m_cap_size = size_of_ptr;
+    }
+    return get_ptr();
+  }
+  void *realloc(size_t size_of_ptr) {
+    // free();
+    if (size_of_ptr) {
+      m_data_ptr = ::realloc(m_DO_deallocate ? m_data_ptr : 0, size_of_ptr);
+      if (m_data_ptr) m_cap_size = size_of_ptr;
+    }
+    return get_ptr();
+  }
+  inline void *operator()(size_t size_of_ptr) { return malloc(size_of_ptr); }
+  inline void *operator()() { return get_ptr(); }
+  inline void memset(int _Val) {
+    if (m_cap_size) ::memset(get_ptr(), _Val, m_cap_size);
+  }
+  inline void dont_deallocation_on_free() { m_DO_deallocate = 0; }
+  inline void do_deallocation_on_free() { m_DO_deallocate = 1; }
+};
+
   // iterator_template Class
-
-
 template <typename Type>
 class iterator_template {
  protected:
@@ -258,7 +346,7 @@ class iterator_template {
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
   // using iterator_concept = std::contiguous_iterator_tag;
-  iterator_template() : m_iterator{nullptr} {}
+  iterator_template() : iterator_template(nullptr,nullptr,(Type *)-1)  {}
   // iterator_template(Type *iter ) : m_iterator{iter} {}
   iterator_template(Type *iter, Type *min_end, Type *max_end)
       : m_iterator{iter},
@@ -277,7 +365,9 @@ class iterator_template {
         "bad ptr access : mjz_ard::iterator_template::throw_if_bad ");
   }
 
-  iterator_template(const iterator_template &p) : m_iterator(p.m_iterator) {}
+  iterator_template(const iterator_template &p) : m_iterator(p.m_iterator),
+        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
   iterator_template(iterator_template &&p) noexcept
       : m_iterator(p.m_iterator),
         m_iterator_begin_ptr(p.m_iterator_begin_ptr),
@@ -1919,6 +2009,7 @@ if the string that it references goes out of scope (delete , ~obj , },free ,...)
 use this obj like a std::string_view  not like std::string
 */
 class mjz_str_view : public basic_mjz_String {
+
  protected:
   char *&buffer_ref(void) { return m_buffer; }
   using basic_mjz_String::buffer_ref;
@@ -1953,7 +2044,10 @@ inline const char* data()const {return m_buffer;}
       default;  // we are string viewes and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
 
-  mjz_str_view(mjz_Str &&) = delete;
+ mjz_str_view &operator=(mjz_Str &&s) { return copy(s);}
+  mjz_str_view(mjz_Str &&s) : mjz_str_view(s) {
+      }
+
   mjz_str_view(const mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view(mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
@@ -2083,94 +2177,7 @@ class type_cmp_fn_class {
 };
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
                       bool force_neg = 0);
-class malloc_wrapper {
-  malloc_wrapper &move(malloc_wrapper &otr) {
-    otr.dont_deallocation_on_free();
-    free();
-    m_data_ptr = otr.m_data_ptr;
-    m_cap_size = otr.m_cap_size;
-    return *this;
-  };
-  malloc_wrapper &move(void *data_ptr, size_t size_of_ptr) {
-    free();
-    if (size_of_ptr) {
-      m_data_ptr = data_ptr;
-      m_cap_size = size_of_ptr;
-    }
-    return *this;
-  };
 
- protected:
-  void *m_data_ptr{};
-  size_t m_cap_size{};
-  bool m_DO_deallocate{1};
-
- public:
-  inline malloc_wrapper(size_t size_of_ptr = 0) {
-    m_data_ptr = malloc(size_of_ptr);
-  };
-  inline malloc_wrapper(size_t size_of_ptr, int VAl_) {
-    m_data_ptr = malloc(size_of_ptr);
-    memset(VAl_);
-  };
-  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr) {
-    move(data_ptr, size_of_ptr);
-  }
-  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr, int VAl_) {
-    move(data_ptr, size_of_ptr).memset(VAl_);
-  }
-  inline malloc_wrapper &change_data_ptr(void *data_ptr, size_t size_of_ptr) {
-    return move(data_ptr, size_of_ptr);
-  }
-  inline malloc_wrapper &change_data_ptr(malloc_wrapper &&otr) {
-    return move(otr);
-  }
-  ~malloc_wrapper() { free(); }
-  malloc_wrapper(malloc_wrapper &) = delete;
-  inline malloc_wrapper(malloc_wrapper &&otr) noexcept { move(otr); }
-  malloc_wrapper(const malloc_wrapper &) = delete;
-  malloc_wrapper &operator=(malloc_wrapper &) = delete;
-  inline malloc_wrapper &operator=(malloc_wrapper &&otr) noexcept {
-    return move(otr);
-  };
-  malloc_wrapper &operator=(const malloc_wrapper &) = delete;
-  template <typename T>
-  inline T *get_ptr_as() {
-    return (T *)m_data_ptr;
-  }
-  inline void *get_ptr() { return m_data_ptr; }
-  inline size_t get_size() { return m_cap_size; }
-  void free() {
-    if (!m_DO_deallocate) goto __return_;
-    if (m_cap_size) ::free(m_data_ptr);
-  __return_:
-    m_data_ptr = 0;
-    m_cap_size = 0;
-  }
-  void *malloc(size_t size_of_ptr) {
-    free();
-    if (size_of_ptr) {
-      m_data_ptr = ::malloc(size_of_ptr);
-      if (m_data_ptr) m_cap_size = size_of_ptr;
-    }
-    return get_ptr();
-  }
-  void *realloc(size_t size_of_ptr) {
-    // free();
-    if (size_of_ptr) {
-      m_data_ptr = ::realloc(m_DO_deallocate ? m_data_ptr : 0, size_of_ptr);
-      if (m_data_ptr) m_cap_size = size_of_ptr;
-    }
-    return get_ptr();
-  }
-  inline void *operator()(size_t size_of_ptr) { return malloc(size_of_ptr); }
-  inline void *operator()() { return get_ptr(); }
-  inline void memset(int _Val) {
-    if (m_cap_size) ::memset(get_ptr(), _Val, m_cap_size);
-  }
-  inline void dont_deallocation_on_free() { m_DO_deallocate = 0; }
-  inline void do_deallocation_on_free() { m_DO_deallocate = 1; }
-};
 inline mjz_Str operator"" _m_str(const char *p) { return mjz_Str(p); }
 inline mjz_Str operator"" _m_str(char c) { return mjz_Str(c); }
 inline mjz_Str operator"" _m_str(unsigned long long num) {
@@ -2203,6 +2210,9 @@ inline mjz_str_view operator""_m_strv(const char *initilizer, size_t length_) {
 inline mjz_str_view operator"" _m_strv(const char *p) {
   return operator""_m_strv(p, mjz_Str::strlen(p));
 }
+
+
+namespace short_string_convestion_operators {
 inline mjz_str_view operator""_msv(const char *initilizer, size_t length_) {
   return operator""_m_strv(initilizer, length_);
 }
@@ -2213,8 +2223,46 @@ inline mjz_str_view operator""_sv(const char *initilizer, size_t length_) {
   return operator""_m_strv(initilizer, length_);
 }
 inline mjz_str_view operator""_sv(const char *p) {
-  return operator""_m_strv(p, mjz_Str::strlen(p));
+  return operator""_msv(p);
 }
+inline mjz_Str operator"" _s(const char *p) { return mjz_Str(p); }
+inline mjz_Str operator"" _s(char c) { return mjz_Str(c); }
+inline mjz_Str operator"" _s(unsigned long long num) { return mjz_Str(num); }
+inline mjz_Str operator"" _s(long double num) { return mjz_Str((double)num); }
+inline mjz_Str operator"" _ps(char c) {
+  return mjz_Str(c).string_do_interpret();
+}
+inline mjz_Str operator"" _ps(unsigned long long num) {
+  return mjz_Str(num).string_do_interpret();
+}
+inline mjz_Str operator"" _ps(long double num) {
+  return mjz_Str((double)num).string_do_interpret();
+}
+inline mjz_Str operator"" _ps(const char *initilizer) {
+  return mjz_Str(initilizer).string_do_interpret();
+}
+inline mjz_Str operator""_s(const char *initilizer, size_t length_) {
+  return mjz_Str(initilizer, length_);
+}
+inline mjz_Str operator"" _ps(const char *initilizer, size_t length_) {
+  return mjz_Str(initilizer, length_).string_do_interpret();
+}
+inline mjz_str_view operator""_v(const char *initilizer, size_t length_) {
+  return mjz_str_view(initilizer, length_);
+}
+
+inline mjz_str_view operator""_mv(const char *initilizer, size_t length_) {
+  return operator""_v(initilizer, length_);
+}
+inline mjz_str_view operator"" _mv(const char *p) {
+  return operator""_v(p, mjz_Str::strlen(p));
+}
+inline mjz_str_view operator"" _v(const char *p) {
+  return operator""_mv(p);
+}
+
+    }
+
 }  // namespace mjz_ard
 // using mjz_ard::__FlashStringHelper;
 // using mjz_ard::mjz_Str;
