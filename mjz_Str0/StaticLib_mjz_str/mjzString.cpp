@@ -594,7 +594,7 @@ void *mjz_Str::realloc_pv(void *ptr, size_t new_size, bool constructor) {
   bool ptr_is_in_stack = realloc_helper_is_in_stack(ptr);
   bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr));  //(buffer == ptr);
   bool ptr_Can_set_to_stack = (new_size <= (stack_buffer_size + 1));
-  volatile char *&my_buffer = (volatile char *&)m_buffer;
+ 
   if (ptr_Can_set_to_stack) {
     if (ptr_is_buffer) {
       size_t the__length = m_capacity;
@@ -1307,6 +1307,68 @@ mjz_Str basic_mjz_String::substring(size_t left, size_t right) const {
   // // (this->*update_event_F_p)(); //departed
   return out;
 }
+
+mjz_str_view basic_mjz_String::substr_view(size_t beginIndex,
+                                           size_t endIndex) const {
+  const char *out_ptr{};
+  size_t out_len{};
+  substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
+  return out_len ? mjz_str_view(out_ptr, out_len) : mjz_str_view();
+}
+mjz_str_view basic_mjz_String::substr_view_beg_n(size_t beginIndex,
+                                                 size_t number) const {
+  return basic_mjz_String::substr_view(beginIndex, number + beginIndex);
+    }
+
+ mjz_str_view basic_mjz_String::substr_view(size_t beginIndex) {
+  return basic_mjz_String::substr_view(beginIndex, length() - beginIndex);
+     }
+
+ mjz_str_view basic_mjz_String::substr_view_beg_n(size_t beginIndex,size_t number) {
+  return basic_mjz_String::substr_view(beginIndex, number + beginIndex);
+     }
+mjz_str_view basic_mjz_String::substr_view(size_t beginIndex) const {
+  return basic_mjz_String::substr_view(beginIndex, length() - beginIndex);
+    }
+
+mjz_str_view basic_mjz_String::substr_view(int64_t beginIndex,
+                                           int64_t endIndex) const {
+  return basic_mjz_String::substr_view(signed_index_to_unsigned(beginIndex),
+                                       signed_index_to_unsigned(endIndex));
+    }
+mjz_str_view basic_mjz_String::substr_view(int64_t beginIndex) const {
+  return basic_mjz_String::substr_view(signed_index_to_unsigned(beginIndex));
+    }
+mjz_str_view basic_mjz_String::substr_view_beg_n(int64_t beginIndex,
+                                                 size_t number) {
+  return basic_mjz_String::substr_view(signed_index_to_unsigned(beginIndex),
+                                       signed_index_to_unsigned(beginIndex)+number);
+    }
+mjz_str_view basic_mjz_String::substr_view_beg_n(int64_t beginIndex,size_t number) const {
+    return basic_mjz_String::substr_view(
+        signed_index_to_unsigned(beginIndex),
+        signed_index_to_unsigned(beginIndex) + number);}
+
+
+mjz_str_view basic_mjz_String::substr_view_beg_n(unsigned int beginIndex,
+                                                 unsigned int number) const {
+    return basic_mjz_String::substr_view_beg_n((size_t)beginIndex,
+                                               (size_t)number);
+    }
+mjz_str_view basic_mjz_String::substr_view(int beginIndex) const {
+    return basic_mjz_String::substr_view((int64_t)beginIndex);
+    }
+mjz_str_view basic_mjz_String::substr_view(int beginIndex, int endIndex) const {
+  return  basic_mjz_String::substr_view((int64_t)beginIndex, (int64_t)endIndex);
+    }
+mjz_str_view basic_mjz_String::substr_view_beg_n(int beginIndex,
+                                                 int number) const {
+  return basic_mjz_String::substr_view_beg_n((int64_t)beginIndex,
+                                             (size_t)number);
+    }
+
+
+
 size_t basic_mjz_String::signed_index_to_unsigned(int64_t input) const {
   if (0 <= input) {
     return input;

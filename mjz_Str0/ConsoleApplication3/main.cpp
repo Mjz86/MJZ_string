@@ -381,6 +381,10 @@ void test_mstr_vs_sstr(
   my_strtd.~basic_string();
   timer("std alloc base");
   new (&my_strtd) std::string();
+  timer("mjz_str_view");
+volatile  auto a ="god code"_sv;
+  timer("~mjz_str_view");
+a.~mjz_str_view();
   timer("timer_").Stop(timer_cmd::just_Stop);
 }
 const char* cstr_largeee =
@@ -413,11 +417,10 @@ int main786() {
   return main79();
 }
 
+void string_out(mjz_str_view input) { std::cout << input; }
 int main() {
 
-
-  return main786();
-}
+  return main786(); }
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 

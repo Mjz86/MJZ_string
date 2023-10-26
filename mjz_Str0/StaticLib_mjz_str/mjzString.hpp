@@ -240,7 +240,187 @@ class mjz_Str_DATA_storage_cls
  private:
   // mjz_Str_DATA_storage_cls() = default;
 };
+
+  // iterator_template Class
+
+
+template <typename Type>
+class iterator_template {
+ protected:
+  Type *m_iterator;
+  Type *m_iterator_begin_ptr;
+  Type *m_iterator_end_ptr;
+
+ public:
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  // using iterator_concept = std::contiguous_iterator_tag;
+  iterator_template() : m_iterator{nullptr} {}
+  // iterator_template(Type *iter ) : m_iterator{iter} {}
+  iterator_template(Type *iter, Type *min_end, Type *max_end)
+      : m_iterator{iter},
+        m_iterator_begin_ptr{min_end},
+        m_iterator_end_ptr{max_end} {
+    throw_if_bad();
+  }
+  void throw_if_bad(Type *_iterator = (Type *)-1) {
+    if (_iterator == (Type *)-1) {
+      _iterator = m_iterator;
+    }
+    if ((m_iterator_begin_ptr <= _iterator) && (_iterator <= m_iterator_end_ptr)) {
+      return;
+    }
+    throw std::exception(
+        "bad ptr access : mjz_ard::iterator_template::throw_if_bad ");
+  }
+
+  iterator_template(const iterator_template &p) : m_iterator(p.m_iterator) {}
+  iterator_template(iterator_template &&p)noexcept : m_iterator(p.m_iterator) {}
+  iterator_template &operator=(Type *iter) {
+    m_iterator = iter;
+    throw_if_bad();
+    return *this;
+  }
+  iterator_template &operator=(const iterator_template &p) {
+    m_iterator = (p.m_iterator);
+    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
+    m_iterator_end_ptr = p.m_iterator_end_ptr;
+    throw_if_bad();
+    return *this;
+  }
+  iterator_template &operator=(iterator_template &&p) noexcept {
+    m_iterator = (p.m_iterator);
+    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
+    m_iterator_end_ptr = p.m_iterator_end_ptr;
+    return *this;
+  }
+  ~iterator_template() { m_iterator = 0; }
+  bool operator==(const iterator_template &other) const noexcept {
+    return m_iterator == other.m_iterator;
+  }
+  bool operator!=(const iterator_template &other) const noexcept {
+    return m_iterator != other.m_iterator;
+  }
+  reference operator*() const noexcept { return *m_iterator; }
+  pointer operator->() const noexcept { return m_iterator; }
+  iterator_template &operator++() {
+    ++m_iterator;
+    throw_if_bad();
+    return *this;
+  }
+  iterator_template operator++(int) {
+    iterator_template tmp(*this);
+    ++(*this);
+    return tmp;
+  }
+  iterator_template &operator--() {
+    --m_iterator;
+    throw_if_bad();
+    return *this;
+  }
+  iterator_template operator--(int) {
+    iterator_template tmp(*this);
+    --(*this);
+    return tmp;
+  }
+  iterator_template &operator+=(const difference_type other) {
+    m_iterator += other;
+    throw_if_bad();
+    return *this;
+  }
+  iterator_template &operator-=(const difference_type other) {
+    m_iterator -= other;
+    throw_if_bad();
+    return *this;
+  }
+  iterator_template &operator+=(const iterator_template &other) {
+    m_iterator += other.m_iterator;
+    throw_if_bad();
+    return *this;
+  }
+  iterator_template &operator-=(const iterator_template &other) {
+    m_iterator -= other.m_iterator;
+    throw_if_bad();
+    return *this;
+  }
+  reference operator[](std::size_t index) const {
+    throw_if_bad(m_iterator + index);
+    return m_iterator[index];
+  }
+  bool operator<(const iterator_template &other) const noexcept {
+    return m_iterator < other.m_iterator;
+  }
+  bool operator>(const iterator_template &other) const noexcept {
+    return m_iterator > other.m_iterator;
+  }
+  bool operator<=(const iterator_template &other) const noexcept {
+    return m_iterator <= other.m_iterator;
+  }
+  bool operator>=(const iterator_template &other) const noexcept {
+    return m_iterator >= other.m_iterator;
+  }
+  operator pointer() { return m_iterator; }
+  explicit operator pointer &() { return m_iterator; }
+  pointer get_pointer() const { return m_iterator; }
+  pointer &get_pointer() { return m_iterator; }
+  friend iterator_template operator+(const iterator_template &me,
+                                     const difference_type other) {
+    return iterator_template(
+        me.m_iterator + other,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  friend iterator_template operator-(const iterator_template &me,
+                                     const difference_type other) {
+    return iterator_template(
+        me.m_iterator - other,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  friend iterator_template operator+(const difference_type other,
+                                     const iterator_template &me) {
+    return iterator_template(
+        other + me.m_iterator,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  // friend iterator_template operator-(const difference_type other, const
+  // iterator_template& me) noexcept { // bad function dont use
+  // return iterator_template(me.m_iterator - (pointer)other);
+  // }
+  friend iterator_template operator+(const iterator_template &other,
+                                     const iterator_template &me) {
+    return iterator_template(other.m_iterator + me,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  friend difference_type operator-(const iterator_template &other,
+                                   const iterator_template &me) {
+    return std::distance(other.m_iterator, me.m_iterator);
+  }
+  friend void swap(iterator_template &lhs, iterator_template &rhs) {
+    iterator_template lhsm_iterator = lhs;
+    lhs = rhs;
+    rhs = lhsm_iterator;
+  }
+  friend void swap(reference lhs, reference rhs) {
+    value_type lhsm_ = lhs;
+    lhs = rhs;
+    rhs = lhsm_;
+  }
+};
+
+
+
+
+
+
+
 class mjz_Str;
+class mjz_str_view;
 class basic_mjz_String {
   friend class mjz_Str;
 
@@ -250,7 +430,11 @@ class basic_mjz_String {
   size_t m_capacity{};
   // the string length (not counting the '\0')
   size_t m_length{};
+  inline const char *begining_of_str_ptr() const { return m_buffer ; }
+  inline const char *ending_of_str_ptr() const { return m_buffer + length(); }
 
+  inline  char *begining_of_str_ptr()  { return m_buffer ; }
+  inline  char *ending_of_str_ptr()  { return m_buffer + length(); }
  public:
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
   static constexpr int64_t forbiden_chars_cnt_size = 3;
@@ -421,6 +605,23 @@ class basic_mjz_String {
   mjz_Str substring_beg_n(size_t beginIndex, size_t number) const;
   mjz_Str substring(size_t beginIndex) const;
   mjz_Str substring_beg_n(int64_t beginIndex, size_t number) const;
+
+  friend class mjz_str_view;
+  mjz_str_view substr_view(size_t beginIndex);
+  mjz_str_view substr_view(size_t beginIndex, size_t endIndex) const;
+  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number);
+  mjz_str_view substr_view(int64_t beginIndex, int64_t endIndex) const;
+  mjz_str_view substr_view(int64_t beginIndex) const;
+  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number);
+  mjz_str_view substr_view_beg_n(unsigned int beginIndex,
+                                 unsigned int number) const;
+  mjz_str_view substr_view(int beginIndex) const;
+  mjz_str_view substr_view(int beginIndex, int endIndex) const;
+  mjz_str_view substr_view_beg_n(int beginIndex, int number) const;
+  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number) const;
+  mjz_str_view substr_view(size_t beginIndex) const;
+  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number) const;
+
   const char &at(int64_t i) const { return operator[](i); }
   const char &back() const { return buffer_ref()[0]; }
   const char &front() const { return operator[]((int64_t)-1); }
@@ -1256,27 +1457,36 @@ class mjz_Str : public basic_mjz_String,
     return helper__op_shift_input_(rhs, CIN, rhs.get_shift_op_r_s());
   }
   friend std::ostream &operator<<(std::ostream &COUT, const mjz_Str &rhs) {
-    COUT << rhs.get_shift_op_l_sc().c_str();
+    COUT.write(rhs.get_shift_op_l_sc().c_str(),
+               rhs.get_shift_op_l_sc().length());
+
     return COUT;
   }
   friend std::ostream &operator>>(const mjz_Str &rhs, std::ostream &COUT) {
-    COUT << rhs.get_s_shift_op_r_sc().c_str();
+    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
+               rhs.get_s_shift_op_r_sc().length());
+
     return COUT;
   }
   friend std::ostream &operator<<(std::ostream &COUT, mjz_Str &rhs) {
-    COUT << rhs.get_shift_op_l_s().c_str();
+    COUT.write(rhs.get_shift_op_l_s().c_str(), rhs.get_shift_op_l_s().length());
     return COUT;
   }
   friend std::ostream &operator>>(mjz_Str &rhs, std::ostream &COUT) {
-    COUT << rhs.get_s_shift_op_r_s().c_str();
+    COUT.write(rhs.get_s_shift_op_r_s().c_str(),
+               rhs.get_s_shift_op_r_s().length());
+
     return COUT;
   }
   friend std::ostream &operator>>(mjz_Str &&rhs, std::ostream &COUT) {
-    COUT << rhs.get_s_shift_op_r_sc().c_str();
+    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
+               rhs.get_s_shift_op_r_sc().length());
     return COUT;
   }
   friend std::ostream &operator<<(std::ostream &COUT, mjz_Str &&rhs) {
-    COUT << rhs.get_shift_op_l_sc().c_str();
+    COUT.write(rhs.get_shift_op_l_sc().c_str(),
+               rhs.get_shift_op_l_sc().length());
+
     return COUT;
   }
   friend class STRINGSerial;
@@ -1294,228 +1504,39 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual const char *end_c_str() const {
     return c_str() + length();
   }
-  // iterator_template Class
-  template <typename Type>
-  class iterator_template {
-   protected:
-    Type *m_iterator;
 
-   public:
-    using value_type = Type;
-    using reference = value_type &;
-    using pointer = value_type *;
-    using iterator_category = std::random_access_iterator_tag;
-    using difference_type = std::ptrdiff_t;
-    // using iterator_concept = std::contiguous_iterator_tag;
-    iterator_template(Type *iter = nullptr) : m_iterator{iter} {}
-    iterator_template(const iterator_template &p) noexcept
-        : m_iterator(p.m_iterator) {}
-    iterator_template(iterator_template &&p) noexcept
-        : m_iterator(p.m_iterator) {}
-    iterator_template &operator=(Type *iter) {
-      m_iterator = iter;
-      return *this;
-    }
-    iterator_template &operator=(const iterator_template &p) {
-      m_iterator = (p.m_iterator);
-      return *this;
-    }
-    iterator_template &operator=(iterator_template &&p) {
-      m_iterator = (p.m_iterator);
-      return *this;
-    }
-    ~iterator_template() { m_iterator = 0; }
-    bool operator==(const iterator_template &other) const noexcept {
-      return m_iterator == other.m_iterator;
-    }
-    bool operator!=(const iterator_template &other) const noexcept {
-      return m_iterator != other.m_iterator;
-    }
-    reference operator*() const noexcept { return *m_iterator; }
-    pointer operator->() const noexcept { return m_iterator; }
-    iterator_template &operator++() noexcept {
-      ++m_iterator;
-      return *this;
-    }
-    iterator_template operator++(int) noexcept {
-      iterator_template tmp(*this);
-      ++(*this);
-      return tmp;
-    }
-    iterator_template &operator--() noexcept {
-      --m_iterator;
-      return *this;
-    }
-    iterator_template operator--(int) noexcept {
-      iterator_template tmp(*this);
-      --(*this);
-      return tmp;
-    }
-    iterator_template &operator+=(const difference_type other) noexcept {
-      m_iterator += other;
-      return *this;
-    }
-    iterator_template &operator-=(const difference_type other) noexcept {
-      m_iterator -= other;
-      return *this;
-    }
-    iterator_template &operator+=(const iterator_template &other) noexcept {
-      m_iterator += other.m_iterator;
-      return *this;
-    }
-    iterator_template &operator-=(const iterator_template &other) noexcept {
-      m_iterator -= other.m_iterator;
-      return *this;
-    }
-    reference operator[](std::size_t index) const { return m_iterator[index]; }
-    bool operator<(const iterator_template &other) const noexcept {
-      return m_iterator < other.m_iterator;
-    }
-    bool operator>(const iterator_template &other) const noexcept {
-      return m_iterator > other.m_iterator;
-    }
-    bool operator<=(const iterator_template &other) const noexcept {
-      return m_iterator <= other.m_iterator;
-    }
-    bool operator>=(const iterator_template &other) const noexcept {
-      return m_iterator >= other.m_iterator;
-    }
-    operator pointer() { return m_iterator; }
-    explicit operator pointer &() { return m_iterator; }
-    pointer get_pointer() const { return m_iterator; }
-    pointer &get_pointer() { return m_iterator; }
-    friend iterator_template operator+(const iterator_template &me,
-                                       const difference_type other) noexcept {
-      return iterator_template(me.m_iterator + other);
-    }
-    friend iterator_template operator-(const iterator_template &me,
-                                       const difference_type other) noexcept {
-      return iterator_template(me.m_iterator - other);
-    }
-    friend iterator_template operator+(const difference_type other,
-                                       const iterator_template &me) noexcept {
-      return iterator_template(other + me.m_iterator);
-    }
-    // friend iterator_template operator-(const difference_type other, const
-    // iterator_template& me) noexcept { // bad function dont use
-    // return iterator_template(me.m_iterator - (pointer)other);
-    // }
-    friend iterator_template operator+(const iterator_template &other,
-                                       const iterator_template &me) noexcept {
-      return iterator_template(other.m_iterator + me);
-    }
-    friend difference_type operator-(const iterator_template &other,
-                                     const iterator_template &me) noexcept {
-      return std::distance(other.m_iterator, me.m_iterator);
-    }
-    friend void swap(iterator_template &lhs, iterator_template &rhs) {
-      iterator_template lhsm_iterator = lhs;
-      lhs = rhs;
-      rhs = lhsm_iterator;
-    }
-    friend void swap(reference lhs, reference rhs) {
-      value_type lhsm_ = lhs;
-      lhs = rhs;
-      rhs = lhsm_;
-    }
-  };
   // Iterator Class
   using iterator_template_CC = iterator_template<const char>;
   using iterator_template_C = iterator_template<char>;
   using const_iterator = iterator_template_CC;
   using iterator = iterator_template_C;
-  /*
-  class const_iterator : public iterator_template_CC {
-  public:
-  const_iterator()
-  : iterator_template_CC(nullptr) { }
-  const_iterator(iterator_template_CC p)
-  : iterator_template_CC(p) { }
-  const_iterator(const char *p)
-  : iterator_template_CC(p) { }
-  const_iterator(const const_iterator &p)
-  : iterator_template_CC(p.m_iterator) { }
-  const_iterator(const_iterator &&p)
-  : iterator_template_CC(p.m_iterator) {
+
+  const_iterator begin() const {
+    return const_iterator(begin_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
   }
-  const_iterator &operator=(const_iterator &&p) {
-  m_iterator = (p.m_iterator);
-  return *this;
+  const_iterator end() const {
+    return const_iterator(end_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
   }
-  const_iterator &operator=(iterator_template_CC p) {
-  m_iterator = p.get_pointer(); // there is a error if i want to access
-  it directly return *this;
+  iterator begin() {
+    return iterator(begin_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
   }
-  const_iterator &operator=(const const_iterator &p) {
-  m_iterator = (p.m_iterator);
-  return *this;
+  iterator end() {
+    return iterator(end_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
   }
-  explicit operator iterator_template_CC() {
-  return iterator_template_CC(m_iterator);
-  }
-  explicit operator iterator_template_CC &() {
-  return *((iterator_template_CC *)this);
-  }
-  friend void swap(const_iterator &lhs, const_iterator &rhs) {
-  const_iterator lhsm_iterator = lhs;
-  lhs = rhs;
-  rhs = lhsm_iterator;
-  }
-  };
-  class iterator : public iterator_template_C {
-  public:
-  iterator()
-  : iterator_template_C(nullptr) { }
-  iterator(iterator_template_C p)
-  : iterator_template_C(p) { }
-  iterator(char *p)
-  : iterator_template_C(p) { }
-  iterator(const iterator &p)
-  : iterator_template_C(p.m_iterator) { }
-  iterator(iterator &&p)
-  : iterator_template_C(p.m_iterator) {
-  }
-  iterator &operator=(const iterator &p) {
-  m_iterator = (p.m_iterator);
-  return *this;
-  }
-  iterator &operator=(iterator_template_C p) {
-  m_iterator = p.get_pointer(); // there is a error if i want to access
-  it directly return *this;
-  }
-  iterator &operator=(iterator &&p) {
-  m_iterator = (p.m_iterator);
-  return *this;
-  }
-  explicit operator const_iterator() const {
-  return const_iterator(m_iterator);
-  }
-  explicit operator iterator_template_CC() {
-  return iterator_template_CC(m_iterator);
-  }
-  explicit operator iterator_template_C() {
-  return iterator_template_C(m_iterator);
-  }
-  explicit operator iterator_template_C &() {
-  return *((iterator_template_C *)this);
-  }
-  friend void swap(iterator &lhs, iterator &rhs) {
-  iterator lhsm_iterator = lhs;
-  lhs = rhs;
-  rhs = lhsm_iterator;
-  }
-  };
- */
-  const_iterator begin() const { return const_iterator(begin_c_str()); }
-  const_iterator end() const { return const_iterator(end_c_str()); }
-  iterator begin() { return iterator(begin_c_str()); }
-  iterator end() { return iterator(end_c_str()); }
   typedef std::reverse_iterator<iterator> rev_iterator;
   typedef std::reverse_iterator<const_iterator> const_rev_iterator;
-  rev_iterator rbegin() { return rev_iterator(end()); }
-  const_rev_iterator rbegin() const { return const_rev_iterator(end()); };
-  rev_iterator rend() { return rev_iterator(begin()); }
-  const_rev_iterator rend() const { return const_rev_iterator(begin()); };
+  rev_iterator rbegin() {
+    return rev_iterator({end(), begining_of_str_ptr(), ending_of_str_ptr()});
+  }
+  const_rev_iterator rbegin() const {
+    return const_rev_iterator({end(), begining_of_str_ptr(), ending_of_str_ptr()});
+  };
+  rev_iterator rend() {
+    return rev_iterator({begin(), begining_of_str_ptr(), ending_of_str_ptr()});
+  }
+  const_rev_iterator rend() const {
+    return const_rev_iterator({begin(), begining_of_str_ptr(), ending_of_str_ptr()});
+  };
   // erase
   mjz_Str &erase(size_t pos_ = 0, size_t len_ = -1);
   iterator erase(iterator p);
@@ -1883,20 +1904,27 @@ class mjz_Str : public basic_mjz_String,
   }
 };
 class mjz_str_view : public basic_mjz_String {
+ protected:
+  char *&buffer_ref(void) { return m_buffer; }
+  using basic_mjz_String::buffer_ref;
+  using basic_mjz_String::C_str;
+  using basic_mjz_String::c_str;
   mjz_str_view &copy(const mjz_str_view &s) {
     m_buffer = const_cast<char *>(s.c_str());
     m_length = s.length();
     m_capacity = m_length;
     return *this;
   };
-
+ inline const char *begin_c_str()const { return c_str();
+     }
+  inline const char *end_c_str() const { return c_str() + length(); }
  public:
   mjz_str_view(const mjz_Str &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view(const char *cstr_, size_t len)
       : basic_mjz_String(cstr_, len, len) {}
   mjz_str_view(const char *cstr_) : mjz_str_view(cstr_, strlen(cstr_)) {}
   mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
-  char *&buffer_ref(void) { return m_buffer; }
+  
   bool is_blank(void) const {
     size_t i{};
     while (i < length()) {
@@ -1905,15 +1933,28 @@ class mjz_str_view : public basic_mjz_String {
     }
     return 1;
   }
-  mjz_str_view(mjz_str_view &&s) = delete;
-  mjz_str_view &operator=(mjz_str_view &&) = delete;
+  mjz_str_view(mjz_str_view &&s) =
+      default;  // we are string viewes and not strings
+  mjz_str_view &operator=(mjz_str_view &&) = default;
+
   mjz_str_view(mjz_Str &&) = delete;
   mjz_str_view(const mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view(mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
   mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
-  virtual ~mjz_str_view(){};
+  inline virtual ~mjz_str_view(){};
+  using iterator_template_CC = iterator_template<const char>;
+  using const_iterator = iterator_template_CC;
 
+  const_iterator begin() const {
+    return const_iterator(begin_c_str(), begining_of_str_ptr(),ending_of_str_ptr());
+  }
+  const_iterator end() const {
+    return const_iterator(end_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
+  }
+  typedef std::reverse_iterator<const_iterator> const_rev_iterator;
+  const_rev_iterator rbegin() const { return const_rev_iterator(end()); };
+  const_rev_iterator rend() const { return const_rev_iterator(begin()); };
  public:
   friend StringSumHelper operator+(const StringSumHelper &lhs,
                                    const mjz_str_view &rhs);
@@ -1923,6 +1964,31 @@ class mjz_str_view : public basic_mjz_String {
                                    const basic_mjz_String &rhs);
   friend StringSumHelper operator+(const mjz_str_view &lhs,
                                    const StringSumHelper &rhs);
+
+  friend std::ostream &operator<<(std::ostream &COUT, const mjz_str_view &rhs) {
+    COUT.write(rhs.c_str(), rhs.length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(const mjz_str_view &rhs, std::ostream &COUT) {
+    COUT.write(rhs.c_str(), rhs.length());
+    return COUT;
+  }
+  friend std::ostream &operator<<(std::ostream &COUT, mjz_str_view &rhs) {
+    COUT.write(rhs.c_str(), rhs.length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(mjz_str_view &rhs, std::ostream &COUT) {
+    COUT.write(rhs.c_str(), rhs.length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(mjz_str_view &&rhs, std::ostream &COUT) {
+    COUT.write(rhs.c_str(), rhs.length());
+    return COUT;
+  }
+  friend std::ostream &operator<<(std::ostream &COUT, mjz_str_view &&rhs) {
+    COUT.write(rhs.c_str(), rhs.length());
+    return COUT;
+  }
 };
 class StringSumHelper : public mjz_Str {
  public:
@@ -2080,6 +2146,24 @@ inline mjz_Str operator""_m_str(const char *initilizer, size_t length_) {
 inline mjz_Str operator"" _m_pstr(const char *initilizer, size_t length_) {
   return mjz_Str(initilizer, length_).string_do_interpret();
 }
+inline mjz_str_view operator""_m_strv(const char *initilizer, size_t length_) {
+  return mjz_str_view(initilizer, length_);
+}
+inline mjz_str_view operator"" _m_strv(const char *p) {
+  return operator""_m_strv(p, mjz_Str::strlen(p));
+}
+inline mjz_str_view operator""_msv(const char *initilizer, size_t length_) {
+  return operator""_m_strv(initilizer, length_);
+}
+inline mjz_str_view operator"" _msv(const char *p) {
+  return operator""_m_strv(p, mjz_Str::strlen(p));
+}
+inline mjz_str_view operator""_sv(const char *initilizer, size_t length_) {
+  return operator""_m_strv(initilizer, length_);
+}
+inline mjz_str_view operator""_sv(const char *p) {
+  return operator""_m_strv(p, mjz_Str::strlen(p));
+}
 }  // namespace mjz_ard
 // using mjz_ard::__FlashStringHelper;
 // using mjz_ard::mjz_Str;
@@ -2091,6 +2175,9 @@ typedef mjz_ard::malloc_wrapper mlc_wrp;
 typedef std::string string;
 typedef mjz_ard::hash_sha_512 hash_sha_512;
 typedef mjz_ard::StringSumHelper mjz_StringSumHelper;
+typedef mjz_ard::mjz_str_view mjz_str_view;
+typedef mjz_ard::mjz_str_view mstrview;
+typedef mjz_ard::mjz_str_view mstrv;
 #undef NO_IGNORE_CHAR
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus
