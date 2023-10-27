@@ -472,25 +472,44 @@ int main() {
 int hash_demo() {
   using namespace mjz_ard::short_string_convestion_operators;
   using namespace have_mjz_ard_removed;
-  const uint8_t password_hash[] = {94,  136, 72,  152, 218, 40,  4,  113, 81,
-                                208, 229, 111, 141, 198, 41,  39, 115, 96,
-                                61,  13,  106, 171, 189, 214, 42, 17,  239,
-                                114, 29,  21,  66,  216};  // hash of password
+
+  std::array<uint8_t[32], 3> password_hash = {{
+      {94,  136, 72,  152, 218, 40,  4,  113, 81, 208, 229,
+       111, 141, 198, 41,  39,  115, 96, 61,  13, 106, 171,
+       189, 214, 42,  17,  239, 114, 29, 21,  66, 216},  // hash of  "password"
+      {1,   186, 71,  25,  200, 11, 111, 233, 17,  176, 145,
+       167, 192, 81,  36,  182, 78, 238, 206, 150, 78,  9,
+       192, 88,  239, 143, 152, 5,  218, 202, 84,  107},  // hash of "\n" //the
+                                                          // string interpreter
+                                                          // in operator<< will
+                                                          // change a normal
+                                                          // {'\\','n'} input to
+                                                          // a {'\n'} mjz string
+      {20,  141, 233, 197, 167, 164, 77,  25,  229, 108, 217,
+       174, 26,  85,  75,  246, 120, 71,  175, 176, 197, 143,
+       110, 18,  250, 41,  172, 125, 223, 202, 153, 64}  // hash of "p"
+  }};
 
   mjz_str a;
   std::cin >> a;
+#if 0
   auto hash_pair = a.hash_with_output();
-  // std::cout << hash_pair.second << "\n";
-  bool password_is_correct =!cmpr_hash(hash_pair.first, password_hash);
-
-        std::cout << (password_is_correct ? "correct" : "incorrect")
-            << "\n";
+   std::cout << hash_pair.second << "\n";
+  auto& my_hash= hash_pair.first;
+#else
+  auto my_hash = a.hash();
+#endif
+  bool password_is_correct = false;
+  for (uint8_t(&obj)[32]  : password_hash)
+    password_is_correct |= (my_hash == obj);
+ 
+  std::cout << (password_is_correct ? "correct" : "incorrect") << "\n";
 
   return password_is_correct;
 }
 }  // namespace dont_use
 int main() {
+  std::cout << "enter password :\n";
   if (!dont_use::hash_demo()) return 0;
-
-    return dont_use::main976();
-    }
+  return dont_use::main976();
+}

@@ -545,6 +545,18 @@ inline int cmpr_hash(const void *rhs, const SHA256_CTX &lhs) {
 inline int cmpr_hash(const SHA256_CTX &rhs, const void *lhs) {
   return cmpr_hash(rhs.hashed_data, lhs);
 }
+inline int operator!=(const void *rhs, const SHA256_CTX &lhs) {
+  return cmpr_hash(rhs, lhs.hashed_data);
+}
+inline bool operator!=(const SHA256_CTX &rhs, const void *lhs) {
+  return cmpr_hash(rhs.hashed_data, lhs);
+}
+inline bool operator==(const void *rhs, const SHA256_CTX &lhs) {
+  return !cmpr_hash(rhs, lhs.hashed_data);
+}
+inline bool operator==(const SHA256_CTX &rhs, const void *lhs) {
+  return !cmpr_hash(rhs.hashed_data, lhs);
+}
 inline bool operator!=(const SHA256_CTX &rhs, const SHA256_CTX &lhs) {
   return !!cmpr_hash(rhs.hashed_data, lhs.hashed_data);
 }
