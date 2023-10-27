@@ -11,37 +11,41 @@ a fast alternative to std::string.<br>
  and more... .<br>
  this test is from the example on my 2core laptop :(<br>
  (note i am a student 16yo)<br>
- [TIMER] total - 4.3974e+08ns
-shredptr :16 mjzstr :80 vs
- std::str 32
-1. mjz alloc large:395.757031 ns (50656900.000000 / 128000.000000)
-2. std alloc large:179.942969 ns (23032700.000000 / 128000.000000)
-3. mjz dealloc large:84.958594 ns (10874700.000000 / 128000.000000)
-4. std dealloc large:71.544531 ns (9157700.000000 / 128000.000000)
-5. mjz dealloc base:43.943750 ns (5624800.000000 / 128000.000000)
-6. mjz alloc base:41.360547 ns (10588300.000000 / 256000.000000)
-7. _timer_:37.071875 ns (4745200.000000 / 128000.000000)
-8. std dealloc base:36.661719 ns (4692700.000000 / 128000.000000)
-9. mjz alloc:27.127344 ns (3472300.000000 / 128000.000000)
-10. std alloc base:26.041016 ns (6666500.000000 / 256000.000000)
-11. mjz dealloc:10.259375 ns (1313200.000000 / 128000.000000)
-12. std alloc:9.551562 ns (1222600.000000 / 128000.000000)
-13. timer_:4.303125 ns (550800.000000 / 128000.000000)
-14. std dealloc:2.267187 ns (290200.000000 / 128000.000000)
-1. mjz alloc large:40.766466 %
-2. std alloc large:18.535713 %
-3. mjz dealloc large:8.751485 %
-4. std dealloc large:7.369718 %
-5. mjz dealloc base:4.526594 %
-6. mjz alloc base:4.260501 %
-7. _timer_:3.818730 %
-8. std dealloc base:3.776481 %
-9. mjz alloc:2.794356 %
-10. std alloc base:2.682454 %
-11. mjz dealloc:1.056806 %
-12. std alloc:0.983895 %
-13. timer_:0.443260 %
-14. std dealloc:0.233540 %
+ str view :16 <br>
+ mjzstr :80 vs<br>
+ std::str :32<br>
+1. mjz alloc large:154.341406 ns (19755700.000000 / 128000.000000)
+2. std alloc large:141.796094 ns (18149900.000000 / 128000.000000)
+3. mjz dealloc large:69.010156 ns (8833300.000000 / 128000.000000)
+4. std dealloc large:58.661719 ns (7508700.000000 / 128000.000000)
+5. mjz dealloc base:39.153125 ns (5011600.000000 / 128000.000000)
+6. mjz alloc base:37.687500 ns (9648000.000000 / 256000.000000)
+7. std dealloc base:29.756250 ns (3808800.000000 / 128000.000000)
+8. _timer_:29.291406 ns (3749300.000000 / 128000.000000)
+9. mjz alloc:22.847656 ns (2924500.000000 / 128000.000000)
+10. std alloc base:21.542578 ns (5514900.000000 / 256000.000000)
+11. mjz dealloc:9.522656 ns (1218900.000000 / 128000.000000)
+12. std alloc:7.082031 ns (906500.000000 / 128000.000000)
+13. mjz_str_view:5.660156 ns (724500.000000 / 128000.000000)
+14. timer_:5.054688 ns (647000.000000 / 128000.000000)
+15. ~mjz_str_view:4.888281 ns (625700.000000 / 128000.000000)
+16. std dealloc:-0.279687 ns (-35800.000000 / 128000.000000)
+1. mjz alloc large:24.266906 %
+2. std alloc large:22.294422 %
+3. mjz dealloc large:10.850380 %
+4. std dealloc large:9.223308 %
+5. mjz dealloc base:6.155997 %
+6. mjz alloc base:5.925558 %
+7. std dealloc base:4.678538 %
+8. _timer_:4.605451 %
+9. mjz alloc:3.592308 %
+10. std alloc base:3.387113 %
+11. mjz dealloc:1.497235 %
+12. std alloc:1.113499 %
+13. mjz_str_view:0.889939 %
+14. timer_:0.794742 %
+15. ~mjz_str_view:0.768578 %
+16. std dealloc:-0.043975 %
 
 </p>
  <br>
