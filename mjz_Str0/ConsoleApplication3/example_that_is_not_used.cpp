@@ -473,7 +473,7 @@ int hash_demo() {
   using namespace mjz_ard::short_string_convestion_operators;
   using namespace have_mjz_ard_removed;
 
-  std::array<uint8_t[32], 3> password_hash = {{
+  std::array<uint8_t[32], 4> password_hash = {{
       {94,  136, 72,  152, 218, 40,  4,  113, 81, 208, 229,
        111, 141, 198, 41,  39,  115, 96, 61,  13, 106, 171,
        189, 214, 42,  17,  239, 114, 29, 21,  66, 216},  // hash of  "password"
@@ -488,11 +488,16 @@ int hash_demo() {
       {20,  141, 233, 197, 167, 164, 77,  25,  229, 108, 217,
        174, 26,  85,  75,  246, 120, 71,  175, 176, 197, 143,
        110, 18,  250, 41,  172, 125, 223, 202, 153, 64}  // hash of "p"
+       ,
+        {175, 219, 195, 16,  252, 20,  32,  118,
+                                 220, 122, 102, 106, 27,  138, 16,  25,
+                                 232, 87,  120, 105, 31,  158, 241, 18,
+                                 98,  231, 29,  99,  173, 186, 108, 169}//hash of "toor_pass"
   }};
 
   mjz_str a;
   std::cin >> a;
-#if 0
+#if 1
   auto hash_pair = a.hash_with_output();
    std::cout << hash_pair.second << "\n";
   auto& my_hash= hash_pair.first;
