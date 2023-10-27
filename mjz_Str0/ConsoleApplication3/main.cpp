@@ -3,7 +3,7 @@
 //
 
 #include "mjzString.hpp"
-using namespace mjz_ard;
+using namespace have_mjz_ard_removed;
 
 #include <chrono>
 #include <cstdint>
@@ -158,7 +158,7 @@ int main2() {
 
     for (int i{}; i < mycolnum; i++)
       for (int j{}; j < myrownum; j++)
-        my2dar[i][j] = GET_CHAR_from_int((j + i * mycolnum) % 36,
+        my2dar[i][j] = mjz_ard::GET_CHAR_from_int((j + i * mycolnum) % 36,
                                          ((j + i * mycolnum) / 36) % 2);
 
     // for (int i{}; i < mycolnum; i++)
@@ -287,6 +287,7 @@ long loop() {
   std::cout << "\n";
 
   return mystr()([](auto THis_) -> int {
+    using  namespace mjz_ard;
     mjz_Str& mystr = *THis_;
     mystr =
         "exiting enter some natural number to exit note that size of string \nis \n:"_m_str;
@@ -383,9 +384,11 @@ void test_mstr_vs_sstr(
   new (&my_strtd) std::string();
   timer("mjz_str_view");
   using namespace mjz_ard::short_string_convestion_operators;
-volatile  auto a ="god code"_sv;
+  char a_storage[sizeof(mjz_str_view)]{};
+  new (a_storage) mjz_str_view("god code");
   timer("~mjz_str_view");
-a.~mjz_str_view(); //TODO: V749 https://pvs-studio.com/en/docs/warnings/V749/ Destructor of the 'a' object will be invoked a second time after leaving the object's scope.
+  reinterpret_cast<mjz_str_view*>(a_storage) //TODO: V1032 https://pvs-studio.com/en/docs/warnings/V1032/ The pointer 'a_storage' is cast to a more strictly aligned pointer type.
+      ->~mjz_str_view();  
   timer("timer_").Stop(timer_cmd::just_Stop);
 }
 const char* cstr_largeee =
@@ -408,9 +411,8 @@ int main786() {
       }
     }
   }
-  std::cout << "shredptr :" << sizeof(std::shared_ptr<mjz_Str_DATA_storage_cls>)
-            << "str view :" << sizeof(mjz_str_view)
-            << "shredptr :" << sizeof(std::shared_ptr<mjz_Str_DATA_storage_cls>)
+  std::cout << " str view :" << sizeof(mjz_str_view) << " shredptr :"
+            << sizeof(std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls>)
             << " mjzstr :" << sizeof(mjz_Str) << " vs \n std::str "
             << sizeof(std::string) << " \n";
   std::cout << Scoped_speed_Timer::show_analysis(map_ptr, _timer_sign);
@@ -421,8 +423,6 @@ int main786() {
 }
 
 void string_out(mjz_str_view input) {
-
-  input.remove_suffix(1);
   std::cout << input;
 }
 int main976() {
@@ -433,6 +433,7 @@ int main976() {
   for (int i{}; i < 1000;i++) {
     Scoped_speed_Timer tm(_timer_sign);
     tm("str");
+      using  namespace mjz_ard;
     "abcdefg"_m_strv.copy(arr[i], 9);
     tm(_timer_sign);
   }
@@ -440,9 +441,21 @@ int main976() {
   std::cout << arr[0];
   return 0; }
 int main() {
-    
-    string_out("abcdefg"_m_strv);
-    return 0;
+    using namespace mjz_ard::short_string_convestion_operators;
+     using namespace mjz_ard::short_string_names;
+       using  namespace mjz_ard;
+   unsigned char dta[20]{};
+       ("hi mom "_v + " hello "_v).getBytes(dta, 19);
+    auto dt = mjz_str_view(dta);
+    std::array<sv, 1000> ar;
+  for (auto& obj : ar) {
+    obj = dt;
+  }
+  dta[2] = 'F';
+  for (const auto& obj : ar) {
+   std::cout<< obj ;
+  }
+  return main786();
     }
     // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu

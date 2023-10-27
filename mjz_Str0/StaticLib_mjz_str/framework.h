@@ -8,21 +8,21 @@ class speed_Timer {
 
   void Reset() { m_Start = std::chrono::high_resolution_clock::now(); }
 
-  double Elapsednano() {
-    return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(
+ long double Elapsednano() {
+    return (long double)std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::high_resolution_clock::now() - m_Start)
         .count();
   }
-  double Elapsed() { return Elapsednano() * 0.001f * 0.001f * 0.001f; }
+ long double Elapsed() { return Elapsednano() * 0.001f * 0.001f * 0.001f; }
 
-  double ElapsedMillis() { return Elapsednano() / 1000.0f / 1000.0f; }
+ long double ElapsedMillis() { return Elapsednano() / 1000.0f / 1000.0f; }
 
  private:
   std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
 };
 struct timer_info {
-  double Time_ns;
-  double atempt_num;
+  long double Time_ns;
+  long double atempt_num;
 };
 inline bool operator<(timer_info rhs, timer_info lhs) {
   return (rhs.Time_ns / rhs.atempt_num) < (lhs.Time_ns / lhs.atempt_num);
@@ -57,7 +57,7 @@ class Scoped_speed_Timer {
     return *this;
   }
   void Stop(timer_cmd cmd_ = timer_cmd::NONE) {
-    double time = m_Timer.Elapsednano();
+    long double time = m_Timer.Elapsednano();
     if ((stoped && !(cmd_ & timer_cmd::Force_log)) ||
         !!(cmd_ & timer_cmd::just_Stop))
       goto return_;
@@ -87,7 +87,7 @@ class Scoped_speed_Timer {
           cmpr_fnction = operator_less_than) {
     std::string ret_str;
     auto& _timer_info = (*map_ptr)[timer_signuchure_name];
-    double time_defult = _timer_info.Time_ns / _timer_info.atempt_num;
+    long double time_defult = _timer_info.Time_ns / _timer_info.atempt_num;
 
     std::vector<std::pair<std::string, timer_info>> vect_analis(
         map_ptr->size());
@@ -98,16 +98,15 @@ class Scoped_speed_Timer {
           obj.second.Time_ns =
               (obj.second.Time_ns) - (obj.second.atempt_num * time_defult);
 
-        obj.second.Time_ns =
-            static_cast<double>(static_cast<uint64_t>(obj.second.Time_ns));
+        obj.second.Time_ns =floor(obj.second.Time_ns);
 
         vect_analis[i++] = obj;
       }
       std::sort(vect_analis.begin(), vect_analis.end(), cmpr_fnction);
       i = 0;
-      double time_token_total{};
+      long double time_token_total{};
       for (auto& obj : vect_analis) {
-        double time_token = (obj.second.Time_ns) / obj.second.atempt_num;
+        long double time_token = (obj.second.Time_ns) / obj.second.atempt_num;
         ret_str += std::to_string(++i);
         ret_str += ". ";
         ret_str += obj.first;

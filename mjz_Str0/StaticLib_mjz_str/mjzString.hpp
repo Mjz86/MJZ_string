@@ -10,7 +10,7 @@
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- Lesser General Public License for more details.
+ Lesser General Public License for more details. //TODO: V1042 https://pvs-studio.com/en/docs/warnings/V1042/ This file is marked with copyleft license, which requires you to open the derived source code.
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not,write to the Free Software
  Foundation,Inc.,51 Franklin St,Fifth Floor,Boston,MA 02110-1301 USA
@@ -237,11 +237,17 @@ class mjz_Str_DATA_storage_cls
     // private.
     return std::make_shared<mjz_Str_DATA_storage_cls>();
   }
+  void change_free_fnctn_functions(std::function<void(void *)> free_) {
+    free_fnctn = free_;
+  }
+  void change_realloc_fnctn_functions(
+      std::function<void *(void *, size_t)> realloc_) {
+    realloc_fnctn = realloc_;
+  }
 
  private:
   // mjz_Str_DATA_storage_cls() = default;
 };
-
 class malloc_wrapper {
   malloc_wrapper &move(malloc_wrapper &otr) {
     otr.dont_deallocation_on_free();
@@ -331,7 +337,7 @@ class malloc_wrapper {
   inline void do_deallocation_on_free() { m_DO_deallocate = 1; }
 };
 
-  // iterator_template Class
+// iterator_template Class
 template <typename Type>
 class iterator_template {
  protected:
@@ -346,7 +352,7 @@ class iterator_template {
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
   // using iterator_concept = std::contiguous_iterator_tag;
-  iterator_template() : iterator_template(nullptr,nullptr,(Type *)-1)  {}
+  iterator_template() : iterator_template(nullptr, nullptr, (Type *)-1) {}
   // iterator_template(Type *iter ) : m_iterator{iter} {}
   iterator_template(Type *iter, Type *min_end, Type *max_end)
       : m_iterator{iter},
@@ -358,14 +364,16 @@ class iterator_template {
     if (_iterator == (Type *)-1) {
       _iterator = m_iterator;
     }
-    if ((m_iterator_begin_ptr <= _iterator) && (_iterator <= m_iterator_end_ptr)) {
+    if ((m_iterator_begin_ptr <= _iterator) &&
+        (_iterator <= m_iterator_end_ptr)) {
       return;
     }
     throw std::exception(
         "bad ptr access : mjz_ard::iterator_template::throw_if_bad ");
   }
 
-  iterator_template(const iterator_template &p) : m_iterator(p.m_iterator),
+  iterator_template(const iterator_template &p)
+      : m_iterator(p.m_iterator),
         m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
   iterator_template(iterator_template &&p) noexcept
@@ -486,7 +494,8 @@ class iterator_template {
   // }
   friend iterator_template operator+(const iterator_template &other,
                                      const iterator_template &me) {
-    return iterator_template(other.m_iterator + me,
+    return iterator_template(
+        other.m_iterator + me,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
@@ -505,29 +514,7 @@ class iterator_template {
     rhs = lhsm_;
   }
 };
-
-
-
-
-
-
-
-class mjz_Str;
-class mjz_str_view;
-class basic_mjz_String {
-  friend class mjz_Str;
-
- protected:  // the actual char array
-  char *m_buffer;
-  // the array length minus one (for the '\0')
-  size_t m_capacity;
-  // the string length (not counting the '\0')
-  size_t m_length;
-  inline const char *begining_of_str_ptr() const { return m_buffer ; }
-  inline const char *ending_of_str_ptr() const { return m_buffer + length(); }
-
-  inline  char *begining_of_str_ptr()  { return m_buffer ; }
-  inline  char *ending_of_str_ptr()  { return m_buffer + length(); }
+class static_str_algo {
  public:
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
   static constexpr int64_t forbiden_chars_cnt_size = 3;
@@ -536,34 +523,126 @@ class basic_mjz_String {
   static constexpr const char *empty_STRING_C_STR = "";
 
  public:
-  basic_mjz_String()
-      : m_buffer(const_cast<char*>(empty_STRING_C_STR)), m_capacity(0), m_length(0) {
+  static void *memmove(void *dest, const void *src, size_t len) {
+    char *d = (char *)dest;
+    const char *s = (const char *)src;
+    if (d < s)
+      while (len--) *d++ = *s++;
+    else {
+      const char *lasts = s + (len - 1);
+      char *lastd = d + (len - 1);
+      while (len--) *lastd-- = *lasts--;
+    }
+    return dest;
   }
-  basic_mjz_String(char *bfr, size_t cap, size_t len)
-      : m_buffer(bfr), m_capacity(cap), m_length(len){};
-  basic_mjz_String(const char *bfr, size_t cap, size_t len)
-      : m_buffer(const_cast<char *>(bfr)), m_capacity(cap), m_length(len){};
-  virtual ~basic_mjz_String(){};
-  basic_mjz_String(basic_mjz_String &&) = delete;
-  basic_mjz_String(const basic_mjz_String &) = delete;
-  basic_mjz_String(basic_mjz_String &) = delete;
-  basic_mjz_String &operator=(basic_mjz_String &&) = delete;
-  basic_mjz_String &operator=(const basic_mjz_String &) = delete;
-  basic_mjz_String &operator=(basic_mjz_String &) = delete;
+  static void *memcpy(void *dest, const void *src, size_t len) {
+    return memmove(dest, src, len);
+  }
+  static inline size_t strlen(const char *str) {
+    if (!(str && *str)) return 0;
+    const char *str_i = str;
+    while (1) {
+      if (!*++str_i) return str_i - str;
+    }
+  }
+  static inline const char *strchr(const char *str, size_t len_, char ch) {
+    const char *haystack_end = str + len_;
+    for (const char *i{str}; i < haystack_end; ++i) {
+      if (*(i) == ch) return i;
+    }
+    return NULL;
+  }
+  static inline const char *strrchr(const char *str, size_t len_, char ch) {
+    const char *haystack_end = str + len_;
+    const char *i{haystack_end - 1};
+    for (;;) {
+      if (*(i) == ch) return i;
+      if (i <= str) break;
+      --i;
+    }
+    return NULL;
+  }
+  static inline const char *strstr(const char *const haystack_,
+                                   const size_t haystack_len,
+                                   const char *const needle_,
+                                   const size_t needle_len) {
+    const char *haystack = haystack_;
+    const char *needle = needle_;
+    /* Length of NEEDLE. */
+    /* Known minimum length of HAYSTACK. */
+    /* Handle empty NEEDLE special case. */
+    if (needle[0] == '\0') return (char *)haystack;
+    if (haystack_len < needle_len) return NULL;
+    if (haystack_len == 0) return NULL;
+    /* Skip until we find the first matching char from NEEDLE. */
+    const char *haystack_end = haystack + haystack_len;
+    haystack = strchr(haystack, haystack_len, needle[0]);
+    if (haystack_end == haystack || needle[1] == '\0' || !haystack)
+      return (char *)haystack;
+    /* Ensure HAYSTACK length is at least as long as NEEDLE length.
+    Since a match may occur early on in a huge HAYSTACK, use strnlen
+    and read ahead a few cachelines for improved performance. */
+    /* Check whether we have a match. This improves performance since we avoid
+    the initialization overhead of the two-way algorithm. */
+    if (memcmp(haystack, needle, needle_len) == 0) return (char *)haystack;
+    /* Perform the search. Abstract memory is considered to be an array
+    of 'unsigned char' values, not an array of 'char' values. See
+    ISO C 99 section 6.2.6.1. */
+    return NULL;
+  }
+};
+class basic_mjz_Str_view : public static_str_algo {
+ public:
+  static int64_t compare_two_str(const char *rhs, size_t rhs_l, const char *lhs,
+                                 size_t lhs_l);
+  static bool are_two_str_equale(const char *rhs, size_t rhs_l, const char *lhs,
+                                 size_t lhs_l);
+
+  inline const char *begining_of_str_ptr() const { return m_buffer; }
+  inline const char *ending_of_str_ptr() const { return m_buffer + m_length; }
+
+  inline char *begining_of_str_ptr() { return m_buffer; }
+  inline char *ending_of_str_ptr() { return m_buffer + m_length; }
+
+ protected:  // the actual char array
+  char *m_buffer;
+  // the string length (not counting the '\0')
+  size_t m_length;
 
  public:
-  inline size_t length(void) const { return m_length; }
-  inline size_t max_size() const { return m_capacity; }
-  inline virtual char *&buffer_ref() = 0;
-  virtual bool is_blank() const = 0;
+  basic_mjz_Str_view(char *buffer, size_t length)
+      : m_buffer(buffer), m_length(length) {}
+  basic_mjz_Str_view(const char *buffer, size_t length)
+      : basic_mjz_Str_view(const_cast<char *>(buffer), length) {}
+  ~basic_mjz_Str_view()= default;
+  basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = delete;
+  basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = delete;
+  basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = delete;
+  basic_mjz_Str_view(basic_mjz_Str_view &&) = delete;
+  basic_mjz_Str_view(basic_mjz_Str_view &) = delete;
+  basic_mjz_Str_view(const basic_mjz_Str_view &) = delete;
+
+ public:
+  inline char *&buffer_ref() { return m_buffer; }
+  inline const char *buffer_ref() const { return m_buffer; }
+  bool is_blank() const {
+    size_t i{};
+    while (i < m_length) {
+      if (!is_blank_characteres_default(m_buffer[i])) return 0;
+      i++;
+    }
+    return 1;
+  }
   bool empty() const {
     return (!m_length || m_buffer == empty_STRING_C_STR || m_buffer == nullptr);
   }
-  inline virtual const char *buffer_ref() const { return m_buffer; }
   inline const char *c_str() const { return buffer_ref(); }
   inline const char *c_str() { return buffer_ref(); }
   inline const char *C_str() const { return buffer_ref(); }
-  inline char *C_str() { return buffer_ref(); }
+  inline char *C_str() { return m_buffer; }
+  inline size_t length(void) const { return m_length; }
+
+ public:
   if_virtual_then_virtual explicit operator const bool() const {
     return !is_blank();
   }
@@ -577,65 +656,71 @@ class basic_mjz_String {
   if_virtual_then_virtual long long toLL(void) const;
   if_virtual_then_virtual long long to_LL(int radix = 10, bool *had_error = 0,
                                           uint8_t error_level = 0) const;
-  friend bool operator==(const basic_mjz_String &a, const basic_mjz_String &b) {
+  friend bool operator==(const basic_mjz_Str_view &a,
+                         const basic_mjz_Str_view &b) {
     return a.equals(b);
   }
-  friend bool operator==(const basic_mjz_String &a, const char *b) {
+  friend bool operator==(const basic_mjz_Str_view &a, const char *b) {
     return a.equals(b);
   }
-  friend bool operator==(const char *a, const basic_mjz_String &b) {
+  friend bool operator==(const char *a, const basic_mjz_Str_view &b) {
     return b == a;
   }
-  friend bool operator<(const basic_mjz_String &a, const basic_mjz_String &b) {
+  friend bool operator<(const basic_mjz_Str_view &a,
+                        const basic_mjz_Str_view &b) {
     return a.compareTo(b) < 0;
   }
-  friend bool operator<(const basic_mjz_String &a, const char *b) {
+  friend bool operator<(const basic_mjz_Str_view &a, const char *b) {
     return a.compareTo(b) < 0;
   }
-  friend bool operator<(const char *a, const basic_mjz_String &b) {
+  friend bool operator<(const char *a, const basic_mjz_Str_view &b) {
     return b.compareTo(a) > 0;
   }
-  friend bool operator!=(const basic_mjz_String &a, const basic_mjz_String &b) {
+  friend bool operator!=(const basic_mjz_Str_view &a,
+                         const basic_mjz_Str_view &b) {
     return !(a == b);
   }
-  friend bool operator!=(const basic_mjz_String &a, const char *b) {
+  friend bool operator!=(const basic_mjz_Str_view &a, const char *b) {
     return !(a == b);
   }
-  friend bool operator!=(const char *a, const basic_mjz_String &b) {
+  friend bool operator!=(const char *a, const basic_mjz_Str_view &b) {
     return !(a == b);
   }
-  friend bool operator>(const basic_mjz_String &a, const basic_mjz_String &b) {
+  friend bool operator>(const basic_mjz_Str_view &a,
+                        const basic_mjz_Str_view &b) {
     return b < a;
   }
-  friend bool operator>(const basic_mjz_String &a, const char *b) {
+  friend bool operator>(const basic_mjz_Str_view &a, const char *b) {
     return b < a;
   }
-  friend bool operator>(const char *a, const basic_mjz_String &b) {
+  friend bool operator>(const char *a, const basic_mjz_Str_view &b) {
     return b < a;
   }
-  friend bool operator<=(const basic_mjz_String &a, const basic_mjz_String &b) {
+  friend bool operator<=(const basic_mjz_Str_view &a,
+                         const basic_mjz_Str_view &b) {
     return !(b < a);
   }
-  friend bool operator<=(const basic_mjz_String &a, const char *b) {
+  friend bool operator<=(const basic_mjz_Str_view &a, const char *b) {
     return !(b < a);
   }
-  friend bool operator<=(const char *a, const basic_mjz_String &b) {
+  friend bool operator<=(const char *a, const basic_mjz_Str_view &b) {
     return !(b < a);
   }
-  friend bool operator>=(const basic_mjz_String &a, const basic_mjz_String &b) {
+  friend bool operator>=(const basic_mjz_Str_view &a,
+                         const basic_mjz_Str_view &b) {
     return !(a < b);
   }
-  friend bool operator>=(const basic_mjz_String &a, const char *b) {
+  friend bool operator>=(const basic_mjz_Str_view &a, const char *b) {
     return !(a < b);
   }
-  friend bool operator>=(const char *a, const basic_mjz_String &b) {
+  friend bool operator>=(const char *a, const basic_mjz_Str_view &b) {
     return !(a < b);
   }
 
-  if_virtual_then_virtual int64_t compareTo(const basic_mjz_String &s) const;
+  if_virtual_then_virtual int64_t compareTo(const basic_mjz_Str_view &s) const;
   if_virtual_then_virtual int64_t compareTo(const char *cstr) const;
   if_virtual_then_virtual bool equals(const char *cstr, size_t cstr_len) const;
-  if_virtual_then_virtual bool equals(const basic_mjz_String &s) const;
+  if_virtual_then_virtual bool equals(const basic_mjz_Str_view &s) const;
   inline bool equals(const char *cstr) const {
     return equals(cstr, strlen(cstr));
   }
@@ -643,13 +728,14 @@ class basic_mjz_String {
   if_virtual_then_virtual size_t UN_ORDERED_compare(const char *s,
                                                     size_t s_len) const;
   if_virtual_then_virtual size_t
-  UN_ORDERED_compare(const basic_mjz_String &s) const;
+  UN_ORDERED_compare(const basic_mjz_Str_view &s) const;
   if_virtual_then_virtual bool equalsIgnoreCase(
-      const basic_mjz_String &s) const;
-  if_virtual_then_virtual bool startsWith(const basic_mjz_String &prefix) const;
-  if_virtual_then_virtual bool startsWith(const basic_mjz_String &prefix,
+      const basic_mjz_Str_view &s) const;
+  if_virtual_then_virtual bool startsWith(
+      const basic_mjz_Str_view &prefix) const;
+  if_virtual_then_virtual bool startsWith(const basic_mjz_Str_view &prefix,
                                           size_t offset) const;
-  if_virtual_then_virtual bool endsWith(const basic_mjz_String &suffix) const;
+  if_virtual_then_virtual bool endsWith(const basic_mjz_Str_view &suffix) const;
   // Function that return the length
   size_t size() const { return length(); }
   if_virtual_then_virtual char charAt(int64_t index) const;
@@ -725,75 +811,41 @@ class basic_mjz_String {
   const char &at(int64_t i) const { return operator[](i); }
   const char &back() const { return buffer_ref()[0]; }
   const char &front() const { return operator[]((int64_t)-1); }
+};
+
+class mjz_Str;
+class mjz_str_view;
+class basic_mjz_String : public basic_mjz_Str_view {
+ protected:
+  friend class mjz_Str;
+  // the array length minus one (for the '\0')
+  size_t m_capacity;
 
  public:
-  static void *memmove(void *dest, const void *src, size_t len) {
-    char *d = (char *)dest;
-    const char *s = (const char *)src;
-    if (d < s)
-      while (len--) *d++ = *s++;
-    else {
-      const char *lasts = s + (len - 1);
-      char *lastd = d + (len - 1);
-      while (len--) *lastd-- = *lasts--;
-    }
-    return dest;
-  }
-  static void *memcpy(void *dest, const void *src, size_t len) {
-    return memmove(dest, src, len);
-  }
-  static inline size_t strlen(const char *str) {
-    if (!(str && *str)) return 0;
-    const char *str_i = str;
-    while (1) {
-      if (!*++str_i) return str_i - str;
-    }
-  }
-  static inline const char *strchr(const char *str, size_t len_, char ch) {
-    const char *haystack_end = str + len_;
-    for (const char *i{str}; i < haystack_end; ++i) {
-      if (*(i) == ch) return i;
-    }
-    return NULL;
-  }
-  static inline const char *strrchr(const char *str, size_t len_, char ch) {
-    const char *haystack_end = str + len_;
-    const char *i{haystack_end - 1};
-    for (;;) {
-      if (*(i) == ch) return i;
-      if (i <= str) break;
-      --i;
-    }
-    return NULL;
-  }
-  static inline const char *strstr(const char *const haystack_,
-                                   const size_t haystack_len,
-                                   const char *const needle_,
-                                   const size_t needle_len) {
-    const char *haystack = haystack_;
-    const char *needle = needle_;
-    /* Length of NEEDLE. */
-    /* Known minimum length of HAYSTACK. */
-    /* Handle empty NEEDLE special case. */
-    if (needle[0] == '\0') return (char *)haystack;
-    if (haystack_len < needle_len) return NULL;
-    if (haystack_len == 0) return NULL;
-    /* Skip until we find the first matching char from NEEDLE. */
-    const char *haystack_end = haystack + haystack_len;
-    haystack = strchr(haystack, haystack_len, needle[0]);
-    if (haystack_end == haystack || needle[1] == '\0' || !haystack)
-      return (char *)haystack;
-    /* Ensure HAYSTACK length is at least as long as NEEDLE length.
-    Since a match may occur early on in a huge HAYSTACK, use strnlen
-    and read ahead a few cachelines for improved performance. */
-    /* Check whether we have a match. This improves performance since we avoid
-    the initialization overhead of the two-way algorithm. */
-    if (memcmp(haystack, needle, needle_len) == 0) return (char *)haystack;
-    /* Perform the search. Abstract memory is considered to be an array
-    of 'unsigned char' values, not an array of 'char' values. See
-    ISO C 99 section 6.2.6.1. */
-    return NULL;
-  }
+  inline basic_mjz_String(char *bfr, size_t cap, size_t len)
+      : basic_mjz_Str_view(bfr, len), m_capacity(cap){};
+  inline basic_mjz_String(const char *bfr, size_t cap, size_t len)
+      : basic_mjz_String(const_cast<char *>(bfr), cap, len){};
+  inline basic_mjz_String() : basic_mjz_String(empty_STRING_C_STR, 0, 0) {}
+  inline virtual ~basic_mjz_String(){};
+  basic_mjz_String(basic_mjz_String &&) = delete;
+  basic_mjz_String(const basic_mjz_String &) = delete;
+  basic_mjz_String(basic_mjz_String &) = delete;
+  basic_mjz_String &operator=(basic_mjz_String &&) = delete;
+  basic_mjz_String &operator=(const basic_mjz_String &) = delete;
+  basic_mjz_String &operator=(basic_mjz_String &) = delete;
+
+ public:
+  inline size_t max_size() const { return m_capacity; }
+
+ public:
+  inline const char *buffer_ref() const { return m_buffer; }
+  inline virtual char *&buffer_ref() = 0;
+  virtual bool is_blank() const = 0;
+  inline const char *c_str() const { return buffer_ref(); }
+  inline const char *c_str() { return buffer_ref(); }
+  inline const char *C_str() const { return buffer_ref(); }
+  inline char *C_str() { return buffer_ref(); }
 };
 #ifndef Arduino
 class mjz_Str : public basic_mjz_String {
@@ -940,7 +992,7 @@ class mjz_Str : public basic_mjz_String,
   size_t println(unsigned long long, int = DEC) if_override_then_override;
   size_t println(double, int = 2) if_override_then_override;
   size_t println(const mjz_Str &) if_override_then_override;
-  size_t println(void) if_override_then_override;
+  size_t println(void) if_override_then_override; //TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/ Consider inspecting the 'println' function. The return value is not always used. Total calls: 13, discarded results: 1.
   // parsing methods
   void setTimeout(
       unsigned long timeout);  // sets maximum milliseconds to wait for
@@ -1104,6 +1156,8 @@ class mjz_Str : public basic_mjz_String,
   inline mjz_Str() : mjz_Str((const char *)empty_STRING_C_STR, 0) {}
   explicit inline mjz_Str(const basic_mjz_String &otr)
       : mjz_Str(otr.c_str(), otr.length()) {}
+  explicit inline mjz_Str(const basic_mjz_Str_view &otr)
+      : mjz_Str(otr.c_str(), otr.length()) {}
 #ifndef Arduino
   if_virtual_then_virtual mjz_Str &operator=(std__string_view_if_is &x) {
     return operator=(std::string(x).c_str());
@@ -1200,7 +1254,7 @@ class mjz_Str : public basic_mjz_String,
                                        bool constructor = 0);
   bool addto_length(size_t addition_tolen, bool just_size = 0);
   inline virtual char *&buffer_ref() override;
-  inline virtual const char *buffer_ref() const override { return m_buffer; }
+  inline virtual const char *buffer_ref() const { return m_buffer; }
   if_virtual_then_virtual explicit operator char *() { return buffer_ref(); }
   if_virtual_then_virtual explicit operator const uint8_t *() const {
     return (const uint8_t *)buffer_ref();
@@ -1307,7 +1361,7 @@ class mjz_Str : public basic_mjz_String,
   // is left unchanged). if the argument is null or invalid,the
   // concatenation is considered unsuccessful.
   if_virtual_then_virtual bool concat(const mjz_Str &str);
-  if_virtual_then_virtual bool concat(const char *cstr);
+  if_virtual_then_virtual bool concat(const char *cstr); //TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/ Consider inspecting the 'concat' function. The return value is not always used. Total calls: 11, discarded results: 1.
   if_virtual_then_virtual bool concat(const char *cstr, size_t length);
   if_virtual_then_virtual bool concat(const uint8_t *cstr, size_t length) {
     return concat((const char *)cstr, length);
@@ -1448,19 +1502,22 @@ class mjz_Str : public basic_mjz_String,
     concat(str);
     return (*this);
   }
-  friend mjz_Str &&operator_plus(mjz_Str &&lhs, const basic_mjz_String &rhs);
-  friend StringSumHelper operator+(mjz_Str &&lhs, const basic_mjz_String &rhs);
-  friend StringSumHelper operator+(mjz_Str lhs, const basic_mjz_String &rhs);
-  friend StringSumHelper operator+(const basic_mjz_String &lhs,
-                                   const basic_mjz_String &rhs);
+  friend mjz_Str &&operator_plus(mjz_Str &&lhs, const basic_mjz_Str_view &rhs);
+  friend StringSumHelper operator+(mjz_Str &&lhs,
+                                   const basic_mjz_Str_view &rhs);
+  friend StringSumHelper operator+(const basic_mjz_Str_view &rhs,
+                                   const basic_mjz_Str_view &lhs);
+  friend StringSumHelper operator+(mjz_Str lhs, const basic_mjz_Str_view &rhs);
+  friend StringSumHelper operator+(const basic_mjz_Str_view &lhs,
+                                   const basic_mjz_Str_view &rhs);
   friend StringSumHelper operator+(mjz_Str &&lhs, const StringSumHelper &rhs);
   friend StringSumHelper operator+(mjz_Str lhs, const StringSumHelper &rhs);
-  friend StringSumHelper operator+(const basic_mjz_String &lhs,
+  friend StringSumHelper operator+(const basic_mjz_Str_view &lhs,
                                    const StringSumHelper &rhs);
   friend StringSumHelper operator+(const StringSumHelper &lhs,
-                                   const basic_mjz_String &rhs);
+                                   const basic_mjz_Str_view &rhs);
   friend StringSumHelper operator+(StringSumHelper &&lhs,
-                                   const basic_mjz_String &rhs);
+                                   const basic_mjz_Str_view &rhs);
   friend StringSumHelper operator+(StringSumHelper &&lhs, const char *cstr);
   friend StringSumHelper operator+(StringSumHelper &&lhs, char c);
   friend StringSumHelper operator+(StringSumHelper &&lhs, unsigned char num);
@@ -1612,10 +1669,12 @@ class mjz_Str : public basic_mjz_String,
   using iterator = iterator_template_C;
 
   const_iterator begin() const {
-    return const_iterator(begin_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
+    return const_iterator(begin_c_str(), begining_of_str_ptr(),
+                          ending_of_str_ptr());
   }
   const_iterator end() const {
-    return const_iterator(end_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
+    return const_iterator(end_c_str(), begining_of_str_ptr(),
+                          ending_of_str_ptr());
   }
   iterator begin() {
     return iterator(begin_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
@@ -1629,13 +1688,15 @@ class mjz_Str : public basic_mjz_String,
     return rev_iterator({end(), begining_of_str_ptr(), ending_of_str_ptr()});
   }
   const_rev_iterator rbegin() const {
-    return const_rev_iterator({end(), begining_of_str_ptr(), ending_of_str_ptr()});
+    return const_rev_iterator(
+        {end(), begining_of_str_ptr(), ending_of_str_ptr()});
   };
   rev_iterator rend() {
     return rev_iterator({begin(), begining_of_str_ptr(), ending_of_str_ptr()});
   }
   const_rev_iterator rend() const {
-    return const_rev_iterator({begin(), begining_of_str_ptr(), ending_of_str_ptr()});
+    return const_rev_iterator(
+        {begin(), begining_of_str_ptr(), ending_of_str_ptr()});
   };
   // erase
   mjz_Str &erase(size_t pos_ = 0, size_t len_ = -1);
@@ -1687,6 +1748,7 @@ class mjz_Str : public basic_mjz_String,
     if (m_length) buffer_ref()[--m_length] = 0;
     return *this;
   }
+  friend class basic_mjz_Str_view;
 
  protected:
   // if_virtual_then_virtual void update_event();
@@ -2004,103 +2066,87 @@ class mjz_Str : public basic_mjz_String,
   }
 };
 /*
-please dont use mjz_str_view with temporary strings 
-if the string that it references goes out of scope (delete , ~obj , },free ,...)the string_view will have undefined behavior
-use this obj like a std::string_view  not like std::string
+please dont use mjz_str_view with temporary strings
+if the string that it references goes out of scope (delete , ~obj , },free
+,...)the string_view will have undefined behavior use this obj like a
+std::string_view  not like std::string
 */
-class mjz_str_view : public basic_mjz_String {
-
+class mjz_str_view : public basic_mjz_Str_view {
  protected:
   char *&buffer_ref(void) { return m_buffer; }
-  using basic_mjz_String::buffer_ref;
-  using basic_mjz_String::C_str;
-  using basic_mjz_String::c_str;
-  mjz_str_view &copy(const mjz_str_view &s) {
+  using basic_mjz_Str_view::buffer_ref;
+  using basic_mjz_Str_view::C_str;
+  using basic_mjz_Str_view::c_str;
+  mjz_str_view &copy(const basic_mjz_Str_view &s) {
     m_buffer = const_cast<char *>(s.c_str());
     m_length = s.length();
-    m_capacity = m_length;
     return *this;
   };
- inline const char *begin_c_str()const { return c_str();
-     }
+  inline const char *begin_c_str() const { return c_str(); }
   inline const char *end_c_str() const { return c_str() + length(); }
+
  public:
-inline const char* data()const {return m_buffer;}
+  inline const char *data() const { return m_buffer; }
   mjz_str_view(const mjz_Str &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view(const char *cstr_, size_t len)
-      : basic_mjz_String(cstr_, len, len) {}
+      : basic_mjz_Str_view(cstr_, len) {}
+  mjz_str_view(const uint8_t *cstr_, size_t len)
+      : mjz_str_view((char *)(cstr_), len) {}
+  mjz_str_view(const uint8_t *cstr_) : mjz_str_view((char *)(cstr_)) {}
   mjz_str_view(const char *cstr_) : mjz_str_view(cstr_, strlen(cstr_)) {}
   mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
-  
-  bool is_blank(void) const {
-    size_t i{};
-    while (i < length()) {
-      if (!is_blank_characteres_default(m_buffer[i])) return 0;
-      i++;
-    }
-    return 1;
-  }
   mjz_str_view(mjz_str_view &&s) =
       default;  // we are string viewes and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
 
- mjz_str_view &operator=(mjz_Str &&s) { return copy(s);}
-  mjz_str_view(mjz_Str &&s) : mjz_str_view(s) {
-      }
+  mjz_str_view &operator=(mjz_Str &&s) { return copy(s); }
+  mjz_str_view(mjz_Str &&s) : mjz_str_view(s) {}
 
   mjz_str_view(const mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view(mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
   mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
-  inline virtual ~mjz_str_view(){};
+  inline ~mjz_str_view()= default;
   using iterator_template_CC = iterator_template<const char>;
   using const_iterator = iterator_template_CC;
 
   const_iterator begin() const {
-    return const_iterator(begin_c_str(), begining_of_str_ptr(),ending_of_str_ptr());
+    return const_iterator(begin_c_str(), begining_of_str_ptr(),
+                          ending_of_str_ptr());
   }
   const_iterator end() const {
-    return const_iterator(end_c_str(), begining_of_str_ptr(), ending_of_str_ptr());
+    return const_iterator(end_c_str(), begining_of_str_ptr(),
+                          ending_of_str_ptr());
   }
   typedef std::reverse_iterator<const_iterator> const_rev_iterator;
   const_rev_iterator rbegin() const { return const_rev_iterator(end()); };
   const_rev_iterator rend() const { return const_rev_iterator(begin()); };
+
  public:
   inline void remove_prefix(size_t n) {
     m_buffer += n;
     remove_suffix(n);
   }
-  inline void remove_suffix(size_t n) {
-    m_length -= n;
-    m_capacity -= n;
-  }
-  friend void swap(mjz_str_view &lhs, mjz_str_view &rhs) {
-    lhs.swap( rhs);
-  }
+  inline void remove_suffix(size_t n) { m_length -= n; }
+  friend void swap(mjz_str_view &lhs, mjz_str_view &rhs) { lhs.swap(rhs); }
 
-   void swap(mjz_str_view &rhs) { 
-       std::swap(m_length, rhs. m_length);
-    std::swap(m_capacity, rhs.m_capacity);
+  void swap(mjz_str_view &rhs) {
+    std::swap(m_length, rhs.m_length);
     std::swap(m_buffer, rhs.m_buffer);
   }
-    size_t copy(char* dest, size_t count, size_t pos = 0) const {
+  size_t copy(char *dest, size_t count, size_t pos = 0) const {
     if (length() <= pos) return 0;
-    size_t  amuont= min( count, length() - pos);
-    memmove(dest, m_buffer + pos, amuont);
-    return amuont;
-       }
-    size_t copy(char *dest, size_t count, int64_t pos ) const {
+    size_t amount = min(count, length() - pos);
+    memmove(dest, m_buffer + pos, amount);
+    return amount;
+  }
+  size_t copy(char *dest, size_t count, int64_t pos) const {
     return copy(dest, count, mjz_str_view::signed_index_to_unsigned(pos));
-   }
- 
-
-
-
-
-
-
-
-
+  }
+  friend StringSumHelper operator+(const mjz_str_view &rhs,
+                                   const mjz_str_view &lhs);
+  friend StringSumHelper operator+(const basic_mjz_Str_view &rhs,
+                                   const basic_mjz_Str_view &lhs);
   friend StringSumHelper operator+(const StringSumHelper &lhs,
                                    const mjz_str_view &rhs);
   friend StringSumHelper operator+(StringSumHelper &&lhs,
@@ -2135,6 +2181,38 @@ inline const char* data()const {return m_buffer;}
     return COUT;
   }
 };
+
+class mjz_virtual_string_view : public mjz_str_view {
+  mjz_virtual_string_view(const mjz_Str &s)
+      : mjz_virtual_string_view(s.c_str(), s.length()) {}
+  mjz_virtual_string_view(const char *cstr_, size_t len)
+      : mjz_str_view(cstr_, len) {}
+  mjz_virtual_string_view(const char *cstr_)
+      : mjz_virtual_string_view(cstr_, strlen(cstr_)) {}
+  mjz_virtual_string_view() : mjz_virtual_string_view(empty_STRING_C_STR, 0) {}
+  mjz_virtual_string_view(mjz_virtual_string_view &&s) =
+      default;  // we are string viewes and not strings
+  mjz_virtual_string_view &operator=(mjz_virtual_string_view &&) = default;
+
+  mjz_virtual_string_view &operator=(mjz_Str &&s) {
+    copy(s);
+    return *this;
+  }
+  mjz_virtual_string_view(mjz_Str &&s) : mjz_str_view(s) {}
+  mjz_virtual_string_view(const mjz_virtual_string_view &s)
+      : mjz_virtual_string_view(s.c_str(), s.length()) {}
+  mjz_virtual_string_view(mjz_virtual_string_view &s)
+      : mjz_virtual_string_view(s.c_str(), s.length()) {}
+  mjz_virtual_string_view &operator=(const mjz_virtual_string_view &s) {
+    copy(s);
+    return *this;
+  };
+  mjz_virtual_string_view &operator=(mjz_virtual_string_view &s) {
+    copy(s);
+    return *this;
+  }
+  virtual inline ~mjz_virtual_string_view(){};
+};
 class StringSumHelper : public mjz_Str {
  public:
   StringSumHelper(const basic_mjz_String &s)
@@ -2144,8 +2222,9 @@ class StringSumHelper : public mjz_Str {
           return *this_;
         })) {}
   StringSumHelper(basic_mjz_String &&s) : StringSumHelper(s) {}
+  StringSumHelper(const basic_mjz_Str_view &otr) : mjz_Str(otr) {}
   StringSumHelper(const mjz_str_view &s)
-      : StringSumHelper((const basic_mjz_String &)s) {}
+      : mjz_Str(s) {}
   StringSumHelper(mjz_str_view &&s) : StringSumHelper(s) {}
   StringSumHelper(const mjz_Str &s) : mjz_Str(s) {}
   StringSumHelper(const char *p) : mjz_Str(p) {}
@@ -2211,7 +2290,6 @@ inline mjz_str_view operator"" _m_strv(const char *p) {
   return operator""_m_strv(p, mjz_Str::strlen(p));
 }
 
-
 namespace short_string_convestion_operators {
 inline mjz_str_view operator""_msv(const char *initilizer, size_t length_) {
   return operator""_m_strv(initilizer, length_);
@@ -2222,9 +2300,7 @@ inline mjz_str_view operator"" _msv(const char *p) {
 inline mjz_str_view operator""_sv(const char *initilizer, size_t length_) {
   return operator""_m_strv(initilizer, length_);
 }
-inline mjz_str_view operator""_sv(const char *p) {
-  return operator""_msv(p);
-}
+inline mjz_str_view operator""_sv(const char *p) { return operator""_msv(p); }
 inline mjz_Str operator"" _s(const char *p) { return mjz_Str(p); }
 inline mjz_Str operator"" _s(char c) { return mjz_Str(c); }
 inline mjz_Str operator"" _s(unsigned long long num) { return mjz_Str(num); }
@@ -2257,16 +2333,24 @@ inline mjz_str_view operator""_mv(const char *initilizer, size_t length_) {
 inline mjz_str_view operator"" _mv(const char *p) {
   return operator""_v(p, mjz_Str::strlen(p));
 }
-inline mjz_str_view operator"" _v(const char *p) {
-  return operator""_mv(p);
-}
+inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 
-    }
+}  // namespace short_string_convestion_operators
+namespace short_string_names {
+typedef mjz_ard::mjz_Str Str;
+typedef mjz_ard::mjz_Str str;
+typedef mjz_ard::mjz_Str s;
+typedef mjz_ard::mjz_Str S;
+typedef std::string sstr;
+typedef mjz_ard::StringSumHelper StrSH;
+typedef mjz_ard::mjz_str_view sv;
+typedef mjz_ard::mjz_str_view strv;
+typedef mjz_ard::mjz_str_view mstrview;
+typedef mjz_ard::mjz_str_view mstrv;
+}  // namespace short_string_names
 
 }  // namespace mjz_ard
-// using mjz_ard::__FlashStringHelper;
-// using mjz_ard::mjz_Str;
-// using namespace opt;//sorry
+namespace have_mjz_ard_removed {
 typedef mjz_ard::mjz_Str mjz_Str;
 typedef mjz_ard::mjz_Str mjz_str;
 typedef mjz_ard::malloc_wrapper malloc_wrpr;
@@ -2277,6 +2361,7 @@ typedef mjz_ard::StringSumHelper mjz_StringSumHelper;
 typedef mjz_ard::mjz_str_view mjz_str_view;
 typedef mjz_ard::mjz_str_view mstrview;
 typedef mjz_ard::mjz_str_view mstrv;
+    }
 #undef NO_IGNORE_CHAR
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus

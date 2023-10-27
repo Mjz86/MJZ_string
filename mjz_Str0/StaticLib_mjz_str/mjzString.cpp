@@ -16,6 +16,7 @@ long long map(long long x, long long in_min, long long in_max,
 }
 uint16_t makeWord(uint16_t w) { return w; }
 uint16_t makeWord(uint8_t h, uint8_t l) { return (h << 8) | l; }
+
 }  // namespace mjz_ard
 #endif
 /*
@@ -641,7 +642,7 @@ void mjz_Str::free_pv(void *&ptr, bool constructor) {
   }
   ptr = 0;
 }
-void mjz_Str::free_pv(void *const &ptr, bool constructor) {
+void mjz_Str::free_pv(void *const &ptr, bool constructor) { //TODO: V835 https://pvs-studio.com/en/docs/warnings/V835/ Passing cheap-to-copy argument by reference may lead to decreased performance. To avoid this, replace the first argument 'void*const & ptr' with 'void*const  ptr'. //TODO: V659 https://pvs-studio.com/en/docs/warnings/V659/ Declarations of functions with 'mjz_Str::free_pv' name differ in the 'const' keyword only, but the bodies of these functions have different composition. This is suspicious and can possibly be an error. Check lines: 631, 645.
   void *ptr_ = ptr;
   free_pv(ptr_, constructor);
 }
@@ -859,11 +860,21 @@ bool mjz_Str::concat(const __FlashStringHelper *str) {
 /*********************************************/
 /* Concatenate */
 /*********************************************/
-mjz_Str &&operator_plus(mjz_Str &&lhs, const basic_mjz_String &rhs) {
+
+mjz_Str &&operator_plus(mjz_Str &&lhs, const basic_mjz_Str_view &rhs) {
   if (!lhs.concat(rhs.c_str(), rhs.length())) {
     lhs.invalidate();
   }
   return std::move(lhs);
+}
+
+StringSumHelper operator+(const basic_mjz_Str_view &rhs,
+                          const basic_mjz_Str_view &lhs) {
+  return operator_plus(mjz_Str(rhs), lhs);
+}
+ StringSumHelper operator+(const mjz_str_view &rhs,
+                                 const mjz_str_view &lhs) {
+  return operator_plus(mjz_Str(rhs), lhs);
 }
 StringSumHelper operator+(mjz_Str &&lhs, const basic_mjz_String &rhs) {
   return operator_plus((mjz_Str &&) std::move(lhs),
@@ -879,37 +890,31 @@ StringSumHelper operator+(const basic_mjz_String &lhs,
 }
 StringSumHelper operator+(mjz_Str &&lhs, const StringSumHelper &rhs) {
   return operator_plus((mjz_Str &&) std::move(lhs),
-                       (const basic_mjz_String &)rhs);
+                       (const basic_mjz_Str_view &)rhs);
 }
 StringSumHelper operator+(mjz_Str lhs, const StringSumHelper &rhs) {
   return operator_plus((mjz_Str &&) std::move(lhs),
-                       (const basic_mjz_String &)rhs);
+                       (const basic_mjz_Str_view &)rhs);
 }
-StringSumHelper operator+(const basic_mjz_String &lhs,
+StringSumHelper operator+(const basic_mjz_Str_view &lhs,
                           const StringSumHelper &rhs) {
-  return operator_plus(mjz_Str(lhs), (const basic_mjz_String &)rhs);
+  return operator_plus(mjz_Str(lhs), (const basic_mjz_Str_view &)rhs);
 }
 StringSumHelper operator+(const StringSumHelper &lhs,
-                          const basic_mjz_String &rhs) {
-  return operator_plus(mjz_Str(lhs), (const basic_mjz_String &)rhs);
+                          const basic_mjz_Str_view &rhs) {
+  return operator_plus(mjz_Str(lhs), (const basic_mjz_Str_view &)rhs);
 }
-StringSumHelper operator+(StringSumHelper &&lhs, const basic_mjz_String &rhs) {
+StringSumHelper operator+(StringSumHelper &&lhs,
+                          const basic_mjz_Str_view &rhs) {
   return operator_plus((mjz_Str &&) std::move(lhs),
-                       (const basic_mjz_String &)rhs);
-}
-StringSumHelper operator+(const StringSumHelper &lhs, const mjz_str_view &rhs) {
-  return operator_plus(mjz_Str(lhs), (const basic_mjz_String &)rhs);
-}
-StringSumHelper operator+(StringSumHelper &&lhs, const mjz_str_view &rhs) {
-  return operator_plus((mjz_Str &&) std::move(lhs),
-                       (const basic_mjz_String &)rhs);
+                       (const basic_mjz_Str_view &)rhs);
 }
 StringSumHelper operator+(const mjz_str_view &lhs,
-                          const basic_mjz_String &rhs) {
-  return operator_plus(mjz_Str(lhs), (const basic_mjz_String &)rhs);
+                          const basic_mjz_Str_view &rhs) {
+  return operator_plus(mjz_Str(lhs), (const basic_mjz_Str_view &)rhs);
 }
 StringSumHelper operator+(const mjz_str_view &lhs, const StringSumHelper &rhs) {
-  return operator_plus(mjz_Str(lhs), (const basic_mjz_String &)rhs);
+  return operator_plus(mjz_Str(lhs), (const basic_mjz_Str_view &)rhs);
 }
 StringSumHelper operator+(StringSumHelper &&lhs, const char *cstr) {
   StringSumHelper &a = const_cast<StringSumHelper &>(lhs);
@@ -999,57 +1004,54 @@ StringSumHelper operator+(StringSumHelper &&lhs,
 /*********************************************/
 /* Comparison */
 /*********************************************/
-int64_t basic_mjz_String::compareTo(const basic_mjz_String &s) const {
-  if (!m_buffer || !s.m_buffer) {
-    if (s.m_buffer && s.m_length > 0) {
-      //// (this->*update_event_F_p)(); //departed
-      return static_cast<int64_t>(0) - *(unsigned char *)s.m_buffer;
+int64_t basic_mjz_Str_view::compare_two_str(const char *rhs, size_t rhs_l,
+                                                 const char *lhs,
+                                                 size_t lhs_l) {
+  if (!rhs || !lhs) {
+    if (lhs && lhs_l > 0) {
+      return static_cast<int64_t>(0) - *(unsigned char *)lhs;
     }
-    if (m_buffer && m_length > 0) {
-      //// (this->*update_event_F_p)(); //departed
-      return *(unsigned char *)m_buffer;
+    if (rhs && rhs_l > 0) {
+     
+      return *(unsigned char *)rhs;
     }
-    //// (this->*update_event_F_p)(); //departed
+   
     return 0;
   }
-  // if( len != s.len)return -1;
-  //// (this->*update_event_F_p)(); //departed
-  return MJZ_STRnCMP(m_buffer, s.m_buffer, m_length);
+  return MJZ_STRnCMP(rhs, lhs, rhs_l);
 }
-int64_t basic_mjz_String::compareTo(const char *cstr) const {
-  if (!m_buffer || !cstr) {
-    if (cstr && *cstr) {
-      // // (this->*update_event_F_p)(); //departed
-      return static_cast<int64_t>(0) - *(unsigned char *)cstr;
-    }
-    if (m_buffer && m_length > 0) {
-      // // (this->*update_event_F_p)(); //departed
-      return *(unsigned char *)m_buffer;
-    }
-    // // (this->*update_event_F_p)(); //departed
-    return 0;
-  }
-  // // (this->*update_event_F_p)(); //departed
-  return MJZ_STRCMP(m_buffer, cstr);
+int64_t basic_mjz_Str_view::compareTo(
+    const basic_mjz_Str_view &s) const {
+  
+  return compare_two_str(m_buffer,m_length, s.m_buffer, m_length);
 }
-bool basic_mjz_String::equals(const basic_mjz_String &s2) const {
+int64_t basic_mjz_Str_view::compareTo(const char *cstr) const {
+  return compare_two_str(m_buffer, m_length, cstr, strlen(cstr));
+}
+bool basic_mjz_Str_view::equals(const basic_mjz_Str_view &s2) const {
   // // (this->*update_event_F_p)(); //departed
   return (m_length == s2.m_length && compareTo(s2) == 0);
 }
-bool basic_mjz_String::equals(const char *cstr, size_t cstr_len) const {
-  if (m_length == 0) {
+bool basic_mjz_Str_view::are_two_str_equale(const char* rhs, size_t rhs_l,
+                                                 const char* lhs,
+                                                 size_t lhs_l) {
+  if (rhs_l == 0) {
     // // (this->*update_event_F_p)(); //departed
-    return (cstr == NULL || *cstr == 0);
+    return (lhs == NULL || *lhs == 0);
   }
-  if (cstr == NULL) {
+  if (lhs == NULL) {
     // // (this->*update_event_F_p)(); //departed
-    return m_buffer[0] == 0;
+    return rhs[0] == 0;
   }
-  if (cstr_len != length()) return 0;
+  if (lhs_l != rhs_l) return 0;
   // // (this->*update_event_F_p)(); //departed
-  return MJZ_STRnCMP(m_buffer, cstr, cstr_len) == 0;
-}
-bool basic_mjz_String::equalsIgnoreCase(const basic_mjz_String &s2) const {
+  return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
+    }
+bool basic_mjz_Str_view::equals(const char *cstr, size_t cstr_len) const {
+ return are_two_str_equale(m_buffer, m_length, cstr,  cstr_len);
+    }
+bool basic_mjz_Str_view::equalsIgnoreCase(
+        const basic_mjz_Str_view &s2) const {
   if (this == &s2) {
     // // (this->*update_event_F_p)(); //departed
     return true;
@@ -1074,7 +1076,8 @@ bool basic_mjz_String::equalsIgnoreCase(const basic_mjz_String &s2) const {
   // // (this->*update_event_F_p)(); //departed
   return true;
 }
-bool basic_mjz_String::startsWith(const basic_mjz_String &s2) const {
+bool basic_mjz_Str_view::startsWith(
+    const basic_mjz_Str_view &s2) const {
   if (m_length < s2.m_length) {
     // // (this->*update_event_F_p)(); //departed
     return false;
@@ -1082,7 +1085,7 @@ bool basic_mjz_String::startsWith(const basic_mjz_String &s2) const {
   // // (this->*update_event_F_p)(); //departed
   return startsWith(s2, 0);
 }
-bool basic_mjz_String::startsWith(const basic_mjz_String &s2,
+bool basic_mjz_Str_view::startsWith(const basic_mjz_Str_view &s2,
                                   size_t offset) const {
   if (offset > m_length - s2.m_length || !m_buffer || !s2.m_buffer) {
     // // (this->*update_event_F_p)(); //departed
@@ -1091,7 +1094,8 @@ bool basic_mjz_String::startsWith(const basic_mjz_String &s2,
   // // (this->*update_event_F_p)(); //departed
   return MJZ_STRnCMP(&m_buffer[offset], s2.m_buffer, s2.m_length) == 0;
 }
-bool basic_mjz_String::endsWith(const basic_mjz_String &s2) const {
+bool basic_mjz_Str_view::endsWith(
+    const basic_mjz_Str_view &s2) const {
   if (m_length < s2.m_length || !m_buffer || !s2.m_buffer) {
     // // (this->*update_event_F_p)(); //departed
     return false;
@@ -1103,7 +1107,7 @@ bool basic_mjz_String::endsWith(const basic_mjz_String &s2) const {
 /*********************************************/
 /* Character Access */
 /*********************************************/
-char basic_mjz_String::charAt(size_t loc) const {
+char basic_mjz_Str_view::charAt(size_t loc) const {
   // // (this->*update_event_F_p)(); //departed
   return operator[](loc);
 }
@@ -1113,7 +1117,7 @@ void mjz_Str::setCharAt(size_t loc, char c) {
   }
   // (this->*update_event_F_p)(); //departed
 }
-char basic_mjz_String::charAt(int64_t loc) const {
+char basic_mjz_Str_view::charAt(int64_t loc) const {
   // // (this->*update_event_F_p)(); //departed
   loc = signed_index_to_unsigned(loc);
   return operator[](loc);
@@ -1135,7 +1139,7 @@ char &mjz_Str::operator[](size_t index) {
   // (this->*update_event_F_p)(); //departed
   return m_buffer[index];
 }
-char basic_mjz_String::operator[](size_t index) const {
+char basic_mjz_Str_view::operator[](size_t index) const {
   if (index >= m_length || !m_buffer) {
     // // (this->*update_event_F_p)(); //departed
     return 0;
@@ -1156,7 +1160,7 @@ char &mjz_Str::operator[](int64_t index) {
   // (this->*update_event_F_p)(); //departed
   return m_buffer[index];
 }
-char basic_mjz_String::operator[](int64_t index) const {
+char basic_mjz_Str_view::operator[](int64_t index) const {
   if (index < 0) {
     index = signed_index_to_unsigned(index);
   }
@@ -1167,7 +1171,7 @@ char basic_mjz_String::operator[](int64_t index) const {
   // // (this->*update_event_F_p)(); //departed
   return m_buffer[index];
 }
-void basic_mjz_String::getBytes(unsigned char *buf, size_t bufsize,
+void basic_mjz_Str_view::getBytes(unsigned char *buf, size_t bufsize,
                                 size_t index) const {
   if (!bufsize || !buf) {
     // // (this->*update_event_F_p)(); //departed
@@ -1189,8 +1193,8 @@ void basic_mjz_String::getBytes(unsigned char *buf, size_t bufsize,
 /*********************************************/
 /* Search */
 /*********************************************/
-int64_t basic_mjz_String::indexOf(char c) const { return indexOf(c, 0); }
-int64_t basic_mjz_String::indexOf(char ch, size_t fromIndex) const {
+int64_t basic_mjz_Str_view::indexOf(char c) const { return indexOf(c, 0); }
+int64_t basic_mjz_Str_view::indexOf(char ch, size_t fromIndex) const {
   if (fromIndex >= m_length) {
     return -1;
   }
@@ -1200,13 +1204,15 @@ int64_t basic_mjz_String::indexOf(char ch, size_t fromIndex) const {
   }
   return (int64_t)(temp - m_buffer);
 }
-int64_t basic_mjz_String::indexOf(const mjz_Str &s2) const {
+int64_t basic_mjz_Str_view::indexOf(const mjz_Str &s2) const {
   return indexOf(s2, 0);
 }
-int64_t basic_mjz_String::indexOf(const mjz_Str &s2, size_t fromIndex) const {
+int64_t basic_mjz_Str_view::indexOf(const mjz_Str &s2,
+                                         size_t fromIndex) const {
   return indexOf_cstr(s2.c_str(), s2.length(), fromIndex);
 }
-int64_t basic_mjz_String::indexOf_cstr(const char *c_str_, size_t len_str,
+int64_t basic_mjz_Str_view::indexOf_cstr(const char *c_str_,
+                                              size_t len_str,
                                        size_t fromIndex) const {
   if (fromIndex >= m_length) {
     return -1;
@@ -1218,10 +1224,10 @@ int64_t basic_mjz_String::indexOf_cstr(const char *c_str_, size_t len_str,
   }
   return (int64_t)(found - m_buffer);
 }
-int64_t basic_mjz_String::lastIndexOf(char theChar) const {
+int64_t basic_mjz_Str_view::lastIndexOf(char theChar) const {
   return lastIndexOf(theChar, m_length - 1);
 }
-int64_t basic_mjz_String::lastIndexOf(char ch, size_t fromIndex) const {
+int64_t basic_mjz_Str_view::lastIndexOf(char ch, size_t fromIndex) const {
   if (fromIndex >= m_length) {
     return -1;
   }
@@ -1234,10 +1240,11 @@ int64_t basic_mjz_String::lastIndexOf(char ch, size_t fromIndex) const {
   }
   return (int64_t)(temp - m_buffer);
 }
-int64_t basic_mjz_String::lastIndexOf(const mjz_Str &s2) const {
+int64_t basic_mjz_Str_view::lastIndexOf(const mjz_Str &s2) const {
   return lastIndexOf(s2, m_length - s2.m_length);
 }
-int64_t basic_mjz_String::lastIndexOf_cstr(const char *cstr__, size_t length__,
+int64_t basic_mjz_Str_view::lastIndexOf_cstr(const char *cstr__,
+                                                  size_t length__,
                                            size_t fromIndex) const {
   if (length__ == 0 || m_length == 0 || length__ > m_length) {
     return -1;
@@ -1257,48 +1264,49 @@ int64_t basic_mjz_String::lastIndexOf_cstr(const char *cstr__, size_t length__,
   }
   return found;
 }
-int64_t basic_mjz_String::lastIndexOf(const mjz_Str &s2,
+int64_t basic_mjz_Str_view::lastIndexOf(const mjz_Str &s2,
                                       size_t fromIndex) const {
   return lastIndexOf_cstr(s2.c_str(), s2.length(), fromIndex);
 }
-mjz_Str basic_mjz_String::substring_beg_n(size_t beginIndex,
+mjz_Str basic_mjz_Str_view::substring_beg_n(size_t beginIndex,
                                           size_t number) const {
   size_t endIndex = beginIndex + number;
   if (!number || length() < endIndex) return mjz_Str();
   return substring(beginIndex, beginIndex + number);
 }
-mjz_Str basic_mjz_String::substring(size_t beginIndex) const {
+mjz_Str basic_mjz_Str_view::substring(size_t beginIndex) const {
   return substring(beginIndex, m_length);
 }
-mjz_Str basic_mjz_String::substring_beg_n(int beginIndex, int number) const {
+mjz_Str basic_mjz_Str_view::substring_beg_n(int beginIndex,
+                                                 int number) const {
   return substring_beg_n((int64_t)beginIndex, (int64_t)number);
 }
-mjz_Str basic_mjz_String::substring(int beginIndex, int endIndex) const {
+mjz_Str basic_mjz_Str_view::substring(int beginIndex, int endIndex) const {
   return substring((int64_t)beginIndex, (int64_t)endIndex);
 };
-mjz_Str basic_mjz_String::substring(int beginIndex) const {
+mjz_Str basic_mjz_Str_view::substring(int beginIndex) const {
   return substring((int64_t)beginIndex);
 }
-mjz_Str basic_mjz_String::substring_beg_n(unsigned int beginIndex,
+mjz_Str basic_mjz_Str_view::substring_beg_n(unsigned int beginIndex,
                                           unsigned int number) const {
   return substring_beg_n((size_t)beginIndex, (size_t)number);
 }
-mjz_Str basic_mjz_String::substring_beg_n(int64_t beginIndex,
+mjz_Str basic_mjz_Str_view::substring_beg_n(int64_t beginIndex,
                                           size_t number) const {
   beginIndex = signed_index_to_unsigned(beginIndex);
   return substring_beg_n((size_t)beginIndex, number);
 }
-mjz_Str basic_mjz_String::substring(int64_t beginIndex,
+mjz_Str basic_mjz_Str_view::substring(int64_t beginIndex,
                                     int64_t endIndex) const {
   beginIndex = signed_index_to_unsigned(beginIndex);
   endIndex = signed_index_to_unsigned(endIndex);
   return substring((size_t)beginIndex, (size_t)endIndex);
 }
-mjz_Str basic_mjz_String::substring(int64_t beginIndex) const {
+mjz_Str basic_mjz_Str_view::substring(int64_t beginIndex) const {
   beginIndex = signed_index_to_unsigned(beginIndex);
   return substring((size_t)beginIndex, length());
 }
-mjz_Str basic_mjz_String::substring(size_t left, size_t right) const {
+mjz_Str basic_mjz_Str_view::substring(size_t left, size_t right) const {
   const char *c_str_out{};
   size_t len_out{};
   if (!substring_give_ptr(left, right, c_str_out, len_out)) return mjz_Str();
@@ -1308,81 +1316,95 @@ mjz_Str basic_mjz_String::substring(size_t left, size_t right) const {
   return out;
 }
 
-mjz_str_view basic_mjz_String::substr_view(size_t beginIndex,
+mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex,
                                            size_t endIndex) const {
   const char *out_ptr{};
   size_t out_len{};
   substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
   return out_len ? mjz_str_view(out_ptr, out_len) : mjz_str_view();
 }
-mjz_str_view basic_mjz_String::substr_view_beg_n(size_t beginIndex,
+mjz_str_view basic_mjz_Str_view::substr_view_beg_n(size_t beginIndex,
                                                  size_t number) const {
-  return basic_mjz_String::substr_view(beginIndex, number + beginIndex);
+  return basic_mjz_Str_view::substr_view(beginIndex, number + beginIndex);
     }
 
- mjz_str_view basic_mjz_String::substr_view(size_t beginIndex) {
-  return basic_mjz_String::substr_view(beginIndex, length() - beginIndex);
+ mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) {
+  return basic_mjz_Str_view::substr_view(beginIndex,
+                                              length() - beginIndex);
      }
 
- mjz_str_view basic_mjz_String::substr_view_beg_n(size_t beginIndex,size_t number) {
-  return basic_mjz_String::substr_view(beginIndex, number + beginIndex);
+ mjz_str_view basic_mjz_Str_view::substr_view_beg_n(size_t beginIndex,
+                                                             size_t number) {
+  return basic_mjz_Str_view::substr_view(
+      beginIndex, number + beginIndex);
      }
-mjz_str_view basic_mjz_String::substr_view(size_t beginIndex) const {
-  return basic_mjz_String::substr_view(beginIndex, length() - beginIndex);
+ mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) const {
+  return basic_mjz_Str_view::substr_view(beginIndex,
+                                              length() - beginIndex);
     }
 
-mjz_str_view basic_mjz_String::substr_view(int64_t beginIndex,
+mjz_str_view basic_mjz_Str_view::substr_view(int64_t beginIndex,
                                            int64_t endIndex) const {
-  return basic_mjz_String::substr_view(signed_index_to_unsigned(beginIndex),
+  return basic_mjz_Str_view::substr_view(
+      signed_index_to_unsigned(beginIndex),
                                        signed_index_to_unsigned(endIndex));
     }
-mjz_str_view basic_mjz_String::substr_view(int64_t beginIndex) const {
-  return basic_mjz_String::substr_view(signed_index_to_unsigned(beginIndex));
+mjz_str_view basic_mjz_Str_view::substr_view(int64_t beginIndex) const {
+  return basic_mjz_Str_view::substr_view(
+      signed_index_to_unsigned(beginIndex));
     }
-mjz_str_view basic_mjz_String::substr_view_beg_n(int64_t beginIndex,
+mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int64_t beginIndex,
                                                  size_t number) {
-  return basic_mjz_String::substr_view(signed_index_to_unsigned(beginIndex),
+  return basic_mjz_Str_view::substr_view(
+      signed_index_to_unsigned(beginIndex),
                                        signed_index_to_unsigned(beginIndex)+number);
     }
-mjz_str_view basic_mjz_String::substr_view_beg_n(int64_t beginIndex,size_t number) const {
-    return basic_mjz_String::substr_view(
+mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int64_t beginIndex,
+                                                        size_t number) const {
+  return basic_mjz_Str_view::substr_view(
         signed_index_to_unsigned(beginIndex),
         signed_index_to_unsigned(beginIndex) + number);}
 
 
-mjz_str_view basic_mjz_String::substr_view_beg_n(unsigned int beginIndex,
+mjz_str_view basic_mjz_Str_view::substr_view_beg_n(
+    unsigned int beginIndex,
                                                  unsigned int number) const {
-    return basic_mjz_String::substr_view_beg_n((size_t)beginIndex,
+  return basic_mjz_Str_view::substr_view_beg_n((size_t)beginIndex,
                                                (size_t)number);
     }
-mjz_str_view basic_mjz_String::substr_view(int beginIndex) const {
-    return basic_mjz_String::substr_view((int64_t)beginIndex);
+mjz_str_view basic_mjz_Str_view::substr_view(int beginIndex) const {
+  return basic_mjz_Str_view::substr_view((int64_t)beginIndex);
     }
-mjz_str_view basic_mjz_String::substr_view(int beginIndex, int endIndex) const {
-  return  basic_mjz_String::substr_view((int64_t)beginIndex, (int64_t)endIndex);
+mjz_str_view basic_mjz_Str_view::substr_view(int beginIndex,
+                                                  int endIndex) const {
+  return basic_mjz_Str_view::substr_view((int64_t)beginIndex,
+                                              (int64_t)endIndex);
     }
-mjz_str_view basic_mjz_String::substr_view_beg_n(int beginIndex,
+mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int beginIndex,
                                                  int number) const {
-  return basic_mjz_String::substr_view_beg_n((int64_t)beginIndex,
+  return basic_mjz_Str_view::substr_view_beg_n((int64_t)beginIndex,
                                              (size_t)number);
     }
 
 
 
-size_t basic_mjz_String::signed_index_to_unsigned(int64_t input) const {
+size_t basic_mjz_Str_view::signed_index_to_unsigned(
+        int64_t input) const {
   if (0 <= input) {
     return input;
   }
   return input + length();
 }
-const char *basic_mjz_String::substring_give_ptr(int64_t left, int64_t right,
+const char *basic_mjz_Str_view::substring_give_ptr(int64_t left,
+                                                        int64_t right,
                                                  const char *&c_str_out,
                                                  size_t &len_out) const {
   return substring_give_ptrULL(signed_index_to_unsigned(left),
                                signed_index_to_unsigned(right), c_str_out,
                                len_out);
 }
-const char *basic_mjz_String::substring_give_ptrULL(size_t left, size_t right,
+const char *basic_mjz_Str_view::substring_give_ptrULL(
+    size_t left, size_t right,
                                                     const char *&c_str_out,
                                                     size_t &len_out) const {
   if (left > right) {
@@ -1529,7 +1551,7 @@ void mjz_Str::trim(void) {
 /*********************************************/
 /* Parsing / Conversion */
 /*********************************************/
-long basic_mjz_String::toInt(void) const {
+long basic_mjz_Str_view::toInt(void) const {
   if (m_buffer) {
     try {
       // // (this->*update_event_F_p)(); //departed
@@ -1542,13 +1564,13 @@ long basic_mjz_String::toInt(void) const {
   // // (this->*update_event_F_p)(); //departed
   return 0;
 }
-long long basic_mjz_String::toLL(void) const {
+long long basic_mjz_Str_view::toLL(void) const {
   if (m_buffer) {
     return to_LL();
   }
   return 0;
 }
-long long basic_mjz_String::to_LL(int radix, bool *had_error,
+long long basic_mjz_Str_view::to_LL(int radix, bool *had_error,
                                   uint8_t error_level) const {
   if (m_buffer) {
     return C_STR_to_LL(c_str(), (uint8_t)min(length(), (uint64_t)255), radix,
@@ -1556,11 +1578,11 @@ long long basic_mjz_String::to_LL(int radix, bool *had_error,
   }
   return 0;
 }
-float basic_mjz_String::toFloat(void) const {
+float basic_mjz_Str_view::toFloat(void) const {
   // // (this->*update_event_F_p)(); //departed
   return float(toDouble());
 }
-double basic_mjz_String::toDouble(void) const {
+double basic_mjz_Str_view::toDouble(void) const {
   if (m_buffer) {
     try {
       // // (this->*update_event_F_p)(); //departed
@@ -2171,10 +2193,12 @@ mjz_Str mjz_Str::operator--(int) {
   --(*this);
   return tmp;
 }
-size_t basic_mjz_String::UN_ORDERED_compare(const basic_mjz_String &s) const {
+size_t basic_mjz_Str_view::UN_ORDERED_compare(
+    const basic_mjz_Str_view &s) const {
   return UN_ORDERED_compare(s.m_buffer, s.m_length);
 }
-size_t basic_mjz_String::UN_ORDERED_compare(const char *s, size_t s_len) const {
+size_t basic_mjz_Str_view::UN_ORDERED_compare(const char *s,
+                                                   size_t s_len) const {
   const unsigned char *ucs_ = (const unsigned char *)s;
   const unsigned char *ucbuffer_ = (const unsigned char *)this->m_buffer;
   size_t number_of_not_right{};
