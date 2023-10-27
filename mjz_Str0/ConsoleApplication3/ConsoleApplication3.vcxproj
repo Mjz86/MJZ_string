@@ -748,7 +748,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="example_that_is_not_used.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\StaticLib_mjz_str\StaticLib2.vcxproj">

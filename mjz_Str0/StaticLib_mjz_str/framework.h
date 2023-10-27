@@ -1,5 +1,9 @@
 #pragma once
 
+#include <chrono>
+#include <cstdint>
+#include <iostream>
+
 #include "mjzString_helper.hpp"
 
 class speed_Timer {
@@ -8,14 +12,14 @@ class speed_Timer {
 
   void Reset() { m_Start = std::chrono::high_resolution_clock::now(); }
 
- long double Elapsednano() {
+  long double Elapsednano() {
     return (long double)std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::high_resolution_clock::now() - m_Start)
         .count();
   }
- long double Elapsed() { return Elapsednano() * 0.001f * 0.001f * 0.001f; }
+  long double Elapsed() { return Elapsednano() * 0.001f * 0.001f * 0.001f; }
 
- long double ElapsedMillis() { return Elapsednano() / 1000.0f / 1000.0f; }
+  long double ElapsedMillis() { return Elapsednano() / 1000.0f / 1000.0f; }
 
  private:
   std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
@@ -98,7 +102,7 @@ class Scoped_speed_Timer {
           obj.second.Time_ns =
               (obj.second.Time_ns) - (obj.second.atempt_num * time_defult);
 
-        obj.second.Time_ns =floor(obj.second.Time_ns);
+        obj.second.Time_ns = floor(obj.second.Time_ns);
 
         vect_analis[i++] = obj;
       }

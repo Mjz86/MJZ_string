@@ -63,6 +63,182 @@ unsigned long millis() {
 unsigned long long millisR() { return std::chrono::mjz_ard::millisR(); }
 #endif
 namespace mjz_ard {
+/*********************************************************************
+* Filename:   sha256.c
+* Author:     Brad Conte (brad AT bradconte.com)
+* Copyright:
+* Disclaimer: This code is presented "as is" without any guarantees.
+* Details:    Implementation of the SHA-256 hashing algorithm.
+          SHA-256 is one of the three algorithms in the SHA2
+          specification. The others, SHA-384 and SHA-512, are not
+          offered in this implementation.
+          Algorithm specification can be found here:
+           * http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf
+          This implementation uses little endian byte order.
+*********************************************************************/
+
+/*************************** HEADER FILES ***************************/
+
+/****************************** MACROS ******************************/
+#define ROTLEFT(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
+#define ROTRIGHT(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
+
+#define CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
+#define MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define EP0(x) (ROTRIGHT(x, 2) ^ ROTRIGHT(x, 13) ^ ROTRIGHT(x, 22))
+#define EP1(x) (ROTRIGHT(x, 6) ^ ROTRIGHT(x, 11) ^ ROTRIGHT(x, 25))
+#define SIG0(x) (ROTRIGHT(x, 7) ^ ROTRIGHT(x, 18) ^ ((x) >> 3))
+#define SIG1(x) (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10))
+
+/**************************** VARIABLES *****************************/
+static const WORD k[64] = {
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
+    0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+    0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+    0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+    0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+    0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+    0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
+
+/*********************** FUNCTION DEFINITIONS ***********************/
+void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
+  WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+
+  for (i = 0, j = 0; i < 16; ++i, j += 4)
+    m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) |
+           (data[j + 3]);
+  for (; i < 64; ++i)
+    m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
+
+  a = ctx->state[0];
+  b = ctx->state[1];
+  c = ctx->state[2];
+  d = ctx->state[3];
+  e = ctx->state[4];
+  f = ctx->state[5];
+  g = ctx->state[6];
+  h = ctx->state[7];
+
+  for (i = 0; i < 64; ++i) {
+    t1 = h + EP1(e) + CH(e, f, g) + k[i] + m[i];
+    t2 = EP0(a) + MAJ(a, b, c);
+    h = g;
+    g = f;
+    f = e;
+    e = d + t1;
+    d = c;
+    c = b;
+    b = a;
+    a = t1 + t2;
+  }
+
+  ctx->state[0] += a;
+  ctx->state[1] += b;
+  ctx->state[2] += c;
+  ctx->state[3] += d;
+  ctx->state[4] += e;
+  ctx->state[5] += f;
+  ctx->state[6] += g;
+  ctx->state[7] += h;
+}
+
+void sha256_init(SHA256_CTX *ctx) {
+  ctx->datalen = 0;
+  ctx->bitlen = 0;
+  ctx->state[0] = 0x6a09e667;
+  ctx->state[1] = 0xbb67ae85;
+  ctx->state[2] = 0x3c6ef372;
+  ctx->state[3] = 0xa54ff53a;
+  ctx->state[4] = 0x510e527f;
+  ctx->state[5] = 0x9b05688c;
+  ctx->state[6] = 0x1f83d9ab;
+  ctx->state[7] = 0x5be0cd19;
+}
+
+void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len) {
+  WORD i;
+
+  for (i = 0; i < len; ++i) {
+    ctx->data[ctx->datalen] = data[i];
+    ctx->datalen++;
+    if (ctx->datalen == 64) {
+      sha256_transform(ctx, ctx->data);
+      ctx->bitlen += 512;
+      ctx->datalen = 0;
+    }
+  }
+}
+
+void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
+  WORD i;
+
+  i = ctx->datalen;
+
+  // Pad whatever data is left in the buffer.
+  if (ctx->datalen < 56) {
+    ctx->data[i++] = 0x80;
+    while (i < 56) ctx->data[i++] = 0x00;
+  } else {
+    ctx->data[i++] = 0x80;
+    while (i < 64) ctx->data[i++] = 0x00;
+    sha256_transform(ctx, ctx->data);
+    memset(ctx->data, 0, 56);
+  }
+
+  // Append to the padding the total message's length in bits and transform.
+  ctx->bitlen += static_cast<uint64_t>(ctx->datalen) * 8;
+  ctx->data[63] = static_cast<BYTE>(ctx->bitlen);
+  ctx->data[62] = static_cast<BYTE>(ctx->bitlen >> 8);
+  ctx->data[61] = static_cast<BYTE>(ctx->bitlen >> 16);
+  ctx->data[60] = static_cast<BYTE>(ctx->bitlen >> 24);
+  ctx->data[59] = static_cast<BYTE>(ctx->bitlen >> 32);
+  ctx->data[58] = static_cast<BYTE>(ctx->bitlen >> 40);
+  ctx->data[57] = static_cast<BYTE>(ctx->bitlen >> 48);
+  ctx->data[56] = static_cast<BYTE>(ctx->bitlen >> 56);
+  sha256_transform(ctx, ctx->data);
+
+  // Since this implementation uses little endian byte ordering and SHA uses big
+  // endian, reverse all the bytes when copying the final state to the output
+  // hash.
+  for (i = 0; i < 4; ++i) {
+    hash[i] = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+    hash[i + 4] = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+    hash[i + 8] = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+    hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
+    hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
+    hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
+    hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
+    hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
+  }
+}
+
+/*********************************************************************
+* Filename:   sha256.c
+* Author:     Brad Conte (brad AT bradconte.com)
+* Copyright:
+* Disclaimer: This code is presented "as is" without any guarantees.
+* Details:    Performs known-answer tests on the corresponding SHA1
+                  implementation. These tests do not encompass the full
+                  range of available test vectors, however, if the tests
+                  pass it is very, very likely that the code is correct
+                  and was compiled properly. This code also serves as
+                  example usage of the functions.
+*********************************************************************/
+
+/*************************** HEADER FILES ***************************/
+
+/*********************** FUNCTION DEFINITIONS ***********************/
+void sha256_the_string(SHA256_CTX *hash_out, const char *c_str, size_t len) {
+  SHA256_CTX ctx;
+  sha256_init(&ctx);
+  sha256_update(&ctx, reinterpret_cast<const BYTE *>(c_str), len);
+  sha256_final(&ctx, hash_out->data);
+  return;
+}
 /*********************************************/
 /* Static Member Initialisation */
 /*********************************************/
@@ -356,7 +532,11 @@ void *mjz_Str::realloc_new_ns::operator new(size_t size_, void *where) {
 mjz_Str::mjz_Str(const char *cstr, size_t length) {
   init();
   if (cstr) {
-    copy(cstr, length, 1); //TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling the 'free' virtual function indirectly in the constructor may lead to unexpected result at runtime. Check lines: 'mjzString.cpp:358', 'mjzString.hpp:734'.
+    copy(cstr, length,
+         1);  // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/
+              // Calling the 'free' virtual function indirectly in the
+              // constructor may lead to unexpected result at runtime. Check
+              // lines: 'mjzString.cpp:358', 'mjzString.hpp:734'.
   }
   // (this->*update_event_F_p)(); //departed
 }
@@ -460,7 +640,12 @@ mjz_Str::mjz_Str(double value, unsigned char decimalPlaces) {
   // (this->*update_event_F_p)(); //departed
 }
 mjz_Str::~mjz_Str(void) {
-  invalidate(1); //TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling the 'free' virtual function indirectly in the destructor may lead to unexpected result at runtime. Check lines: 'mjzString.cpp:462', 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640', 'mjzString.hpp:734'.
+  invalidate(
+      1);  // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling
+           // the 'free' virtual function indirectly in the destructor may lead
+           // to unexpected result at runtime. Check lines: 'mjzString.cpp:462',
+           // 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640',
+           // 'mjzString.hpp:734'.
 }  // i don't need to do this but this is explained in stackoverfllow . the
    // vtable of the drived free override gets destroyed when ~mjz_Str() gets
    // called so mjz_Str::free shoud be called and i do it explicitly its not
@@ -595,7 +780,7 @@ void *mjz_Str::realloc_pv(void *ptr, size_t new_size, bool constructor) {
   bool ptr_is_in_stack = realloc_helper_is_in_stack(ptr);
   bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr));  //(buffer == ptr);
   bool ptr_Can_set_to_stack = (new_size <= (stack_buffer_size + 1));
- 
+
   if (ptr_Can_set_to_stack) {
     if (ptr_is_buffer) {
       size_t the__length = m_capacity;
@@ -642,7 +827,20 @@ void mjz_Str::free_pv(void *&ptr, bool constructor) {
   }
   ptr = 0;
 }
-void mjz_Str::free_pv(void *const &ptr, bool constructor) { //TODO: V835 https://pvs-studio.com/en/docs/warnings/V835/ Passing cheap-to-copy argument by reference may lead to decreased performance. To avoid this, replace the first argument 'void*const & ptr' with 'void*const  ptr'. //TODO: V659 https://pvs-studio.com/en/docs/warnings/V659/ Declarations of functions with 'mjz_Str::free_pv' name differ in the 'const' keyword only, but the bodies of these functions have different composition. This is suspicious and can possibly be an error. Check lines: 631, 645.
+void mjz_Str::free_pv(
+    void *const &ptr,
+    bool constructor) {  // TODO: V835
+                         // https://pvs-studio.com/en/docs/warnings/V835/
+                         // Passing cheap-to-copy argument by reference may lead
+                         // to decreased performance. To avoid this, replace the
+                         // first argument 'void*const & ptr' with 'void*const
+                         // ptr'. //TODO: V659
+                         // https://pvs-studio.com/en/docs/warnings/V659/
+                         // Declarations of functions with 'mjz_Str::free_pv'
+                         // name differ in the 'const' keyword only, but the
+                         // bodies of these functions have different
+                         // composition. This is suspicious and can possibly be
+                         // an error. Check lines: 631, 645.
   void *ptr_ = ptr;
   free_pv(ptr_, constructor);
 }
@@ -661,7 +859,7 @@ bool mjz_Str::changeBuffer(size_t maxStrLen, bool constructor) {
 /*********************************************/
 /* Copy and Move */
 /*********************************************/
-mjz_Str &mjz_Str::copy(const char *cstr, size_t length, bool constructor) {
+mjz_Str &mjz_Str::copy(const char *cstr, size_t length, bool ) {
   if (reserve(length, 0, 1)) goto _Success_full_;
   invalidate();
   // (this->*update_event_F_p)(); //departed
@@ -872,8 +1070,7 @@ StringSumHelper operator+(const basic_mjz_Str_view &rhs,
                           const basic_mjz_Str_view &lhs) {
   return operator_plus(mjz_Str(rhs), lhs);
 }
- StringSumHelper operator+(const mjz_str_view &rhs,
-                                 const mjz_str_view &lhs) {
+StringSumHelper operator+(const mjz_str_view &rhs, const mjz_str_view &lhs) {
   return operator_plus(mjz_Str(rhs), lhs);
 }
 StringSumHelper operator+(mjz_Str &&lhs, const basic_mjz_String &rhs) {
@@ -1005,25 +1202,21 @@ StringSumHelper operator+(StringSumHelper &&lhs,
 /* Comparison */
 /*********************************************/
 int64_t basic_mjz_Str_view::compare_two_str(const char *rhs, size_t rhs_l,
-                                                 const char *lhs,
-                                                 size_t lhs_l) {
+                                            const char *lhs, size_t lhs_l) {
   if (!rhs || !lhs) {
     if (lhs && lhs_l > 0) {
       return static_cast<int64_t>(0) - *(unsigned char *)lhs;
     }
     if (rhs && rhs_l > 0) {
-     
       return *(unsigned char *)rhs;
     }
-   
+
     return 0;
   }
   return MJZ_STRnCMP(rhs, lhs, rhs_l);
 }
-int64_t basic_mjz_Str_view::compareTo(
-    const basic_mjz_Str_view &s) const {
-  
-  return compare_two_str(m_buffer,m_length, s.m_buffer, m_length);
+int64_t basic_mjz_Str_view::compareTo(const basic_mjz_Str_view &s) const {
+  return compare_two_str(m_buffer, m_length, s.m_buffer, m_length);
 }
 int64_t basic_mjz_Str_view::compareTo(const char *cstr) const {
   return compare_two_str(m_buffer, m_length, cstr, strlen(cstr));
@@ -1032,9 +1225,8 @@ bool basic_mjz_Str_view::equals(const basic_mjz_Str_view &s2) const {
   // // (this->*update_event_F_p)(); //departed
   return (m_length == s2.m_length && compareTo(s2) == 0);
 }
-bool basic_mjz_Str_view::are_two_str_equale(const char* rhs, size_t rhs_l,
-                                                 const char* lhs,
-                                                 size_t lhs_l) {
+bool basic_mjz_Str_view::are_two_str_equale(const char *rhs, size_t rhs_l,
+                                            const char *lhs, size_t lhs_l) {
   if (rhs_l == 0) {
     // // (this->*update_event_F_p)(); //departed
     return (lhs == NULL || *lhs == 0);
@@ -1046,12 +1238,11 @@ bool basic_mjz_Str_view::are_two_str_equale(const char* rhs, size_t rhs_l,
   if (lhs_l != rhs_l) return 0;
   // // (this->*update_event_F_p)(); //departed
   return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
-    }
+}
 bool basic_mjz_Str_view::equals(const char *cstr, size_t cstr_len) const {
- return are_two_str_equale(m_buffer, m_length, cstr,  cstr_len);
-    }
-bool basic_mjz_Str_view::equalsIgnoreCase(
-        const basic_mjz_Str_view &s2) const {
+  return are_two_str_equale(m_buffer, m_length, cstr, cstr_len);
+}
+bool basic_mjz_Str_view::equalsIgnoreCase(const basic_mjz_Str_view &s2) const {
   if (this == &s2) {
     // // (this->*update_event_F_p)(); //departed
     return true;
@@ -1076,8 +1267,7 @@ bool basic_mjz_Str_view::equalsIgnoreCase(
   // // (this->*update_event_F_p)(); //departed
   return true;
 }
-bool basic_mjz_Str_view::startsWith(
-    const basic_mjz_Str_view &s2) const {
+bool basic_mjz_Str_view::startsWith(const basic_mjz_Str_view &s2) const {
   if (m_length < s2.m_length) {
     // // (this->*update_event_F_p)(); //departed
     return false;
@@ -1086,7 +1276,7 @@ bool basic_mjz_Str_view::startsWith(
   return startsWith(s2, 0);
 }
 bool basic_mjz_Str_view::startsWith(const basic_mjz_Str_view &s2,
-                                  size_t offset) const {
+                                    size_t offset) const {
   if (offset > m_length - s2.m_length || !m_buffer || !s2.m_buffer) {
     // // (this->*update_event_F_p)(); //departed
     return false;
@@ -1094,8 +1284,7 @@ bool basic_mjz_Str_view::startsWith(const basic_mjz_Str_view &s2,
   // // (this->*update_event_F_p)(); //departed
   return MJZ_STRnCMP(&m_buffer[offset], s2.m_buffer, s2.m_length) == 0;
 }
-bool basic_mjz_Str_view::endsWith(
-    const basic_mjz_Str_view &s2) const {
+bool basic_mjz_Str_view::endsWith(const basic_mjz_Str_view &s2) const {
   if (m_length < s2.m_length || !m_buffer || !s2.m_buffer) {
     // // (this->*update_event_F_p)(); //departed
     return false;
@@ -1172,7 +1361,7 @@ char basic_mjz_Str_view::operator[](int64_t index) const {
   return m_buffer[index];
 }
 void basic_mjz_Str_view::getBytes(unsigned char *buf, size_t bufsize,
-                                size_t index) const {
+                                  size_t index) const {
   if (!bufsize || !buf) {
     // // (this->*update_event_F_p)(); //departed
     return;
@@ -1207,13 +1396,11 @@ int64_t basic_mjz_Str_view::indexOf(char ch, size_t fromIndex) const {
 int64_t basic_mjz_Str_view::indexOf(const mjz_Str &s2) const {
   return indexOf(s2, 0);
 }
-int64_t basic_mjz_Str_view::indexOf(const mjz_Str &s2,
-                                         size_t fromIndex) const {
+int64_t basic_mjz_Str_view::indexOf(const mjz_Str &s2, size_t fromIndex) const {
   return indexOf_cstr(s2.c_str(), s2.length(), fromIndex);
 }
-int64_t basic_mjz_Str_view::indexOf_cstr(const char *c_str_,
-                                              size_t len_str,
-                                       size_t fromIndex) const {
+int64_t basic_mjz_Str_view::indexOf_cstr(const char *c_str_, size_t len_str,
+                                         size_t fromIndex) const {
   if (fromIndex >= m_length) {
     return -1;
   }
@@ -1244,8 +1431,8 @@ int64_t basic_mjz_Str_view::lastIndexOf(const mjz_Str &s2) const {
   return lastIndexOf(s2, m_length - s2.m_length);
 }
 int64_t basic_mjz_Str_view::lastIndexOf_cstr(const char *cstr__,
-                                                  size_t length__,
-                                           size_t fromIndex) const {
+                                             size_t length__,
+                                             size_t fromIndex) const {
   if (length__ == 0 || m_length == 0 || length__ > m_length) {
     return -1;
   }
@@ -1265,11 +1452,11 @@ int64_t basic_mjz_Str_view::lastIndexOf_cstr(const char *cstr__,
   return found;
 }
 int64_t basic_mjz_Str_view::lastIndexOf(const mjz_Str &s2,
-                                      size_t fromIndex) const {
+                                        size_t fromIndex) const {
   return lastIndexOf_cstr(s2.c_str(), s2.length(), fromIndex);
 }
 mjz_Str basic_mjz_Str_view::substring_beg_n(size_t beginIndex,
-                                          size_t number) const {
+                                            size_t number) const {
   size_t endIndex = beginIndex + number;
   if (!number || length() < endIndex) return mjz_Str();
   return substring(beginIndex, beginIndex + number);
@@ -1277,8 +1464,7 @@ mjz_Str basic_mjz_Str_view::substring_beg_n(size_t beginIndex,
 mjz_Str basic_mjz_Str_view::substring(size_t beginIndex) const {
   return substring(beginIndex, m_length);
 }
-mjz_Str basic_mjz_Str_view::substring_beg_n(int beginIndex,
-                                                 int number) const {
+mjz_Str basic_mjz_Str_view::substring_beg_n(int beginIndex, int number) const {
   return substring_beg_n((int64_t)beginIndex, (int64_t)number);
 }
 mjz_Str basic_mjz_Str_view::substring(int beginIndex, int endIndex) const {
@@ -1288,16 +1474,16 @@ mjz_Str basic_mjz_Str_view::substring(int beginIndex) const {
   return substring((int64_t)beginIndex);
 }
 mjz_Str basic_mjz_Str_view::substring_beg_n(unsigned int beginIndex,
-                                          unsigned int number) const {
+                                            unsigned int number) const {
   return substring_beg_n((size_t)beginIndex, (size_t)number);
 }
 mjz_Str basic_mjz_Str_view::substring_beg_n(int64_t beginIndex,
-                                          size_t number) const {
+                                            size_t number) const {
   beginIndex = signed_index_to_unsigned(beginIndex);
   return substring_beg_n((size_t)beginIndex, number);
 }
 mjz_Str basic_mjz_Str_view::substring(int64_t beginIndex,
-                                    int64_t endIndex) const {
+                                      int64_t endIndex) const {
   beginIndex = signed_index_to_unsigned(beginIndex);
   endIndex = signed_index_to_unsigned(endIndex);
   return substring((size_t)beginIndex, (size_t)endIndex);
@@ -1317,96 +1503,85 @@ mjz_Str basic_mjz_Str_view::substring(size_t left, size_t right) const {
 }
 
 mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex,
-                                           size_t endIndex) const {
+                                             size_t endIndex) const {
   const char *out_ptr{};
   size_t out_len{};
   substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
   return out_len ? mjz_str_view(out_ptr, out_len) : mjz_str_view();
 }
 mjz_str_view basic_mjz_Str_view::substr_view_beg_n(size_t beginIndex,
-                                                 size_t number) const {
+                                                   size_t number) const {
   return basic_mjz_Str_view::substr_view(beginIndex, number + beginIndex);
-    }
+}
 
- mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) {
-  return basic_mjz_Str_view::substr_view(beginIndex,
-                                              length() - beginIndex);
-     }
+mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) {
+  return basic_mjz_Str_view::substr_view(beginIndex, length() - beginIndex);
+}
 
- mjz_str_view basic_mjz_Str_view::substr_view_beg_n(size_t beginIndex,
-                                                             size_t number) {
-  return basic_mjz_Str_view::substr_view(
-      beginIndex, number + beginIndex);
-     }
- mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) const {
-  return basic_mjz_Str_view::substr_view(beginIndex,
-                                              length() - beginIndex);
-    }
+mjz_str_view basic_mjz_Str_view::substr_view_beg_n(size_t beginIndex,
+                                                   size_t number) {
+  return basic_mjz_Str_view::substr_view(beginIndex, number + beginIndex);
+}
+mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) const {
+  return basic_mjz_Str_view::substr_view(beginIndex, length() - beginIndex);
+}
 
 mjz_str_view basic_mjz_Str_view::substr_view(int64_t beginIndex,
-                                           int64_t endIndex) const {
-  return basic_mjz_Str_view::substr_view(
-      signed_index_to_unsigned(beginIndex),
-                                       signed_index_to_unsigned(endIndex));
-    }
+                                             int64_t endIndex) const {
+  return basic_mjz_Str_view::substr_view(signed_index_to_unsigned(beginIndex),
+                                         signed_index_to_unsigned(endIndex));
+}
 mjz_str_view basic_mjz_Str_view::substr_view(int64_t beginIndex) const {
-  return basic_mjz_Str_view::substr_view(
-      signed_index_to_unsigned(beginIndex));
-    }
+  return basic_mjz_Str_view::substr_view(signed_index_to_unsigned(beginIndex));
+}
 mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int64_t beginIndex,
-                                                 size_t number) {
+                                                   size_t number) {
   return basic_mjz_Str_view::substr_view(
       signed_index_to_unsigned(beginIndex),
-                                       signed_index_to_unsigned(beginIndex)+number);
-    }
+      signed_index_to_unsigned(beginIndex) + number);
+}
 mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int64_t beginIndex,
-                                                        size_t number) const {
+                                                   size_t number) const {
   return basic_mjz_Str_view::substr_view(
-        signed_index_to_unsigned(beginIndex),
-        signed_index_to_unsigned(beginIndex) + number);}
+      signed_index_to_unsigned(beginIndex),
+      signed_index_to_unsigned(beginIndex) + number);
+}
 
-
-mjz_str_view basic_mjz_Str_view::substr_view_beg_n(
-    unsigned int beginIndex,
-                                                 unsigned int number) const {
+mjz_str_view basic_mjz_Str_view::substr_view_beg_n(unsigned int beginIndex,
+                                                   unsigned int number) const {
   return basic_mjz_Str_view::substr_view_beg_n((size_t)beginIndex,
                                                (size_t)number);
-    }
+}
 mjz_str_view basic_mjz_Str_view::substr_view(int beginIndex) const {
   return basic_mjz_Str_view::substr_view((int64_t)beginIndex);
-    }
+}
 mjz_str_view basic_mjz_Str_view::substr_view(int beginIndex,
-                                                  int endIndex) const {
+                                             int endIndex) const {
   return basic_mjz_Str_view::substr_view((int64_t)beginIndex,
-                                              (int64_t)endIndex);
-    }
+                                         (int64_t)endIndex);
+}
 mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int beginIndex,
-                                                 int number) const {
+                                                   int number) const {
   return basic_mjz_Str_view::substr_view_beg_n((int64_t)beginIndex,
-                                             (size_t)number);
-    }
+                                               (size_t)number);
+}
 
-
-
-size_t basic_mjz_Str_view::signed_index_to_unsigned(
-        int64_t input) const {
+size_t basic_mjz_Str_view::signed_index_to_unsigned(int64_t input) const {
   if (0 <= input) {
     return input;
   }
   return input + length();
 }
-const char *basic_mjz_Str_view::substring_give_ptr(int64_t left,
-                                                        int64_t right,
-                                                 const char *&c_str_out,
-                                                 size_t &len_out) const {
+const char *basic_mjz_Str_view::substring_give_ptr(int64_t left, int64_t right,
+                                                   const char *&c_str_out,
+                                                   size_t &len_out) const {
   return substring_give_ptrULL(signed_index_to_unsigned(left),
                                signed_index_to_unsigned(right), c_str_out,
                                len_out);
 }
-const char *basic_mjz_Str_view::substring_give_ptrULL(
-    size_t left, size_t right,
-                                                    const char *&c_str_out,
-                                                    size_t &len_out) const {
+const char *basic_mjz_Str_view::substring_give_ptrULL(size_t left, size_t right,
+                                                      const char *&c_str_out,
+                                                      size_t &len_out) const {
   if (left > right) {
     size_t temp = right;
     right = left;
@@ -1571,7 +1746,7 @@ long long basic_mjz_Str_view::toLL(void) const {
   return 0;
 }
 long long basic_mjz_Str_view::to_LL(int radix, bool *had_error,
-                                  uint8_t error_level) const {
+                                    uint8_t error_level) const {
   if (m_buffer) {
     return C_STR_to_LL(c_str(), (uint8_t)min(length(), (uint64_t)255), radix,
                        had_error, error_level);
@@ -2198,7 +2373,7 @@ size_t basic_mjz_Str_view::UN_ORDERED_compare(
   return UN_ORDERED_compare(s.m_buffer, s.m_length);
 }
 size_t basic_mjz_Str_view::UN_ORDERED_compare(const char *s,
-                                                   size_t s_len) const {
+                                              size_t s_len) const {
   const unsigned char *ucs_ = (const unsigned char *)s;
   const unsigned char *ucbuffer_ = (const unsigned char *)this->m_buffer;
   size_t number_of_not_right{};
@@ -2219,42 +2394,31 @@ size_t basic_mjz_Str_view::UN_ORDERED_compare(const char *s,
   }
   return number_of_not_right;
 }
-hash_sha_512 hash_msg_to_sha_512(const char *dev_passwoed,
-                                 const size_t dev_passwoedLength,
-                                 mjz_Str output_name) {
+hash_sha_512 hash_msg_to_sha_512_with_output(
+    const char *dev_passwoed, const size_t dev_passwoedLength,
+    mjz_Str &output_name_in_output_out) {
   hash_sha_512 rtrn{};
-  uint8_t(&shaResult)[64] = rtrn.Hashed;
-  for (int64_t i{}; i < 64; i++) {
-    shaResult[i] = 0;
-  }
-#ifdef Arduino
-  mbedtls_md_context_t ctx;
-  mbedtls_md_type_t md_type = MBEDTLS_MD_SHA512;
-  mbedtls_md_init(&ctx);
-  mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(md_type), 0);
-  mbedtls_md_starts(&ctx);
-  mbedtls_md_update(&ctx, (const unsigned char *)dev_passwoed,
-                    dev_passwoedLength);
-  mbedtls_md_finish(&ctx, shaResult);
-  mbedtls_md_free(&ctx);
-  if (output_name != "Null") {
-    Serial.print("const char " + output_name + " [] = { ");
-    Serial.print((int)shaResult[0]);
+  uint8_t(&shaResult)[SHA256_BLOCK_SIZE] = rtrn.hashed_data;
+  sha256_the_string(&rtrn, dev_passwoed, dev_passwoedLength);
+
+  if (output_name_in_output_out != "Null") {
+    output_name_in_output_out().print("const char " +
+                                      output_name_in_output_out + " [] = { ");
+    output_name_in_output_out.print((int)shaResult[0]);
     for (int64_t i = 1; i < sizeof(shaResult); i++) {
-      Serial.print(",");
-      Serial.print((int)shaResult[i]);
+      output_name_in_output_out.print(",");
+      output_name_in_output_out.print((int)shaResult[i]);
     }
-    Serial.println(" };");
+    output_name_in_output_out.println(" };");
   }
-#endif
   return rtrn;
 }
 hash_sha_512 hash_msg_to_sha_512(const char *dev_passwoed,
                                  const size_t dev_passwoedLength) {
   hash_sha_512 rtrn{};
-  uint8_t(&shaResult)[64] = rtrn.Hashed;
-  for (int64_t i{}; i < 64; i++) shaResult[i] = 0;
-#ifdef Arduino
+  sha256_the_string(&rtrn, dev_passwoed, dev_passwoedLength);
+#if 0 
+  //def Arduino
   mbedtls_md_context_t ctx;
   mbedtls_md_type_t md_type = MBEDTLS_MD_SHA512;
   mbedtls_md_init(&ctx);
@@ -2267,29 +2431,38 @@ hash_sha_512 hash_msg_to_sha_512(const char *dev_passwoed,
 #endif
   return rtrn;
 }
-hash_sha_512 hash_msg_to_sha_512_n(
+hash_sha_512 hash_msg_to_sha_512_n_with_output(
     const char *dev_passwoed, const size_t dev_passwoedLength, uint8_t n,
-    const mjz_Str &output_name) {  // intended copy
+    mjz_Str &output_name) {  // intended copy
   if (n == 0) {
-    return hash_msg_to_sha_512(dev_passwoed, dev_passwoedLength, output_name);
+    return hash_msg_to_sha_512_with_output(dev_passwoed, dev_passwoedLength,
+                                           output_name);
   }
   hash_sha_512 ret = hash_msg_to_sha_512(dev_passwoed, dev_passwoedLength);
   for (int64_t i{}; i < ((int64_t)n - 1); i++) {
-    ret = hash_msg_to_sha_512((char *)ret.Hashed, 64);
+    ret = hash_msg_to_sha_512((char *)ret.hashed_data, SHA256_BLOCK_SIZE);
   }
-  return hash_msg_to_sha_512((char *)ret.Hashed, 64, output_name);
+  return hash_msg_to_sha_512_with_output((char *)ret.hashed_data,
+                                         SHA256_BLOCK_SIZE, output_name);
 }
 hash_sha_512 hash_msg_to_sha_512_n(const char *dev_passwoed,
                                    const size_t dev_passwoedLength,
                                    uint8_t n) {  // intended copy
   hash_sha_512 ret = hash_msg_to_sha_512(dev_passwoed, dev_passwoedLength);
   for (int64_t i{}; i < n; i++) {
-    ret = hash_msg_to_sha_512((char *)ret.Hashed, 64);
+    ret = hash_msg_to_sha_512((char *)ret.hashed_data, SHA256_BLOCK_SIZE);
   }
   return ret;
 }
-hash_sha_512 mjz_Str::mjz_hash(uint8_t n) const {
+hash_sha_512 basic_mjz_Str_view::mjz_hash(uint8_t n) const {
   return hash_msg_to_sha_512_n(c_str(), length(), n);
+}
+std::pair<hash_sha_512, mjz_Str> basic_mjz_Str_view::hash_with_output(
+    uint8_t n) const {
+  hash_sha_512 hash_;
+  mjz_Str output(*this);
+  hash_ = hash_msg_to_sha_512_n_with_output(c_str(), length(), n, output);
+  return {hash_, output};
 }
 long long unsigned int mjz_millis() {
   static uint64_t my_time[2] = {0, 0};

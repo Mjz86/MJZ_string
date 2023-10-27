@@ -10,10 +10,12 @@
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- Lesser General Public License for more details. //TODO: V1042 https://pvs-studio.com/en/docs/warnings/V1042/ This file is marked with copyleft license, which requires you to open the derived source code.
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not,write to the Free Software
- Foundation,Inc.,51 Franklin St,Fifth Floor,Boston,MA 02110-1301 USA
+ Lesser General Public License for more details. //TODO: V1042
+ https://pvs-studio.com/en/docs/warnings/V1042/ This file is marked with
+ copyleft license, which requires you to open the derived source code. You
+ should have received a copy of the GNU Lesser General Public License along with
+ this library; if not,write to the Free Software Foundation,Inc.,51 Franklin
+ St,Fifth Floor,Boston,MA 02110-1301 USA
 */
 #pragma once
 #ifdef __cplusplus
@@ -69,16 +71,7 @@ void tgl_nth_bit_andret32(void *data, uint64_t nthbt);
 void Set_nth_bit_andret8(void *data, uint64_t nthbt, bool set_to);
 void tgl_nth_bit_andret8(void *data, uint64_t nthbt);
 bool Get_nth_bit_andret8(const void *data, uint64_t nthbt);
-struct hash_sha_512 {
-  union {
-    uint8_t Hashed[64];
-    long long unsigned int llui;
-    long long int lli;
-    long int li;
-    unsigned long lui;
-    UINT64_X2_32_t type;
-  };
-};
+
 char *ultoa(uint32_t value, char *buffer, int radix);
 char *ulltoa(uint64_t value, char *buffer, int radix);
 char *b_U_lltoa(uint64_t value, char *BFR_buffer, int radix, bool is_signed,
@@ -514,6 +507,57 @@ class iterator_template {
     rhs = lhsm_;
   }
 };
+/*********************************************************************
+ * Filename:   sha256.h
+ * Author:     Brad Conte (brad AT bradconte.com)
+ * Copyright:
+ * Disclaimer: This code is presented "as is" without any guarantees.
+ * Details:    Defines the API for the corresponding SHA1 implementation.
+ *********************************************************************/
+
+#ifndef SHA256_H
+#define SHA256_H
+
+/*************************** HEADER FILES ***************************/
+
+/****************************** MACROS ******************************/
+#define SHA256_BLOCK_SIZE 32  // SHA256 outputs a 32 byte digest
+
+/**************************** DATA TYPES ****************************/
+typedef uint8_t BYTE;       // 8-bit byte
+typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
+
+struct SHA256_CTX {
+  union {
+    BYTE data[64]{};
+    BYTE hashed_data[SHA256_BLOCK_SIZE];
+  };
+  WORD datalen{};
+  unsigned long long bitlen{};
+  WORD state[8]{};
+};
+inline int cmpr_hash(const void *rhs, const void *lhs) {
+  return std::memcmp(rhs, lhs, SHA256_BLOCK_SIZE);
+}
+inline int cmpr_hash(const void *rhs, const SHA256_CTX &lhs) {
+  return cmpr_hash(rhs, lhs.hashed_data);
+}
+inline int cmpr_hash(const SHA256_CTX &rhs, const void *lhs) {
+  return cmpr_hash(rhs.hashed_data, lhs);
+}
+inline bool operator!=(const SHA256_CTX &rhs, const SHA256_CTX &lhs) {
+  return !!cmpr_hash(rhs.hashed_data, lhs.hashed_data);
+}
+inline bool operator==(const SHA256_CTX &rhs, const SHA256_CTX &lhs) {
+  return !cmpr_hash(rhs.hashed_data, lhs.hashed_data);
+}
+typedef SHA256_CTX hash_sha_512;
+/*********************** FUNCTION DECLARATIONS **********************/
+void sha256_init(SHA256_CTX *ctx);
+void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
+void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
+
+#endif  // SHA256_H
 class static_str_algo {
  public:
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
@@ -522,6 +566,7 @@ class static_str_algo {
   static size_t constexpr DBL_MAX_DECIMAL_PLACES = FLT_MAX_DECIMAL_PLACES;
   static constexpr const char *empty_STRING_C_STR = "";
 
+ public:
  public:
   static void *memmove(void *dest, const void *src, size_t len) {
     char *d = (char *)dest;
@@ -614,7 +659,7 @@ class basic_mjz_Str_view : public static_str_algo {
       : m_buffer(buffer), m_length(length) {}
   basic_mjz_Str_view(const char *buffer, size_t length)
       : basic_mjz_Str_view(const_cast<char *>(buffer), length) {}
-  ~basic_mjz_Str_view()= default;
+  ~basic_mjz_Str_view() = default;
   basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = delete;
   basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = delete;
   basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = delete;
@@ -717,6 +762,10 @@ class basic_mjz_Str_view : public static_str_algo {
     return !(a < b);
   }
 
+  // hash function
+  if_virtual_then_virtual hash_sha_512 mjz_hash(uint8_t n = 0) const;
+  if_virtual_then_virtual hash_sha_512 hash() const { return mjz_hash(0); }
+  std::pair<hash_sha_512, mjz_Str> hash_with_output(uint8_t n = 0) const;
   if_virtual_then_virtual int64_t compareTo(const basic_mjz_Str_view &s) const;
   if_virtual_then_virtual int64_t compareTo(const char *cstr) const;
   if_virtual_then_virtual bool equals(const char *cstr, size_t cstr_len) const;
@@ -992,7 +1041,12 @@ class mjz_Str : public basic_mjz_String,
   size_t println(unsigned long long, int = DEC) if_override_then_override;
   size_t println(double, int = 2) if_override_then_override;
   size_t println(const mjz_Str &) if_override_then_override;
-  size_t println(void) if_override_then_override; //TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/ Consider inspecting the 'println' function. The return value is not always used. Total calls: 13, discarded results: 1.
+  size_t println(void)
+      if_override_then_override;  // TODO: V1071
+                                  // https://pvs-studio.com/en/docs/warnings/V1071/
+                                  // Consider inspecting the 'println' function.
+                                  // The return value is not always used. Total
+                                  // calls: 13, discarded results: 1.
   // parsing methods
   void setTimeout(
       unsigned long timeout);  // sets maximum milliseconds to wait for
@@ -1073,9 +1127,7 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual void begin(unsigned long, uint16_t);
   // if_virtual_then_virtual void end(); used
   // stream
-  // hash function
-  if_virtual_then_virtual hash_sha_512 mjz_hash(uint8_t n = 0) const;
-  if_virtual_then_virtual hash_sha_512 hash() const { return mjz_hash(0); }
+
   // new and delete
   static void *operator new(size_t size_);
   static void *operator new[](size_t size_);
@@ -1361,7 +1413,11 @@ class mjz_Str : public basic_mjz_String,
   // is left unchanged). if the argument is null or invalid,the
   // concatenation is considered unsuccessful.
   if_virtual_then_virtual bool concat(const mjz_Str &str);
-  if_virtual_then_virtual bool concat(const char *cstr); //TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/ Consider inspecting the 'concat' function. The return value is not always used. Total calls: 11, discarded results: 1.
+  if_virtual_then_virtual bool concat(
+      const char *
+          cstr);  // TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/
+                  // Consider inspecting the 'concat' function. The return value
+                  // is not always used. Total calls: 11, discarded results: 1.
   if_virtual_then_virtual bool concat(const char *cstr, size_t length);
   if_virtual_then_virtual bool concat(const uint8_t *cstr, size_t length) {
     return concat((const char *)cstr, length);
@@ -2106,7 +2162,7 @@ class mjz_str_view : public basic_mjz_Str_view {
   mjz_str_view(mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
   mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
   mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
-  inline ~mjz_str_view()= default;
+  inline ~mjz_str_view() = default;
   using iterator_template_CC = iterator_template<const char>;
   using const_iterator = iterator_template_CC;
 
@@ -2223,8 +2279,7 @@ class StringSumHelper : public mjz_Str {
         })) {}
   StringSumHelper(basic_mjz_String &&s) : StringSumHelper(s) {}
   StringSumHelper(const basic_mjz_Str_view &otr) : mjz_Str(otr) {}
-  StringSumHelper(const mjz_str_view &s)
-      : mjz_Str(s) {}
+  StringSumHelper(const mjz_str_view &s) : mjz_Str(s) {}
   StringSumHelper(mjz_str_view &&s) : StringSumHelper(s) {}
   StringSumHelper(const mjz_Str &s) : mjz_Str(s) {}
   StringSumHelper(const char *p) : mjz_Str(p) {}
@@ -2361,7 +2416,17 @@ typedef mjz_ard::StringSumHelper mjz_StringSumHelper;
 typedef mjz_ard::mjz_str_view mjz_str_view;
 typedef mjz_ard::mjz_str_view mstrview;
 typedef mjz_ard::mjz_str_view mstrv;
-    }
+}  // namespace have_mjz_ard_removed
+namespace std {
+template <>
+struct hash<mjz_ard::basic_mjz_Str_view> {
+  size_t operator()(const mjz_ard::basic_mjz_Str_view &k) const {
+    // Compute individual hash values for first, second and third
+    // http://stackoverflow.com/a/1646913/126995
+    return hash<string_view>()({k.c_str(), k.length()});
+  }
+};  // namespace std::hash
+}  // namespace std
 #undef NO_IGNORE_CHAR
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus

@@ -3,13 +3,11 @@
 //
 
 #include "mjzString.hpp"
+static void print(const char* input) { std::cout << input; }
+namespace dont_use {
+
 using namespace have_mjz_ard_removed;
 
-#include <chrono>
-#include <cstdint>
-#include <iostream>
-
-void print(const char* input) { std::cout << input; }
 class mjz_Str_dir_test_class : public mjz_Str {
  public:
   virtual void* realloc(void* ptr, size_t new_size) override {
@@ -158,8 +156,8 @@ int main2() {
 
     for (int i{}; i < mycolnum; i++)
       for (int j{}; j < myrownum; j++)
-        my2dar[i][j] = mjz_ard::GET_CHAR_from_int((j + i * mycolnum) % 36,
-                                         ((j + i * mycolnum) / 36) % 2);
+        my2dar[i][j] = mjz_ard::GET_CHAR_from_int(
+            (j + i * mycolnum) % 36, ((j + i * mycolnum) / 36) % 2);
 
     // for (int i{}; i < mycolnum; i++)
     // std::cout << '\n' << i << ".th col : \"" << my2dar[i] << "\" \n";
@@ -287,7 +285,7 @@ long loop() {
   std::cout << "\n";
 
   return mystr()([](auto THis_) -> int {
-    using  namespace mjz_ard;
+    using namespace mjz_ard;
     mjz_Str& mystr = *THis_;
     mystr =
         "exiting enter some natural number to exit note that size of string \nis \n:"_m_str;
@@ -387,8 +385,11 @@ void test_mstr_vs_sstr(
   char a_storage[sizeof(mjz_str_view)]{};
   new (a_storage) mjz_str_view("god code");
   timer("~mjz_str_view");
-  reinterpret_cast<mjz_str_view*>(a_storage) //TODO: V1032 https://pvs-studio.com/en/docs/warnings/V1032/ The pointer 'a_storage' is cast to a more strictly aligned pointer type.
-      ->~mjz_str_view();  
+  reinterpret_cast<mjz_str_view*>(
+      a_storage)  // TODO: V1032 https://pvs-studio.com/en/docs/warnings/V1032/
+                  // The pointer 'a_storage' is cast to a more strictly aligned
+                  // pointer type.
+      ->~mjz_str_view();
   timer("timer_").Stop(timer_cmd::just_Stop);
 }
 const char* cstr_largeee =
@@ -422,42 +423,41 @@ int main786() {
   return main79();
 }
 
-void string_out(mjz_str_view input) {
-  std::cout << input;
-}
+void string_out(mjz_str_view input) { std::cout << input; }
 int main976() {
   std::shared_ptr<std::map<std::string, timer_info>> map_ptr =
       std::make_shared<std::map<std::string, timer_info>>();
   Scoped_speed_Timer::set_global_map(map_ptr);
   char arr[1000][10]{};
-  for (int i{}; i < 1000;i++) {
+  for (int i{}; i < 1000; i++) {
     Scoped_speed_Timer tm(_timer_sign);
     tm("str");
-      using  namespace mjz_ard;
+    using namespace mjz_ard;
     "abcdefg"_m_strv.copy(arr[i], 9);
     tm(_timer_sign);
   }
   std::cout << Scoped_speed_Timer::show_analysis(map_ptr, _timer_sign);
   std::cout << arr[0];
-  return 0; }
+  return 0;
+}
 int main() {
-    using namespace mjz_ard::short_string_convestion_operators;
-     using namespace mjz_ard::short_string_names;
-       using  namespace mjz_ard;
-   unsigned char dta[20]{};
-       ("hi mom "_v + " hello "_v).getBytes(dta, 19);
-    auto dt = mjz_str_view(dta);
-    std::array<sv, 1000> ar;
+  using namespace mjz_ard::short_string_convestion_operators;
+  using namespace mjz_ard::short_string_names;
+  using namespace mjz_ard;
+  unsigned char dta[20]{};
+  ("hi mom "_v + " hello "_v).getBytes(dta, 19);
+  auto dt = mjz_str_view(dta);
+  std::array<sv, 1000> ar;
   for (auto& obj : ar) {
     obj = dt;
   }
   dta[2] = 'F';
   for (const auto& obj : ar) {
-   std::cout<< obj ;
+    std::cout << obj;
   }
   return main786();
-    }
-    // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
+}
+// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
 // Tips for Getting Started:
@@ -469,3 +469,28 @@ int main() {
 // Existing Item to add existing code files to the project
 // 6. In the future, to open this project again, go to File > Open > Project
 // and select the .sln file
+int hash_demo() {
+  using namespace mjz_ard::short_string_convestion_operators;
+  using namespace have_mjz_ard_removed;
+  const uint8_t password_hash[] = {94,  136, 72,  152, 218, 40,  4,  113, 81,
+                                208, 229, 111, 141, 198, 41,  39, 115, 96,
+                                61,  13,  106, 171, 189, 214, 42, 17,  239,
+                                114, 29,  21,  66,  216};  // hash of password
+
+  mjz_str a;
+  std::cin >> a;
+  auto hash_pair = a.hash_with_output();
+  // std::cout << hash_pair.second << "\n";
+  bool password_is_correct =!cmpr_hash(hash_pair.first, password_hash);
+
+        std::cout << (password_is_correct ? "correct" : "incorrect")
+            << "\n";
+
+  return password_is_correct;
+}
+}  // namespace dont_use
+int main() {
+  if (!dont_use::hash_demo()) return 0;
+
+    return dont_use::main976();
+    }
