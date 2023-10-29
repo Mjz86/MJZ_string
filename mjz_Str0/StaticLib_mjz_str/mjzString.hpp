@@ -241,6 +241,7 @@ class mjz_Str_DATA_storage_cls
  private:
   // mjz_Str_DATA_storage_cls() = default;
 };
+
 class malloc_wrapper {
   malloc_wrapper &move(malloc_wrapper &otr) {
     otr.dont_deallocation_on_free();
@@ -328,6 +329,11 @@ class malloc_wrapper {
   }
   inline void dont_deallocation_on_free() { m_DO_deallocate = 0; }
   inline void do_deallocation_on_free() { m_DO_deallocate = 1; }
+
+  malloc_wrapper(void *data_ptr, const size_t &cap_size, bool DO_deallocate)
+      : m_data_ptr(data_ptr),
+        m_cap_size(cap_size),
+        m_DO_deallocate(DO_deallocate) {}
 };
 
 // iterator_template Class
@@ -345,15 +351,15 @@ class iterator_template {
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
   // using iterator_concept = std::contiguous_iterator_tag;
-  iterator_template() : iterator_template(nullptr, nullptr, (Type *)-1) {}
-  // iterator_template(Type *iter ) : m_iterator{iter} {}
-  iterator_template(Type *iter, Type *min_end, Type *max_end)
+  constexpr iterator_template() noexcept
+      : iterator_template(nullptr, nullptr, (Type *)-1) {}
+  // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
+  constexpr iterator_template(Type *iter, Type *min_end, Type *max_end)noexcept
       : m_iterator{iter},
         m_iterator_begin_ptr{min_end},
         m_iterator_end_ptr{max_end} {
-    throw_if_bad();
   }
-  void throw_if_bad(Type *_iterator = (Type *)-1) {
+  constexpr void throw_if_bad(Type *_iterator) const {
     if (_iterator == (Type *)-1) {
       _iterator = m_iterator;
     }
@@ -364,118 +370,134 @@ class iterator_template {
     throw std::exception(
         "bad ptr access : mjz_ard::iterator_template::throw_if_bad ");
   }
+  constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
 
-  iterator_template(const iterator_template &p)
+  constexpr iterator_template(const iterator_template &p)noexcept
       : m_iterator(p.m_iterator),
         m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  iterator_template(iterator_template &&p) noexcept
+  constexpr iterator_template(iterator_template &&p) noexcept
       : m_iterator(p.m_iterator),
         m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  iterator_template &operator=(Type *iter) {
+  constexpr iterator_template &operator=(Type *iter) {
     m_iterator = iter;
     throw_if_bad();
     return *this;
   }
-  iterator_template &operator=(const iterator_template &p) {
+  constexpr iterator_template &operator=(const iterator_template &p) {
     m_iterator = (p.m_iterator);
     m_iterator_begin_ptr = p.m_iterator_begin_ptr;
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     throw_if_bad();
     return *this;
   }
-  iterator_template &operator=(iterator_template &&p) noexcept {
+  constexpr iterator_template &operator=(iterator_template &&p) noexcept {
     m_iterator = (p.m_iterator);
     m_iterator_begin_ptr = p.m_iterator_begin_ptr;
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     return *this;
   }
-  ~iterator_template() { m_iterator = 0; }
-  bool operator==(const iterator_template &other) const noexcept {
+  constexpr ~iterator_template() {
+    throw_if_bad();
+    m_iterator = 0;
+  }
+  constexpr bool operator==(const iterator_template &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
-  bool operator!=(const iterator_template &other) const noexcept {
+  constexpr bool operator!=(const iterator_template &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
-  reference operator*() const noexcept { return *m_iterator; }
-  pointer operator->() const noexcept { return m_iterator; }
-  iterator_template &operator++() {
-    ++m_iterator;
+  constexpr reference operator*() const  {
     throw_if_bad();
+    return *m_iterator;
+  }
+  constexpr pointer operator->() const  {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr iterator_template &operator++()noexcept {
+    ++m_iterator;
     return *this;
   }
-  iterator_template operator++(int) {
+  constexpr iterator_template operator++(int)noexcept {
     iterator_template tmp(*this);
     ++(*this);
     return tmp;
   }
-  iterator_template &operator--() {
+  constexpr iterator_template &operator--()noexcept {
     --m_iterator;
-    throw_if_bad();
     return *this;
   }
-  iterator_template operator--(int) {
+  constexpr iterator_template operator--(int) noexcept{
     iterator_template tmp(*this);
     --(*this);
     return tmp;
   }
-  iterator_template &operator+=(const difference_type other) {
+  constexpr iterator_template &operator+=(const difference_type other) noexcept{
     m_iterator += other;
-    throw_if_bad();
     return *this;
   }
-  iterator_template &operator-=(const difference_type other) {
+  constexpr iterator_template &operator-=(const difference_type other) noexcept{
     m_iterator -= other;
-    throw_if_bad();
     return *this;
   }
-  iterator_template &operator+=(const iterator_template &other) {
+  constexpr iterator_template &operator+=(const iterator_template &other)noexcept {
     m_iterator += other.m_iterator;
-    throw_if_bad();
     return *this;
   }
-  iterator_template &operator-=(const iterator_template &other) {
+  constexpr iterator_template &operator-=(const iterator_template &other) noexcept{
     m_iterator -= other.m_iterator;
-    throw_if_bad();
     return *this;
   }
-  reference operator[](std::size_t index) const {
+  constexpr reference operator[](std::size_t index) const {
     throw_if_bad(m_iterator + index);
     return m_iterator[index];
   }
-  bool operator<(const iterator_template &other) const noexcept {
+  constexpr bool operator<(const iterator_template &other) const noexcept {
     return m_iterator < other.m_iterator;
   }
-  bool operator>(const iterator_template &other) const noexcept {
+  constexpr bool operator>(const iterator_template &other) const noexcept {
     return m_iterator > other.m_iterator;
   }
-  bool operator<=(const iterator_template &other) const noexcept {
+  constexpr bool operator<=(const iterator_template &other) const noexcept {
     return m_iterator <= other.m_iterator;
   }
-  bool operator>=(const iterator_template &other) const noexcept {
+  constexpr bool operator>=(const iterator_template &other) const noexcept {
     return m_iterator >= other.m_iterator;
   }
-  operator pointer() { return m_iterator; }
-  explicit operator pointer &() { return m_iterator; }
-  pointer get_pointer() const { return m_iterator; }
-  pointer &get_pointer() { return m_iterator; }
-  friend iterator_template operator+(const iterator_template &me,
-                                     const difference_type other) {
+  constexpr operator pointer() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr explicit operator pointer &() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr pointer get_pointer() const {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr pointer &get_pointer() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr friend iterator_template operator+(const iterator_template &me,
+                                               const difference_type other) noexcept{
     return iterator_template(
         me.m_iterator + other,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
-  friend iterator_template operator-(const iterator_template &me,
-                                     const difference_type other) {
+  constexpr friend iterator_template operator-(const iterator_template &me,
+                                               const difference_type other) noexcept{
     return iterator_template(
         me.m_iterator - other,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
-  friend iterator_template operator+(const difference_type other,
-                                     const iterator_template &me) {
+  constexpr friend iterator_template operator+(const difference_type other,
+                                               const iterator_template &me) noexcept{
     return iterator_template(
         other + me.m_iterator,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
@@ -485,27 +507,201 @@ class iterator_template {
   // iterator_template& me) noexcept { // bad function dont use
   // return iterator_template(me.m_iterator - (pointer)other);
   // }
-  friend iterator_template operator+(const iterator_template &other,
-                                     const iterator_template &me) {
+  constexpr friend iterator_template operator+(const iterator_template &other,
+                                               const iterator_template &me)noexcept {
     return iterator_template(
         other.m_iterator + me,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
-  friend difference_type operator-(const iterator_template &other,
-                                   const iterator_template &me) {
+  constexpr friend difference_type operator-(const iterator_template &other,
+                                             const iterator_template &me) noexcept{
     return std::distance(other.m_iterator, me.m_iterator);
   }
-  friend void swap(iterator_template &lhs, iterator_template &rhs) {
+  constexpr friend void swap(iterator_template &lhs, iterator_template &rhs) noexcept{
     iterator_template lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
   }
-  friend void swap(reference lhs, reference rhs) {
+  constexpr friend void swap(reference lhs, reference rhs) noexcept{
     value_type lhsm_ = lhs;
     lhs = rhs;
     rhs = lhsm_;
   }
+};
+class static_str_algo {
+ public:
+  static constexpr int64_t the_reinterpreted_char_cca_size = 17;
+  static constexpr int64_t forbiden_chars_cnt_size = 3;
+  static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
+  static size_t constexpr DBL_MAX_DECIMAL_PLACES = FLT_MAX_DECIMAL_PLACES;
+  static constexpr const char *empty_STRING_C_STR = "";
+
+ public:
+ public:
+  static constexpr int MJZ_STRnCMP(const char *p1, const char *p2,
+                                   size_t lenght) {
+    const unsigned char *s1 = (const unsigned char *)p1;
+    const unsigned char *s2 = (const unsigned char *)p2;
+    const unsigned char *END_OF_char = s1 + lenght;
+    unsigned char c1, c2;
+    do {
+      c1 = (unsigned char)*s1;
+      s1++;
+      c2 = (unsigned char)*s2;
+      s2++;
+      if (END_OF_char < s1) {
+        return c1 - c2;
+      }
+    } while (c1 == c2);
+    return c1 - c2;
+  }
+  constexpr static int memcmp(const void *str1, const void *str2,
+                              size_t count) {
+    const unsigned char *s1 = (const unsigned char *)str1;
+    const unsigned char *s2 = (const unsigned char *)str2;
+    while (0 < count--) {
+      if (*s1++ != *s2++) return s1[-1] < s2[-1] ? -1 : 1;
+    }
+    return 0;
+  }
+  constexpr static int memcmp(const void *str1, size_t count1, const void *str2,
+                              size_t count2) {
+    if (count1 != count2) {
+      return count1 < count2 ? -1 : 1;
+    }
+    if (str1 == str2) {
+      return 0;
+    }
+    return memcmp(str1, str2, count2);
+  }
+
+  constexpr static void *memmove(void *dest, const void *src, size_t len) {
+    char *d = (char *)dest;
+    const char *s = (const char *)src;
+    if (d < s)
+      while (len--) *d++ = *s++;
+    else {
+      const char *lasts = s + (len - 1);
+      char *lastd = d + (len - 1);
+      while (len--) *lastd-- = *lasts--;
+    }
+    return dest;
+  }
+  constexpr static void *memcpy(void *dest, const void *src, size_t len) {
+    return memmove(dest, src, len);
+  }
+  static inline size_t strlen(const char *str) {
+    if (!(str && *str)) return 0;
+    const char *str_i = str;
+    while (1) {
+      if (!*++str_i) return str_i - str;
+    }
+  }
+  constexpr static inline const char *strchr(const char *str, size_t len_,
+                                             char ch) {
+    const char *haystack_end = str + len_;
+    for (const char *i{str}; i < haystack_end; ++i) {
+      if (*(i) == ch) return i;
+    }
+    return NULL;
+  }
+  constexpr static inline const char *strrchr(const char *str, size_t len_,
+                                              char ch) {
+    const char *haystack_end = str + len_;
+    const char *i{haystack_end - 1};
+    for (;;) {
+      if (*(i) == ch) return i;
+      if (i <= str) break;
+      --i;
+    }
+    return NULL;
+  }
+  constexpr static inline const char *strstr(const char *const haystack_,
+                                             const size_t haystack_len,
+                                             const char *const needle_,
+                                             const size_t needle_len) {
+    const char *haystack = haystack_;
+    const char *needle = needle_;
+    /* Length of NEEDLE. */
+    /* Known minimum length of HAYSTACK. */
+    /* Handle empty NEEDLE special case. */
+    if (needle[0] == '\0') return (char *)haystack;
+    if (haystack_len < needle_len) return NULL;
+    if (haystack_len == 0) return NULL;
+    /* Skip until we find the first matching char from NEEDLE. */
+    const char *haystack_end = haystack + haystack_len;
+    haystack = strchr(haystack, haystack_len, needle[0]);
+    if (haystack_end == haystack || needle[1] == '\0' || !haystack)
+      return (char *)haystack;
+    /* Ensure HAYSTACK length is at least as long as NEEDLE length.
+    Since a match may occur early on in a huge HAYSTACK, use strnlen
+    and read ahead a few cachelines for improved performance. */
+    /* Check whether we have a match. This improves performance since we avoid
+    the initialization overhead of the two-way algorithm. */
+    if (static_str_algo::memcmp(haystack, needle, needle_len) == 0)
+      return (char *)haystack;
+    /* Perform the search. Abstract memory is considered to be an array
+    of 'unsigned char' values, not an array of 'char' values. See
+    ISO C 99 section 6.2.6.1. */
+    return NULL;
+  }
+
+  constexpr static int64_t compare_two_str(const char *rhs, size_t rhs_l,
+                                           const char *lhs, size_t lhs_l) {
+    if (!rhs || !lhs) {
+      if (lhs && lhs_l > 0) {
+        return static_cast<int64_t>(0) - *(unsigned char *)lhs;
+      }
+      if (rhs && rhs_l > 0) {
+        return *(unsigned char *)rhs;
+      }
+
+      return 0;
+    }
+    return MJZ_STRnCMP(rhs, lhs, rhs_l);
+  }
+  constexpr static bool are_two_str_equale(const char *rhs, size_t rhs_l,
+                                           const char *lhs, size_t lhs_l) {
+    if (rhs_l == 0) {
+      // // (this->*update_event_F_p)(); //departed
+      return (lhs == NULL || *lhs == 0);
+    }
+    if (lhs == NULL) {
+      // // (this->*update_event_F_p)(); //departed
+      return rhs[0] == 0;
+    }
+    if (lhs_l != rhs_l) return 0;
+    // // (this->*update_event_F_p)(); //departed
+    return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
+  }
+
+ public:
+  static constexpr int64_t stack_buffer_size = 15;
+  class stack_str_buf {
+    mutable bool STR_is_in_stack{};
+
+   public:
+    char stack_buffer[stack_buffer_size + 1]{};  // string you're searching for
+    stack_str_buf() : STR_is_in_stack(0) {
+      stack_buffer[stack_buffer_size] = 0;
+    }
+    stack_str_buf(const stack_str_buf &) = default;
+    stack_str_buf(stack_str_buf &&) = default;
+    stack_str_buf &operator=(stack_str_buf &&) = default;
+    stack_str_buf &operator=(const stack_str_buf &) = default;
+    bool set(bool STR_is_in_stack_) {
+      STR_is_in_stack = STR_is_in_stack_;
+      if (STR_is_in_stack_) goto _return___;
+      memset(stack_buffer, 0, stack_buffer_size);
+      stack_buffer[stack_buffer_size] = 0;
+    _return___:
+      return STR_is_in_stack;
+    }
+    bool get() { return STR_is_in_stack; }
+    // virtual //i dont need it
+    ~stack_str_buf() { STR_is_in_stack = 0; }
+  };
 };
 /*********************************************************************
  * Filename:   sha256.h
@@ -535,131 +731,220 @@ struct SHA256_CTX {
   WORD datalen{};
   unsigned long long bitlen{};
   WORD state[8]{};
+  mjz_Str to_string() const;
+  static inline int compare_hash(const void *rhs, const SHA256_CTX &lhs) {
+    return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
+  }
+  static inline int compare_hash(const SHA256_CTX &rhs, const void *lhs) {
+    return SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
+  }
+  friend inline int operator!=(const void *rhs, const SHA256_CTX &lhs) {
+    return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
+  }
+  friend inline bool operator!=(const SHA256_CTX &rhs, const void *lhs) {
+    return SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
+  }
+  friend inline bool operator==(const void *rhs, const SHA256_CTX &lhs) {
+    return !SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
+  }
+  friend inline bool operator==(const SHA256_CTX &rhs, const void *lhs) {
+    return !SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
+  }
+  friend inline bool operator!=(const SHA256_CTX &rhs, const SHA256_CTX &lhs) {
+    return !!SHA256_CTX::compare_hash(rhs.hashed_data, lhs.hashed_data);
+  }
+  friend inline bool operator==(const SHA256_CTX &rhs, const SHA256_CTX &lhs) {
+    return !SHA256_CTX::compare_hash(rhs.hashed_data, lhs.hashed_data);
+  }
+  inline static int real_compare_hash(const void *rhs, const void *lhs) {
+    return static_str_algo::memcmp(rhs, lhs, SHA256_BLOCK_SIZE);
+  }
+  static inline int compare_hash(const void *rhs, const void *lhs) {
+    return real_compare_hash(rhs, lhs);
+  }
+#define ROTLEFT(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
+#define ROTRIGHT(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
+
+#define CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
+#define MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define EP0(x) (ROTRIGHT(x, 2) ^ ROTRIGHT(x, 13) ^ ROTRIGHT(x, 22))
+#define EP1(x) (ROTRIGHT(x, 6) ^ ROTRIGHT(x, 11) ^ ROTRIGHT(x, 25))
+#define SIG0(x) (ROTRIGHT(x, 7) ^ ROTRIGHT(x, 18) ^ ((x) >> 3))
+#define SIG1(x) (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10))
+ private:
+  /**************************** VARIABLES *****************************/
+  static constexpr const WORD k_KEY_ENCRIPTER[64] = {
+      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
+      0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+      0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+      0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+      0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+      0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+      0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+      0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+      0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
+
+  /*********************** FUNCTION DEFINITIONS ***********************/
+  static constexpr void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
+    WORD a{}, b{}, c{}, d{}, e{}, f{}, g{}, h{}, i{}, j{}, t1{}, t2{}, m[64]{};
+
+    for (i = 0, j = 0; i < 16; ++i, j += 4)
+      m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) |
+             (data[j + 3]);
+    for (; i < 64; ++i)
+      m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
+
+    a = ctx->state[0];
+    b = ctx->state[1];
+    c = ctx->state[2];
+    d = ctx->state[3];
+    e = ctx->state[4];
+    f = ctx->state[5];
+    g = ctx->state[6];
+    h = ctx->state[7];
+
+    for (i = 0; i < 64; ++i) {
+      t1 = h + EP1(e) + CH(e, f, g) + k_KEY_ENCRIPTER[i] + m[i];
+      t2 = EP0(a) + MAJ(a, b, c);
+      h = g;
+      g = f;
+      f = e;
+      e = d + t1;
+      d = c;
+      c = b;
+      b = a;
+      a = t1 + t2;
+    }
+
+    ctx->state[0] += a;
+    ctx->state[1] += b;
+    ctx->state[2] += c;
+    ctx->state[3] += d;
+    ctx->state[4] += e;
+    ctx->state[5] += f;
+    ctx->state[6] += g;
+    ctx->state[7] += h;
+  }
+
+  static constexpr void sha256_init(SHA256_CTX *ctx) {
+    ctx->datalen = 0;
+    ctx->bitlen = 0;
+    ctx->state[0] = 0x6a09e667;
+    ctx->state[1] = 0xbb67ae85;
+    ctx->state[2] = 0x3c6ef372;
+    ctx->state[3] = 0xa54ff53a;
+    ctx->state[4] = 0x510e527f;
+    ctx->state[5] = 0x9b05688c;
+    ctx->state[6] = 0x1f83d9ab;
+    ctx->state[7] = 0x5be0cd19;
+  }
+
+  static constexpr void sha256_update(SHA256_CTX *ctx, const BYTE data[],
+                                      size_t len) {
+    WORD i;
+
+    for (i = 0; i < len; ++i) {
+      ctx->data[ctx->datalen] = data[i];
+      ctx->datalen++;
+      if (ctx->datalen == 64) {
+        sha256_transform(ctx, ctx->data);
+        ctx->bitlen += 512;
+        ctx->datalen = 0;
+      }
+    }
+  }
+
+  static constexpr void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
+    WORD i;
+
+    i = ctx->datalen;
+
+    // Pad whatever data is left in the buffer.
+    if (ctx->datalen < 56) {
+      ctx->data[i++] = 0x80;
+      while (i < 56) ctx->data[i++] = 0x00;
+    } else {
+      ctx->data[i++] = 0x80;
+      while (i < 64) ctx->data[i++] = 0x00;
+      sha256_transform(ctx, ctx->data);
+      memset(ctx->data, 0, 56);
+    }
+
+    // Append to the padding the total message's length in bits and transform.
+    ctx->bitlen += static_cast<uint64_t>(ctx->datalen) * 8;
+    ctx->data[63] = static_cast<BYTE>(ctx->bitlen);
+    ctx->data[62] = static_cast<BYTE>(ctx->bitlen >> 8);
+    ctx->data[61] = static_cast<BYTE>(ctx->bitlen >> 16);
+    ctx->data[60] = static_cast<BYTE>(ctx->bitlen >> 24);
+    ctx->data[59] = static_cast<BYTE>(ctx->bitlen >> 32);
+    ctx->data[58] = static_cast<BYTE>(ctx->bitlen >> 40);
+    ctx->data[57] = static_cast<BYTE>(ctx->bitlen >> 48);
+    ctx->data[56] = static_cast<BYTE>(ctx->bitlen >> 56);
+    sha256_transform(ctx, ctx->data);
+
+    // Since this implementation uses little endian byte ordering and SHA uses
+    // big endian, reverse all the bytes when copying the final state to the
+    // output hash.
+    for (i = 0; i < 4; ++i) {
+      hash[i] = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 4] = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 8] = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
+    }
+  }
+
+ public:
+  static constexpr void sha256_the_string(SHA256_CTX *hash_out,
+                                          const char *c_str, size_t len) {
+    SHA256_CTX ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, reinterpret_cast<const BYTE *>(c_str), len);
+    sha256_final(&ctx, hash_out->data);
+    return;
+  }
+  constexpr void sha256_the_string(const char *c_str, size_t len) {
+    return sha256_the_string(this, c_str, len);
+  }
+  static constexpr SHA256_CTX hash_msg_to_sha_512(
+      const char *dev_passwoed, const size_t dev_passwoedLength) {
+    SHA256_CTX rtrn{};
+    sha256_the_string(&rtrn, dev_passwoed, dev_passwoedLength);
+    return rtrn;
+  }
+  static constexpr SHA256_CTX hash_msg_to_sha_512_n(
+      const char *dev_passwoed, const size_t dev_passwoedLength,
+      uint8_t n) {  // intended copy
+    SHA256_CTX ret = hash_msg_to_sha_512(dev_passwoed, dev_passwoedLength);
+    for (int64_t i{}; i < n; i++) {
+      ret = hash_msg_to_sha_512((char *)ret.hashed_data, SHA256_BLOCK_SIZE);
+    }
+    return ret;
+  }
 };
-inline int cmpr_hash(const void *rhs, const void *lhs) {
-  return std::memcmp(rhs, lhs, SHA256_BLOCK_SIZE);
-}
-inline int cmpr_hash(const void *rhs, const SHA256_CTX &lhs) {
-  return cmpr_hash(rhs, lhs.hashed_data);
-}
-inline int cmpr_hash(const SHA256_CTX &rhs, const void *lhs) {
-  return cmpr_hash(rhs.hashed_data, lhs);
-}
-inline int operator!=(const void *rhs, const SHA256_CTX &lhs) {
-  return cmpr_hash(rhs, lhs.hashed_data);
-}
-inline bool operator!=(const SHA256_CTX &rhs, const void *lhs) {
-  return cmpr_hash(rhs.hashed_data, lhs);
-}
-inline bool operator==(const void *rhs, const SHA256_CTX &lhs) {
-  return !cmpr_hash(rhs, lhs.hashed_data);
-}
-inline bool operator==(const SHA256_CTX &rhs, const void *lhs) {
-  return !cmpr_hash(rhs.hashed_data, lhs);
-}
-inline bool operator!=(const SHA256_CTX &rhs, const SHA256_CTX &lhs) {
-  return !!cmpr_hash(rhs.hashed_data, lhs.hashed_data);
-}
-inline bool operator==(const SHA256_CTX &rhs, const SHA256_CTX &lhs) {
-  return !cmpr_hash(rhs.hashed_data, lhs.hashed_data);
-}
-typedef SHA256_CTX hash_sha_512;
+
+typedef SHA256_CTX hash_sha256;
 /*********************** FUNCTION DECLARATIONS **********************/
 void sha256_init(SHA256_CTX *ctx);
 void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
 void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
 
 #endif  // SHA256_H
-class static_str_algo {
- public:
-  static constexpr int64_t the_reinterpreted_char_cca_size = 17;
-  static constexpr int64_t forbiden_chars_cnt_size = 3;
-  static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
-  static size_t constexpr DBL_MAX_DECIMAL_PLACES = FLT_MAX_DECIMAL_PLACES;
-  static constexpr const char *empty_STRING_C_STR = "";
 
- public:
- public:
-  static void *memmove(void *dest, const void *src, size_t len) {
-    char *d = (char *)dest;
-    const char *s = (const char *)src;
-    if (d < s)
-      while (len--) *d++ = *s++;
-    else {
-      const char *lasts = s + (len - 1);
-      char *lastd = d + (len - 1);
-      while (len--) *lastd-- = *lasts--;
-    }
-    return dest;
-  }
-  static void *memcpy(void *dest, const void *src, size_t len) {
-    return memmove(dest, src, len);
-  }
-  static inline size_t strlen(const char *str) {
-    if (!(str && *str)) return 0;
-    const char *str_i = str;
-    while (1) {
-      if (!*++str_i) return str_i - str;
-    }
-  }
-  static inline const char *strchr(const char *str, size_t len_, char ch) {
-    const char *haystack_end = str + len_;
-    for (const char *i{str}; i < haystack_end; ++i) {
-      if (*(i) == ch) return i;
-    }
-    return NULL;
-  }
-  static inline const char *strrchr(const char *str, size_t len_, char ch) {
-    const char *haystack_end = str + len_;
-    const char *i{haystack_end - 1};
-    for (;;) {
-      if (*(i) == ch) return i;
-      if (i <= str) break;
-      --i;
-    }
-    return NULL;
-  }
-  static inline const char *strstr(const char *const haystack_,
-                                   const size_t haystack_len,
-                                   const char *const needle_,
-                                   const size_t needle_len) {
-    const char *haystack = haystack_;
-    const char *needle = needle_;
-    /* Length of NEEDLE. */
-    /* Known minimum length of HAYSTACK. */
-    /* Handle empty NEEDLE special case. */
-    if (needle[0] == '\0') return (char *)haystack;
-    if (haystack_len < needle_len) return NULL;
-    if (haystack_len == 0) return NULL;
-    /* Skip until we find the first matching char from NEEDLE. */
-    const char *haystack_end = haystack + haystack_len;
-    haystack = strchr(haystack, haystack_len, needle[0]);
-    if (haystack_end == haystack || needle[1] == '\0' || !haystack)
-      return (char *)haystack;
-    /* Ensure HAYSTACK length is at least as long as NEEDLE length.
-    Since a match may occur early on in a huge HAYSTACK, use strnlen
-    and read ahead a few cachelines for improved performance. */
-    /* Check whether we have a match. This improves performance since we avoid
-    the initialization overhead of the two-way algorithm. */
-    if (memcmp(haystack, needle, needle_len) == 0) return (char *)haystack;
-    /* Perform the search. Abstract memory is considered to be an array
-    of 'unsigned char' values, not an array of 'char' values. See
-    ISO C 99 section 6.2.6.1. */
-    return NULL;
-  }
-};
 class basic_mjz_Str_view : public static_str_algo {
  public:
-  static int64_t compare_two_str(const char *rhs, size_t rhs_l, const char *lhs,
-                                 size_t lhs_l);
-  static bool are_two_str_equale(const char *rhs, size_t rhs_l, const char *lhs,
-                                 size_t lhs_l);
+  constexpr inline const char *begining_of_str_ptr() const { return m_buffer; }
+  constexpr inline const char *ending_of_str_ptr() const {
+    return m_buffer + m_length;
+  }
 
-  inline const char *begining_of_str_ptr() const { return m_buffer; }
-  inline const char *ending_of_str_ptr() const { return m_buffer + m_length; }
-
-  inline char *begining_of_str_ptr() { return m_buffer; }
-  inline char *ending_of_str_ptr() { return m_buffer + m_length; }
+  constexpr inline char *begining_of_str_ptr() { return m_buffer; }
+  constexpr inline char *ending_of_str_ptr() { return m_buffer + m_length; }
 
  protected:  // the actual char array
   char *m_buffer;
@@ -667,22 +952,22 @@ class basic_mjz_Str_view : public static_str_algo {
   size_t m_length;
 
  public:
-  basic_mjz_Str_view(char *buffer, size_t length)
+  constexpr basic_mjz_Str_view(char *buffer, size_t length)
       : m_buffer(buffer), m_length(length) {}
-  basic_mjz_Str_view(const char *buffer, size_t length)
+  constexpr basic_mjz_Str_view(const char *buffer, size_t length)
       : basic_mjz_Str_view(const_cast<char *>(buffer), length) {}
-  ~basic_mjz_Str_view() = default;
-  basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = delete;
-  basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = delete;
-  basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = delete;
-  basic_mjz_Str_view(basic_mjz_Str_view &&) = delete;
-  basic_mjz_Str_view(basic_mjz_Str_view &) = delete;
-  basic_mjz_Str_view(const basic_mjz_Str_view &) = delete;
+  constexpr ~basic_mjz_Str_view() = default;
+  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = delete;
+  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = delete;
+  constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = delete;
+  constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = delete;
+  constexpr basic_mjz_Str_view(basic_mjz_Str_view &) = delete;
+  constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = delete;
 
  public:
-  inline char *&buffer_ref() { return m_buffer; }
-  inline const char *buffer_ref() const { return m_buffer; }
-  bool is_blank() const {
+  constexpr inline char *&buffer_ref() { return m_buffer; }
+  constexpr inline const char *buffer_ref() const { return m_buffer; }
+  constexpr bool is_blank() const {
     size_t i{};
     while (i < m_length) {
       if (!is_blank_characteres_default(m_buffer[i])) return 0;
@@ -690,149 +975,379 @@ class basic_mjz_Str_view : public static_str_algo {
     }
     return 1;
   }
-  bool empty() const {
+  constexpr bool empty() const {
     return (!m_length || m_buffer == empty_STRING_C_STR || m_buffer == nullptr);
   }
-  inline const char *c_str() const { return buffer_ref(); }
-  inline const char *c_str() { return buffer_ref(); }
-  inline const char *C_str() const { return buffer_ref(); }
-  inline char *C_str() { return m_buffer; }
-  inline size_t length(void) const { return m_length; }
+  constexpr inline const char *c_str() const { return buffer_ref(); }
+  constexpr inline const char *c_str() { return buffer_ref(); }
+  constexpr inline const char *C_str() const { return buffer_ref(); }
+  constexpr inline char *C_str() { return m_buffer; }
+  constexpr inline size_t length(void) const { return m_length; }
 
  public:
-  if_virtual_then_virtual explicit operator const bool() const {
-    return !is_blank();
+  constexpr explicit operator const bool() const { return !is_blank(); }
+  constexpr char operator[](int64_t index) const {
+    index = signed_index_to_unsigned(index);
+    if ((size_t)index >= m_length || !m_buffer) {
+      return 0;
+    }
+    return m_buffer[index];
   }
-  if_virtual_then_virtual char operator[](size_t index) const;
-  if_virtual_then_virtual char operator[](int64_t index) const;
-  if_virtual_then_virtual bool operator!() const { return is_blank(); }
+  constexpr char operator[](size_t index) const {
+    if (index >= m_length || !m_buffer) {
+      return 0;
+    }
+    return m_buffer[index];
+  }
+  constexpr bool operator!() const { return is_blank(); }
   // parsing/conversion
-  if_virtual_then_virtual long toInt(void) const;
-  if_virtual_then_virtual float toFloat(void) const;
-  if_virtual_then_virtual double toDouble(void) const;
-  if_virtual_then_virtual long long toLL(void) const;
-  if_virtual_then_virtual long long to_LL(int radix = 10, bool *had_error = 0,
-                                          uint8_t error_level = 0) const;
-  friend bool operator==(const basic_mjz_Str_view &a,
-                         const basic_mjz_Str_view &b) {
+  constexpr long long toLL(void) const {
+    if (m_buffer) {
+      return to_LL();
+    }
+    return 0;
+  }
+  constexpr long long to_LL(int radix = 10, bool *had_error = 0,
+                            uint8_t error_level = 0) const {
+    if (m_buffer) {
+      return C_STR_to_LL(c_str(), (uint8_t)min(length(), (uint64_t)255), radix,
+                         had_error, error_level);
+    }
+    return 0;
+  }
+  constexpr long toInt(void) const { return (long)toLL(); }
+
+  constexpr float toFloat(void) const {
+    // // (this->*update_event_F_p)(); //departed
+    return float(toDouble());
+  }
+  constexpr double toDouble(void) const {
+    if (m_buffer) {
+      char *ptr{};
+      return strtod(m_buffer, &ptr);
+    }
+    return 0;
+  }
+
+  constexpr friend bool operator==(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
     return a.equals(b);
   }
-  friend bool operator==(const basic_mjz_Str_view &a, const char *b) {
+  constexpr friend bool operator==(const basic_mjz_Str_view &a, const char *b) {
     return a.equals(b);
   }
-  friend bool operator==(const char *a, const basic_mjz_Str_view &b) {
+  constexpr friend bool operator==(const char *a, const basic_mjz_Str_view &b) {
     return b == a;
   }
-  friend bool operator<(const basic_mjz_Str_view &a,
-                        const basic_mjz_Str_view &b) {
+  constexpr friend bool operator<(const basic_mjz_Str_view &a,
+                                  const basic_mjz_Str_view &b) {
     return a.compareTo(b) < 0;
   }
-  friend bool operator<(const basic_mjz_Str_view &a, const char *b) {
+  constexpr friend bool operator<(const basic_mjz_Str_view &a, const char *b) {
     return a.compareTo(b) < 0;
   }
-  friend bool operator<(const char *a, const basic_mjz_Str_view &b) {
+  constexpr friend bool operator<(const char *a, const basic_mjz_Str_view &b) {
     return b.compareTo(a) > 0;
   }
-  friend bool operator!=(const basic_mjz_Str_view &a,
-                         const basic_mjz_Str_view &b) {
+  constexpr friend bool operator!=(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
     return !(a == b);
   }
-  friend bool operator!=(const basic_mjz_Str_view &a, const char *b) {
+  constexpr friend bool operator!=(const basic_mjz_Str_view &a, const char *b) {
     return !(a == b);
   }
-  friend bool operator!=(const char *a, const basic_mjz_Str_view &b) {
+  constexpr friend bool operator!=(const char *a, const basic_mjz_Str_view &b) {
     return !(a == b);
   }
-  friend bool operator>(const basic_mjz_Str_view &a,
-                        const basic_mjz_Str_view &b) {
+  constexpr friend bool operator>(const basic_mjz_Str_view &a,
+                                  const basic_mjz_Str_view &b) {
     return b < a;
   }
-  friend bool operator>(const basic_mjz_Str_view &a, const char *b) {
+  constexpr friend bool operator>(const basic_mjz_Str_view &a, const char *b) {
     return b < a;
   }
-  friend bool operator>(const char *a, const basic_mjz_Str_view &b) {
+  constexpr friend bool operator>(const char *a, const basic_mjz_Str_view &b) {
     return b < a;
   }
-  friend bool operator<=(const basic_mjz_Str_view &a,
-                         const basic_mjz_Str_view &b) {
+  constexpr friend bool operator<=(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
     return !(b < a);
   }
-  friend bool operator<=(const basic_mjz_Str_view &a, const char *b) {
+  constexpr friend bool operator<=(const basic_mjz_Str_view &a, const char *b) {
     return !(b < a);
   }
-  friend bool operator<=(const char *a, const basic_mjz_Str_view &b) {
+  constexpr friend bool operator<=(const char *a, const basic_mjz_Str_view &b) {
     return !(b < a);
   }
-  friend bool operator>=(const basic_mjz_Str_view &a,
-                         const basic_mjz_Str_view &b) {
+  constexpr friend bool operator>=(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
     return !(a < b);
   }
-  friend bool operator>=(const basic_mjz_Str_view &a, const char *b) {
+  constexpr friend bool operator>=(const basic_mjz_Str_view &a, const char *b) {
     return !(a < b);
   }
-  friend bool operator>=(const char *a, const basic_mjz_Str_view &b) {
+  constexpr friend bool operator>=(const char *a, const basic_mjz_Str_view &b) {
     return !(a < b);
   }
 
   // hash function
-  if_virtual_then_virtual hash_sha_512 mjz_hash(uint8_t n = 0) const;
-  if_virtual_then_virtual hash_sha_512 hash() const { return mjz_hash(0); }
-  std::pair<hash_sha_512, mjz_Str> hash_with_output(uint8_t n = 0) const;
-  if_virtual_then_virtual int64_t compareTo(const basic_mjz_Str_view &s) const;
-  if_virtual_then_virtual int64_t compareTo(const char *cstr) const;
-  if_virtual_then_virtual bool equals(const char *cstr, size_t cstr_len) const;
-  if_virtual_then_virtual bool equals(const basic_mjz_Str_view &s) const;
-  inline bool equals(const char *cstr) const {
+  constexpr hash_sha256 mjz_hash(uint8_t n = 0) const {
+    return SHA256_CTX::hash_msg_to_sha_512_n(c_str(), length(), n);
+  }
+  constexpr hash_sha256 hash() const { return mjz_hash(0); }
+  constexpr int64_t compareTo(const basic_mjz_Str_view &s) const {
+    return compare_two_str(m_buffer, m_length, s.m_buffer, m_length);
+  }
+
+  constexpr int64_t compareTo(const char *cstr) const {
+    return compare_two_str(m_buffer, m_length, cstr, strlen(cstr));
+  }
+  constexpr bool equals(const char *cstr, size_t cstr_len) const {
+    return are_two_str_equale(m_buffer, m_length, cstr, cstr_len);
+  }
+  constexpr bool equals(const basic_mjz_Str_view &s2) const {
+    // // (this->*update_event_F_p)(); //departed
+    return (m_length == s2.m_length && compareTo(s2) == 0);
+  }
+  constexpr inline bool equals(const char *cstr) const {
     return equals(cstr, strlen(cstr));
   }
-  inline size_t signed_index_to_unsigned(int64_t input) const;
-  if_virtual_then_virtual size_t UN_ORDERED_compare(const char *s,
-                                                    size_t s_len) const;
-  if_virtual_then_virtual size_t
-  UN_ORDERED_compare(const basic_mjz_Str_view &s) const;
-  if_virtual_then_virtual bool equalsIgnoreCase(
-      const basic_mjz_Str_view &s) const;
-  if_virtual_then_virtual bool startsWith(
-      const basic_mjz_Str_view &prefix) const;
-  if_virtual_then_virtual bool startsWith(const basic_mjz_Str_view &prefix,
-                                          size_t offset) const;
-  if_virtual_then_virtual bool endsWith(const basic_mjz_Str_view &suffix) const;
+  constexpr inline size_t signed_index_to_unsigned(int64_t input) const {
+    if (input < 0) {
+      input += length();
+    }
+    if (length() < (size_t)(input)) {
+      input = length();
+    }
+    return (size_t)(input);
+  }
+
+  constexpr size_t UN_ORDERED_compare(const basic_mjz_Str_view &s) const {
+    return UN_ORDERED_compare(s.m_buffer, s.m_length);
+  }
+
+  constexpr size_t UN_ORDERED_compare(const char *s, size_t s_len) const {
+    const unsigned char *ucs_ = (const unsigned char *)s;
+    const unsigned char *ucbuffer_ = (const unsigned char *)this->m_buffer;
+    size_t number_of_not_right{};
+    size_t NUMBER_OF_EACH_char_array[2][256]{};
+    for (size_t i{}; i < s_len; i++) {
+      NUMBER_OF_EACH_char_array[0][ucs_[i]]++;
+    }
+    for (size_t i{}; i < this->length(); i++) {
+      NUMBER_OF_EACH_char_array[1][ucbuffer_[i]]++;
+    }
+    for (size_t i{}; i < 256; i++) {
+      number_of_not_right +=
+          (size_t)abs((int64_t)NUMBER_OF_EACH_char_array[1][i] -
+                      (int64_t)NUMBER_OF_EACH_char_array[0][i]);
+    }
+    return number_of_not_right;
+  }
+  constexpr bool equalsIgnoreCase(const basic_mjz_Str_view &s2) const {
+    if (this == &s2) {
+      // // (this->*update_event_F_p)(); //departed
+      return true;
+    }
+    if (m_length != s2.m_length) {
+      // // (this->*update_event_F_p)(); //departed
+      return false;
+    }
+    if (m_length == 0) {
+      //// (this->*update_event_F_p)(); //departed
+      return true;
+    }
+    const char *p1 = m_buffer;
+    const char *p2 = s2.m_buffer;
+    const char *end_p1 = m_buffer + length();
+    while (p1 < end_p1) {
+      if (tolower(*p1++) != tolower(*p2++)) {
+        // // (this->*update_event_F_p)(); //departed
+        return false;
+      }
+    }
+    // // (this->*update_event_F_p)(); //departed
+    return true;
+  }
+  constexpr bool startsWith(const basic_mjz_Str_view &s2) const {
+    if (m_length < s2.m_length) {
+      // // (this->*update_event_F_p)(); //departed
+      return false;
+    }
+    // // (this->*update_event_F_p)(); //departed
+    return startsWith(s2, 0);
+  }
+  constexpr bool startsWith(const basic_mjz_Str_view &s2, size_t offset) const {
+    if (offset > m_length - s2.m_length || !m_buffer || !s2.m_buffer) {
+      // // (this->*update_event_F_p)(); //departed
+      return false;
+    }
+    // // (this->*update_event_F_p)(); //departed
+    return MJZ_STRnCMP(&m_buffer[offset], s2.m_buffer, s2.m_length) == 0;
+  }
+  constexpr bool endsWith(const basic_mjz_Str_view &s2) const {
+    if (m_length < s2.m_length || !m_buffer || !s2.m_buffer) {
+      // // (this->*update_event_F_p)(); //departed
+      return false;
+    }
+    // // (this->*update_event_F_p)(); //departed
+    return MJZ_STRnCMP(&m_buffer[m_length - s2.m_length], s2.m_buffer,
+                       s2.m_length) == 0;
+  }
   // Function that return the length
-  size_t size() const { return length(); }
-  if_virtual_then_virtual char charAt(int64_t index) const;
-  if_virtual_then_virtual char charAt(size_t index) const;
-  if_virtual_then_virtual void getBytes(unsigned char *buf, size_t bufsize,
-                                        size_t index = 0) const;
-  inline if_virtual_then_virtual void toCharArray(char *buf, size_t bufsize,
-                                                  size_t index = 0) const {
+  constexpr size_t size() const { return length(); }
+  constexpr if_virtual_then_virtual char charAt(int64_t loc) const {
+    // // (this->*update_event_F_p)(); //departed
+    loc = signed_index_to_unsigned(loc);
+    return operator[](loc);
+  }
+  constexpr char charAt(size_t loc) const {
+    // // (this->*update_event_F_p)(); //departed
+    return operator[](loc);
+  }
+  constexpr void getBytes(unsigned char *buf, size_t bufsize,
+                          size_t index = 0) const {
+    if (!bufsize || !buf) {
+      // // (this->*update_event_F_p)(); //departed
+      return;
+    }
+    if (index >= m_length) {
+      buf[0] = 0;
+      // // (this->*update_event_F_p)(); //departed
+      return;
+    }
+    size_t n = bufsize - 1;
+    if (n > m_length - index) {
+      n = m_length - index;
+    }
+    memmove((char *)buf, m_buffer + index, min_macro_(n, m_length));
+    buf[n] = 0;
+    // // (this->*update_event_F_p)(); //departed
+  }
+  inline constexpr void toCharArray(char *buf, size_t bufsize,
+                                    size_t index = 0) const {
     getBytes((unsigned char *)buf, bufsize, index);
   }
-  if_virtual_then_virtual int64_t indexOf(char ch) const;
-  if_virtual_then_virtual int64_t indexOf(char ch, size_t fromIndex) const;
+  constexpr int64_t indexOf(char c) const { return indexOf(c, 0); }
+  constexpr int64_t indexOf(char ch, size_t fromIndex) const {
+    if (fromIndex >= m_length) {
+      return -1;
+    }
+    const char *temp = strchr(m_buffer + fromIndex, length() + fromIndex, ch);
+    if (temp == NULL) {
+      return -1;
+    }
+    return (int64_t)(temp - m_buffer);
+  }
+
+  constexpr int64_t indexOf_cstr(const char *c_str_, size_t len_str,
+                                 size_t fromIndex) const {
+    if (fromIndex >= m_length) {
+      return -1;
+    }
+    const char *found =
+        strstr(m_buffer + fromIndex, length() - fromIndex, c_str_, len_str);
+    if (found == NULL) {
+      return -1;
+    }
+    return (int64_t)(found - m_buffer);
+  }
+  constexpr int64_t lastIndexOf_cstr(const char *cstr__, size_t length__,
+                                     size_t fromIndex) const {
+    if (length__ == 0 || m_length == 0 || length__ > m_length) {
+      return -1;
+    }
+    if (fromIndex >= m_length) {
+      fromIndex = m_length - 1;
+    }
+    int64_t found = -1;
+    for (const char *p = m_buffer; p <= m_buffer + fromIndex; p++) {
+      p = strstr(p, m_length, cstr__, length__);
+      if (!p) {
+        break;
+      }
+      if ((size_t)(p - m_buffer) <= fromIndex) {
+        found = (int64_t)(p - m_buffer);
+      }
+    }
+    return found;
+  }
+  inline constexpr int64_t lastIndexOf_cstr(const char *cstr__,
+                                            size_t length__) const {
+    return lastIndexOf_cstr(cstr__, length__, 0);
+  }
+  constexpr int64_t lastIndexOf(char theChar) const {
+    return lastIndexOf(theChar, m_length - 1);
+  }
+  constexpr int64_t lastIndexOf(char ch, size_t fromIndex) const {
+    if (fromIndex >= m_length) {
+      return -1;
+    }
+    char tempchar = m_buffer[fromIndex + 1];
+    m_buffer[fromIndex + 1] = '\0';
+    char *temp = const_cast<char *>(strrchr(m_buffer, length(), ch));
+    m_buffer[fromIndex + 1] = tempchar;
+    if (temp == NULL) {
+      return -1;
+    }
+    return (int64_t)(temp - m_buffer);
+  };
+  constexpr const char *substring_give_ptrULL(size_t left, size_t right,
+                                              const char *&c_str_out,
+                                              size_t &len_out) const {
+    if (left > right) {
+      size_t temp = right;
+      right = left;
+      left = temp;
+    }
+    if (left >= m_length) {
+      // // (this->*update_event_F_p)(); //departed
+      len_out = 0;
+      return (c_str_out = 0);
+    }
+    if (right > m_length) {
+      right = m_length;
+    }
+    c_str_out = m_buffer + left;
+    len_out = right - left;
+    return c_str_out;
+  }
+  constexpr const char *substring_give_ptr(int64_t left, int64_t right,
+                                           const char *&c_str_out,
+                                           size_t &len_out) const {
+    return substring_give_ptrULL(signed_index_to_unsigned(left),
+                                 signed_index_to_unsigned(right), c_str_out,
+                                 len_out);
+  }
+
+  friend class mjz_str_view;
+
+  constexpr const char &at(int64_t i) const { return operator[](i); }
+  constexpr const char &back() const { return buffer_ref()[0]; }
+  constexpr const char &front() const { return operator[]((int64_t)-1); }
+
+ public:  // non constexpr
+  mjz_str_view substr_view(size_t beginIndex);
+  mjz_str_view substr_view(size_t beginIndex, size_t endIndex) const;
+  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number);
+  mjz_str_view substr_view(int64_t beginIndex, int64_t endIndex) const;
+  mjz_str_view substr_view(int64_t beginIndex) const;
+  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number);
+  mjz_str_view substr_view_beg_n(unsigned int beginIndex,
+                                 unsigned int number) const;
+  mjz_str_view substr_view(int beginIndex) const;
+  mjz_str_view substr_view(int beginIndex, int endIndex) const;
+  mjz_str_view substr_view_beg_n(int beginIndex, int number) const;
+  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number) const;
+  mjz_str_view substr_view(size_t beginIndex) const;
+  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number) const;
+
+ public:
+  std::pair<hash_sha256, mjz_Str> hash_with_output(uint8_t n = 0) const;
+
   if_virtual_then_virtual int64_t indexOf(const mjz_Str &str) const;
   if_virtual_then_virtual int64_t indexOf(const mjz_Str &str,
                                           size_t fromIndex) const;
-  if_virtual_then_virtual int64_t indexOf_cstr(const char *c_str_,
-                                               size_t len_str,
-                                               size_t fromIndex) const;
-  if_virtual_then_virtual int64_t lastIndexOf_cstr(const char *cstr__,
-                                                   size_t length__,
-                                                   size_t fromIndex) const;
-  inline if_virtual_then_virtual int64_t
-  lastIndexOf_cstr(const char *cstr__, size_t length__) const {
-    return lastIndexOf_cstr(cstr__, length__, 0);
-  }
-  if_virtual_then_virtual int64_t lastIndexOf(char ch) const;
-  if_virtual_then_virtual int64_t lastIndexOf(char ch, size_t fromIndex) const;
-  if_virtual_then_virtual int64_t lastIndexOf(const mjz_Str &str) const;
-  if_virtual_then_virtual int64_t lastIndexOf(const mjz_Str &str,
-                                              size_t fromIndex) const;
-  if_virtual_then_virtual const char *substring_give_ptrULL(
-      size_t left, size_t right, const char *&c_str_out, size_t &len_out) const;
-  if_virtual_then_virtual const char *substring_give_ptr(int64_t left,
-                                                         int64_t right,
-                                                         const char *&c_str_out,
-                                                         size_t &len_out) const;
   if_virtual_then_virtual mjz_Str substring(size_t beginIndex);
   if_virtual_then_virtual mjz_Str substring(size_t beginIndex,
                                             size_t endIndex) const;
@@ -852,26 +1367,9 @@ class basic_mjz_Str_view : public static_str_algo {
   mjz_Str substring_beg_n(size_t beginIndex, size_t number) const;
   mjz_Str substring(size_t beginIndex) const;
   mjz_Str substring_beg_n(int64_t beginIndex, size_t number) const;
-
-  friend class mjz_str_view;
-  mjz_str_view substr_view(size_t beginIndex);
-  mjz_str_view substr_view(size_t beginIndex, size_t endIndex) const;
-  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number);
-  mjz_str_view substr_view(int64_t beginIndex, int64_t endIndex) const;
-  mjz_str_view substr_view(int64_t beginIndex) const;
-  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number);
-  mjz_str_view substr_view_beg_n(unsigned int beginIndex,
-                                 unsigned int number) const;
-  mjz_str_view substr_view(int beginIndex) const;
-  mjz_str_view substr_view(int beginIndex, int endIndex) const;
-  mjz_str_view substr_view_beg_n(int beginIndex, int number) const;
-  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number) const;
-  mjz_str_view substr_view(size_t beginIndex) const;
-  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number) const;
-
-  const char &at(int64_t i) const { return operator[](i); }
-  const char &back() const { return buffer_ref()[0]; }
-  const char &front() const { return operator[]((int64_t)-1); }
+  if_virtual_then_virtual int64_t lastIndexOf(const mjz_Str &str) const;
+  if_virtual_then_virtual int64_t lastIndexOf(const mjz_Str &str,
+                                              size_t fromIndex) const;
 };
 
 class mjz_Str;
@@ -888,7 +1386,7 @@ class basic_mjz_String : public basic_mjz_Str_view {
   inline basic_mjz_String(const char *bfr, size_t cap, size_t len)
       : basic_mjz_String(const_cast<char *>(bfr), cap, len){};
   inline basic_mjz_String() : basic_mjz_String(empty_STRING_C_STR, 0, 0) {}
-  inline virtual ~basic_mjz_String(){};
+  inline ~basic_mjz_String(){};
   basic_mjz_String(basic_mjz_String &&) = delete;
   basic_mjz_String(const basic_mjz_String &) = delete;
   basic_mjz_String(basic_mjz_String &) = delete;
@@ -898,20 +1396,12 @@ class basic_mjz_String : public basic_mjz_Str_view {
 
  public:
   inline size_t max_size() const { return m_capacity; }
-
- public:
-  inline const char *buffer_ref() const { return m_buffer; }
-  inline virtual char *&buffer_ref() = 0;
-  virtual bool is_blank() const = 0;
-  inline const char *c_str() const { return buffer_ref(); }
-  inline const char *c_str() { return buffer_ref(); }
-  inline const char *C_str() const { return buffer_ref(); }
-  inline char *C_str() { return buffer_ref(); }
 };
 #ifndef Arduino
 class mjz_Str : public basic_mjz_String {
 #if 0
-	 }
+	 
+}
 #endif
 #else
 class mjz_Str : public basic_mjz_String,
@@ -945,31 +1435,7 @@ class mjz_Str : public basic_mjz_String,
     return get_realloc_alloc_function()(ptr, new_size);
   }
   virtual void free(void *ptr) { return get_free_alloc_function()(ptr); }
-  static constexpr int64_t stack_buffer_size = 15;
-  class stack_str_buf {
-    mutable bool STR_is_in_stack{};
 
-   public:
-    char stack_buffer[stack_buffer_size + 1]{};  // string you're searching for
-    stack_str_buf() : STR_is_in_stack(0) {
-      stack_buffer[stack_buffer_size] = 0;
-    }
-    stack_str_buf(const stack_str_buf &) = default;
-    stack_str_buf(stack_str_buf &&) = default;
-    stack_str_buf &operator=(stack_str_buf &&) = default;
-    stack_str_buf &operator=(const stack_str_buf &) = default;
-    bool set(bool STR_is_in_stack_) {
-      STR_is_in_stack = STR_is_in_stack_;
-      if (STR_is_in_stack_) goto _return___;
-      memset(stack_buffer, 0, stack_buffer_size);
-      stack_buffer[stack_buffer_size] = 0;
-    _return___:
-      return STR_is_in_stack;
-    }
-    bool get() { return STR_is_in_stack; }
-    // virtual //i dont need it
-    ~stack_str_buf() { STR_is_in_stack = 0; }
-  };
   stack_str_buf stack_obj_buf;
 
  public:
@@ -1282,6 +1748,7 @@ class mjz_Str : public basic_mjz_String,
   mjz_Str(std::string &&x) : mjz_Str(x.c_str()) {}
   mjz_Str(const std::string &x) : mjz_Str(x.c_str()) {}
   virtual ~mjz_Str(void);  // make all drived destructors called
+  void adjust_cap();
   if_virtual_then_virtual mjz_Str &operator-=(const mjz_Str &othr_);
   if_virtual_then_virtual mjz_Str &operator-=(mjz_Str &&othr_);
   if_virtual_then_virtual mjz_Str &operator*=(unsigned int number_of_it);
@@ -1317,8 +1784,6 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual bool reserve(size_t size_, bool just_size = 0,
                                        bool constructor = 0);
   bool addto_length(size_t addition_tolen, bool just_size = 0);
-  inline virtual char *&buffer_ref() override;
-  inline virtual const char *buffer_ref() const { return m_buffer; }
   if_virtual_then_virtual explicit operator char *() { return buffer_ref(); }
   if_virtual_then_virtual explicit operator const uint8_t *() const {
     return (const uint8_t *)buffer_ref();
@@ -2141,74 +2606,84 @@ std::string_view  not like std::string
 */
 class mjz_str_view : public basic_mjz_Str_view {
  protected:
-  char *&buffer_ref(void) { return m_buffer; }
+  constexpr char *&buffer_ref(void) { return m_buffer; }
   using basic_mjz_Str_view::buffer_ref;
   using basic_mjz_Str_view::C_str;
   using basic_mjz_Str_view::c_str;
-  mjz_str_view &copy(const basic_mjz_Str_view &s) {
+  constexpr mjz_str_view &copy(const basic_mjz_Str_view &s) {
     m_buffer = const_cast<char *>(s.c_str());
     m_length = s.length();
     return *this;
   };
-  inline const char *begin_c_str() const { return c_str(); }
-  inline const char *end_c_str() const { return c_str() + length(); }
+  constexpr inline const char *begin_c_str() const { return c_str(); }
+  constexpr inline const char *end_c_str() const { return c_str() + length(); }
 
  public:
-  inline const char *data() const { return m_buffer; }
+  constexpr inline const char *data() const { return m_buffer; }
   mjz_str_view(const mjz_Str &s) : mjz_str_view(s.c_str(), s.length()) {}
-  mjz_str_view(const char *cstr_, size_t len)
+  constexpr mjz_str_view(const char *cstr_, size_t len)
       : basic_mjz_Str_view(cstr_, len) {}
-  mjz_str_view(const uint8_t *cstr_, size_t len)
+  constexpr mjz_str_view(const uint8_t *cstr_, size_t len)
       : mjz_str_view((char *)(cstr_), len) {}
-  mjz_str_view(const uint8_t *cstr_) : mjz_str_view((char *)(cstr_)) {}
-  mjz_str_view(const char *cstr_) : mjz_str_view(cstr_, strlen(cstr_)) {}
-  mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
+  constexpr mjz_str_view(const uint8_t *cstr_)
+      : mjz_str_view((char *)(cstr_)) {}
+  constexpr mjz_str_view(const char *cstr_)
+      : mjz_str_view(cstr_, strlen(cstr_)) {}
+  constexpr mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
   mjz_str_view(mjz_str_view &&s) =
       default;  // we are string viewes and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
 
-  mjz_str_view &operator=(mjz_Str &&s) { return copy(s); }
+  constexpr mjz_str_view &operator=(mjz_Str &&s) { return copy(s); }
   mjz_str_view(mjz_Str &&s) : mjz_str_view(s) {}
 
-  mjz_str_view(const mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
-  mjz_str_view(mjz_str_view &s) : mjz_str_view(s.c_str(), s.length()) {}
-  mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
-  mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
-  inline ~mjz_str_view() = default;
+  constexpr mjz_str_view(const mjz_str_view &s)
+      : mjz_str_view(s.c_str(), s.length()) {}
+  constexpr mjz_str_view(mjz_str_view &s)
+      : mjz_str_view(s.c_str(), s.length()) {}
+  constexpr mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
+  constexpr mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
+  constexpr inline ~mjz_str_view() = default;
   using iterator_template_CC = iterator_template<const char>;
   using const_iterator = iterator_template_CC;
 
-  const_iterator begin() const {
+  constexpr const_iterator begin() const {
     return const_iterator(begin_c_str(), begining_of_str_ptr(),
                           ending_of_str_ptr());
   }
-  const_iterator end() const {
+  constexpr const_iterator end() const {
     return const_iterator(end_c_str(), begining_of_str_ptr(),
                           ending_of_str_ptr());
   }
   typedef std::reverse_iterator<const_iterator> const_rev_iterator;
-  const_rev_iterator rbegin() const { return const_rev_iterator(end()); };
-  const_rev_iterator rend() const { return const_rev_iterator(begin()); };
+  constexpr const_rev_iterator rbegin() const {
+    return const_rev_iterator(end());
+  };
+  constexpr const_rev_iterator rend() const {
+    return const_rev_iterator(begin());
+  };
 
  public:
-  inline void remove_prefix(size_t n) {
+  constexpr inline void remove_prefix(size_t n) {
     m_buffer += n;
     remove_suffix(n);
   }
-  inline void remove_suffix(size_t n) { m_length -= n; }
-  friend void swap(mjz_str_view &lhs, mjz_str_view &rhs) { lhs.swap(rhs); }
+  constexpr inline void remove_suffix(size_t n) { m_length -= n; }
+  constexpr friend void swap(mjz_str_view &lhs, mjz_str_view &rhs) {
+    lhs.swap(rhs);
+  }
 
-  void swap(mjz_str_view &rhs) {
+  constexpr void swap(mjz_str_view &rhs) {
     std::swap(m_length, rhs.m_length);
     std::swap(m_buffer, rhs.m_buffer);
   }
-  size_t copy(char *dest, size_t count, size_t pos = 0) const {
+  constexpr size_t copy(char *dest, size_t count, size_t pos = 0) const {
     if (length() <= pos) return 0;
     size_t amount = min(count, length() - pos);
     memmove(dest, m_buffer + pos, amount);
     return amount;
   }
-  size_t copy(char *dest, size_t count, int64_t pos) const {
+  constexpr size_t copy(char *dest, size_t count, int64_t pos) const {
     return copy(dest, count, mjz_str_view::signed_index_to_unsigned(pos));
   }
   friend StringSumHelper operator+(const mjz_str_view &rhs,
@@ -2423,7 +2898,7 @@ typedef mjz_ard::mjz_Str mjz_str;
 typedef mjz_ard::malloc_wrapper malloc_wrpr;
 typedef mjz_ard::malloc_wrapper mlc_wrp;
 typedef std::string string;
-typedef mjz_ard::hash_sha_512 hash_sha_512;
+typedef mjz_ard::hash_sha256 hash_sha_512;
 typedef mjz_ard::StringSumHelper mjz_StringSumHelper;
 typedef mjz_ard::mjz_str_view mjz_str_view;
 typedef mjz_ard::mjz_str_view mstrview;

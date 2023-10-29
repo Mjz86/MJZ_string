@@ -383,13 +383,11 @@ void test_mstr_vs_sstr(
   timer("mjz_str_view");
   using namespace mjz_ard::short_string_convestion_operators;
   char a_storage[sizeof(mjz_str_view)]{};
-  new (a_storage) mjz_str_view("god code");
+ auto * view_storage=reinterpret_cast<mjz_str_view*>(
+      a_storage);
+  new (view_storage) mjz_str_view("god code");
   timer("~mjz_str_view");
-  reinterpret_cast<mjz_str_view*>(
-      a_storage)  // TODO: V1032 https://pvs-studio.com/en/docs/warnings/V1032/
-                  // The pointer 'a_storage' is cast to a more strictly aligned
-                  // pointer type.
-      ->~mjz_str_view();
+      view_storage->~mjz_str_view();
   timer("timer_").Stop(timer_cmd::just_Stop);
 }
 const char* cstr_largeee =
@@ -497,24 +495,45 @@ int hash_demo() {
 
   mjz_str a;
   std::cin >> a;
-#if 1
-  auto hash_pair = a.hash_with_output();
-   std::cout << hash_pair.second << "\n";
-  auto& my_hash= hash_pair.first;
-#else
+
   auto my_hash = a.hash();
-#endif
+ std::cout << my_hash.to_string();
   bool password_is_correct = false;
   for (uint8_t(&obj)[32]  : password_hash)
     password_is_correct |= (my_hash == obj);
  
-  std::cout << (password_is_correct ? "correct" : "incorrect") << "\n";
+  std::cout << (password_is_correct ? "correct" : "incorrect") << "\n"_s;
+
 
   return password_is_correct;
 }
 }  // namespace dont_use
-int main() {
+bool should_wait_for_input{1};
+bool get_password_thread() {
   std::cout << "enter password :\n";
-  if (!dont_use::hash_demo()) return 0;
-  return dont_use::main976();
+  using namespace  std::chrono_literals;
+  std::chrono::seconds seconds_wait{0s};
+  while (!dont_use::hash_demo()) {
+    std::cout << "please try again after " << ++seconds_wait << " seconds \n";
+    std::this_thread::sleep_for(seconds_wait);
+    if (seconds_wait > 3s) return 0;
+  }
+  return 1;
+}
+int main() {
+  mjz_ard::mjz_Str str;
+ 
+  std::thread get_password(get_password_thread);
+  get_password.join();
+  
+  dont_use::main976();
+  
+
+str("0123456789");
+//  auto sv1=  str.substr_view_beg_n((size_t)1,(size_t)8);
+//auto sv2 = str.substr_view_beg_n( -4LL, (size_t)8);
+auto sv3 = str.substr_view_beg_n(-9LL,str.length());
+  std::cout << "\n\n"<<sv3// << sv1 << sv2 << mjz_ard::mjz_Str(sv1) << mjz_ard::mjz_Str(sv2)
+          << "\n\n";
+  return 0;
 }

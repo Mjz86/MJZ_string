@@ -53,13 +53,7 @@ class Scoped_speed_Timer {
       : m_Name(name, strlen(name)) {
     if (glob) m_uomp = g_map;
   }
-  Scoped_speed_Timer& operator()(const std::string& name, bool nomatter = 1) {
-    Stop();
-    stoped = 0;
-    m_Name = name;
-    m_Timer.Reset();
-    return *this;
-  }
+  Scoped_speed_Timer& operator()(const std::string& name, bool nomatter = 1);
   void Stop(timer_cmd cmd_ = timer_cmd::NONE) {
     long double time = m_Timer.Elapsednano();
     if ((stoped && !(cmd_ & timer_cmd::Force_log)) ||
