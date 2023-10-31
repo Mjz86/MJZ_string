@@ -87,7 +87,7 @@ auto max(const T& a, const L& b) -> decltype((b < a) ? b : a) {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stddef.h>
 #include <algorithm>
 #include <array>
 #include <chrono>

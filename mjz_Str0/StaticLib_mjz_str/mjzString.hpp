@@ -354,11 +354,10 @@ class iterator_template {
   constexpr iterator_template() noexcept
       : iterator_template(nullptr, nullptr, (Type *)-1) {}
   // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
-  constexpr iterator_template(Type *iter, Type *min_end, Type *max_end)noexcept
+  constexpr iterator_template(Type *iter, Type *min_end, Type *max_end) noexcept
       : m_iterator{iter},
         m_iterator_begin_ptr{min_end},
-        m_iterator_end_ptr{max_end} {
-  }
+        m_iterator_end_ptr{max_end} {}
   constexpr void throw_if_bad(Type *_iterator) const {
     if (_iterator == (Type *)-1) {
       _iterator = m_iterator;
@@ -372,7 +371,7 @@ class iterator_template {
   }
   constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
 
-  constexpr iterator_template(const iterator_template &p)noexcept
+  constexpr iterator_template(const iterator_template &p) noexcept
       : m_iterator(p.m_iterator),
         m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
@@ -408,45 +407,49 @@ class iterator_template {
   constexpr bool operator!=(const iterator_template &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
-  constexpr reference operator*() const  {
+  constexpr reference operator*() const {
     throw_if_bad();
     return *m_iterator;
   }
-  constexpr pointer operator->() const  {
+  constexpr pointer operator->() const {
     throw_if_bad();
     return m_iterator;
   }
-  constexpr iterator_template &operator++()noexcept {
+  constexpr iterator_template &operator++() noexcept {
     ++m_iterator;
     return *this;
   }
-  constexpr iterator_template operator++(int)noexcept {
+  constexpr iterator_template operator++(int) noexcept {
     iterator_template tmp(*this);
     ++(*this);
     return tmp;
   }
-  constexpr iterator_template &operator--()noexcept {
+  constexpr iterator_template &operator--() noexcept {
     --m_iterator;
     return *this;
   }
-  constexpr iterator_template operator--(int) noexcept{
+  constexpr iterator_template operator--(int) noexcept {
     iterator_template tmp(*this);
     --(*this);
     return tmp;
   }
-  constexpr iterator_template &operator+=(const difference_type other) noexcept{
+  constexpr iterator_template &operator+=(
+      const difference_type other) noexcept {
     m_iterator += other;
     return *this;
   }
-  constexpr iterator_template &operator-=(const difference_type other) noexcept{
+  constexpr iterator_template &operator-=(
+      const difference_type other) noexcept {
     m_iterator -= other;
     return *this;
   }
-  constexpr iterator_template &operator+=(const iterator_template &other)noexcept {
+  constexpr iterator_template &operator+=(
+      const iterator_template &other) noexcept {
     m_iterator += other.m_iterator;
     return *this;
   }
-  constexpr iterator_template &operator-=(const iterator_template &other) noexcept{
+  constexpr iterator_template &operator-=(
+      const iterator_template &other) noexcept {
     m_iterator -= other.m_iterator;
     return *this;
   }
@@ -482,22 +485,22 @@ class iterator_template {
     throw_if_bad();
     return m_iterator;
   }
-  constexpr friend iterator_template operator+(const iterator_template &me,
-                                               const difference_type other) noexcept{
+  constexpr friend iterator_template operator+(
+      const iterator_template &me, const difference_type other) noexcept {
     return iterator_template(
         me.m_iterator + other,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
-  constexpr friend iterator_template operator-(const iterator_template &me,
-                                               const difference_type other) noexcept{
+  constexpr friend iterator_template operator-(
+      const iterator_template &me, const difference_type other) noexcept {
     return iterator_template(
         me.m_iterator - other,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
-  constexpr friend iterator_template operator+(const difference_type other,
-                                               const iterator_template &me) noexcept{
+  constexpr friend iterator_template operator+(
+      const difference_type other, const iterator_template &me) noexcept {
     return iterator_template(
         other + me.m_iterator,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
@@ -507,23 +510,24 @@ class iterator_template {
   // iterator_template& me) noexcept { // bad function dont use
   // return iterator_template(me.m_iterator - (pointer)other);
   // }
-  constexpr friend iterator_template operator+(const iterator_template &other,
-                                               const iterator_template &me)noexcept {
+  constexpr friend iterator_template operator+(
+      const iterator_template &other, const iterator_template &me) noexcept {
     return iterator_template(
         other.m_iterator + me,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
-  constexpr friend difference_type operator-(const iterator_template &other,
-                                             const iterator_template &me) noexcept{
+  constexpr friend difference_type operator-(
+      const iterator_template &other, const iterator_template &me) noexcept {
     return std::distance(other.m_iterator, me.m_iterator);
   }
-  constexpr friend void swap(iterator_template &lhs, iterator_template &rhs) noexcept{
+  constexpr friend void swap(iterator_template &lhs,
+                             iterator_template &rhs) noexcept {
     iterator_template lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
   }
-  constexpr friend void swap(reference lhs, reference rhs) noexcept{
+  constexpr friend void swap(reference lhs, reference rhs) noexcept {
     value_type lhsm_ = lhs;
     lhs = rhs;
     rhs = lhsm_;
@@ -664,15 +668,15 @@ class static_str_algo {
   constexpr static bool are_two_str_equale(const char *rhs, size_t rhs_l,
                                            const char *lhs, size_t lhs_l) {
     if (rhs_l == 0) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return (lhs == NULL || *lhs == 0);
     }
     if (lhs == NULL) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return rhs[0] == 0;
     }
     if (lhs_l != rhs_l) return 0;
-    // // (this->*update_event_F_p)(); //departed
+    //
     return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
   }
 
@@ -900,6 +904,9 @@ struct SHA256_CTX {
   }
 
  public:
+  constexpr size_t get_as_64bit_hash() const {
+    return *((size_t *)hashed_data);
+      }
   static constexpr void sha256_the_string(SHA256_CTX *hash_out,
                                           const char *c_str, size_t len) {
     SHA256_CTX ctx;
@@ -936,6 +943,153 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
 
 #endif  // SHA256_H
 
+#ifndef SHA1_H
+#define SHA1_H
+
+/****************************** MACROS ******************************/
+#define SHA1_BLOCK_SIZE 20  // SHA1 outputs a 20 byte digest
+
+struct SHA1_CTX : public SHA256_CTX {
+  WORD k[4]{};
+ protected:
+  static constexpr void sha1_transform(SHA1_CTX *ctx, const BYTE data[]) {
+    WORD a{}, b{}, c{}, d{}, e{}, i{}, j{}, t{}, m[80]{};
+
+    for (i = 0, j = 0; i < 16; ++i, j += 4)
+      m[i] = (data[j] << 24) + (data[j + 1] << 16) + (data[j + 2] << 8) +
+             (data[j + 3]);
+    for (; i < 80; ++i) {
+      m[i] = (m[i - 3] ^ m[i - 8] ^ m[i - 14] ^ m[i - 16]);
+      m[i] = (m[i] << 1) | (m[i] >> 31);
+    }
+
+    a = ctx->state[0];
+    b = ctx->state[1];
+    c = ctx->state[2];
+    d = ctx->state[3];
+    e = ctx->state[4];
+
+    for (i = 0; i < 20; ++i) {
+      t = ROTLEFT(a, 5) + ((b & c) ^ (~b & d)) + e + ctx->k[0] + m[i];
+      e = d;
+      d = c;
+      c = ROTLEFT(b, 30);
+      b = a;
+      a = t;
+    }
+    for (; i < 40; ++i) {
+      t = ROTLEFT(a, 5) + (b ^ c ^ d) + e + ctx->k[1] + m[i];
+      e = d;
+      d = c;
+      c = ROTLEFT(b, 30);
+      b = a;
+      a = t;
+    }
+    for (; i < 60; ++i) {
+      t = ROTLEFT(a, 5) + ((b & c) ^ (b & d) ^ (c & d)) + e + ctx->k[2] + m[i];
+      e = d;
+      d = c;
+      c = ROTLEFT(b, 30);
+      b = a;
+      a = t;
+    }
+    for (; i < 80; ++i) {
+      t = ROTLEFT(a, 5) + (b ^ c ^ d) + e + ctx->k[3] + m[i];
+      e = d;
+      d = c;
+      c = ROTLEFT(b, 30);
+      b = a;
+      a = t;
+    }
+
+    ctx->state[0] += a;
+    ctx->state[1] += b;
+    ctx->state[2] += c;
+    ctx->state[3] += d;
+    ctx->state[4] += e;
+  }  // namespace mjz_ard
+
+  static constexpr void sha1_init(SHA1_CTX *ctx) {
+    ctx->datalen = 0;
+    ctx->bitlen = 0;
+    ctx->state[0] = 0x67452301;
+    ctx->state[1] = 0xEFCDAB89;
+    ctx->state[2] = 0x98BADCFE;
+    ctx->state[3] = 0x10325476;
+    ctx->state[4] = 0xc3d2e1f0;
+    ctx->k[0] = 0x5a827999;
+    ctx->k[1] = 0x6ed9eba1;
+    ctx->k[2] = 0x8f1bbcdc;
+    ctx->k[3] = 0xca62c1d6;
+  }
+
+  static constexpr void sha1_update(SHA1_CTX *ctx, const BYTE data[],
+                                    size_t len) {
+    size_t i;
+
+    for (i = 0; i < len; ++i) {
+      ctx->data[ctx->datalen] = data[i];
+      ctx->datalen++;
+      if (ctx->datalen == 64) {
+        sha1_transform(ctx, ctx->data);
+        ctx->bitlen += 512;
+        ctx->datalen = 0;
+      }
+    }
+  }
+
+  static constexpr void sha1_final(SHA1_CTX *ctx, BYTE hash[]) {
+    WORD i;
+
+    i = ctx->datalen;
+
+    // Pad whatever data is left in the buffer.
+    if (ctx->datalen < 56) {
+      ctx->data[i++] = 0x80;
+      while (i < 56) ctx->data[i++] = 0x00;
+    } else {
+      ctx->data[i++] = 0x80;
+      while (i < 64) ctx->data[i++] = 0x00;
+      sha1_transform(ctx, ctx->data);
+      memset(ctx->data, 0, 56);
+    }
+
+    // Append to the padding the total message's length in bits and transform.
+    ctx->bitlen += ctx->datalen * 8;
+    ctx->data[63] = ctx->bitlen;
+    ctx->data[62] = ctx->bitlen >> 8;
+    ctx->data[61] = ctx->bitlen >> 16;
+    ctx->data[60] = ctx->bitlen >> 24;
+    ctx->data[59] = ctx->bitlen >> 32;
+    ctx->data[58] = ctx->bitlen >> 40;
+    ctx->data[57] = ctx->bitlen >> 48;
+    ctx->data[56] = ctx->bitlen >> 56;
+    sha1_transform(ctx, ctx->data);
+
+    // Since this implementation uses little endian byte ordering and MD uses
+    // big endian, reverse all the bytes when copying the final state to the
+    // output hash.
+    for (i = 0; i < 4; ++i) {
+      hash[i] = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 4] = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 8] = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
+      hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
+    }
+  }
+  
+ public:
+  constexpr SHA1_CTX() {}
+  static constexpr SHA1_CTX SHA_1(const void *ptr, size_t len) {
+    SHA1_CTX ctx{}, buffer{};
+    sha1_init(&ctx);
+    sha1_update(&ctx, (const BYTE *)ptr, len);
+    sha1_final(&ctx, buffer.hashed_data);
+    return buffer;
+  }
+};
+
+#endif  // SHA1_Hstatic
 class basic_mjz_Str_view : public static_str_algo {
  public:
   constexpr inline const char *begining_of_str_ptr() const { return m_buffer; }
@@ -1018,7 +1172,7 @@ class basic_mjz_Str_view : public static_str_algo {
   constexpr long toInt(void) const { return (long)toLL(); }
 
   constexpr float toFloat(void) const {
-    // // (this->*update_event_F_p)(); //departed
+    //
     return float(toDouble());
   }
   constexpr double toDouble(void) const {
@@ -1106,7 +1260,7 @@ class basic_mjz_Str_view : public static_str_algo {
     return are_two_str_equale(m_buffer, m_length, cstr, cstr_len);
   }
   constexpr bool equals(const basic_mjz_Str_view &s2) const {
-    // // (this->*update_event_F_p)(); //departed
+    //
     return (m_length == s2.m_length && compareTo(s2) == 0);
   }
   constexpr inline bool equals(const char *cstr) const {
@@ -1146,15 +1300,15 @@ class basic_mjz_Str_view : public static_str_algo {
   }
   constexpr bool equalsIgnoreCase(const basic_mjz_Str_view &s2) const {
     if (this == &s2) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return true;
     }
     if (m_length != s2.m_length) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return false;
     }
     if (m_length == 0) {
-      //// (this->*update_event_F_p)(); //departed
+      //
       return true;
     }
     const char *p1 = m_buffer;
@@ -1162,58 +1316,58 @@ class basic_mjz_Str_view : public static_str_algo {
     const char *end_p1 = m_buffer + length();
     while (p1 < end_p1) {
       if (tolower(*p1++) != tolower(*p2++)) {
-        // // (this->*update_event_F_p)(); //departed
+        //
         return false;
       }
     }
-    // // (this->*update_event_F_p)(); //departed
+    //
     return true;
   }
   constexpr bool startsWith(const basic_mjz_Str_view &s2) const {
     if (m_length < s2.m_length) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return false;
     }
-    // // (this->*update_event_F_p)(); //departed
+    //
     return startsWith(s2, 0);
   }
   constexpr bool startsWith(const basic_mjz_Str_view &s2, size_t offset) const {
     if (offset > m_length - s2.m_length || !m_buffer || !s2.m_buffer) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return false;
     }
-    // // (this->*update_event_F_p)(); //departed
+    //
     return MJZ_STRnCMP(&m_buffer[offset], s2.m_buffer, s2.m_length) == 0;
   }
   constexpr bool endsWith(const basic_mjz_Str_view &s2) const {
     if (m_length < s2.m_length || !m_buffer || !s2.m_buffer) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return false;
     }
-    // // (this->*update_event_F_p)(); //departed
+    //
     return MJZ_STRnCMP(&m_buffer[m_length - s2.m_length], s2.m_buffer,
                        s2.m_length) == 0;
   }
   // Function that return the length
   constexpr size_t size() const { return length(); }
   constexpr if_virtual_then_virtual char charAt(int64_t loc) const {
-    // // (this->*update_event_F_p)(); //departed
+    //
     loc = signed_index_to_unsigned(loc);
     return operator[](loc);
   }
   constexpr char charAt(size_t loc) const {
-    // // (this->*update_event_F_p)(); //departed
+    //
     return operator[](loc);
   }
   constexpr void getBytes(unsigned char *buf, size_t bufsize,
                           size_t index = 0) const {
     if (!bufsize || !buf) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       return;
     }
     if (index >= m_length) {
       buf[0] = 0;
-      // // (this->*update_event_F_p)(); //departed
+      //
       return;
     }
     size_t n = bufsize - 1;
@@ -1222,7 +1376,7 @@ class basic_mjz_Str_view : public static_str_algo {
     }
     memmove((char *)buf, m_buffer + index, min_macro_(n, m_length));
     buf[n] = 0;
-    // // (this->*update_event_F_p)(); //departed
+    //
   }
   inline constexpr void toCharArray(char *buf, size_t bufsize,
                                     size_t index = 0) const {
@@ -1301,7 +1455,7 @@ class basic_mjz_Str_view : public static_str_algo {
       left = temp;
     }
     if (left >= m_length) {
-      // // (this->*update_event_F_p)(); //departed
+      //
       len_out = 0;
       return (c_str_out = 0);
     }
@@ -1411,8 +1565,8 @@ class mjz_Str : public basic_mjz_String,
   static std::shared_ptr<mjz_Str_DATA_storage_cls>
       main_mjz_Str_DATA_storage_Obj_ptr;
   bool did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
-  // void (mjz_Str::*update_event_F_p)( void); //departed // to call
-  // (object_ptr->*pointer_name)(arguments)//
+  // void (mjz_Str::*update_event_F_p)( void); //departed
+  // (object_ptr->*pointer_name)(arguments)//like (this->*update_event_F_p)();
   std::shared_ptr<mjz_Str_DATA_storage_cls>
       drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
   std::shared_ptr<mjz_Str_DATA_storage_cls>
@@ -2908,9 +3062,28 @@ namespace std {
 template <>
 struct hash<mjz_ard::basic_mjz_Str_view> {
   size_t operator()(const mjz_ard::basic_mjz_Str_view &k) const {
-    // Compute individual hash values for first, second and third
-    // http://stackoverflow.com/a/1646913/126995
-    return hash<string_view>()({k.c_str(), k.length()});
+    return mjz_ard::SHA1_CTX::SHA_1(k.c_str(), k.length()).get_as_64bit_hash();
+    
+  }
+};  // namespace std::hash
+
+template <>
+struct hash<mjz_ard::mjz_Str> {
+  size_t operator()(const mjz_ard::mjz_Str &k) const {
+    return mjz_ard::SHA1_CTX::SHA_1(k.c_str(), k.length()).get_as_64bit_hash();
+  }
+};  // namespace std::hash
+
+template <>
+struct hash<mjz_ard::mjz_str_view> {
+  size_t operator()(const mjz_ard::mjz_str_view &k) const {
+    return mjz_ard::SHA1_CTX::SHA_1(k.data(), k.length()).get_as_64bit_hash();
+  }
+};  // namespace std::hash
+template <>
+struct hash<mjz_ard::mjz_virtual_string_view> {
+  size_t operator()(const mjz_ard::mjz_virtual_string_view &k) const {
+    return mjz_ard::SHA1_CTX::SHA_1(k.data(), k.length()).get_as_64bit_hash();
   }
 };  // namespace std::hash
 }  // namespace std

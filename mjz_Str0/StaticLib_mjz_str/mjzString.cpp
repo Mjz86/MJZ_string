@@ -349,17 +349,17 @@ mjz_Str::mjz_Str(const char *cstr, size_t length) {
               // constructor may lead to unexpected result at runtime. Check
               // lines: 'mjzString.cpp:358', 'mjzString.hpp:734'.
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(const mjz_Str &value) {
   init();
   *this = value;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(const __FlashStringHelper *pstr) {
   init();
   *this = pstr;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(mjz_Str &&rval) noexcept
     : basic_mjz_String((rval.stack_obj_buf.get() ? stack_obj_buf.stack_buffer
@@ -374,62 +374,62 @@ mjz_Str::mjz_Str(mjz_Str &&rval) noexcept
   rval.m_capacity = 0;
   rval.m_length = 0;
   rval.stack_obj_buf.set(0);
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(char c) {
   init();
   char buf[2] = {c, 0};
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(unsigned char value, unsigned char base) {
   init();
   char buf[1 + 8 * sizeof(unsigned char)];
   utoa(value, buf, base);
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(int value, unsigned char base) {
   init();
   char buf[2 + 8 * sizeof(int)];
   itoa(value, buf, base);
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(unsigned int value, unsigned char base) {
   init();
   char buf[1 + 8 * sizeof(unsigned int)];
   utoa(value, buf, base);
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(long value, unsigned char base) {
   init();
   char buf[2 + 8 * sizeof(long)];
   ltoa(value, buf, base);
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(unsigned long value, unsigned char base) {
   init();
   char buf[1 + 8 * sizeof(unsigned long)];
   ultoa(value, buf, base);
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(long long int value, unsigned char base) {
   init();
   char buf[2 + 8 * sizeof(long long)];
   lltoa(value, buf, base);
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(long long unsigned int value, unsigned char base) {
   init();
   char buf[1 + 8 * sizeof(unsigned long long)];
   ulltoa(value, buf, base);
   *this = buf;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(float value, unsigned char decimalPlaces) {
   static size_t const FLOAT_BUF_SIZE = FLT_MAX_10_EXP + FLT_MAX_DECIMAL_PLACES +
@@ -438,7 +438,7 @@ mjz_Str::mjz_Str(float value, unsigned char decimalPlaces) {
   char buf[FLOAT_BUF_SIZE];
   decimalPlaces = min_macro_(decimalPlaces, FLT_MAX_DECIMAL_PLACES);
   *this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::mjz_Str(double value, unsigned char decimalPlaces) {
   static size_t const DOUBLE_BUF_SIZE = DBL_MAX_10_EXP +
@@ -448,7 +448,7 @@ mjz_Str::mjz_Str(double value, unsigned char decimalPlaces) {
   char buf[DOUBLE_BUF_SIZE];
   decimalPlaces = min_macro_(decimalPlaces, DBL_MAX_DECIMAL_PLACES);
   *this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str::~mjz_Str(void) {
   invalidate(
@@ -546,7 +546,7 @@ void mjz_Str::invalidate(bool constructor) {
   m_buffer = NULL;
 _end__:
   m_capacity = m_length = 0;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 bool mjz_Str::reserve(size_t size_, bool just_size, bool constructor) {
   int64_t different_of_size_and_cap = (int64_t)size_ - (int64_t)m_capacity;
@@ -561,17 +561,17 @@ bool mjz_Str::reserve(size_t size_, bool just_size, bool constructor) {
   }
 ignored_stack:
   if (m_buffer && m_capacity >= size_) {
-    // (this->*update_event_F_p)(); //departed
+    
     return 1;
   }
   if (changeBuffer(size_, constructor)) {
     if (m_length == 0) {
       m_buffer[0] = 0;
     }
-    // (this->*update_event_F_p)(); //departed
+    
     return true;
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return false;
 }
 bool mjz_Str::addto_length(size_t addition_tolen, bool just_size) {
@@ -661,10 +661,10 @@ bool mjz_Str::changeBuffer(size_t maxStrLen, bool constructor) {
   if (newbuffer) {
     m_buffer = newbuffer;
     m_capacity = maxStrLen;
-    // (this->*update_event_F_p)(); //departed
+    
     return true;
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return false;
 }
 /*********************************************/
@@ -673,25 +673,25 @@ bool mjz_Str::changeBuffer(size_t maxStrLen, bool constructor) {
 mjz_Str &mjz_Str::copy(const char *cstr, size_t length, bool ) {
   if (reserve(length, 0, 1)) goto _Success_full_;
   invalidate();
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 _Success_full_:
   m_length = length;
   memmove(m_buffer, cstr, length);
   m_buffer[m_length] = '\0';
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 #define PGM_P const char *
 mjz_Str &mjz_Str::copy(const __FlashStringHelper *pstr, size_t length) {
   if (!reserve(length)) {
     invalidate();
-    // (this->*update_event_F_p)(); //departed
+    
     return *this;
   }
   m_length = length;
   memmove(m_buffer, (PGM_P)pstr, length);
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 void mjz_Str::move(mjz_Str &rhs) {
@@ -710,11 +710,11 @@ void mjz_Str::move(mjz_Str &rhs) {
     rhs.m_length = 0;
     rhs.m_capacity = 0;
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str &mjz_Str::operator=(const mjz_Str &rhs) {
   if (this == &rhs) {
-    // (this->*update_event_F_p)(); //departed
+    
     return *this;
   }
   if (rhs.m_buffer) {
@@ -722,17 +722,17 @@ mjz_Str &mjz_Str::operator=(const mjz_Str &rhs) {
   } else {
     invalidate();
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 mjz_Str &mjz_Str::operator=(mjz_Str &&rval) noexcept {
   move(rval);
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 mjz_Str &mjz_Str::operator=(const char *cstr) {
   operator()(cstr);
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 mjz_Str &mjz_Str::operator()(const char *other, size_t size_len) {
@@ -741,7 +741,7 @@ mjz_Str &mjz_Str::operator()(const char *other, size_t size_len) {
   } else {
     invalidate();
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 mjz_Str &mjz_Str::operator=(const __FlashStringHelper *pstr) {
@@ -750,120 +750,120 @@ mjz_Str &mjz_Str::operator=(const __FlashStringHelper *pstr) {
   } else {
     invalidate();
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 /*********************************************/
 /* concat */
 /*********************************************/
 bool mjz_Str::concat(const mjz_Str &s) {
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(s.m_buffer, s.m_length);
 }
 bool mjz_Str::concat(const char *cstr, size_t length) {
   size_t newlen = m_length + length;
   if (!cstr) {
-    // (this->*update_event_F_p)(); //departed
+    
     return false;
   }
   if (length == 0) {
-    // (this->*update_event_F_p)(); //departed
+    
     return true;
   }
   if (!reserve(newlen)) {
-    // (this->*update_event_F_p)(); //departed
+    
     return false;
   }
   memmove(m_buffer + m_length, cstr, length);
   m_length = newlen;
   m_buffer[m_length] = '\0';
-  // (this->*update_event_F_p)(); //departed
+  
   return true;
 }
 bool mjz_Str::concat(const char *cstr) {
   if (!cstr) {
-    // (this->*update_event_F_p)(); //departed
+    
     return false;
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(cstr, (size_t)strlen(cstr));
 }
 bool mjz_Str::concat(char c) {
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(&c, 1);
 }
 bool mjz_Str::concat(unsigned char num) {
   char buf[1 + 3 * sizeof(unsigned char)];
   itoa(num, buf, 10);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(buf);
 }
 bool mjz_Str::concat(int num) {
   char buf[2 + 3 * sizeof(int)];
   itoa(num, buf, 10);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(buf);
 }
 bool mjz_Str::concat(unsigned int num) {
   char buf[1 + 3 * sizeof(unsigned int)];
   utoa(num, buf, 10);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(buf);
 }
 bool mjz_Str::concat(long num) {
   char buf[2 + 3 * sizeof(long)];
   ltoa(num, buf, 10);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(buf);
 }
 bool mjz_Str::concat(unsigned long num) {
   char buf[1 + 3 * sizeof(unsigned long)];
   ultoa(num, buf, 10);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(buf);
 }
 bool mjz_Str::concat(long long num) {
   char buf[2 + 3 * sizeof(long long)];
   lltoa(num, buf, 10);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(buf);
 }
 bool mjz_Str::concat(unsigned long long num) {
   char buf[1 + 3 * sizeof(unsigned long long)];
   ulltoa(num, buf, 10);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(buf);
 }
 bool mjz_Str::concat(float num) {
   char buf[20];
   char *string = dtostrf(num, 4, 2, buf);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(string);
 }
 bool mjz_Str::concat(double num) {
   char buf[20];
   char *string = dtostrf(num, 4, 2, buf);
-  // (this->*update_event_F_p)(); //departed
+  
   return concat(string);
 }
 bool mjz_Str::concat(const __FlashStringHelper *str) {
   if (!str) {
-    // (this->*update_event_F_p)(); //departed
+    
     return false;
   }
   size_t length = (size_t)strlen((const char *)str);
   if (length == 0) {
-    // (this->*update_event_F_p)(); //departed
+    
     return true;
   }
   size_t newlen = m_length + length;
   if (!reserve(newlen)) {
-    // (this->*update_event_F_p)(); //departed
+    
     return false;
   }
   memmove(m_buffer + m_length, (const char *)str, newlen);
   m_length = newlen;
-  // (this->*update_event_F_p)(); //departed
+  
   return true;
 }
 /*********************************************/
@@ -1021,7 +1021,7 @@ void mjz_Str::setCharAt(size_t loc, char c) {
   if (loc < m_length) {
     m_buffer[loc] = c;
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 
 void mjz_Str::setCharAt(int64_t loc, char c) {
@@ -1029,16 +1029,16 @@ void mjz_Str::setCharAt(int64_t loc, char c) {
   if ((size_t)loc < m_length) {
     m_buffer[loc] = c;
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 char &mjz_Str::operator[](size_t index) {
   static char dummy_writable_char;
   if (index >= m_length || !m_buffer) {
     dummy_writable_char = 0;
-    // (this->*update_event_F_p)(); //departed
+    
     return dummy_writable_char;
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return m_buffer[index];
 }
 char &mjz_Str::operator[](int64_t index) {
@@ -1046,10 +1046,10 @@ char &mjz_Str::operator[](int64_t index) {
   static char dummy_writable_char;
   if ((size_t)index >= m_length || !m_buffer) {
     dummy_writable_char = 0;
-    // (this->*update_event_F_p)(); //departed
+    
     return dummy_writable_char;
   }
-  // (this->*update_event_F_p)(); //departed
+  
   return m_buffer[index];
 }
 /*********************************************/
@@ -1137,7 +1137,7 @@ mjz_Str basic_mjz_Str_view::substring(size_t left, size_t right) const {
   if (!substring_give_ptr(left, right, c_str_out, len_out)) return mjz_Str();
   mjz_Str out;
   out.copy(c_str_out, len_out);
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return out;
 }
 
@@ -1221,7 +1221,7 @@ mjz_Str &mjz_Str::insert(size_t pos, const char *s, size_t n) {
 }
 void mjz_Str::replace(char find, char replace_) {
   if (!m_buffer) {
-    // (this->*update_event_F_p)(); //departed
+    
     return;
   }
   for (char *p = m_buffer; *p; p++) {
@@ -1229,7 +1229,7 @@ void mjz_Str::replace(char find, char replace_) {
       *p = replace_;
     }
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 // namespace mjz_ard
 void mjz_Str::replace(const mjz_Str &find, const mjz_Str &replace_) {
@@ -1240,15 +1240,15 @@ void mjz_Str::remove(size_t index) {
   // below will take care of truncating it at the end of the
   // string.
   remove(index, (size_t)-1);
-  // (this->*update_event_F_p)(); //departed
+  
 }
 void mjz_Str::remove(size_t index, size_t count) {
   if (index >= m_length) {
-    // (this->*update_event_F_p)(); //departed
+    
     return;
   }
   if (count <= 0) {
-    // (this->*update_event_F_p)(); //departed
+    
     return;
   }
   if (count > m_length - index) {
@@ -1258,7 +1258,7 @@ void mjz_Str::remove(size_t index, size_t count) {
   m_length = m_length - count;
   memmove(writeTo, m_buffer + index + count, m_length - index);
   m_buffer[m_length] = 0;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str &mjz_Str::erase(size_t pos_, size_t len_) {
   if (len_ <= pos_ || length() < (len_ + pos_)) goto _end__;
@@ -1288,27 +1288,27 @@ mjz_Str &mjz_Str::erase_from_f_to_l(size_t first, size_t last) {
 }
 void mjz_Str::toLowerCase(void) {
   if (!m_buffer) {
-    // (this->*update_event_F_p)(); //departed
+    
     return;
   }
   for (char *p = m_buffer; *p; p++) {
     *p = (char)tolower(*p);
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 void mjz_Str::toUpperCase(void) {
   if (!m_buffer) {
-    // (this->*update_event_F_p)(); //departed
+    
     return;
   }
   for (char *p = m_buffer; *p; p++) {
     *p = (char)toupper(*p);
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 void mjz_Str::trim(void) {
   if (!m_buffer || m_length == 0) {
-    // (this->*update_event_F_p)(); //departed
+    
     return;
   }
   char *begin = m_buffer;
@@ -1325,145 +1325,129 @@ void mjz_Str::trim(void) {
     memmove(m_buffer, begin, m_length);
   }
   m_buffer[m_length] = 0;
-  // (this->*update_event_F_p)(); //departed
+  
 }
 /*********************************************/
 /* Parsing / Conversion */
 /*********************************************/
 void *mjz_Str::do_this_for_me(function_ptr function_ptr_, void *x) {
-  // (this->*update_event_F_p)(); //departed
+  
   return function_ptr_(*this, x);
 }
 const mjz_Str &mjz_Str::get_shift_op_rc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_shift_op_r() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 const mjz_Str &mjz_Str::get_shift_op_lc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_shift_op_l() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 const mjz_Str &mjz_Str::get_shift_op_r_sc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_shift_op_r_s() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 const mjz_Str &mjz_Str::get_shift_op_l_sc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_shift_op_l_s() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 const mjz_Str &mjz_Str::get_s_shift_op_rc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_s_shift_op_r() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 const mjz_Str &mjz_Str::get_s_shift_op_lc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_s_shift_op_l() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 const mjz_Str &mjz_Str::get_s_shift_op_r_sc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_s_shift_op_r_s() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 const mjz_Str &mjz_Str::get_s_shift_op_l_sc() const {
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return (const mjz_Str &)*this;
 }
 mjz_Str &mjz_Str::get_s_shift_op_l_s() {
-  // (this->*update_event_F_p)(); //departed
+  
   return *this;
 }
 mjz_Str &mjz_Str::operator>>(mjz_Str &typeing) {
   // typeing.get_shift_op_r() += get_s_shift_op_r();
   helper__op_shift_input_(*this, get_s_shift_op_r(), typeing.get_shift_op_r());
-  // (this->*update_event_F_p)(); //departed
+  
   return get_s_shift_op_r();
 }
 mjz_Str &mjz_Str::operator>>(mjz_Str *typeing) {
   // typeing->get_shift_op_r() += get_s_shift_op_r();
   helper__op_shift_input_(*this, get_s_shift_op_r(), typeing->get_shift_op_r());
-  // (this->*update_event_F_p)(); //departed
+  
   return get_s_shift_op_r();
 }
 const mjz_Str &mjz_Str::operator>>(mjz_Str &typeing) const {
   // typeing.get_shift_op_r() += get_s_shift_op_rc();
   helper__op_shift_input_(*this, get_s_shift_op_rc(), typeing.get_shift_op_r());
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return get_s_shift_op_rc();
 }
 const mjz_Str &mjz_Str::operator>>(mjz_Str *typeing) const {
   // typeing->get_shift_op_r() += get_s_shift_op_rc();
   helper__op_shift_input_(*this, get_s_shift_op_rc(),
                           typeing->get_shift_op_r());
-  // // (this->*update_event_F_p)(); //departed
+  // 
   return get_s_shift_op_rc();
 }
 mjz_Str &mjz_Str::operator<<(mjz_Str &typeing) {
   // get_s_shift_op_l() += typeing.get_shift_op_l();
   helper__op_shift_input_(*this, typeing.get_shift_op_l(), get_s_shift_op_l());
-  // (this->*update_event_F_p)(); //departed
+  
   return get_s_shift_op_l();
 }
 mjz_Str &mjz_Str::operator<<(mjz_Str *typeing) {
   // get_s_shift_op_l() += typeing->get_shift_op_l();
   helper__op_shift_input_(*this, typeing->get_shift_op_l(), get_s_shift_op_l());
-  // (this->*update_event_F_p)(); //departed
+  
   return get_s_shift_op_l();
 }
 mjz_Str &mjz_Str::operator<<(const mjz_Str &typeing) {
   // get_s_shift_op_l() += typeing.get_shift_op_lc();
   helper__op_shift_input_(*this, typeing.get_shift_op_lc(), get_s_shift_op_l());
-  // (this->*update_event_F_p)(); //departed
+  
   return get_s_shift_op_l();
 }
 mjz_Str &mjz_Str::operator<<(mjz_Str &&typeing) {
   // get_s_shift_op_l() += typeing.get_shift_op_lc();
   helper__op_shift_input_(*this, typeing.get_shift_op_lc(), get_s_shift_op_l());
-  // (this->*update_event_F_p)(); //departed
+  
   return get_s_shift_op_l();
 }
-#ifndef Arduino
-// void mjz_Str::update_event() {
-// update_event_ard_string();
-// }
-// void mjz_Str::update_event_ard_string() {
-// std::string_view::operator=(buffer);//depatred
-//}
-#else
-/*
-void mjz_Str::update_event() {
- return;
-}
-void mjz_Str::update_event_ard_string() {
- return;
-}
-*/
-#endif
+
 mjz_Str mjz_Str::string_do_interpret() {
   mjz_Str out_str;
   str_helper__op_shift_input_(out_str, *this);
@@ -1488,12 +1472,11 @@ void str_helper__op_shift_input_(mjz_Str &rhs, mjz_Str &CIN) {
 const mjz_Str &helper__op_shift_input_(const mjz_Str &rhs, const mjz_Str &CIN,
                                        mjz_Str &get_shift_op_s) {
   if (CIN.is_blank()) return CIN;
-  //
   const char *CIN_c_str = CIN.c_str();
   size_t CURunt_index_{};
   size_t my_bfr_obj_length = CIN.length() + 4;
   malloc_wrapper my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
-  char *bfr = (char *)my_bfr_obj_ptr.get_ptr();  // char bfr[2050];
+  char *bfr = (char *)my_bfr_obj_ptr.get_ptr();  
   uint8_t is_reinterpreted{};
   constexpr uint8_t is_reinterpreted_and_is_int = 2;
   uint8_t value_reinterpreted_and_is_int{};
@@ -1674,14 +1657,13 @@ size_t mjz_Str::read(uint8_t *buf, size_t size_) {
     return (size_t)-1;
   }
   memmove(buf, m_buffer, size_);
-  // buf[size_]= 0;
+   buf[size_]= 0;
   remove(0, (size_t)size_);
   return size_;
 }
 void mjz_Str::flush() {}
 void mjz_Str::begin(unsigned long) {}
 void mjz_Str::begin(unsigned long, uint16_t) {}
-// void mjz_Str::end() {}
 mjz_Str &mjz_Str::ULL_LL_to_str_add(uint64_t value, int radix, bool is_signed,
                                     bool force_neg) {
   this->operator+=(ULL_LL_to_str(value, radix, is_signed, force_neg));
@@ -1697,7 +1679,7 @@ mjz_Str &mjz_Str::ULL_LL_to_str_rep(uint64_t value, int radix, bool is_signed,
   return *this;
 }
 const char mjz_Str::forbiden_chars_cnt[forbiden_chars_cnt_size] = {
-    '\r', '\n', 0};  //{ 3, 4, 23, 24, 25, 27, 28, 29, 30, 31, 127, 0 };
+    '\r', '\n', 0};  
 const char
     mjz_Str::the_in_reinterpreted_char_cca[the_reinterpreted_char_cca_size] = {
         'n',
@@ -1814,7 +1796,7 @@ mjz_Str mjz_Str::create_mjz_Str_2D_char_array(size_t size_col, size_t size_row,
 void mjz_Str::replace(const char *find_cstr, size_t find_count,
                       const char *replace_cstr, size_t replace_count) {
   if (m_length == 0 || find_count == 0) {
-    // (this->*update_event_F_p)(); //departed
+    
     return;
   }
   int64_t diff = replace_count - find_count;
@@ -1835,7 +1817,7 @@ void mjz_Str::replace(const char *find_cstr, size_t find_count,
       size_ -= diff;
     }
     if (size_ == m_length) {
-      // (this->*update_event_F_p)(); //departed
+      
       return;
     }
     int64_t index = m_length - 1;
@@ -1856,11 +1838,11 @@ void mjz_Str::replace(const char *find_cstr, size_t find_count,
       size_ += diff;
     }
     if (size_ == m_length) {
-      // (this->*update_event_F_p)(); //departed
+      
       return;
     }
     if (size_ > m_capacity && !changeBuffer(size_, 0)) {
-      // (this->*update_event_F_p)(); //departed
+      
       return;  // XXX: tell user!
     }
     int64_t index = m_length - 1;
@@ -1874,7 +1856,7 @@ void mjz_Str::replace(const char *find_cstr, size_t find_count,
       index--;
     }
   }
-  // (this->*update_event_F_p)(); //departed
+  
 }
 mjz_Str &mjz_Str::operator-=(const mjz_Str &othr_) {
   int64_t index_of_remove = lastIndexOf(othr_);
@@ -1987,7 +1969,7 @@ long long unsigned int mjz_millis() {
   static uint64_t my_time[2] = {0, 0};
   uint64_t ARD_millis_vr = ARD_millis();
   if (my_time[0] > ARD_millis_vr) {
-    my_time[1] += 1;  //+=1;
+    my_time[1] += 1;  
   }
   my_time[0] = ARD_millis_vr;
   return *((uint64_t *)my_time);
@@ -2220,7 +2202,7 @@ size_t mjz_Str::printULLNumber(unsigned long long n64, uint8_t base) {
   uint8_t i = 0;
   uint8_t innerLoops = 0;
   // Special case workaround
-  // https://github.com/mjz_ard/ArduinoCore-API/issues/178
+  // https://github.com/arduino/ArduinoCore-API/issues/178
   if (n64 == 0) {
     write('0');
     return 1;

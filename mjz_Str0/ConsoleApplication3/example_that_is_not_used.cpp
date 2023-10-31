@@ -535,5 +535,15 @@ str("0123456789");
 auto sv3 = str.substr_view_beg_n(-9LL,str.length());
   std::cout << "\n\n"<<sv3// << sv1 << sv2 << mjz_ard::mjz_Str(sv1) << mjz_ard::mjz_Str(sv2)
           << "\n\n";
+  using namespace mjz_ard::short_string_convestion_operators;
+  using namespace mjz_ard::short_string_names;
+  using namespace mjz_ard;
+  std::map<mjz_Str, mjz_Str>
+  map_str;
+  for (int i{};i<1000;i++)
+  map_str[mjz_Str(esp_random())] = esp_random();
+  for (auto& [k, v] : map_str) {
+    std::cout << k << " : " << v << " \n";
+      }
   return 0;
 }
