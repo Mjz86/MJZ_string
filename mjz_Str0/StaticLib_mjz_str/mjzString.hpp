@@ -1055,15 +1055,15 @@ struct SHA1_CTX : public SHA256_CTX {
     }
 
     // Append to the padding the total message's length in bits and transform.
-    ctx->bitlen += ctx->datalen * 8;
-    ctx->data[63] = ctx->bitlen;
-    ctx->data[62] = ctx->bitlen >> 8;
-    ctx->data[61] = ctx->bitlen >> 16;
-    ctx->data[60] = ctx->bitlen >> 24;
-    ctx->data[59] = ctx->bitlen >> 32;
-    ctx->data[58] = ctx->bitlen >> 40;
-    ctx->data[57] = ctx->bitlen >> 48;
-    ctx->data[56] = ctx->bitlen >> 56;
+    ctx->bitlen += static_cast<unsigned long long>(ctx->datalen) * 8;
+    ctx->data[63] =static_cast<BYTE>( ctx->bitlen);
+    ctx->data[62] = static_cast<BYTE>(ctx->bitlen >> 8);
+    ctx->data[61] =static_cast<BYTE>( ctx->bitlen >> 16);
+    ctx->data[60] =static_cast<BYTE>( ctx->bitlen >> 24);
+    ctx->data[59] =static_cast<BYTE>( ctx->bitlen >> 32);
+    ctx->data[58] =static_cast<BYTE>( ctx->bitlen >> 40);
+    ctx->data[57] =static_cast<BYTE>( ctx->bitlen >> 48);
+    ctx->data[56] =static_cast<BYTE>( ctx->bitlen >> 56);
     sha1_transform(ctx, ctx->data);
 
     // Since this implementation uses little endian byte ordering and MD uses
