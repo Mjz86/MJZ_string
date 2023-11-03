@@ -405,6 +405,262 @@ class static_str_algo {
     // virtual //i dont need it
     ~stack_str_buf() { STR_is_in_stack = 0; }
   };
+
+  public:
+  constexpr static inline double expUL(uint32_t number) {
+    double retval{1};
+    for (uint32_t i{}; i < number; i++) {
+      retval *= EULER;
+    }
+    return retval;
+  }
+
+  constexpr static uint8_t number_of_terms = 100;
+
+  constexpr static inline uint64_t floor(double x) { return (uint64_t)x; }
+
+  constexpr static inline double expUD(double x) {
+    uint32_t floor_x = (uint32_t)floor(x);
+    double retval_fast_component = expUL(floor_x);
+    x -= floor_x;
+    double retval{1};
+    for (int64_t i = 1; i <= number_of_terms; i++) {
+      double term{1};
+      for (int64_t j = 1; j <= i; j++) {
+        term *= x / j;
+      }
+      retval += term;
+    }
+    return retval * retval_fast_component;
+  }
+
+  constexpr static inline double exp(int32_t number) {
+    return ((0 < number) ? expUL(number) : (double)1 / expUL(-(number)));
+  }
+  constexpr static inline double exp(double number) {
+    return ((0 < number) ? expUD(number) : (double)1 / expUD(-(number)));
+  }
+
+  constexpr static inline double log(double x) {
+    if (x == 1) return 0;
+    if (x == 0) return NAN;
+    uint64_t integer_component{0};
+    for (; EULER < x; x /= EULER) {
+      integer_component++;
+    }
+    double retval{0};
+    double term{1};
+    double x_mines_one = (x - 1.0);
+    for (int64_t i{1}; i <= number_of_terms; i++) {
+      term *= x_mines_one / x;
+      retval += term / i;
+    }
+    return integer_component + retval;
+  }
+  constexpr static inline double powUD(double base, double exponent) {
+    if (base == 0) return 0;
+    uint32_t exponent_int_component = (uint32_t)floor(exponent);
+    exponent -= exponent_int_component;
+    return exp(exponent * log(base)) * powUL(base, exponent_int_component);
+    
+  }
+
+  constexpr static inline double powUL(double base, uint32_t exponent) {
+    double result{1};
+    for (uint64_t i{}; i < exponent; i++) result *= base;
+    return result;
+  }
+  constexpr static inline double pow(double base, double exponent) {
+    return ((0 < exponent) ? (powUD(base, exponent))
+                           : (1 / powUD(base, -exponent)));
+  }
+
+  constexpr static inline double sqrt(double x) { return pow(x, 0.5); }
+
+  constexpr static inline uint64_t ceiling(double x) {
+    uint64_t fx = floor(x);
+    if (fx == x) return fx;
+    return fx + 1;
+  }
+
+  constexpr static inline uint64_t round(double x) {
+    uint64_t fx = floor(x);
+    return ((0.5 < (x - fx)) ? (fx + 1) : (fx));
+  }
+
+  constexpr static inline float exp(float x) { return (float)exp((double)x); }
+
+  constexpr static float AlphaLeaky = 0.01f;
+  constexpr static float AlphaSELU = 1.6733f;
+  constexpr static float LamdaSELU = 1.0507f;
+  constexpr static float AlphaELU = 1.0f;
+  constexpr static inline float Sigmoid(float x) {
+    return 1.0f / (1 + exp(-x));
+  }
+  constexpr static inline float Tanh(float x) {
+    return (exp(2 * x) - 1) / (exp(2 * x) + 1);
+  }
+  constexpr static inline float ReLU(float x) { return (x > 0) ? x : 0; }
+
+  constexpr static inline float LeakyReLU(float x) {
+    return (x > 0) ? x : AlphaLeaky * x;
+  }
+  constexpr static inline float LeakyReLUDer(const float &fx) {
+    return (fx > 0) ? 1 : AlphaLeaky;
+  }
+
+  constexpr static inline float LeakyELU(float x) {
+    return (x > 0) ? x : AlphaLeaky * x;
+  }
+  constexpr static inline float ELU(float x) {
+    return (x > 0) ? x : AlphaELU * (exp(x) - 1);
+  }
+  constexpr static inline float SELU(float x) {
+    return (x > 0) ? x : AlphaSELU * (exp(x) - 1);
+  }
+  constexpr static inline double erf(double x) {
+    if (x <= 0) return 0.0;
+    if (4 < x) return 1.0;
+    constexpr double retval_c{2 / (sqrt(PI))};
+    double retval{0};
+    double nag_x_sqr = -(x * x);
+
+    for (uint32_t i{}; i < number_of_terms; i++) {
+      double retval_buff = x / (2 * i + 1);
+      for (uint32_t j{1}; j <= i; j++) {
+        retval_buff *= nag_x_sqr / j;
+      }
+      retval += retval_buff;
+    }
+
+    return retval * retval_c;
+  }
+  constexpr static inline uint32_t factorial(uint32_t x) {
+    uint32_t ret_val{1};
+    while (x != 1) {
+      ret_val *= x--;
+    }
+    return ret_val;
+  }
+
+  constexpr static inline double cos_rad_until_pi_over_2(double x) {
+    if (x == HALF_PI) return 0;
+    constexpr double neg_1ovr_fact2 = -1.0 / factorial(2);
+    constexpr double _1ovr_fact4 = 1.0 / factorial(4);
+    constexpr double neg_1ovr_fact6 = -1.0 / factorial(6);
+    constexpr double _1ovr_fact8 = 1.0 / factorial(8);
+    constexpr double neg_1ovr_fact10 = -1.0 / factorial(10);
+
+    double retval{};
+    double x_2 = (x * x);
+    retval =
+        1.0 +
+        x_2 *
+            (neg_1ovr_fact2 +
+             x_2 *
+                 (_1ovr_fact4 +
+                  x_2 *
+                      neg_1ovr_fact6));  // we dont do all the polonomial just 4
+    if (HALF_PI - abs(x) < 0.01) {
+       double x_8 = powUL(x_2, 4);
+      retval += x_8*_1ovr_fact8;
+       retval += x_8*x_2*neg_1ovr_fact10;
+    }
+    if (1 < retval) return 1;
+    if (retval < -1) return -1;
+    return retval;
+  }
+
+  constexpr static inline double sin_rad_until_pi_over_2(double x) {
+    if (x == HALF_PI) return 1;
+    constexpr double _1ovr_fact1 = 1.0 / factorial(1);
+    constexpr double neg_1ovr_fact3 = -1.0 / factorial(3);
+    constexpr double _1ovr_fact5 = 1.0 / factorial(5);
+    constexpr double neg_1ovr_fact7 = -1.0 / factorial(7);
+    constexpr double _1ovr_fact9 = 1.0 / factorial(9);
+    constexpr double neg_1ovr_fact11 = -1.0 / factorial(11);
+    double retval{};
+
+    double x_2 = (x * x);
+    retval = x * (_1ovr_fact1 +
+                  x_2 * (neg_1ovr_fact3 +
+                         x_2 * (_1ovr_fact5 +
+                                x_2 * neg_1ovr_fact7)));  // we dont do all the
+                                                          // polonomial just 4
+
+     if (HALF_PI - abs(x) < 0.01) {
+       double x_9 = powUL(x_2, 4) * x;
+       retval += x_9* _1ovr_fact9;
+       retval += x_9 * x_2 * neg_1ovr_fact11;
+    }
+    if (1 < retval) return 1;
+    if (retval < -1) return -1;
+    return retval;
+  }
+
+  constexpr static inline double cos_rad_until_pi(double x) {
+    return HALF_PI < x ? -cos_rad_until_pi_over_2(PI - x)
+                       : cos_rad_until_pi_over_2(x);
+  }
+
+  constexpr static inline double sin_rad_until_pi(double x) {
+    return HALF_PI < x ? sin_rad_until_pi_over_2(PI - x)
+                       : sin_rad_until_pi_over_2(x);
+  }
+
+  constexpr static inline double cos_rad_until_2_pi(double x) {
+    if (x < PI) return cos_rad_until_pi(x);
+    if (PI <= x && x < (PI + HALF_PI)) {
+      return -cos_rad_until_pi_over_2(PI - x);
+    }
+    return cos_rad_until_pi_over_2(TWO_PI - x);
+  }
+
+  constexpr static inline double sin_rad_until_2_pi(double x) {
+    if (x <= PI) return sin_rad_until_pi(x);
+    if (PI < x && x < (PI + HALF_PI)) {
+      return -sin_rad_until_pi(x - PI);
+    }
+    return -sin_rad_until_pi_over_2(TWO_PI - x);
+  }
+  constexpr static inline double radians_adjust_cos(double x) {
+    if (x == NAN) return 0;
+    if (x == INFINITY) return 0;
+    if (x == -INFINITY) return 0;
+    if (x < 0) x = -x;
+    while (TWO_PI < x) x -= TWO_PI;
+    return x;
+  }
+  constexpr static inline double radians_adjust_sin(
+      double x) {
+    if (x == NAN) return 0;
+    if (x == INFINITY) return 0;
+    if (x == -INFINITY) return 0;
+    bool was_neg{};
+    if (x < 0) {
+      was_neg = 1;
+      x = -x;
+    }
+    while (TWO_PI < x) x -= TWO_PI;
+    return  was_neg? x+PI:x;
+      }
+  constexpr static inline double cos_rad(double x) {
+    return cos_rad_until_2_pi(radians_adjust_cos(x));
+  }
+
+  constexpr static inline double sin_rad(double x) {
+    return sin_rad_until_2_pi(radians_adjust_sin(x));
+  }
+  constexpr static inline double tan_rad(double x) {
+    return sin_rad(x) / cos_rad(x);
+      }
+  constexpr static inline double cot_rad(double x) {
+    return cos_rad(x) / sin_rad(x) ;
+  }
+
+  constexpr static inline float log(float x) { return (float)log((double)x); }
+
+  constexpr static inline float erf(float x) { return (float)erf((double)x); }
 };
 template <int N>
 class mjz_RingBufferN {
@@ -3688,254 +3944,6 @@ class Point3D {
   inline constexpr Point3D(const Point3D<T> &p, const Vector3<T> &v)
       : x(p.x + v.m_x), y(p.y + v.m_y), z(p.z + v.m_z), w(p.w) {}
 };
-
-namespace mathy_functions {
-
-constexpr inline double expUL(uint32_t number) {
-  double retval{1};
-  for (uint32_t i{}; i < number; i++) {
-    retval *= EULER;
-  }
-  return retval;
-}
-
-constexpr uint8_t number_of_terms = 100;
-
-constexpr inline uint64_t floor(double x) { return (uint64_t)x; }
-
-constexpr inline double expUD(double x) {
-  uint32_t floor_x = (uint32_t)floor(x);
-  double retval_fast_component = expUL(floor_x);
-  x -= floor_x;
-  double retval{1};
-  for (int64_t i = 1; i <= number_of_terms; i++) {
-    double term{1};
-    for (int64_t j = 1; j <= i; j++) {
-      term *= x / j;
-    }
-    retval += term;
-  }
-  return retval * retval_fast_component;
-}
-
-constexpr inline double exp(int32_t number) {
-  return ((0 < number) ? expUL(number) : (double)1 / expUL(-(number)));
-}
-constexpr inline double exp(double number) {
-  return ((0 < number) ? expUD(number) : (double)1 / expUD(-(number)));
-}
-
-constexpr inline double log(double x) {
-  if (x == 1) return 0;
-  if (x == 0) return NAN;
-  uint64_t integer_component{0};
-  for (; EULER < x; x /= EULER) {
-    integer_component++;
-  }
-  double retval{0};
-  double term{1};
-  double x_mines_one = (x - 1.0);
-  for (int64_t i{1}; i <= number_of_terms; i++) {
-    term *= x_mines_one / x;
-    retval += term / i;
-  }
-  return integer_component + retval;
-}
-constexpr inline double powUD(double base, double exponent) {
-  if (base == 0) return 0;
-  uint64_t exponent_int_component = floor(exponent);
-  exponent -= exponent_int_component;
-  double result = exp(exponent * log(base));
-  for (uint64_t i{}; i < exponent_int_component; i++) result *= base;
-  return result;
-}
-constexpr inline double pow(double base, double exponent) {
-  return ((0 < exponent) ? (powUD(base, exponent))
-                         : (1 / powUD(base, -exponent)));
-}
-
-constexpr inline double sqrt(double x) { return pow(x, 0.5); }
-
-constexpr inline uint64_t ceiling(double x) {
-  uint64_t fx = floor(x);
-  if (fx == x) return fx;
-  return fx + 1;
-}
-
-constexpr inline uint64_t round(double x) {
-  uint64_t fx = floor(x);
-  return ((0.5 < (x - fx)) ? (fx + 1) : (fx));
-}
-
-constexpr inline float exp(float x) { return (float)exp((double)x); }
-
-constexpr float AlphaLeaky = 0.01f;
-constexpr float AlphaSELU = 1.6733f;
-constexpr float LamdaSELU = 1.0507f;
-constexpr float AlphaELU = 1.0f;
-constexpr inline float Sigmoid(float x) { return 1.0f / (1 + exp(-x)); }
-constexpr inline float Tanh(float x) {
-  return (exp(2 * x) - 1) / (exp(2 * x) + 1);
-}
-constexpr inline float ReLU(float x) { return (x > 0) ? x : 0; }
-
-constexpr inline float LeakyReLU(float x) {
-  return (x > 0) ? x : AlphaLeaky * x;
-}
-constexpr inline float LeakyReLUDer(const float &fx) {
-  return (fx > 0) ? 1 : AlphaLeaky;
-}
-
-constexpr inline float LeakyELU(float x) {
-  return (x > 0) ? x : AlphaLeaky * x;
-}
-constexpr inline float ELU(float x) {
-  return (x > 0) ? x : AlphaELU * (exp(x) - 1);
-}
-constexpr inline float SELU(float x) {
-  return (x > 0) ? x : AlphaSELU * (exp(x) - 1);
-}
-constexpr inline double erf(double x) {
-  if (x <= 0) return 0.0;
-  if (4 < x) return 1.0;
-  constexpr double retval_c{2 / (sqrt(PI))};
-  double retval{0};
-  double nag_x_sqr = -(x * x);
-
-  for (uint32_t i{}; i < number_of_terms; i++) {
-    double retval_buff = x / (2 * i + 1);
-    for (uint32_t j{1}; j <= i; j++) {
-      retval_buff *= nag_x_sqr / j;
-    }
-    retval += retval_buff;
-  }
-
-  return retval * retval_c;
-}
-constexpr inline uint32_t factorial(uint32_t x) {
-  uint32_t ret_val{1};
-  while (x != 1) {
-    ret_val *= x--;
-  }
-  return ret_val;
-}
-
-constexpr inline double cos_rad_until_pi_over_2(double x) {
-  if (x == HALF_PI) return 0;
-  constexpr double neg_1ovr_fact2 = -1.0 / factorial(2);
-  constexpr double _1ovr_fact4 = 1.0 / factorial(4);
-  constexpr double neg_1ovr_fact6 = -1.0 / factorial(6);
-
-  double retval{};
-  double x_2 = (x * x);
-  retval =
-      1.0 +
-      x_2 *
-          (neg_1ovr_fact2 +
-           x_2 *
-               (_1ovr_fact4 +
-                x_2 * neg_1ovr_fact6));  // we dont do all the polonomial just 4
-  if (1 < retval) return 1;
-  if (retval < -1) return -1;
-  return retval;
-}
-
-constexpr inline double sin_rad_until_pi_over_2(double x) {
-  if (x == HALF_PI) return 1;
-  constexpr double _1ovr_fact1 = 1.0 / factorial(1);
-  constexpr double neg_1ovr_fact3 = -1.0 / factorial(3);
-  constexpr double _1ovr_fact5 = 1.0 / factorial(5);
-  constexpr double neg_1ovr_fact7 = -1.0 / factorial(7);
-
-  double retval{};
-
-  double x_2 = (x * x);
-  retval = x * (_1ovr_fact1 +
-                x_2 * (neg_1ovr_fact3 +
-                       x_2 * (_1ovr_fact5 +
-                              x_2 * neg_1ovr_fact7)));  // we dont do all the
-                                                        // polonomial just 4
-  if (1 < retval) return 1;
-  if (retval < -1) return -1;
-  return retval;
-}
-
-constexpr inline double cos_rad_until_pi(double x) {
-  return HALF_PI < x ? -cos_rad_until_pi_over_2(PI - x)
-                     : cos_rad_until_pi_over_2(x);
-}
-
-constexpr inline double sin_rad_until_pi(double x) {
-  return HALF_PI < x ? sin_rad_until_pi_over_2(PI - x)
-                     : sin_rad_until_pi_over_2(x);
-}
-
-constexpr inline double cos_rad_until_2_pi(double x) {
-  if (x < PI) return cos_rad_until_pi(x);
-  if (PI <= x && x < (PI + HALF_PI)) {
-    return -cos_rad_until_pi_over_2(PI - x);
-  }
-  return cos_rad_until_pi_over_2(TWO_PI - x);
-}
-
-constexpr inline double sin_rad_until_2_pi(double x) {
-  if (x <= PI) return sin_rad_until_pi(x);
-  if (PI < x && x < (PI + HALF_PI)) {
-    return -sin_rad_until_pi(x-PI);
-  }
-  return -sin_rad_until_pi_over_2(TWO_PI - x);
-}
-constexpr inline double radians_adjust(double x) {
-  if (x == NAN) return 0;
-  if (x == INFINITY) return 0;
-  if (x == -INFINITY) return 0;
-  if (x < 0) x = -x;
-  while (TWO_PI < x) x -= TWO_PI;
-  return x;
-}
-
-constexpr inline double cos_rad(double x) {
-  return cos_rad_until_2_pi(radians_adjust(x));
-}
-
-constexpr inline double sin_rad(double x) {
-  return sin_rad_until_2_pi(radians_adjust(x));
-}
-
-constexpr inline float log(float x) { return (float)log((double)x); }
-
-constexpr inline float erf(float x) { return (float)erf((double)x); }
-
-constexpr inline float sqrt(float x) { return (float)sqrt((double)x); }
-
-constexpr inline float Identity(float x) { return x; }
-constexpr inline float BinaryStep(float x) { return (x < 0.0f) ? 0.0f : 1.0f; }
-constexpr inline float Softplus(float x) { return log(1.0f + exp(x)); }
-constexpr inline float SiLU(float x) { return x / (1 + exp(-x)); }
-constexpr inline float GELU(float x) {
-  return (1.0f / 2.0f) * x * (1.0f + erf(x / sqrt(x)));
-}
-constexpr inline float Mish(float x) { return x * Tanh(log(1 + exp(x))); }
-constexpr inline float Gaussian(float x) { return exp(-(x * x)); }
-constexpr inline float SigmoidDer(const float &fx) { return fx - fx * fx; }
-constexpr inline float TanhDer(const float &fx) { return 1 - fx * fx; }
-constexpr inline float ReLUDer(const float &fx) {
-  return (fx > 0.0f) ? 1.0f : 0.0f;
-}
-
-constexpr inline float LeakyELUDer(const float &fx) {
-  return (fx > 0.0f) ? 1.0f : AlphaLeaky;
-}
-constexpr inline float ELUDer(const float &fx) {
-  return (fx > 0.0f) ? 1.0f : fx + AlphaELU;
-}
-constexpr inline float SELUDer(const float &fx) {
-  return (fx > 0) ? LamdaSELU : fx + AlphaSELU * LamdaSELU;
-}
-
-constexpr inline float IdentityDer(float) { return 1; }
-
-}  // namespace mathy_functions
 
 namespace short_string_names {
 typedef mjz_ard::mjz_Str Str;

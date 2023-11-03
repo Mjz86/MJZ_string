@@ -515,11 +515,19 @@ int main() {
     using namespace mjz_ard;
     using namespace mjz_ard::short_string_convestion_operators;
     using namespace mjz_ard::short_string_names;
-    for (double x{};x<PI*4;x+=0.01)
-    if ((mjz_Str(mjz_ard::mathy_functions::cos_rad(x)) != mjz_Str(cos(x)))) {
-      std::cout << x << " : " <<mjz_ard::mathy_functions::cos_rad(x)- cos(x)<< "\n";
+    std::vector<std::pair<double, double>> num_a;
+    for (double x{PI * 4}; x > -PI * 4; x -= 0.01) {
+    double a = mjz_ard::static_str_algo::tan_rad(x);
+    double b = tan(x);
+    double del = abs(a - b);
+    
+      num_a.emplace_back(x, del);
+      
     }
-}
+    std::sort(num_a.begin(), num_a.end(),
+              [](auto a, auto b) { return  b.second < a.second; });
+    for (auto& [k, v] : num_a) std::cout << k << " : " << v << "\n";
+    }
 
 
 
