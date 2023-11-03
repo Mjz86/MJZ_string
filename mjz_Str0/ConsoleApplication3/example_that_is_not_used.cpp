@@ -515,28 +515,25 @@ int main() {
     using namespace mjz_ard;
     using namespace mjz_ard::short_string_convestion_operators;
     using namespace mjz_ard::short_string_names;
-    //
-    uint64_t itr{};
-    double integrol{};
-    for (double x{-1}; x < 1; x += 0.00001) {
-    itr++;
-    integrol -= ((-0.69813170079773212 * x * x - 0.87266462599716477) * x +1.5707963267948966 - acos(x));
-        }
-    std::cout << integrol / itr << "\n";
-        std::cin.get();
 
-    std::vector<std::pair<double, double>> num_a;
-    for (double x{PI * 4}; x > -PI * 4; x -= 0.01) {
-    double a = mjz_ard::static_str_algo::acos(cos(x));
-    double b = mjz_ard::static_str_algo::fastest_normal_acos(cos(x));
+    std::vector <
+        std::pair<std::pair<double, double>, std::pair<double, double>>> num_a;
+    for (double x{0}; x < 10; x += 1) {  //= 0.01
+    double a = mjz_ard::static_str_algo::sqrt(x);
+    double b = sqrt(x);
     double del = abs(a - b);
     
-      num_a.emplace_back(x, del);
+      num_a.push_back({{x, del}, {a, b}});
       
     }
     std::sort(num_a.begin(), num_a.end(),
-              [](auto a, auto b) { return  b.second < a.second; });
-    for (auto& [k, v] : num_a) std::cout << k << " : " << v << "\n";
+              [](auto a, auto b) { return b.first.second < a.first.second; });
+
+    for (auto& [kv, ab] : num_a) {
+      auto& [k, v] = kv;
+      auto& [a, b] = ab;
+      std::cout << k << " : " << v << "=" << a << "-" << b << "\n";
+    }
     }
 
 

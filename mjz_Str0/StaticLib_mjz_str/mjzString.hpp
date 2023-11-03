@@ -431,7 +431,8 @@ class static_str_algo {
       }
       retval += term;
     }
-    return retval * retval_fast_component;
+    retval *= retval_fast_component;
+    return retval;
   }
 
   constexpr static inline double exp(int32_t number) {
@@ -475,7 +476,10 @@ class static_str_algo {
                            : (1 / powUD(base, -exponent)));
   }
 
-  constexpr static inline double sqrt(double x) { return pow(x, 0.5); }
+  constexpr static inline double sqrt(double x) {
+    if (!x) return 0;
+    return expUD(log(x) * 0.5);
+  }
 
   constexpr static inline uint64_t ceiling(double x) {
     uint64_t fx = floor(x);
