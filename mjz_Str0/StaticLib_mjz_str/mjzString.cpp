@@ -84,9 +84,14 @@ namespace mjz_ard {
     return random( diff ) + howsmall; }
   char * dtostrf( double __val, signed char __width, unsigned char __prec,
                   char * __s ) {
-    std::string frmt = "%";
-    frmt += std::to_string( __width ) + '.' + std::to_string( __prec ) + "lf";
-    sprintf_alt_( __s, static_cast<size_t>( __width ) + 1, frmt.c_str(), __val );
+    char buffer_for_not_overflowing[65]{};
+    mjz_Str frmt("%");//be carefull not recusively ... yourself
+    frmt +=__width;
+    frmt += '.';
+    frmt += __prec;
+    frmt += "lf";
+    sprintf_alt_(buffer_for_not_overflowing, 64,frmt.c_str(), __val);
+    memmove(__s, buffer_for_not_overflowing, __width);
     return __s; }
 #define end_of_transmission_char 4
 #define null_char 0
@@ -1848,7 +1853,7 @@ namespace mjz_ard {
     return print( ( unsigned long )n, base ); }
   size_t mjz_Str::print( long n, int base ) {
     if ( base == 0 ) {
-      return write( n ); }
+      return write( (uint8_t)n ); }
     else
       if ( base == 10 ) {
         if ( n < 0 ) {
@@ -1861,12 +1866,14 @@ namespace mjz_ard {
         return printNumber( n, static_cast<uint8_t>( base ) ); } }
   size_t mjz_Str::print( unsigned long n, int base ) {
     if ( base == 0 ) {
-      return write( n ); }
+        return write((uint8_t)n);
+    }
     else {
       return printNumber( n, static_cast<uint8_t>( base ) ); } }
   size_t mjz_Str::print( long long n, int base ) {
     if ( base == 0 ) {
-      return write( n ); }
+      return write((uint8_t)n);
+    }
     else
       if ( base == 10 ) {
         if ( n < 0 ) {
@@ -1879,7 +1886,8 @@ namespace mjz_ard {
         return printULLNumber( n, static_cast<uint8_t>( base ) ); } }
   size_t mjz_Str::print( unsigned long long n, int base ) {
     if ( base == 0 ) {
-      return write( n ); }
+        return write((uint8_t)n);
+    }
     else {
       return printULLNumber( n, static_cast<uint8_t>( base ) ); } }
   size_t mjz_Str::print( double n, int digits ) { return printFloat( n, digits ); }

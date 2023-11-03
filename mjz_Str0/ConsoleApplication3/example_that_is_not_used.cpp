@@ -174,7 +174,8 @@ namespace dont_use {
 
   long loop2() {
     mjz_Str mystr( esp_random() );
-    return mystr()( [&]( mjz_Str * this_ ) -> long { return ( long )this_->toLL(); } ); }
+    return mystr()([&](mjz_Str& obj) -> long { return (long)obj.toLL(); });
+  }
   long loop() {
     mjz_Str mystr;
     mystr.change_reinterpret_char_char( '\1' );
@@ -285,8 +286,7 @@ namespace dont_use {
     main2();
 
   mjz_Str("hello there i biult a cmd app press any word to start\n")(
-        [&](mjz_Str* this_) -> bool {
-          mjz_Str& obj = *this_;
+        [&](mjz_Str& obj) -> bool {
           obj.change_reinterpret_char_char('\1');
           std::cout << obj;
           std::cin >> obj();
@@ -484,7 +484,7 @@ bool get_password_thread() {
       return 0; } }
 
   return 1; }
-int main() {
+int main86469() {
   mjz_ard::mjz_Str str;
   std::thread get_password( get_password_thread );
   get_password.join();
@@ -509,6 +509,17 @@ int main() {
 
   return 0; }
 
+
+
+int main() {
+    using namespace mjz_ard;
+    using namespace mjz_ard::short_string_convestion_operators;
+    using namespace mjz_ard::short_string_names;
+    for (double x{};x<PI*4;x+=0.01)
+    if ((mjz_Str(mjz_ard::mathy_functions::cos_rad(x)) != mjz_Str(cos(x)))) {
+      std::cout << x << " : " <<mjz_ard::mathy_functions::cos_rad(x)- cos(x)<< "\n";
+    }
+}
 
 
 

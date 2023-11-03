@@ -522,9 +522,8 @@ class malloc_wrapper {
   void *m_data_ptr{};
   size_t m_cap_size{};
   uint8_t m_Dealocation_state{};
- 
 
- constexpr inline void obj_is_moved() {
+  constexpr inline void obj_is_moved() {
     m_Dealocation_state |= Dealocation_state::is_moved |
                            Dealocation_state::dont_deallocate_on_free;
   }
@@ -545,32 +544,31 @@ class malloc_wrapper {
              ? ~Dealocation_state::dont_deallocate_on_free
              : Dealocation_state::dont_deallocate_on_free);
   }
-   inline malloc_wrapper(size_t size_of_ptr = 0) {
+  inline malloc_wrapper(size_t size_of_ptr = 0) {
     m_data_ptr = malloc(size_of_ptr);
   };
-   inline malloc_wrapper(size_t size_of_ptr, int VAl_) {
-    m_data_ptr = malloc(size_of_ptr); memset(VAl_);
+  inline malloc_wrapper(size_t size_of_ptr, int VAl_) {
+    m_data_ptr = malloc(size_of_ptr);
+    memset(VAl_);
   };
-   inline malloc_wrapper(void *data_ptr, size_t size_of_ptr) {
+  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr) {
     move(data_ptr, size_of_ptr);
   }
-   inline malloc_wrapper(void *data_ptr, size_t size_of_ptr,
-                                  int VAl_) {
+  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr, int VAl_) {
     move(data_ptr, size_of_ptr).memset(VAl_);
   }
-   inline malloc_wrapper &change_data_ptr(void *data_ptr,
-                                                   size_t size_of_ptr) {
+  inline malloc_wrapper &change_data_ptr(void *data_ptr, size_t size_of_ptr) {
     return move(data_ptr, size_of_ptr);
   }
-   inline malloc_wrapper &change_data_ptr(malloc_wrapper &&otr) {
+  inline malloc_wrapper &change_data_ptr(malloc_wrapper &&otr) {
     return move(otr);
   }
- inline ~malloc_wrapper() { free(); }
+  inline ~malloc_wrapper() { free(); }
   malloc_wrapper(malloc_wrapper &) = delete;
   inline malloc_wrapper(malloc_wrapper &&otr) noexcept { move(otr); }
   malloc_wrapper(const malloc_wrapper &) = delete;
   malloc_wrapper &operator=(malloc_wrapper &) = delete;
-   inline malloc_wrapper &operator=(malloc_wrapper &&otr) noexcept {
+  inline malloc_wrapper &operator=(malloc_wrapper &&otr) noexcept {
     return move(otr);
   };
   malloc_wrapper &operator=(const malloc_wrapper &) = delete;
@@ -2100,6 +2098,9 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual mjz_Str &operator++();  // print empty line
   if_virtual_then_virtual mjz_Str operator++(int);
   if_virtual_then_virtual mjz_Str &operator--();  // read one character
+  inline mjz_Str &operator-() { return (*this)(); }
+  inline mjz_Str &operator+() { return ++(*this); }
+
   if_virtual_then_virtual mjz_Str operator--(int);
   inline if_virtual_then_virtual mjz_Str &operator()() {
     this->operator=(empty_STRING_C_STR);
@@ -2798,40 +2799,40 @@ class mjz_Str : public basic_mjz_String,
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
                                             Args_frScnf &...args_frScnf) {
-    your__function_(this, args_frScnf...);
+    your__function_(*this, args_frScnf...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual const mjz_Str &run_code(
       your_FUNCTION_Type your__function_, Args_frScnf &...args_frScnf) const {
-    your__function_(this, args_frScnf...);
+    your__function_(*this, args_frScnf...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto run_code_and_return(
       your_FUNCTION_Type your__function_, Args_frScnf &...args_frScnf) {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto run_code_and_return(
       your_FUNCTION_Type your__function_, Args_frScnf &...args_frScnf) const {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
   template <typename your_FUNCTION_Type>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_) {
-    return your__function_(this);
+    return your__function_(*this);
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
                                           Args_frScnf &...args_frScnf) {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
                                           Args_frScnf &...args_frScnf) const {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename... Args_frScnf>
   if_virtual_then_virtual mjz_Str &operator<<(
@@ -2857,39 +2858,39 @@ class mjz_Str : public basic_mjz_String,
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
                                             const Args_frScnf &...args_frScnf) {
-    your__function_(this, args_frScnf...);
+    your__function_(*this, args_frScnf...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual const mjz_Str &run_code(
       your_FUNCTION_Type your__function_,
       const Args_frScnf &...args_frScnf) const {
-    your__function_(this, args_frScnf...);
+    your__function_(*this, args_frScnf...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto run_code_and_return(
       your_FUNCTION_Type your__function_, const Args_frScnf &...args_frScnf) {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto run_code_and_return(
       your_FUNCTION_Type your__function_,
       const Args_frScnf &...args_frScnf) const {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
                                           const Args_frScnf &...args_frScnf) {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto operator()(
       your_FUNCTION_Type your__function_,
       const Args_frScnf &...args_frScnf) const {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename... Args_frScnf>
   if_virtual_then_virtual mjz_Str &operator<<(Args_frScnf &&...args_frScnf) {
@@ -2911,36 +2912,36 @@ class mjz_Str : public basic_mjz_String,
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
                                             Args_frScnf &&...args_frScnf) {
-    your__function_(this, args_frScnf...);
+    your__function_(*this, args_frScnf...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual const mjz_Str &run_code(
       your_FUNCTION_Type your__function_, Args_frScnf &&...args_frScnf) const {
-    your__function_(this, args_frScnf...);
+    your__function_(*this, args_frScnf...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto run_code_and_return(
       your_FUNCTION_Type your__function_, Args_frScnf &&...args_frScnf) {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto run_code_and_return(
       your_FUNCTION_Type your__function_, Args_frScnf &&...args_frScnf) const {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
                                           Args_frScnf &&...args_frScnf) {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
   template <typename your_FUNCTION_Type, typename... Args_frScnf>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
                                           Args_frScnf &&...args_frScnf) const {
-    return your__function_(this, args_frScnf...);
+    return your__function_(*this, args_frScnf...);
   }
 };
 /*
@@ -3107,10 +3108,10 @@ class mjz_virtual_string_view : public mjz_str_view {
 class StringSumHelper : public mjz_Str {
  public:
   StringSumHelper(const basic_mjz_String &s)
-      : mjz_Str(mjz_Str(s.c_str(), s.length())([](mjz_Str *this_) {
-          std::cout << *this_ << "\n";
-          this_->reserve(1);
-          return *this_;
+      : mjz_Str(mjz_Str(s.c_str(), s.length())([](mjz_Str &obj) {
+          std::cout << obj << "\n";
+          obj.reserve(1);
+          return obj;
         })) {}
   StringSumHelper(basic_mjz_String &&s) : StringSumHelper(s) {}
   StringSumHelper(const basic_mjz_Str_view &otr) : mjz_Str(otr) {}
@@ -3226,6 +3227,716 @@ inline mjz_str_view operator"" _mv(const char *p) {
 inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 
 }  // namespace short_string_convestion_operators
+
+/************************************************************
+    Author: Charlie Murphy
+    Email:  tm507211@ohio.edu
+
+    Date:   July 20, 2015
+
+    Description: Implementation of vector classes
+************************************************************/
+#include <cmath>
+#include <iostream>
+
+/***************************************************************************************
+  Vector2  -- 2-D vector class
+***************************************************************************************/
+template <class T>
+class Vector2 {
+ public:
+  T m_x;
+  T m_y;
+  constexpr inline ~Vector2() = default;
+  constexpr inline Vector2 &operator=(Vector2 &) = default;
+  constexpr inline Vector2 &operator=(Vector2 &&) = default;
+  constexpr inline Vector2 &operator=(const Vector2 &) = default;
+
+  constexpr inline Vector2 &operator()(Vector2 &obj) { return *this = obj; };
+  constexpr inline Vector2 &operator()(Vector2 &&obj) { return *this = obj; };
+  constexpr inline Vector2 &operator()(const Vector2 &obj) {
+    return *this = obj;
+  };
+  constexpr inline Vector2 &operator()(const T &x, const T &y) {
+    m_x = (x);
+    m_x = (y);
+    return *this;
+  };
+  template <typename FNC_T>
+  inline auto operator()(FNC_T your_function) {
+    return your_function(*this);
+  };
+  template <typename FNC_T>
+  inline auto operator()(FNC_T your_function) const {
+    return your_function(*this);
+  };
+
+  template <typename FNC_T>
+  inline Vector2 operator()(int do_save, FNC_T your_function) {
+    auto v = Vector2(your_function(x()), your_function(y()));
+    if (do_save) return (*this)(v);
+    return v;
+  };
+  template <typename FNC_T>
+  inline Vector2 operator()(int, FNC_T your_function) const {
+    return Vector2(your_function(x()), your_function(y()));
+  };
+  template <typename FNC_T, typename FNC_T2>
+  inline auto operator()(FNC_T2 your_function_returning, FNC_T your_function) {
+    return your_function_returning(operator()(0, your_function));
+  };
+  template <typename FNC_T, typename FNC_T2>
+  inline auto operator()(FNC_T2 your_function_returning,
+                         FNC_T your_function) const {
+    return your_function_returning(operator()(0, your_function));
+  };
+
+  inline constexpr T &x() { return m_x; }
+  inline constexpr T &y() { return m_y; }
+  inline constexpr const T &x() const { return m_x; }
+  inline constexpr const T &y() const { return m_y; }
+
+  inline constexpr Vector2(const T &s = T()) : m_x(s), m_y(s) {}
+  inline constexpr Vector2(const T &x, const T &y) : m_x(x), m_y(y) {}
+  inline constexpr Vector2(const Vector2<T> &v) : m_x(v.m_x), m_y(v.m_y) {}
+  inline constexpr bool operator==(const Vector2<T> &v) const {
+    return m_x == v.m_x && m_y == v.m_y;
+  }
+  inline constexpr bool operator!=(const Vector2<T> &v) const {
+    return m_x != v.m_x || m_y != v.m_y;
+  }
+
+  /**********************************************
+    Indexing operator
+  **********************************************/
+  inline constexpr T &operator[](int i) { return *(&m_x + i); }
+  inline constexpr const T operator[](int i) const { return *(&m_x + i); }
+
+  /*********************************************
+    Non modifying math operators
+  *********************************************/
+  inline constexpr Vector2<T> operator-() const {
+    return Vector2<T>(-m_x, -m_y);
+  }
+  inline constexpr Vector2<T> operator+(const Vector2<T> &v) const {
+    return Vector2<T>(m_x + v.m_x, m_y + v.m_y);
+  }
+  inline constexpr Vector2<T> operator-(const Vector2<T> &v) const {
+    return Vector2<T>(m_x - v.m_x, m_y - v.m_y);
+  }
+  inline constexpr Vector2<T> operator*(const T &s) const {
+    return Vector2<T>(m_x * s, m_y * s);
+  }
+  inline constexpr Vector2<T> operator*(const Vector2<T> &v) const {
+    return Vector2<T>(m_x * v.m_x, m_y * v.m_y);
+  }
+  inline constexpr Vector2<T> operator/(const T &s) const {
+    return Vector2<T>(m_x / s, m_y / s);
+  }
+
+  /*******************************************
+    Modifying Math Operators
+  *******************************************/
+  inline constexpr Vector2<T> &operator+=(const Vector2<T> &v) {
+    m_x += v.m_x;
+    m_y += v.m_y;
+    return *this;
+  }
+  inline constexpr Vector2<T> &operator-=(const Vector2<T> &v) {
+    m_x -= v.m_x;
+    m_y -= v.m_y;
+    return *this;
+  }
+  inline constexpr Vector2<T> &operator*=(const T &s) {
+    m_x *= s;
+    m_y *= s;
+    return *this;
+  }
+  inline constexpr Vector2<T> &operator*=(const Vector2<T> &v) {
+    m_x *= v.m_x;
+    m_y *= v.m_y;
+    return *this;
+  }
+  inline constexpr Vector2<T> &operator/=(const T &s) {
+    m_x /= s;
+    m_y /= s;
+    return *this;
+  }
+
+  /*******************************************
+    Cast to T* (lets you use vec2 as T array)
+  *******************************************/
+  inline constexpr operator const T *() const { return static_cast<T *>(&m_x); }
+  inline constexpr operator T *() { return static_cast<T *>(&m_x); }
+
+  /********************************************
+    Useful Vector Operations
+  ********************************************/
+  inline constexpr T length() const { return std::sqrt(m_x * m_x + m_y * m_y); }
+  inline constexpr T lengthSq() const { return m_x * m_x + m_y * m_y; }
+  inline constexpr Vector2<T> &normalize() {
+    T length = this->length();
+    m_x /= length;
+    m_y /= length;
+    return *this;
+  }
+  inline constexpr Vector2<T> unit() const {
+    T length = length();
+    return Vector2<T>(m_x / length, m_y / length);
+  }
+  inline constexpr T dot(const Vector2<T> &v) const {
+    return m_x * v.m_x + m_y * v.m_y;
+  }
+  inline constexpr T cross(
+      const Vector2<T> &v) const {     // 3-D cross product with z assumed 0
+    return m_x * v.m_y + v.m_x * m_y;  // return magnitude of resulting vector
+  }
+  template <class T>
+  friend std::ostream &operator<<(std::ostream &outs, const Vector2<T> &v) {
+    outs << "<" << v.m_x << ", " << v.m_y << ">";
+    return outs;
+  }
+  template <class T>
+  friend std::istream &operator>>(std::istream &ins, Vector2<T> &v) {
+    ins >> v.m_x >> v.m_y;
+    return ins;
+  }
+
+  template <class T>
+  friend inline constexpr Vector2<T> operator*(T s, const Vector2<T> &v) {
+    return Vector2<T>(s * v.m_x, s * v.m_y);
+  }
+
+  /********************************************************
+   Basic Trig functions of angle between vectors
+  ********************************************************/
+  template <class T>
+  friend inline constexpr T cos(const Vector2<T> &v1, const Vector2<T> &v2) {
+    return dot(v1, v2) / v1.length() / v2.length();
+  }
+  template <class T>
+  friend inline constexpr T sin(const Vector2<T> &v1, const Vector2<T> &v2) {
+    return cross(v1, v2) / v1.length() / v2.length();
+  }
+  template <class T>
+  friend inline constexpr T tan(const Vector2<T> &v1, const Vector2<T> &v2) {
+    return sin(v1, v2) / cos(v1, v2);
+  }
+  template <class T>
+  friend inline constexpr T angle(const Vector2<T> &v1, const Vector2<T> &v2) {
+    return std::acos(cos(v1, v2));
+  }
+
+  template <class T>
+  friend inline constexpr T dot(const Vector2<T> &v1, const Vector2<T> &v2) {
+    return v1.dot(v2);
+  }
+  template <class T>
+  friend inline constexpr T cross(const Vector2<T> &v1, const Vector2<T> &v2) {
+    return v1.cross(v2);
+  }
+};
+
+/*********************************************************************************
+ Vector3 -- 3D vector
+*********************************************************************************/
+template <class T>
+class Vector3 {
+ public:
+  T m_x;
+  T m_y;
+  T m_z;
+  constexpr inline ~Vector3() = default;
+  constexpr inline Vector3 &operator=(Vector3 &) = default;
+  constexpr inline Vector3 &operator=(Vector3 &&) = default;
+  constexpr inline Vector3 &operator=(const Vector3 &) = default;
+
+  constexpr inline Vector3 &operator()(Vector3 &obj) { return *this = obj; };
+  constexpr inline Vector3 &operator()(Vector3 &&obj) { return *this = obj; };
+  constexpr inline Vector3 &operator()(const Vector3 &obj) {
+    return *this = obj;
+  };
+  constexpr inline Vector3 &operator()(const T &x, const T &y, const T &z) {
+    m_x = (x);
+    m_x = (y);
+    m_x = (z);
+    return *this;
+  };
+  template <typename FNC_T>
+  inline auto operator()(FNC_T your_function) {
+    return your_function(*this);
+  };
+  template <typename FNC_T>
+  inline auto operator()(FNC_T your_function) const {
+    return your_function(*this);
+  };
+
+  template <typename FNC_T>
+  inline Vector3 operator()(int do_save, FNC_T your_function) {
+    auto v =
+        Vector3(your_function(x()), your_function(y()), your_function(z()));
+    if (do_save) return (*this)(v);
+    return v;
+  };
+  template <typename FNC_T>
+  inline Vector3 operator()(int, FNC_T your_function) const {
+    return Vector3(your_function(x()), your_function(y()), your_function(z()));
+  };
+  template <typename FNC_T, typename FNC_T2>
+  inline auto operator()(FNC_T2 your_function_returning, FNC_T your_function) {
+    return your_function_returning(operator()(0, your_function));
+  };
+  template <typename FNC_T, typename FNC_T2>
+  inline auto operator()(FNC_T2 your_function_returning,
+                         FNC_T your_function) const {
+    return your_function_returning(operator()(0, your_function));
+  };
+
+  inline constexpr T &x() { return m_x; }
+  inline constexpr T &y() { return m_y; }
+  inline constexpr T &z() { return m_z; }
+  inline constexpr const T &x() const { return m_x; }
+  inline constexpr const T &y() const { return m_y; }
+  inline constexpr const T &z() const { return m_z; }
+
+  inline constexpr Vector3(const T &s = T()) : m_x(s), m_y(s), m_z(s) {}
+  inline constexpr Vector3(const T &x, const T &y, const T &z)
+      : m_x(x), m_y(y), m_z(z) {}
+  inline constexpr Vector3(const Vector2<T> &v, const T &s = T())
+      : m_x(v.m_x), m_y(v.m_y), m_z(s) {}
+  inline constexpr Vector3(const Vector3<T> &v)
+      : m_x(v.m_x), m_y(v.m_y), m_z(v.m_z) {}
+
+  inline constexpr bool operator==(const Vector3<T> &v) const {
+    return m_x == v.m_x && m_y == v.m_y && m_z == v.m_z;
+  }
+  inline constexpr bool operator!=(const Vector3<T> &v) const {
+    return m_x != v.m_x || m_y != v.m_y || m_z != v.m_z;
+  }
+
+  /**********************************************
+    Indexing operator
+  **********************************************/
+  inline constexpr T &operator[](int i) { return *(&m_x + i); }
+  const T operator[](int i) const { return *(&m_x + i); }
+
+  /*********************************************
+    Non modifying math operators
+  *********************************************/
+  inline constexpr Vector3<T> operator-() const {
+    return Vector3<T>(-m_x, -m_y, -m_z);
+  }
+  inline constexpr Vector3<T> operator+(const Vector3<T> &v) const {
+    return Vector3<T>(m_x + v.m_x, m_y + v.m_y, m_z + v.m_z);
+  }
+  inline constexpr Vector3<T> operator-(const Vector3<T> &v) const {
+    return Vector3<T>(m_x - v.m_x, m_y - v.m_y, m_z - v.m_z);
+  }
+  inline constexpr Vector3<T> operator*(const T &s) const {
+    return Vector3<T>(m_x * s, m_y * s, m_z * s);
+  }
+  inline constexpr Vector3<T> operator*(const Vector3<T> &v) const {
+    return Vector3<T>(m_x * v.m_x, m_y * v.m_y, m_z * v.m_z);
+  }
+  inline constexpr Vector3<T> operator/(const T &s) const {
+    return Vector3<T>(m_x / s, m_y / s, m_z / s);
+  }
+
+  /*******************************************
+    Modifying Math Operators
+  *******************************************/
+  inline constexpr Vector3<T> &operator+=(const Vector3<T> &v) {
+    m_x += v.m_x;
+    m_y += v.m_y;
+    m_z += v.m_z;
+    return *this;
+  }
+  inline constexpr Vector3<T> &operator-=(const Vector3<T> &v) {
+    m_x -= v.m_x;
+    m_y -= v.m_y;
+    m_y -= v.m_z;
+    return *this;
+  }
+  inline constexpr Vector3<T> &operator*=(const T &s) {
+    m_x *= s;
+    m_y *= s;
+    m_z *= s;
+    return *this;
+  }
+  inline constexpr Vector3<T> &operator*=(const Vector3<T> &v) {
+    m_x *= v.m_x;
+    m_y *= v.m_y;
+    m_z *= v.m_z;
+    return *this;
+  }
+  inline constexpr Vector3<T> &operator/=(const T &s) {
+    m_x /= s;
+    m_y /= s;
+    m_z /= s;
+    return *this;
+  }
+
+  /*******************************************
+    Cast to T* (lets you use vec2 as T array)
+  *******************************************/
+  inline constexpr operator const T *() const { return static_cast<T *>(&m_x); }
+  inline constexpr operator T *() { return static_cast<T *>(&m_x); }
+
+  /********************************************
+    Useful Vector Operations
+  ********************************************/
+  inline constexpr T length() const {
+    return std::sqrt(m_x * m_x + m_y * m_y + m_z * m_z);
+  }
+  inline constexpr T lengthSq() const {
+    return m_x * m_x + m_y * m_y + m_z * m_z;
+  }
+  inline constexpr Vector3<T> &normalize() {
+    T length = this->length();
+    m_x /= length;
+    m_y /= length;
+    m_z /= length;
+    return *this;
+  }
+  inline constexpr Vector3<T> unit() const {
+    T length = length();
+    return Vector3<T>(m_x / length, m_y / length, m_z / length);
+  }
+  inline constexpr T dot(const Vector3<T> &v) const {
+    return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
+  }
+  inline constexpr Vector3<T> cross(
+      const Vector3<T> &v) { /* NOTE this function modifies the vector unlike 2D
+                                and non-member versions */
+    T x_(m_x), y_(m_y), z_(m_z);
+    m_x = y_ * v.m_z - z_ * v.m_y;
+    m_y = z_ * v.m_x - x_ * v.m_z;
+    m_z = x_ * v.m_y - y_ * v.m_x;
+    return *this;
+  }
+  template <class T>
+  friend std::ostream &operator<<(std::ostream &outs, const Vector3<T> &v) {
+    outs << "<" << v.m_x << ", " << v.m_y << ", " << v.m_z << ">";
+    return outs;
+  }
+  template <class T>
+  friend std::istream &operator>>(std::istream &ins, Vector3<T> &v) {
+    ins >> v.m_x >> v.m_y >> v.m_z;
+    return ins;
+  }
+
+  template <class T>
+  inline constexpr friend Vector3<T> operator*(T s, const Vector3<T> &v) {
+    return Vector3<T>(s * v.m_x, s * v.m_y, s * v.m_z);
+  }
+
+  /********************************************************
+   Basic Trig functions of angle between vectors
+  ********************************************************/
+  template <class T>
+  inline constexpr friend T cos(const Vector3<T> &v1, const Vector3<T> &v2) {
+    return dot(v1, v2) / v1.length() / v2.length();
+  }
+  template <class T>
+  inline constexpr friend T sin(const Vector3<T> &v1, const Vector3<T> &v2) {
+    return cross(v1, v2).length() / v1.length() / v2.length();
+  }
+  template <class T>
+  inline constexpr friend T tan(const Vector3<T> &v1, const Vector3<T> &v2) {
+    return sin(v1, v2) / cos(v1, v2);
+  }
+  template <class T>
+  inline constexpr friend T angle(const Vector3<T> &v1, const Vector3<T> &v2) {
+    return std::acos(cos(v1, v2));
+  }
+
+  template <class T>
+  inline constexpr friend T dot(const Vector3<T> &v1, const Vector3<T> &v2) {
+    return v1.dot(v2);
+  }
+  template <class T>
+  inline constexpr friend Vector3<T> cross(const Vector3<T> &v1,
+                                           const Vector3<T> &v2) {
+    return Vector3<T>(v1.m_y * v2.m_z - v1.m_z * v2.m_y,
+                      v1.m_z * v2.m_x - v1.m_x * v2.m_z,
+                      v1.m_x * v2.m_y - v1.m_y * v2.m_x);
+  }
+};
+
+/******************************************************************************************
+    Author: Charlie Murphy
+    Email:  tm507211@ohio.edu
+
+    Date:   Augost 7, 2015
+
+    Description: Defines point class.
+******************************************************************************************/
+
+template <class T>
+class Point3D {
+ public:
+  T x;
+  T y;
+  T z;
+  T w;
+
+  inline constexpr Point3D(const T &s = T()) : x(s), y(s), z(s), w(s) {}
+  inline constexpr Point3D(const T &x, const T &y, const T &z, const T &w)
+      : x(x), y(y), z(z), w(w) {}
+  inline constexpr Point3D(const Point3D<T> &p)
+      : x(p.x), y(p.y), z(p.z), w(p.w) {}
+  inline constexpr Point3D(const Point3D<T> &p, const Vector3<T> &v)
+      : x(p.x + v.m_x), y(p.y + v.m_y), z(p.z + v.m_z), w(p.w) {}
+};
+
+namespace mathy_functions {
+
+constexpr inline double expUL(uint32_t number) {
+  double retval{1};
+  for (uint32_t i{}; i < number; i++) {
+    retval *= EULER;
+  }
+  return retval;
+}
+
+constexpr uint8_t number_of_terms = 100;
+
+constexpr inline uint64_t floor(double x) { return (uint64_t)x; }
+
+constexpr inline double expUD(double x) {
+  uint32_t floor_x = (uint32_t)floor(x);
+  double retval_fast_component = expUL(floor_x);
+  x -= floor_x;
+  double retval{1};
+  for (int64_t i = 1; i <= number_of_terms; i++) {
+    double term{1};
+    for (int64_t j = 1; j <= i; j++) {
+      term *= x / j;
+    }
+    retval += term;
+  }
+  return retval * retval_fast_component;
+}
+
+constexpr inline double exp(int32_t number) {
+  return ((0 < number) ? expUL(number) : (double)1 / expUL(-(number)));
+}
+constexpr inline double exp(double number) {
+  return ((0 < number) ? expUD(number) : (double)1 / expUD(-(number)));
+}
+
+constexpr inline double log(double x) {
+  if (x == 1) return 0;
+  if (x == 0) return NAN;
+  uint64_t integer_component{0};
+  for (; EULER < x; x /= EULER) {
+    integer_component++;
+  }
+  double retval{0};
+  double term{1};
+  double x_mines_one = (x - 1.0);
+  for (int64_t i{1}; i <= number_of_terms; i++) {
+    term *= x_mines_one / x;
+    retval += term / i;
+  }
+  return integer_component + retval;
+}
+constexpr inline double powUD(double base, double exponent) {
+  if (base == 0) return 0;
+  uint64_t exponent_int_component = floor(exponent);
+  exponent -= exponent_int_component;
+  double result = exp(exponent * log(base));
+  for (uint64_t i{}; i < exponent_int_component; i++) result *= base;
+  return result;
+}
+constexpr inline double pow(double base, double exponent) {
+  return ((0 < exponent) ? (powUD(base, exponent))
+                         : (1 / powUD(base, -exponent)));
+}
+
+constexpr inline double sqrt(double x) { return pow(x, 0.5); }
+
+constexpr inline uint64_t ceiling(double x) {
+  uint64_t fx = floor(x);
+  if (fx == x) return fx;
+  return fx + 1;
+}
+
+constexpr inline uint64_t round(double x) {
+  uint64_t fx = floor(x);
+  return ((0.5 < (x - fx)) ? (fx + 1) : (fx));
+}
+
+constexpr inline float exp(float x) { return (float)exp((double)x); }
+
+constexpr float AlphaLeaky = 0.01f;
+constexpr float AlphaSELU = 1.6733f;
+constexpr float LamdaSELU = 1.0507f;
+constexpr float AlphaELU = 1.0f;
+constexpr inline float Sigmoid(float x) { return 1.0f / (1 + exp(-x)); }
+constexpr inline float Tanh(float x) {
+  return (exp(2 * x) - 1) / (exp(2 * x) + 1);
+}
+constexpr inline float ReLU(float x) { return (x > 0) ? x : 0; }
+
+constexpr inline float LeakyReLU(float x) {
+  return (x > 0) ? x : AlphaLeaky * x;
+}
+constexpr inline float LeakyReLUDer(const float &fx) {
+  return (fx > 0) ? 1 : AlphaLeaky;
+}
+
+constexpr inline float LeakyELU(float x) {
+  return (x > 0) ? x : AlphaLeaky * x;
+}
+constexpr inline float ELU(float x) {
+  return (x > 0) ? x : AlphaELU * (exp(x) - 1);
+}
+constexpr inline float SELU(float x) {
+  return (x > 0) ? x : AlphaSELU * (exp(x) - 1);
+}
+constexpr inline double erf(double x) {
+  if (x <= 0) return 0.0;
+  if (4 < x) return 1.0;
+  constexpr double retval_c{2 / (sqrt(PI))};
+  double retval{0};
+  double nag_x_sqr = -(x * x);
+
+  for (uint32_t i{}; i < number_of_terms; i++) {
+    double retval_buff = x / (2 * i + 1);
+    for (uint32_t j{1}; j <= i; j++) {
+      retval_buff *= nag_x_sqr / j;
+    }
+    retval += retval_buff;
+  }
+
+  return retval * retval_c;
+}
+constexpr inline uint32_t factorial(uint32_t x) {
+  uint32_t ret_val{1};
+  while (x != 1) {
+    ret_val *= x--;
+  }
+  return ret_val;
+}
+
+constexpr inline double cos_rad_until_pi_over_2(double x) {
+  if (x == HALF_PI) return 0;
+  constexpr double neg_1ovr_fact2 = -1.0 / factorial(2);
+  constexpr double _1ovr_fact4 = 1.0 / factorial(4);
+  constexpr double neg_1ovr_fact6 = -1.0 / factorial(6);
+
+  double retval{};
+  double x_2 = (x * x);
+  retval =
+      1.0 +
+      x_2 *
+          (neg_1ovr_fact2 +
+           x_2 *
+               (_1ovr_fact4 +
+                x_2 * neg_1ovr_fact6));  // we dont do all the polonomial just 4
+  if (1 < retval) return 1;
+  if (retval < -1) return -1;
+  return retval;
+}
+
+constexpr inline double sin_rad_until_pi_over_2(double x) {
+  if (x == HALF_PI) return 1;
+  constexpr double _1ovr_fact1 = 1.0 / factorial(1);
+  constexpr double neg_1ovr_fact3 = -1.0 / factorial(3);
+  constexpr double _1ovr_fact5 = 1.0 / factorial(5);
+  constexpr double neg_1ovr_fact7 = -1.0 / factorial(7);
+
+  double retval{};
+
+  double x_2 = (x * x);
+  retval = x * (_1ovr_fact1 +
+                x_2 * (neg_1ovr_fact3 +
+                       x_2 * (_1ovr_fact5 +
+                              x_2 * neg_1ovr_fact7)));  // we dont do all the
+                                                        // polonomial just 4
+  if (1 < retval) return 1;
+  if (retval < -1) return -1;
+  return retval;
+}
+
+constexpr inline double cos_rad_until_pi(double x) {
+  return HALF_PI < x ? -cos_rad_until_pi_over_2(PI - x)
+                     : cos_rad_until_pi_over_2(x);
+}
+
+constexpr inline double sin_rad_until_pi(double x) {
+  return HALF_PI < x ? sin_rad_until_pi_over_2(PI - x)
+                     : sin_rad_until_pi_over_2(x);
+}
+
+constexpr inline double cos_rad_until_2_pi(double x) {
+  if (x < PI) return cos_rad_until_pi(x);
+  if (PI <= x && x < (PI + HALF_PI)) {
+    return -cos_rad_until_pi_over_2(PI - x);
+  }
+  return cos_rad_until_pi_over_2(TWO_PI - x);
+}
+
+constexpr inline double sin_rad_until_2_pi(double x) {
+  if (x <= PI) return sin_rad_until_pi(x);
+  if (PI < x && x < (PI + HALF_PI)) {
+    return -sin_rad_until_pi(x-PI);
+  }
+  return -sin_rad_until_pi_over_2(TWO_PI - x);
+}
+constexpr inline double radians_adjust(double x) {
+  if (x == NAN) return 0;
+  if (x == INFINITY) return 0;
+  if (x == -INFINITY) return 0;
+  if (x < 0) x = -x;
+  while (TWO_PI < x) x -= TWO_PI;
+  return x;
+}
+
+constexpr inline double cos_rad(double x) {
+  return cos_rad_until_2_pi(radians_adjust(x));
+}
+
+constexpr inline double sin_rad(double x) {
+  return sin_rad_until_2_pi(radians_adjust(x));
+}
+
+constexpr inline float log(float x) { return (float)log((double)x); }
+
+constexpr inline float erf(float x) { return (float)erf((double)x); }
+
+constexpr inline float sqrt(float x) { return (float)sqrt((double)x); }
+
+constexpr inline float Identity(float x) { return x; }
+constexpr inline float BinaryStep(float x) { return (x < 0.0f) ? 0.0f : 1.0f; }
+constexpr inline float Softplus(float x) { return log(1.0f + exp(x)); }
+constexpr inline float SiLU(float x) { return x / (1 + exp(-x)); }
+constexpr inline float GELU(float x) {
+  return (1.0f / 2.0f) * x * (1.0f + erf(x / sqrt(x)));
+}
+constexpr inline float Mish(float x) { return x * Tanh(log(1 + exp(x))); }
+constexpr inline float Gaussian(float x) { return exp(-(x * x)); }
+constexpr inline float SigmoidDer(const float &fx) { return fx - fx * fx; }
+constexpr inline float TanhDer(const float &fx) { return 1 - fx * fx; }
+constexpr inline float ReLUDer(const float &fx) {
+  return (fx > 0.0f) ? 1.0f : 0.0f;
+}
+
+constexpr inline float LeakyELUDer(const float &fx) {
+  return (fx > 0.0f) ? 1.0f : AlphaLeaky;
+}
+constexpr inline float ELUDer(const float &fx) {
+  return (fx > 0.0f) ? 1.0f : fx + AlphaELU;
+}
+constexpr inline float SELUDer(const float &fx) {
+  return (fx > 0) ? LamdaSELU : fx + AlphaSELU * LamdaSELU;
+}
+
+constexpr inline float IdentityDer(float) { return 1; }
+
+}  // namespace mathy_functions
+
 namespace short_string_names {
 typedef mjz_ard::mjz_Str Str;
 typedef mjz_ard::mjz_Str str;
@@ -3237,6 +3948,12 @@ typedef mjz_ard::mjz_str_view sv;
 typedef mjz_ard::mjz_str_view strv;
 typedef mjz_ard::mjz_str_view mstrview;
 typedef mjz_ard::mjz_str_view mstrv;
+typedef mjz_ard::Vector3<float> mvf3;
+typedef mjz_ard::Vector3<float> Vectorf3;
+
+typedef mjz_ard::Vector2<float> mvf2;
+typedef mjz_ard::Vector2<float> Vectorf2;
+
 }  // namespace short_string_names
 
 }  // namespace mjz_ard
@@ -3251,6 +3968,8 @@ typedef mjz_ard::StringSumHelper mjz_StringSumHelper;
 typedef mjz_ard::mjz_str_view mjz_str_view;
 typedef mjz_ard::mjz_str_view mstrview;
 typedef mjz_ard::mjz_str_view mstrv;
+typedef mjz_ard::Vector3<float> mjz_Vectorf3;
+typedef mjz_ard::Vector2<float> mjz_Vectorf2;
 }  // namespace have_mjz_ard_removed
 namespace std {
 template <>
