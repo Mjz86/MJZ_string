@@ -18,6 +18,8 @@
   Franklin St,Fifth Floor,Boston,MA 02110-1301 USA
 */
 #pragma once
+
+#define NumberOf(arg) ((size_t)(sizeof(arg) / sizeof(arg[0])))
 #ifdef __cplusplus
 #ifndef __mjz_ard_STRINGS__
 #define __mjz_ard_STRINGS__
@@ -2029,44 +2031,44 @@ class mjz_Str : public basic_mjz_String,
   explicit inline mjz_Str(const basic_mjz_Str_view &otr)
       : mjz_Str(otr.c_str(), otr.length()) {}
 #ifndef Arduino
-  if_virtual_then_virtual mjz_Str &operator=(std__string_view_if_is &x) {
+  if_virtual_then_virtual mjz_Str &operator=(std::string_view &x) {
     return operator=(std::string(x).c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator=(std__string_view_if_is &&x) {
+  if_virtual_then_virtual mjz_Str &operator=(std::string_view &&x) {
     return operator=(std::string(x).c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(std__string_view_if_is &x) {
+  if_virtual_then_virtual mjz_Str &operator+=(std::string_view &x) {
     return operator+=(std::string(x).c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(std__string_view_if_is &&x) {
+  if_virtual_then_virtual mjz_Str &operator+=(std::string_view &&x) {
     return operator+=(std::string(x).c_str());
   }
 #else
-  mjz_Str(std__string_view_if_is &x)
+  mjz_Str(String &x)
       : mjz_Str(((x.c_str() != 0) ? (x.c_str())
                                   : ((const char *)empty_STRING_C_STR))) {}
-  mjz_Str(std__string_view_if_is &&x)
+  mjz_Str(String &&x)
       : mjz_Str(((x.c_str() != 0) ? (x.c_str())
                                   : ((const char *)empty_STRING_C_STR))) {}
-  mjz_Str(const std__string_view_if_is &x)
+  mjz_Str(const String &x)
       : mjz_Str(((x.c_str() != 0) ? (x.c_str())
                                   : ((const char *)empty_STRING_C_STR))) {}
-  if_virtual_then_virtual mjz_Str &operator=(std__string_view_if_is &x) {
+  if_virtual_then_virtual mjz_Str &operator=(String &x) {
     return operator=(x.c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator=(const std__string_view_if_is &x) {
+  if_virtual_then_virtual mjz_Str &operator=(const String &x) {
     return operator=(x.c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator=(std__string_view_if_is &&x) {
+  if_virtual_then_virtual mjz_Str &operator=(String &&x) {
     return operator=(x.c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(std__string_view_if_is &x) {
+  if_virtual_then_virtual mjz_Str &operator+=(String &x) {
     return operator+=(x.c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(const std__string_view_if_is &x) {
+  if_virtual_then_virtual mjz_Str &operator+=(const String &x) {
     return operator+=(x.c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(std__string_view_if_is &&x) {
+  if_virtual_then_virtual mjz_Str &operator+=(String &&x) {
     return operator+=(x.c_str());
   }
 #endif
@@ -2677,7 +2679,7 @@ class mjz_Str : public basic_mjz_String,
     return basic_mjz_String::substring_beg_n((int64_t)beginIndex,
                                              (int64_t)number);
   }
-  template <typename... Args_frScnf>
+  /* template <typename... Args_frScnf>
   if_virtual_then_virtual size_t write(Args_frScnf &...args_frScnf) {
     mjz_Str return_val = std::move(mjz_Str(args_frScnf...));
     return write((const uint8_t *)return_val.c_str(),
@@ -2695,6 +2697,7 @@ class mjz_Str : public basic_mjz_String,
     return write((const uint8_t *)return_val.c_str(),
                  (size_t)return_val.length());
   }
+  */
   template <typename... Args_frScnf>
   int scanf(const char *format, Args_frScnf &...args_frScnf) {
     int ret = sprintf_alt_((char *)buffer_ref(), (size_t)length(), format,
