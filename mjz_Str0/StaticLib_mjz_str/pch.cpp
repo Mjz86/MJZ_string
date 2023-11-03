@@ -8,4 +8,6 @@ Scoped_speed_Timer & Scoped_speed_Timer::operator()( const std::string & name, b
   m_Name = name;
   m_Timer.Reset();
   return *this; }
+
+
 // When you are using pre-compiled headers, this source file is necessary for compilation to succeed.

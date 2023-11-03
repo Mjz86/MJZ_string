@@ -284,25 +284,25 @@ namespace dont_use {
   int main79() {
     main2();
 
-    if ( mjz_Str( "hello there i biult a cmd app press any word to start\n" )(
-    [&]( mjz_Str * this_ ) -> bool {
-    mjz_Str & obj = *this_;
-    obj.change_reinterpret_char_char( '\1' );
-      std::cout << obj;
-      std::cin >> obj();
-      obj.change_reinterpret_char_char( '\\' );
-      obj <<= mjz_Str( obj );
-      obj.replace( " ", 1, "", 0 );
-      obj.toLowerCase();
+  mjz_Str("hello there i biult a cmd app press any word to start\n")(
+        [&](mjz_Str* this_) -> bool {
+          mjz_Str& obj = *this_;
+          obj.change_reinterpret_char_char('\1');
+          std::cout << obj;
+          std::cin >> obj();
+          obj.change_reinterpret_char_char('\\');
+          obj <<= mjz_Str(obj);
+          obj.replace(" ", 1, "", 0);
+          obj.toLowerCase();
 
-      if ( ( obj.is_blank() ) ) return 0;
+          if ((obj.is_blank())) return 0;
 
-      if ( ( !!obj.toLL() ) || ( obj == "exit" ) || ( obj == "e" ) ) return 1;
-      return 0; } ) )
-    goto _end___;
-    return main00();
-  _end___:
-    return 0; }
+          if ((!!obj.toLL()) || (obj == "exit") || (obj == "e")) return 1;
+          return 0;
+        });
+
+    return 0;
+      }
   int main7() {
     mjz_Str mystr( "hello there i biult a cmd app press any word to start\n" );
     std::cout << "1. : \"" << mystr << "\"\n";

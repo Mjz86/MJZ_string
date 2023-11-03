@@ -2348,7 +2348,7 @@ namespace mjz_ard {
   typedef mjz_RingBufferN<SERIAL_BUFFER_SIZE> RingBuffer;
   template <int N>
   mjz_RingBufferN<N>::mjz_RingBufferN( void ) {
-    memset( _aucBuffer, 0, N );
+    static_str_algo::memset(_aucBuffer, 0, N);
     clear(); }
   template <int N>
   void mjz_RingBufferN<N>::store_char( uint8_t c ) {
