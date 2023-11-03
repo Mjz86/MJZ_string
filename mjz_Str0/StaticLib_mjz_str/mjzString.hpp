@@ -657,10 +657,66 @@ class static_str_algo {
   constexpr static inline double cot_rad(double x) {
     return cos_rad(x) / sin_rad(x) ;
   }
-
-  constexpr static inline float log(float x) { return (float)log((double)x); }
+ 
+  constexpr static inline float 
+      log(float x) { return (float)log((double)x); }
 
   constexpr static inline float erf(float x) { return (float)erf((double)x); }
+  constexpr static inline double acos(double x) {
+    return fastest_acos(x) ;
+  }
+  constexpr static inline double abs(double x) { return x < 0 ? -x : x;}
+  constexpr static inline double fastest_normal_acos(double x) {
+    x = ((-0.69813170079773212 * x * x - 0.87266462599716477) * x +
+         1.5707963267948966);
+    x -= 0.0156668 * (0 < x && x < 0.5);
+    x += 0.0156668 * (-0.5 < x && x < 0);
+    x += 0.0958027 * (0.5 < x && x < 1);
+    x -= 0.0958027 * (-1 < x && x < -0.5);
+
+    return x;
+  }
+  constexpr static inline double fastest_acos(double x) {
+    x = ((-0.69813170079773212 * x * x - 0.87266462599716477) * x +
+         1.5707963267948966);
+    return x;
+  }
+  private :
+
+  constexpr static inline float sl_acos(float x) {
+    float negate = float(x < 0);
+    x = abs(x);
+    float ret = -0.0187293;
+    ret = ret * x;
+    ret = ret + 0.0742610;
+    ret = ret * x;
+    ret = ret - 0.2121144;
+    ret = ret * x;
+    ret = ret + 1.5707288;
+    ret = ret * sqrt(1.0 - x);
+    ret = ret - 2 * negate * ret;
+    return negate * 3.14159265358979 + ret;
+  }
+
+  constexpr static inline double meh_acos(double x) {
+    double a = 1.43 + 0.59 * x;
+    a = (a + (2 + 2 * x) / a) / 2;
+    double b = 1.65 - 1.41 * x;
+    b = (b + (2 - 2 * x) / b) / 2;
+    double c = 0.88 - 0.77 * x;
+    c = (c + (2 - a) / c) / 2;
+    return (8 * (c + (2 - a) / c) - (b + (2 - 2 * x) / b)) / 6;
+  }
+  constexpr static inline float slow_acos(float a) {
+    const float C = 0.10501094f;
+    float r{}, s{}, t{}, u{};
+    t = (a < 0) ? (-a) : a;  // handle negative arguments
+    u = 1.0f - t;
+    s = sqrt(u + u);
+    r = C * u * s + s;      // or fmaf (C * u, s, s) if FMA support in hardware
+    if (a < 0) r = PI - r;  // handle negative arguments
+    return r;
+  }
 };
 template <int N>
 class mjz_RingBufferN {
