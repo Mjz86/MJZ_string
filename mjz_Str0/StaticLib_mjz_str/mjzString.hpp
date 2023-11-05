@@ -1,21 +1,22 @@
 /*
-  String library for Wiring & arduino
+  String library for Wiring & Arduino
   ...mostly rewritten by Paul Stoffregen...
-  Copyright (c) 2009-10 Hernando Barragan. All right reserved.
-  Copyright 2011,Paul Stoffregen,paul@pjrc.com
+  Copyright (c) 2009-10 Hernando Barragan.  All right reserved.
+  Copyright 2011, Paul Stoffregen, paul@pjrc.com
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
-  version 2.1 of the License,or (at your option) any later version.
+  version 2.1 of the License, or (at your option) any later version.
+
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-  Lesser General Public License for more details. //TODO: V1042
-  https://pvs-studio.com/en/docs/warnings/V1042/ This file is marked with
-  copyleft license, which requires you to open the derived source code. You
-  should have received a copy of the GNU Lesser General Public License along
-  with this library; if not,write to the Free Software Foundation,Inc.,51
-  Franklin St,Fifth Floor,Boston,MA 02110-1301 USA
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #pragma once
 
@@ -407,6 +408,11 @@ class static_str_algo {
   };
 
   public:
+ 
+
+  constexpr static uint8_t number_of_terms = 100;
+
+  constexpr static inline uint64_t floor(double x) { return (uint64_t)x; }
   constexpr static inline double expUL(uint32_t number) {
     double retval{1};
     for (uint32_t i{}; i < number; i++) {
@@ -414,11 +420,6 @@ class static_str_algo {
     }
     return retval;
   }
-
-  constexpr static uint8_t number_of_terms = 100;
-
-  constexpr static inline uint64_t floor(double x) { return (uint64_t)x; }
-
   constexpr static inline double expUD(double x) {
     uint32_t floor_x = (uint32_t)floor(x);
     double retval_fast_component = expUL(floor_x);
@@ -480,7 +481,11 @@ class static_str_algo {
     if (!x) return 0;
     return expUD(log(x) * 0.5);
   }
-
+  template <typename T>
+  constexpr static inline T sqrtt(T x) {
+    if (!x) return 0;
+    return expUt(logt(x) * (T)0.5);
+  }
   constexpr static inline uint64_t ceiling(double x) {
     uint64_t fx = floor(x);
     if (fx == x) return fx;
@@ -492,17 +497,150 @@ class static_str_algo {
     return ((0.5 < (x - fx)) ? (fx + 1) : (fx));
   }
 
-  constexpr static inline float exp(float x) { return (float)exp((double)x); }
+  template <typename T>
+  constexpr static inline T expULt(uint32_t number) {
+    T retval{1};
+    for (uint32_t i{}; i < number; i++) {
+      retval *= (T)EULER;
+    }
+    return retval;
+  }
+  template <typename T>
+  constexpr static inline T expUt(T x) {
+    T retval{1};
+    for (int64_t i = 1; i <= number_of_terms; i++) {
+      T term{1};
+      for (int64_t j = 1; j <= i; j++) {
+        term *= x / j;
+      }
+      retval += term;
+    }
+    return retval;
+  }
 
+  template <typename T>
+  constexpr static inline T expt(int32_t number) {
+    return ((0 < number) ? expULt(number) : (T)1 / expULt(-(number)));
+  }
+  template <typename T>
+  constexpr static inline T expt(T number) {
+    return ((0 < number) ? expUt(number) : (T)1 / expUt(-(number)));
+  }
+
+  template <typename T>
+  constexpr static inline T logt(T x) {
+    if (x == (T)1) return 0;
+    if (x == (T)0) return NAN;
+    T integer_component{0};
+    T EULER_T = EULER;
+    for (; EULER_T < x; x /= EULER_T) {
+      integer_component+=1;
+    }
+    T retval{0};
+    T term{1};
+    T x_mines_one = (x - 1.0f);
+    for (int64_t i{1}; i <= number_of_terms; i++) {
+      term *= x_mines_one / x;
+      retval += term / i;
+    }
+    return integer_component + retval;
+  }
+  template <typename T>
+  constexpr static inline T powUt(T base, T exponent) {
+    if (base == 0) return 0;
+    uint32_t exponent_int_component = (uint32_t)floor(exponent);
+    exponent -= exponent_int_component;
+    return expt(exponent * logt(base)) * powULt(base, exponent_int_component);
+  }
+
+  template <typename T>
+  constexpr static inline T powULt(T base, uint32_t exponent) {
+    T result{1};
+    for (uint64_t i{}; i < exponent; i++) result *= base;
+    return result;
+  }
+  template <typename T>
+  constexpr static inline T powt(T base, T exponent) {
+    return ((0 < exponent) ? (powUt(base, exponent))
+                           : (1 / powUt(base, -exponent)));
+  }
+
+  constexpr static inline float expULf(uint32_t number) {
+    float retval{1};
+    for (uint32_t i{}; i < number; i++) {
+      retval *= (float)EULER;
+    }
+    return retval;
+  }
+  constexpr static inline float expUF(float x) {
+    uint32_t floor_x = (uint32_t)floor(x);
+    float retval_fast_component = expULf(floor_x);
+    x -= floor_x;
+    float retval{1};
+    for (int64_t i = 1; i <= number_of_terms; i++) {
+      float term{1};
+      for (int64_t j = 1; j <= i; j++) {
+        term *= x / j;
+      }
+      retval += term;
+    }
+    retval *= retval_fast_component;
+    return retval;
+  }
+
+  constexpr static inline float expf(int32_t number) {
+    return ((0 < number) ? expULf(number) : (float)1 / expULf(-(number)));
+  }
+  constexpr static inline float expf(float number) {
+    return ((0 < number) ? expUF(number) : (float)1 / expUF(-(number)));
+  }
+
+  constexpr static inline float logf(float x) {
+    if (x == 1) return 0;
+    if (x == 0) return NAN;
+    uint64_t integer_component{0};
+    for (; EULER < x; x /=(float) EULER) {
+      integer_component++;
+    }
+    float retval{0};
+    float term{1};
+    float x_mines_one = (x - 1.0f);
+    for (int64_t i{1}; i <= number_of_terms; i++) {
+      term *= x_mines_one / x;
+      retval += term / i;
+    }
+    return integer_component + retval;
+  }
+  constexpr static inline float powUF(float base, float exponent) {
+    if (base == 0) return 0;
+    uint32_t exponent_int_component = (uint32_t)floor(exponent);
+    exponent -= exponent_int_component;
+    return expf(exponent * logf(base)) * powULf(base, exponent_int_component);
+  }
+
+  constexpr static inline float powULf(float base, uint32_t exponent) {
+    float result{1};
+    for (uint64_t i{}; i < exponent; i++) result *= base;
+    return result;
+  }
+  constexpr static inline float powf(float base, float exponent) {
+    return ((0 < exponent) ? (powUF(base, exponent))
+                           : (1 / powUF(base, -exponent)));
+  }
+
+  constexpr static inline float sqrtf(float x) {
+    if (!x) return 0;
+    return expf(logf(x) * 0.5f);
+  }
   constexpr static float AlphaLeaky = 0.01f;
   constexpr static float AlphaSELU = 1.6733f;
   constexpr static float LamdaSELU = 1.0507f;
   constexpr static float AlphaELU = 1.0f;
   constexpr static inline float Sigmoid(float x) {
-    return 1.0f / (1 + exp(-x));
+    return 1.0f / (1 + expf(-x));
   }
   constexpr static inline float Tanh(float x) {
-    return (exp(2 * x) - 1) / (exp(2 * x) + 1);
+    return (expf(2 * x) - 1) / (expf(2 * x) + 1);
   }
   constexpr static inline float ReLU(float x) { return (x > 0) ? x : 0; }
 
@@ -517,15 +655,15 @@ class static_str_algo {
     return (x > 0) ? x : AlphaLeaky * x;
   }
   constexpr static inline float ELU(float x) {
-    return (x > 0) ? x : AlphaELU * (exp(x) - 1);
+    return (x > 0) ? x : AlphaELU * (expf(x) - 1);
   }
   constexpr static inline float SELU(float x) {
-    return (x > 0) ? x : AlphaSELU * (exp(x) - 1);
+    return (x > 0) ? x : AlphaSELU * (expf(x) - 1);
   }
   constexpr static inline double erf(double x) {
     if (x <= 0) return 0.0;
     if (4 < x) return 1.0;
-    constexpr double retval_c{2 / (sqrt(PI))};
+    constexpr double retval_c =2.0 / (sqrt(( double)PI));
     double retval{0};
     double nag_x_sqr = -(x * x);
 
@@ -669,7 +807,8 @@ class static_str_algo {
   constexpr static inline double acos(double x) {
     return fastest_acos(x) ;
   }
-  constexpr static inline double abs(double x) { return x < 0 ? -x : x;}
+  template<typename T>
+  constexpr static inline auto abs(const T& x) { return x < 0 ? -x : x;}
   constexpr static inline double fastest_normal_acos(double x) {
     x = ((-0.69813170079773212 * x * x - 0.87266462599716477) * x +
          1.5707963267948966);
@@ -687,10 +826,10 @@ class static_str_algo {
   }
   private :
 
-  constexpr static inline float sl_acos(float x) {
-    float negate = float(x < 0);
+  constexpr static inline double sl_acos(double x) {
+    double negate = double(x < 0);
     x = abs(x);
-    float ret = -0.0187293;
+    double ret = -0.0187293;
     ret = ret * x;
     ret = ret + 0.0742610;
     ret = ret * x;
@@ -711,9 +850,9 @@ class static_str_algo {
     c = (c + (2 - a) / c) / 2;
     return (8 * (c + (2 - a) / c) - (b + (2 - 2 * x) / b)) / 6;
   }
-  constexpr static inline float slow_acos(float a) {
-    const float C = 0.10501094f;
-    float r{}, s{}, t{}, u{};
+  constexpr static inline double slow_acos(double a) {
+    const double C = 0.10501094f;
+    double r{}, s{}, t{}, u{};
     t = (a < 0) ? (-a) : a;  // handle negative arguments
     u = 1.0f - t;
     s = sqrt(u + u);
@@ -1546,7 +1685,7 @@ struct SHA1_CTX : public SHA256_CTX {
 };
 
 #endif  // SHA1_Hstatic
-class basic_mjz_Str_view : public static_str_algo {
+class basic_mjz_Str_view : protected static_str_algo {
  public:
   constexpr inline const char *begining_of_str_ptr() const { return m_buffer; }
   constexpr inline const char *ending_of_str_ptr() const {
@@ -2236,8 +2375,8 @@ class mjz_Str : public basic_mjz_String,
   // terminator character detected returns the number of characters placed in
   // the buffer (0 means no valid data found)
   // Arduino mjz_Str functions to be added here
-  mjz_Str readmjz_Str();
-  mjz_Str readmjz_StrUntil(char terminator);
+  mjz_Str read_mjz_Str();
+  mjz_Str read_mjz_Str_Until(char terminator);
   if_virtual_then_virtual size_t write(const char *buf, size_t size_);
   if_virtual_then_virtual size_t write(const char *buf);
   if_virtual_then_virtual size_t write(uint8_t) if_ard_then_override;
@@ -2275,8 +2414,8 @@ class mjz_Str : public basic_mjz_String,
     delete (mjz_Str *)ret_piont;
   }
   inline static mjz_Str &replace_with_new_str(mjz_Str &where) {
-    // obj.mjz_Str::~mjz_Str();//bad not calling virtualy
-    // obj->~mjz_Str(); // good calls the most drived constructor
+    // obj.mjz_Str::~mjz_Str();//bad not calling virtually
+    // obj->~mjz_Str(); // good calls the most derived constructor
     where.~mjz_Str();  // end lifetime
     new (&where) mjz_Str;
     return where;
@@ -2414,7 +2553,7 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual mjz_Str &operator++();  // print empty line
   if_virtual_then_virtual mjz_Str operator++(int);
   if_virtual_then_virtual mjz_Str &operator--();  // read one character
-  inline mjz_Str &operator-() { return (*this)(); }
+  inline char operator-() { return (char)read(); }
   inline mjz_Str &operator+() { return ++(*this); }
 
   if_virtual_then_virtual mjz_Str operator--(int);
@@ -2510,16 +2649,16 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual char &operator[](size_t index);
   if_virtual_then_virtual char &operator[](int64_t index);
   if_virtual_then_virtual std__string_view_if_is std_new_sv() = delete;
-  if_virtual_then_virtual std__string_view_if_is stdsv() const {
+  if_virtual_then_virtual std__string_view_if_is std_sv() const {
     return std__string_view_if_is((const char *)buffer_ref());
   }
-  if_virtual_then_virtual std__string_view_if_is &&stdsvt() const {
+  if_virtual_then_virtual std__string_view_if_is &&std_sv_temp() const {
     return std::move(std__string_view_if_is((const char *)buffer_ref()));
   }
-  if_virtual_then_virtual const std::string stds() const {
+  if_virtual_then_virtual const std::string std_s() const {
     return std::string((const char *)buffer_ref());
   }
-  if_virtual_then_virtual const std::string &&stdst() const {
+  if_virtual_then_virtual const std::string &&std_st() const {
     return std::move(std::string((const char *)buffer_ref()));
   }
   // creates a copy of the assigned value. if the value is null or
@@ -2569,57 +2708,57 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual bool concat(float num);
   if_virtual_then_virtual bool concat(double num);
   if_virtual_then_virtual bool concat(const __FlashStringHelper *str);
-  if_virtual_then_virtual const mjz_Str &operator>>(mjz_Str &typeing) const;
-  if_virtual_then_virtual const mjz_Str &operator>>(mjz_Str *typeing) const;
-  if_virtual_then_virtual mjz_Str &operator>>(mjz_Str &typeing);
-  if_virtual_then_virtual mjz_Str &operator>>(mjz_Str *typeing);
-  if_virtual_then_virtual const mjz_Str &operator>>=(mjz_Str &typeing) const {
-    typeing.operator=(empty_STRING_C_STR);
-    return operator>>(typeing);
+  if_virtual_then_virtual const mjz_Str &operator>>(mjz_Str &typing) const;
+  if_virtual_then_virtual const mjz_Str &operator>>(mjz_Str *typing) const;
+  if_virtual_then_virtual mjz_Str &operator>>(mjz_Str &typing);
+  if_virtual_then_virtual mjz_Str &operator>>(mjz_Str *typing);
+  if_virtual_then_virtual const mjz_Str &operator>>=(mjz_Str &typing) const {
+    typing.operator=(empty_STRING_C_STR);
+    return operator>>(typing);
   }
-  if_virtual_then_virtual const mjz_Str &operator>>=(mjz_Str *typeing) const {
-    typeing->operator=(empty_STRING_C_STR);
-    return operator>>(typeing);
+  if_virtual_then_virtual const mjz_Str &operator>>=(mjz_Str *typing) const {
+    typing->operator=(empty_STRING_C_STR);
+    return operator>>(typing);
   }
-  if_virtual_then_virtual mjz_Str &operator>>=(mjz_Str &typeing) {
-    typeing.operator=(empty_STRING_C_STR);
-    return operator>>(typeing);
+  if_virtual_then_virtual mjz_Str &operator>>=(mjz_Str &typing) {
+    typing.operator=(empty_STRING_C_STR);
+    return operator>>(typing);
   }
-  if_virtual_then_virtual mjz_Str &operator>>=(mjz_Str *typeing) {
-    typeing->operator=(empty_STRING_C_STR);
-    return operator>>(typeing);
+  if_virtual_then_virtual mjz_Str &operator>>=(mjz_Str *typing) {
+    typing->operator=(empty_STRING_C_STR);
+    return operator>>(typing);
   }
-  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str &typeing);
-  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str *typeing);
-  if_virtual_then_virtual mjz_Str &operator<<(const mjz_Str &typeing);
-  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str &&typeing);
-  if_virtual_then_virtual mjz_Str &operator<<=(mjz_Str &typeing) {
-    if (&typeing != this) {
+  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str &typing);
+  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str *typing);
+  if_virtual_then_virtual mjz_Str &operator<<(const mjz_Str &typing);
+  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str &&typing);
+  if_virtual_then_virtual mjz_Str &operator<<=(mjz_Str &typing) {
+    if (&typing != this) {
       this->operator=(empty_STRING_C_STR);
-      return operator<<(typeing);
+      return operator<<(typing);
     }
 
-    mjz_Str new_temp = typeing;
+    mjz_Str new_temp = typing;
     this->operator=(empty_STRING_C_STR);
     return operator<<(new_temp);
   }
-  if_virtual_then_virtual mjz_Str &operator<<=(const mjz_Str &typeing) {
-    if (&typeing != this) {
+  if_virtual_then_virtual mjz_Str &operator<<=(const mjz_Str &typing) {
+    if (&typing != this) {
       this->operator=(empty_STRING_C_STR);
-      return operator<<(typeing);
+      return operator<<(typing);
     }
 
-    mjz_Str new_temp = typeing;
+    mjz_Str new_temp = typing;
     this->operator=(empty_STRING_C_STR);
     return operator<<(new_temp);
   }
-  if_virtual_then_virtual mjz_Str &operator<<=(mjz_Str &&typeing) {
-    if (&typeing != this) {
+  if_virtual_then_virtual mjz_Str &operator<<=(mjz_Str &&typing) {
+    if (&typing != this) {
       this->operator=(empty_STRING_C_STR);
-      return operator<<(typeing);
+      return operator<<(typing);
     }
 
-    mjz_Str new_temp = typeing;
+    mjz_Str new_temp = typing;
     this->operator=(empty_STRING_C_STR);
     return operator<<(new_temp);
   }
@@ -2996,143 +3135,143 @@ class mjz_Str : public basic_mjz_String,
     return basic_mjz_String::substring_beg_n((int64_t)beginIndex,
                                              (int64_t)number);
   }
-  /* template <typename... Args_frScnf>
-  if_virtual_then_virtual size_t write(Args_frScnf &...args_frScnf) {
-    mjz_Str return_val = std::move(mjz_Str(args_frScnf...));
+  /* template <typename... arguments_types>
+  if_virtual_then_virtual size_t write(arguments_types &...arguments_arr) {
+    mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
     return write((const uint8_t *)return_val.c_str(),
                  (size_t)return_val.length());
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual size_t write(const Args_frScnf &...args_frScnf) {
-    mjz_Str return_val = std::move(mjz_Str(args_frScnf...));
+  template <typename... arguments_types>
+  if_virtual_then_virtual size_t write(const arguments_types &...arguments_arr) {
+    mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
     return write((const uint8_t *)return_val.c_str(),
                  (size_t)return_val.length());
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual size_t write(Args_frScnf &&...args_frScnf) {
-    mjz_Str return_val = std::move(mjz_Str(args_frScnf...));
+  template <typename... arguments_types>
+  if_virtual_then_virtual size_t write(arguments_types &&...arguments_arr) {
+    mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
     return write((const uint8_t *)return_val.c_str(),
                  (size_t)return_val.length());
   }
   */
-  template <typename... Args_frScnf>
-  int scanf(const char *format, Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  int scanf(const char *format, arguments_types &...arguments_arr) {
     int ret = sprintf_alt_((char *)buffer_ref(), (size_t)length(), format,
-                           args_frScnf...);
+                           arguments_arr...);
     return ret;
   }
-  template <typename... Args_frScnf>
-  int scanf(const mjz_Str &format, Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  int scanf(const mjz_Str &format, arguments_types &...arguments_arr) {
     int ret = sprintf_alt_((char *)buffer_ref(), length(), format.buffer_ref(),
-                           args_frScnf...);
+                           arguments_arr...);
     return ret;
   }
-  template <typename... Args_frScnf>
-  int scanf(const char *format, const Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  int scanf(const char *format, const arguments_types &...arguments_arr) {
     int ret = sprintf_alt_((char *)buffer_ref(), (size_t)length(), format,
-                           args_frScnf...);
+                           arguments_arr...);
     return ret;
   }
-  template <typename... Args_frScnf>
-  int scanf(const mjz_Str &format, const Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  int scanf(const mjz_Str &format, const arguments_types &...arguments_arr) {
     int ret = sprintf_alt_((char *)buffer_ref(), length(), format.buffer_ref(),
-                           args_frScnf...);
+                           arguments_arr...);
     return ret;
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator-=(Args_frScnf &...args_frScnf) {
-    return operator-=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator-=(arguments_types &...arguments_arr) {
+    return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str operator-(Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str operator-(arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator-=(args_frScnf...);
+    return lhs.operator-=(arguments_arr...);
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator/=(Args_frScnf &...args_frScnf) {
-    return operator/=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator/=(arguments_types &...arguments_arr) {
+    return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str operator/(Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str operator/(arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator/=(args_frScnf...);
+    return lhs.operator/=(arguments_arr...);
   }
-  template <typename... Args_frScnf>
+  template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator-=(
-      const Args_frScnf &...args_frScnf) {
-    return operator-=(std::move(mjz_Str(args_frScnf...)));
+      const arguments_types &...arguments_arr) {
+    return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str operator-(const Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str operator-(const arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator-=(args_frScnf...);
+    return lhs.operator-=(arguments_arr...);
   }
-  template <typename... Args_frScnf>
+  template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator/=(
-      const Args_frScnf &...args_frScnf) {
-    return operator/=(std::move(mjz_Str(args_frScnf...)));
+      const arguments_types &...arguments_arr) {
+    return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str operator/(const Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str operator/(const arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator/=(args_frScnf...);
+    return lhs.operator/=(arguments_arr...);
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator-=(Args_frScnf &&...args_frScnf) {
-    return operator-=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator-=(arguments_types &&...arguments_arr) {
+    return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str operator-(Args_frScnf &&...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str operator-(arguments_types &&...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator-=(args_frScnf...);
+    return lhs.operator-=(arguments_arr...);
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator/=(Args_frScnf &&...args_frScnf) {
-    return operator/=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator/=(arguments_types &&...arguments_arr) {
+    return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str operator/(Args_frScnf &&...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str operator/(arguments_types &&...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator/=(args_frScnf...);
+    return lhs.operator/=(arguments_arr...);
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator<<(Args_frScnf &...args_frScnf) {
-    return operator<<(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator<<(arguments_types &...arguments_arr) {
+    return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator<<=(Args_frScnf &...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator<<=(arguments_types &...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
-    return operator<<(std::move(mjz_Str(args_frScnf...)));
+    return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator=(Args_frScnf &...args_frScnf) {
-    return operator=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator=(arguments_types &...arguments_arr) {
+    return operator=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator+=(Args_frScnf &...args_frScnf) {
-    return operator+=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator+=(arguments_types &...arguments_arr) {
+    return operator+=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                                            Args_frScnf &...args_frScnf) {
-    your__function_(*this, args_frScnf...);
+                                            arguments_types &...arguments_arr) {
+    your__function_(*this, arguments_arr...);
     return *this;
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual const mjz_Str &run_code(
-      your_FUNCTION_Type your__function_, Args_frScnf &...args_frScnf) const {
-    your__function_(*this, args_frScnf...);
+      your_FUNCTION_Type your__function_, arguments_types &...arguments_arr) const {
+    your__function_(*this, arguments_arr...);
     return *this;
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, Args_frScnf &...args_frScnf) {
-    return your__function_(*this, args_frScnf...);
+      your_FUNCTION_Type your__function_, arguments_types &...arguments_arr) {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, Args_frScnf &...args_frScnf) const {
-    return your__function_(*this, args_frScnf...);
+      your_FUNCTION_Type your__function_, arguments_types &...arguments_arr) const {
+    return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
@@ -3140,124 +3279,124 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_) {
     return your__function_(*this);
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          Args_frScnf &...args_frScnf) {
-    return your__function_(*this, args_frScnf...);
+                                          arguments_types &...arguments_arr) {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          Args_frScnf &...args_frScnf) const {
-    return your__function_(*this, args_frScnf...);
+                                          arguments_types &...arguments_arr) const {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename... Args_frScnf>
+  template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator<<(
-      const Args_frScnf &...args_frScnf) {
-    return operator<<(std::move(mjz_Str(args_frScnf...)));
+      const arguments_types &...arguments_arr) {
+    return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
+  template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator<<=(
-      const Args_frScnf &...args_frScnf) {
+      const arguments_types &...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
-    return operator<<(std::move(mjz_Str(args_frScnf...)));
+    return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
+  template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator=(
-      const Args_frScnf &...args_frScnf) {
-    return operator=(std::move(mjz_Str(args_frScnf...)));
+      const arguments_types &...arguments_arr) {
+    return operator=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
+  template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator+=(
-      const Args_frScnf &...args_frScnf) {
-    return operator+=(std::move(mjz_Str(args_frScnf...)));
+      const arguments_types &...arguments_arr) {
+    return operator+=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                                            const Args_frScnf &...args_frScnf) {
-    your__function_(*this, args_frScnf...);
+                                            const arguments_types &...arguments_arr) {
+    your__function_(*this, arguments_arr...);
     return *this;
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual const mjz_Str &run_code(
       your_FUNCTION_Type your__function_,
-      const Args_frScnf &...args_frScnf) const {
-    your__function_(*this, args_frScnf...);
+      const arguments_types &...arguments_arr) const {
+    your__function_(*this, arguments_arr...);
     return *this;
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, const Args_frScnf &...args_frScnf) {
-    return your__function_(*this, args_frScnf...);
+      your_FUNCTION_Type your__function_, const arguments_types &...arguments_arr) {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
       your_FUNCTION_Type your__function_,
-      const Args_frScnf &...args_frScnf) const {
-    return your__function_(*this, args_frScnf...);
+      const arguments_types &...arguments_arr) const {
+    return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          const Args_frScnf &...args_frScnf) {
-    return your__function_(*this, args_frScnf...);
+                                          const arguments_types &...arguments_arr) {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto operator()(
       your_FUNCTION_Type your__function_,
-      const Args_frScnf &...args_frScnf) const {
-    return your__function_(*this, args_frScnf...);
+      const arguments_types &...arguments_arr) const {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator<<(Args_frScnf &&...args_frScnf) {
-    return operator<<(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator<<(arguments_types &&...arguments_arr) {
+    return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator<<=(Args_frScnf &&...args_frScnf) {
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator<<=(arguments_types &&...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
-    return operator<<(std::move(mjz_Str(args_frScnf...)));
+    return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator=(Args_frScnf &&...args_frScnf) {
-    return operator=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator=(arguments_types &&...arguments_arr) {
+    return operator=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename... Args_frScnf>
-  if_virtual_then_virtual mjz_Str &operator+=(Args_frScnf &&...args_frScnf) {
-    return operator+=(std::move(mjz_Str(args_frScnf...)));
+  template <typename... arguments_types>
+  if_virtual_then_virtual mjz_Str &operator+=(arguments_types &&...arguments_arr) {
+    return operator+=(std::move(mjz_Str(arguments_arr...)));
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                                            Args_frScnf &&...args_frScnf) {
-    your__function_(*this, args_frScnf...);
+                                            arguments_types &&...arguments_arr) {
+    your__function_(*this, arguments_arr...);
     return *this;
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual const mjz_Str &run_code(
-      your_FUNCTION_Type your__function_, Args_frScnf &&...args_frScnf) const {
-    your__function_(*this, args_frScnf...);
+      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) const {
+    your__function_(*this, arguments_arr...);
     return *this;
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, Args_frScnf &&...args_frScnf) {
-    return your__function_(*this, args_frScnf...);
+      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, Args_frScnf &&...args_frScnf) const {
-    return your__function_(*this, args_frScnf...);
+      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) const {
+    return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          Args_frScnf &&...args_frScnf) {
-    return your__function_(*this, args_frScnf...);
+                                          arguments_types &&...arguments_arr) {
+    return your__function_(*this, arguments_arr...);
   }
-  template <typename your_FUNCTION_Type, typename... Args_frScnf>
+  template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          Args_frScnf &&...args_frScnf) const {
-    return your__function_(*this, args_frScnf...);
+                                          arguments_types &&...arguments_arr) const {
+    return your__function_(*this, arguments_arr...);
   }
 };
 /*
@@ -3293,7 +3432,7 @@ class mjz_str_view : public basic_mjz_Str_view {
       : mjz_str_view(cstr_, strlen(cstr_)) {}
   constexpr mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
   mjz_str_view(mjz_str_view &&s) =
-      default;  // we are string viewes and not strings
+      default;  // we are string views and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
 
   constexpr mjz_str_view &operator=(mjz_Str &&s) { return copy(s); }
@@ -3399,7 +3538,7 @@ class mjz_virtual_string_view : public mjz_str_view {
       : mjz_virtual_string_view(cstr_, strlen(cstr_)) {}
   mjz_virtual_string_view() : mjz_virtual_string_view(empty_STRING_C_STR, 0) {}
   mjz_virtual_string_view(mjz_virtual_string_view &&s) =
-      default;  // we are string viewes and not strings
+      default;  // we are string views and not strings
   mjz_virtual_string_view &operator=(mjz_virtual_string_view &&) = default;
 
   mjz_virtual_string_view &operator=(mjz_Str &&s) {
@@ -3461,6 +3600,13 @@ class type_cmp_fn_class {
     return cmpr_function(a, b);
   }
 };
+template <class _function>
+class type_fn_class {
+ public:
+  template <class T>
+  bool operator()(const T &x) { return _function(x);
+  }
+};
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
                       bool force_neg = 0);
 
@@ -3494,7 +3640,7 @@ inline mjz_str_view operator""_m_strv(const char *initilizer, size_t length_) {
   return mjz_str_view(initilizer, length_);
 }
 inline mjz_str_view operator"" _m_strv(const char *p) {
-  return operator""_m_strv(p, mjz_Str::strlen(p));
+  return operator""_m_strv(p, static_str_algo::strlen(p));
 }
 
 namespace short_string_convestion_operators {
@@ -3502,7 +3648,7 @@ inline mjz_str_view operator""_msv(const char *initilizer, size_t length_) {
   return operator""_m_strv(initilizer, length_);
 }
 inline mjz_str_view operator"" _msv(const char *p) {
-  return operator""_m_strv(p, mjz_Str::strlen(p));
+  return operator""_m_strv(p, static_str_algo::strlen(p));
 }
 inline mjz_str_view operator""_sv(const char *initilizer, size_t length_) {
   return operator""_m_strv(initilizer, length_);
@@ -3538,7 +3684,7 @@ inline mjz_str_view operator""_mv(const char *initilizer, size_t length_) {
   return operator""_v(initilizer, length_);
 }
 inline mjz_str_view operator"" _mv(const char *p) {
-  return operator""_v(p, mjz_Str::strlen(p));
+  return operator""_v(p, static_str_algo::strlen(p));
 }
 inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 
@@ -3552,8 +3698,10 @@ inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 
     Description: Implementation of vector classes
 ************************************************************/
-#include <cmath>
-#include <iostream>
+
+}  // namespace mjz_ard 
+
+namespace mjz_ard {
 
 /***************************************************************************************
   Vector2  -- 2-D vector class
@@ -3707,18 +3855,18 @@ class Vector2 {
       const Vector2<T> &v) const {     // 3-D cross product with z assumed 0
     return m_x * v.m_y + v.m_x * m_y;  // return magnitude of resulting vector
   }
-  template <class T>
+  
   friend std::ostream &operator<<(std::ostream &outs, const Vector2<T> &v) {
     outs << "<" << v.m_x << ", " << v.m_y << ">";
     return outs;
   }
-  template <class T>
+  
   friend std::istream &operator>>(std::istream &ins, Vector2<T> &v) {
     ins >> v.m_x >> v.m_y;
     return ins;
   }
 
-  template <class T>
+  
   friend inline constexpr Vector2<T> operator*(T s, const Vector2<T> &v) {
     return Vector2<T>(s * v.m_x, s * v.m_y);
   }
@@ -3726,28 +3874,28 @@ class Vector2 {
   /********************************************************
    Basic Trig functions of angle between vectors
   ********************************************************/
-  template <class T>
+  
   friend inline constexpr T cos(const Vector2<T> &v1, const Vector2<T> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
   }
-  template <class T>
+  
   friend inline constexpr T sin(const Vector2<T> &v1, const Vector2<T> &v2) {
     return cross(v1, v2) / v1.length() / v2.length();
   }
-  template <class T>
+  
   friend inline constexpr T tan(const Vector2<T> &v1, const Vector2<T> &v2) {
     return sin(v1, v2) / cos(v1, v2);
   }
-  template <class T>
+  
   friend inline constexpr T angle(const Vector2<T> &v1, const Vector2<T> &v2) {
     return std::acos(cos(v1, v2));
   }
 
-  template <class T>
+  
   friend inline constexpr T dot(const Vector2<T> &v1, const Vector2<T> &v2) {
     return v1.dot(v2);
   }
-  template <class T>
+  
   friend inline constexpr T cross(const Vector2<T> &v1, const Vector2<T> &v2) {
     return v1.cross(v2);
   }
@@ -3756,6 +3904,7 @@ class Vector2 {
 /*********************************************************************************
  Vector3 -- 3D vector
 *********************************************************************************/
+
 template <class T>
 class Vector3 {
  public:
@@ -3857,6 +4006,9 @@ class Vector3 {
   inline constexpr Vector3<T> operator/(const T &s) const {
     return Vector3<T>(m_x / s, m_y / s, m_z / s);
   }
+  inline constexpr Vector3<T> operator/(const Vector3<T> &v) const {
+    return Vector3<T>(m_x/v.m_x, m_y / v.m_y, m_z / v.m_z);
+  }
 
   /*******************************************
     Modifying Math Operators
@@ -3885,6 +4037,12 @@ class Vector3 {
     m_z *= v.m_z;
     return *this;
   }
+  inline constexpr Vector3<T> &operator/=(const Vector3<T> &v) {
+    m_x /= v.m_x;
+    m_y /= v.m_y;
+    m_z /= v.m_z;
+    return *this;
+  }
   inline constexpr Vector3<T> &operator/=(const T &s) {
     m_x /= s;
     m_y /= s;
@@ -3904,6 +4062,7 @@ class Vector3 {
   inline constexpr T length() const {
     return std::sqrt(m_x * m_x + m_y * m_y + m_z * m_z);
   }
+
   inline constexpr T lengthSq() const {
     return m_x * m_x + m_y * m_y + m_z * m_z;
   }
@@ -3921,7 +4080,8 @@ class Vector3 {
   inline constexpr T dot(const Vector3<T> &v) const {
     return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
   }
-  inline constexpr Vector3<T> cross(
+
+  inline constexpr Vector3<T> cross_with_this(
       const Vector3<T> &v) { /* NOTE this function modifies the vector unlike 2D
                                 and non-member versions */
     T x_(m_x), y_(m_y), z_(m_z);
@@ -3929,48 +4089,42 @@ class Vector3 {
     m_y = z_ * v.m_x - x_ * v.m_z;
     m_z = x_ * v.m_y - y_ * v.m_x;
     return *this;
-  }
-  template <class T>
+  } 
   friend std::ostream &operator<<(std::ostream &outs, const Vector3<T> &v) {
     outs << "<" << v.m_x << ", " << v.m_y << ", " << v.m_z << ">";
     return outs;
-  }
-  template <class T>
+  } 
   friend std::istream &operator>>(std::istream &ins, Vector3<T> &v) {
     ins >> v.m_x >> v.m_y >> v.m_z;
     return ins;
-  }
-
-  template <class T>
+  } 
   inline constexpr friend Vector3<T> operator*(T s, const Vector3<T> &v) {
     return Vector3<T>(s * v.m_x, s * v.m_y, s * v.m_z);
   }
 
   /********************************************************
    Basic Trig functions of angle between vectors
-  ********************************************************/
-  template <class T>
+  ********************************************************/ 
   inline constexpr friend T cos(const Vector3<T> &v1, const Vector3<T> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
-  }
-  template <class T>
-  inline constexpr friend T sin(const Vector3<T> &v1, const Vector3<T> &v2) {
+  } 
+  inline constexpr friend  T sin(const Vector3<T> &v1, const Vector3<T> &v2) {
     return cross(v1, v2).length() / v1.length() / v2.length();
   }
-  template <class T>
+
   inline constexpr friend T tan(const Vector3<T> &v1, const Vector3<T> &v2) {
     return sin(v1, v2) / cos(v1, v2);
   }
-  template <class T>
+
   inline constexpr friend T angle(const Vector3<T> &v1, const Vector3<T> &v2) {
     return std::acos(cos(v1, v2));
   }
 
-  template <class T>
+
   inline constexpr friend T dot(const Vector3<T> &v1, const Vector3<T> &v2) {
     return v1.dot(v2);
   }
-  template <class T>
+  
   inline constexpr friend Vector3<T> cross(const Vector3<T> &v1,
                                            const Vector3<T> &v2) {
     return Vector3<T>(v1.m_y * v2.m_z - v1.m_z * v2.m_y,
@@ -4066,7 +4220,13 @@ struct hash<mjz_ard::mjz_virtual_string_view> {
     return mjz_ard::SHA1_CTX::SHA_1(k.data(), k.length()).get_as_64bit_hash();
   }
 };  // namespace std::hash
+
+template <typename T>
+inline mjz_ard::Vector3<T> sqrt(mjz_ard::Vector3<T> v) {
+  return mjz_ard::Vector3<T>(sqrt(v.x()), sqrt(v.y()), sqrt(v.z()));
+}
 }  // namespace std
 #undef NO_IGNORE_CHAR
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus
+

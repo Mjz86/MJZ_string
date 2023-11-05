@@ -39,11 +39,11 @@
 #include <vector>
 template <typename... T>
 int sprintf_alt_( char * const buffer_for_print, size_t size_of_msg,
-                  const char * const formaing__, T... arggs ) {
+                 const char* const forming__, T... argumentes) {
   #ifndef Arduino
-  return sprintf_s( buffer_for_print, size_of_msg, formaing__, arggs... );
+  return sprintf_s(buffer_for_print, size_of_msg, forming__, argumentes...);
   #else
-  return sprintf( buffer_for_print, formaing__, arggs... );
+  return sprintf(buffer_for_print, forming__, argumentes...);
   #endif
 }
 #ifdef Arduino

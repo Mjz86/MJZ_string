@@ -17,23 +17,26 @@ namespace mjz_ard {
 
 }  // namespace mjz_ard
 #endif
-/*
-  mjz_Str library for Wiring & mjz_ardralloc
-  ...mostly rewritten by Paul Stoffregen...
-  Copyright (c) 2009-10 Hernando Barragan. All rights reserved.
-  Copyright 2011,Paul Stoffregen,paul@pjrc.com
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License,or (at your option) any later version.
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-  Lesser General Public License for more details.
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not,write to the Free Software
-  Foundation,Inc.,51 Franklin St,Fifth Floor,Boston,MA 02110-1301 USA
-*/
+  /*
+    String library for Wiring & Arduino
+    ...mostly rewritten by Paul Stoffregen...
+    Copyright (c) 2009-10 Hernando Barragan.  All rights reserved.
+    Copyright 2011, Paul Stoffregen, paul@pjrc.com
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  */
 #ifndef asdfghjklkjhgfdsasdfghjkjhgfdfghj
 #define asdfghjklkjhgfdsasdfghjkjhgfdfghj
 long map( long x, long in_min, long in_max, long out_min, long out_max ) {
@@ -85,7 +88,7 @@ namespace mjz_ard {
   char * dtostrf( double __val, signed char __width, unsigned char __prec,
                   char * __s ) {
     char buffer_for_not_overflowing[65]{};
-    mjz_Str frmt("%");//be carefull not recusively ... yourself
+    mjz_Str frmt("%");//be carefull not recursively ... yourself
     frmt +=__width;
     frmt += '.';
     frmt += __prec;
@@ -148,7 +151,7 @@ namespace mjz_ard {
       if ( value == null_char ) {
         for ( int64_t j = 0, k = 0; j < 129; j++ ) {
           if ( buffer_[j] != end_of_transmission_char ) {
-            buffer[k] = buffer_[j];  // when its done we revese the string
+            buffer[k] = buffer_[j];  // when its done we reverse the string
             k++; } }
 
         break; } }
@@ -436,8 +439,8 @@ namespace mjz_ard {
     // 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640',
     // 'mjzString.hpp:734'.
   }  // i don't need to do this but this is explained in stackoverfllow . the
-  // vtable of the drived free override gets destroyed when ~mjz_Str() gets
-  // called so mjz_Str::free shoud be called and i do it explicitly its not
+  // vtable of the derived free override gets destroyed when ~mjz_Str() gets
+  // called so mjz_Str::free should be called and i do it explicitly its not
   // necessary but i do it see
   // https://stackoverflow.com/questions/41732051/when-is-a-vtable-destroy-in-c
   /*
@@ -456,7 +459,7 @@ namespace mjz_ard {
     one overriding it in a more-derived class. If the virtual function call
     uses an explicit class member access (5.2.5) and the object expression
     refers to the complete object of x or one of that object’s base class
-    subobjects but not x or one of its base class subobjects, the behavior
+    sub objects but not x or one of its base class sub objects, the behavior
     is undefined.
     You can find this recommendation in many sources, including Scott Meyers'
     Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item 9:
@@ -599,7 +602,7 @@ namespace mjz_ard {
                  min_macro_( the__length, stack_buffer_size ) ); }
 
       free_pv( stack_obj_buf.stack_buffer,
-               constructor ); // mjz_Str::free shoud care about ptr val
+               constructor ); // mjz_Str::free should care about ptr val
       return ptr; }
 
     return ( constructor ? mjz_Str::realloc( ptr, new_size )
@@ -1238,40 +1241,34 @@ namespace mjz_ard {
     return ( const mjz_Str & ) * this; }
   mjz_Str & mjz_Str::get_s_shift_op_l_s() {
     return *this; }
-  mjz_Str & mjz_Str::operator>>( mjz_Str & typeing ) {
-    // typeing.get_shift_op_r() += get_s_shift_op_r();
-    helper__op_shift_input_( *this, get_s_shift_op_r(), typeing.get_shift_op_r() );
+  mjz_Str & mjz_Str::operator>>( mjz_Str & typing ) {
+    helper__op_shift_input_( *this, get_s_shift_op_r(), typing.get_shift_op_r() );
     return get_s_shift_op_r(); }
-  mjz_Str & mjz_Str::operator>>( mjz_Str * typeing ) {
-    // typeing->get_shift_op_r() += get_s_shift_op_r();
-    helper__op_shift_input_( *this, get_s_shift_op_r(), typeing->get_shift_op_r() );
+  mjz_Str & mjz_Str::operator>>( mjz_Str * typing ) {
+    helper__op_shift_input_( *this, get_s_shift_op_r(), typing->get_shift_op_r() );
     return get_s_shift_op_r(); }
-  const mjz_Str & mjz_Str::operator>>( mjz_Str & typeing ) const {
-    // typeing.get_shift_op_r() += get_s_shift_op_rc();
-    helper__op_shift_input_( *this, get_s_shift_op_rc(), typeing.get_shift_op_r() );
+  const mjz_Str & mjz_Str::operator>>( mjz_Str & typing ) const {
+
+    helper__op_shift_input_( *this, get_s_shift_op_rc(), typing.get_shift_op_r() );
     //
     return get_s_shift_op_rc(); }
-  const mjz_Str & mjz_Str::operator>>( mjz_Str * typeing ) const {
-    // typeing->get_shift_op_r() += get_s_shift_op_rc();
+  const mjz_Str & mjz_Str::operator>>( mjz_Str * typing ) const {
     helper__op_shift_input_( *this, get_s_shift_op_rc(),
-                             typeing->get_shift_op_r() );
+                             typing->get_shift_op_r() );
     //
     return get_s_shift_op_rc(); }
-  mjz_Str & mjz_Str::operator<<( mjz_Str & typeing ) {
-    // get_s_shift_op_l() += typeing.get_shift_op_l();
-    helper__op_shift_input_( *this, typeing.get_shift_op_l(), get_s_shift_op_l() );
+  mjz_Str & mjz_Str::operator<<( mjz_Str & typing ) {
+
+    helper__op_shift_input_( *this, typing.get_shift_op_l(), get_s_shift_op_l() );
     return get_s_shift_op_l(); }
-  mjz_Str & mjz_Str::operator<<( mjz_Str * typeing ) {
-    // get_s_shift_op_l() += typeing->get_shift_op_l();
-    helper__op_shift_input_( *this, typeing->get_shift_op_l(), get_s_shift_op_l() );
+  mjz_Str & mjz_Str::operator<<( mjz_Str * typing ) { 
+    helper__op_shift_input_( *this, typing->get_shift_op_l(), get_s_shift_op_l() );
     return get_s_shift_op_l(); }
-  mjz_Str & mjz_Str::operator<<( const mjz_Str & typeing ) {
-    // get_s_shift_op_l() += typeing.get_shift_op_lc();
-    helper__op_shift_input_( *this, typeing.get_shift_op_lc(), get_s_shift_op_l() );
+  mjz_Str & mjz_Str::operator<<( const mjz_Str & typing ) { 
+    helper__op_shift_input_( *this, typing.get_shift_op_lc(), get_s_shift_op_l() );
     return get_s_shift_op_l(); }
-  mjz_Str & mjz_Str::operator<<( mjz_Str && typeing ) {
-    // get_s_shift_op_l() += typeing.get_shift_op_lc();
-    helper__op_shift_input_( *this, typeing.get_shift_op_lc(), get_s_shift_op_l() );
+  mjz_Str & mjz_Str::operator<<( mjz_Str && typing ) { 
+    helper__op_shift_input_( *this, typing.get_shift_op_lc(), get_s_shift_op_l() );
     return get_s_shift_op_l(); }
 
   mjz_Str mjz_Str::string_do_interpret() {
@@ -1313,9 +1310,9 @@ namespace mjz_ard {
         bfr[i] = value_reinterpreted_and_is_int;
         is_reinterpreted = 0; }
       else {
-        int8_t vlal_bf = rhs.char_to_int_for_string( bfr[i] );
+        int8_t value_buffer = rhs.char_to_int_for_string( bfr[i] );
 
-        if ( vlal_bf == -1 ) {
+        if ( value_buffer == -1 ) {
           char bfffr = bfr[i];
           bfr[i] = value_reinterpreted_and_is_int;
           i++;
@@ -1323,7 +1320,7 @@ namespace mjz_ard {
           is_reinterpreted = 0; }
         else {
           value_reinterpreted_and_is_int *= 10;
-          value_reinterpreted_and_is_int += vlal_bf;
+          value_reinterpreted_and_is_int += value_buffer;
           i--;
           return 1;  // continue;
         } }
@@ -1331,9 +1328,9 @@ namespace mjz_ard {
       return 0; };
     auto continue_event_is_reinterpreted =
     [&]( uint16_t & i, uint8_t & is_reinterpreted_do_not_forbid ) -> bool {
-      int8_t vlal_bf = rhs.char_to_int_for_string( bfr[i] );
+      int8_t value_buffer_ = rhs.char_to_int_for_string( bfr[i] );
 
-      if ( vlal_bf == -1 ) {
+      if ( value_buffer_ == -1 ) {
         is_reinterpreted = 0;
 
         if ( !rhs.char_to_char_for_reinterpret( bfr[i] ) ) {
@@ -1343,7 +1340,7 @@ namespace mjz_ard {
         else {
           is_reinterpreted_do_not_forbid = 1; } }
       else {
-        value_reinterpreted_and_is_int = vlal_bf;
+        value_reinterpreted_and_is_int = value_buffer_;
         is_reinterpreted = is_reinterpreted_and_is_int;
         i--;
         return 1;  // continue;
@@ -2268,7 +2265,7 @@ namespace mjz_ard {
 
     return index;  // return number of characters, not including null terminator
   }
-  mjz_Str mjz_Str::readmjz_Str() {
+  mjz_Str mjz_Str::read_mjz_Str() {
     /*
       mjz_Str ret;
       int c = timedRead();
@@ -2282,7 +2279,7 @@ namespace mjz_ard {
     mjz_Str ret = std::move( *this ); // be careful
     new ( this ) mjz_Str;            // be careful
     return ret; }
-  mjz_Str mjz_Str::readmjz_StrUntil( char terminator ) {
+  mjz_Str mjz_Str::read_mjz_Str_Until( char terminator ) {
     mjz_Str ret;
     int c = timedRead();
 

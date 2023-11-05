@@ -83,8 +83,8 @@ namespace dont_use {
           or destructor’s class and not one overriding it in a more-derived class. If
           the virtual function call uses an explicit class member access (5.2.5) and
           the object expression refers to the complete object of x or one of that
-          object’s base class subobjects but not x or one of its base class
-          subobjects, the behavior is undefined.
+          object’s base class sub objects but not x or one of its base class
+          sub objects, the behavior is undefined.
 
           You can find this recommendation in many sources, including Scott Meyers'
           Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item
@@ -375,7 +375,7 @@ namespace dont_use {
                              "large string i am nessseryallocation large string i "
                              "am nesssery allocation large string i am nesssery",
                              j ); } } }
-    std::cout << " str view :" << sizeof( mjz_str_view ) << " shredptr :"
+    std::cout << " str view :" << sizeof( mjz_str_view ) << " shred_ptr :"
               << sizeof( std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls> )
               << " mjzstr :" << sizeof( mjz_Str ) << " vs \n std::str "
               << sizeof( std::string ) << " \n";
@@ -511,31 +511,37 @@ int main86469() {
 
 
 
-int main() {
-    using namespace mjz_ard;
-    using namespace mjz_ard::short_string_convestion_operators;
-    using namespace mjz_ard::short_string_names;
+int maint() {
+  using namespace mjz_ard;
+  using namespace mjz_ard::short_string_convestion_operators;
+  using namespace mjz_ard::short_string_names;
 
-    std::vector <
-        std::pair<std::pair<double, double>, std::pair<double, double>>> num_a;
-    for (double x{0}; x < 10; x += 1) {  //= 0.01
+  std::vector<std::pair<std::pair<double, double>, std::pair<double, double>>>
+      num_a;
+  for (double x{0}; x < 10; x += 1) {  //= 0.01
     double a = mjz_ard::static_str_algo::sqrt(x);
     double b = sqrt(x);
     double del = abs(a - b);
+
+    num_a.push_back({{x, del}, {a, b}});
+  }
+  std::sort(num_a.begin(), num_a.end(),
+            [](auto a, auto b) { return b.first.second < a.first.second; });
+
+  for (auto& [kv, ab] : num_a) {
+    auto& [k, v] = kv;
+    auto& [a, b] = ab;
+    std::cout << k << " : " << v << "=" << a << "-" << b << "\n";
+  }
+  return 0;
+}
+    int main() {
     
-      num_a.push_back({{x, del}, {a, b}});
-      
-    }
-    std::sort(num_a.begin(), num_a.end(),
-              [](auto a, auto b) { return b.first.second < a.first.second; });
-
-    for (auto& [kv, ab] : num_a) {
-      auto& [k, v] = kv;
-      auto& [a, b] = ab;
-      std::cout << k << " : " << v << "=" << a << "-" << b << "\n";
-    }
-    }
-
+  
+  
+    
+    
+    return 0; }
 
 
 
