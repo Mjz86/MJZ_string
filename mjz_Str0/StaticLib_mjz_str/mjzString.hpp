@@ -1300,6 +1300,14 @@ typedef uint8_t BYTE;       // 8-bit byte
 typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
 
 struct SHA256_CTX {
+ protected:
+  char* to_string(char*buf) const;
+ public:
+  char *copy_to_c_string(char *buf, size_t len) const {
+    if (len < 1024) return 0;
+    static_str_algo::memset(buf, 0, len);
+    return to_string(buf);
+      }
   union {
     BYTE data[64]{};
     BYTE hashed_data[SHA256_BLOCK_SIZE];
@@ -1308,6 +1316,7 @@ struct SHA256_CTX {
   unsigned long long bitlen{};
   WORD state[8]{};
   mjz_Str to_string() const;
+  friend std::ostream &operator<<(std::ostream &CIN, const SHA256_CTX &obj);
   static inline int compare_hash(const void *rhs, const SHA256_CTX &lhs) {
     return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
   }

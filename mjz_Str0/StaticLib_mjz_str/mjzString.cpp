@@ -1731,23 +1731,47 @@ namespace mjz_ard {
       output_name_in_output_out.println( " };" ); }
 
     return rtrn; }
+  char *hash_sha256::to_string(char *buf_) const {
+    char *buf = buf_;
+    auto paste_str = [&](mjz_str_view str) {
+      static_str_algo::memmove(buf, str.data(), str.length());
+      buf += str.length();
+    };
+    auto str_left = [&]() { return 1024 - (size_t)buf_ + (size_t)buf;
+    };
+    paste_str("const char ");
+    paste_str("hash");
+    paste_str(" [] = { ");
+    buf += sprintf_s(buf, str_left(), "%d",
+                     (int)hashed_data[0]);
+   
+    for (int64_t i = 1; i < sizeof(hashed_data); i++) {
+      buf += sprintf_s(buf, str_left(), ",");
+      buf += sprintf_s(buf, str_left(), "%d", (int)hashed_data[i]);
+    }
 
+   buf += sprintf_s(buf, str_left(), " };\n");
+    return buf_;
+      }
+  
   mjz_Str hash_sha256::to_string() const {
-    mjz_Str ret_str( "const char " + "hash"_m_str + " [] = { " );
-    ret_str.print( ( int )hashed_data[0] );
-
-    for ( int64_t i = 1; i < sizeof( hashed_data ); i++ ) {
-      ret_str.print( "," );
-      ret_str.print( ( int )hashed_data[i] ); }
-
-    ret_str.println( " };" );
-    return ret_str; }
+    char buffer[1024]{};
+   
+    return mjz_Str(to_string(buffer));
+  }
+  std::ostream &operator<<(std::ostream &CIN, const mjz_ard::SHA256_CTX &obj) {
+    char buffer[1024]{};
+    CIN << obj.to_string(buffer);
+    return CIN;
+  }
   hash_sha256 hash_msg_to_sha_512_n_with_output(
     const char * dev_passwoed, const size_t dev_passwoedLength, uint8_t n,
     mjz_Str & output_name ) { // intended copy
     if ( n == 0 ) {
       return hash_msg_to_sha_512_with_output( dev_passwoed, dev_passwoedLength,
                                               output_name ); }
+   
+    static 
 
     hash_sha256 ret =
       hash_sha256::hash_msg_to_sha_512( dev_passwoed, dev_passwoedLength );
@@ -2070,33 +2094,37 @@ namespace mjz_ard {
     return n; }
   // private method to read stream with timeout
   int mjz_Str::timedRead() {
-    unsigned long _startMillis;  // used for timeout measurement
+  //  unsigned long _startMillis;  // used for timeout measurement
     int c;
-    _startMillis = millis();
+   // _startMillis = millis();
 
-    do {
+   // do {
       c = read();
 
       if ( c >= 0 ) {
-        return c; } }
-    while ( millis() - _startMillis <
-            drived_mjz_Str_DATA_storage_Obj_ptr->_timeout );
+        return c; } 
+      //}
+    //while ( 
+           // millis() - _startMillis <
+           // drived_mjz_Str_DATA_storage_Obj_ptr->_timeout
+           //);
 
     return -1;  // -1 indicates timeout
   }
   // private method to peek stream with timeout
   int mjz_Str::timedPeek() {
-    unsigned long _startMillis;  // used for timeout measurement
+   // unsigned long _startMillis;  // used for timeout measurement
     int c;
-    _startMillis = millis();
+   // _startMillis = millis();
 
-    do {
+   // do {
       c = peek();
 
       if ( c >= 0 ) {
-        return c; } }
-    while ( millis() - _startMillis <
-            drived_mjz_Str_DATA_storage_Obj_ptr->_timeout );
+        return c; }
+        //}
+  //  while ( millis() - _startMillis <
+      //      drived_mjz_Str_DATA_storage_Obj_ptr->_timeout );
 
     return -1;  // -1 indicates timeout
   }
@@ -2197,7 +2225,7 @@ namespace mjz_ard {
     bool isNegative = false;
     bool isFraction = false;
     double value = 0.0;
-    int c;
+    int c{};
     double fraction = 1.0;
     c = peekNextDigit( lookahead, true );
 
@@ -2218,9 +2246,12 @@ namespace mjz_ard {
             if ( c >= '0' && c <= '9' ) { // is c a digit?
               if ( isFraction ) {
                 fraction *= 0.1;
-                value = value + fraction * ( c - '0' ); }
+          value = value + fraction * ((char)c - '0');
+              }
               else {
-                value = value * 10 + c - '0'; } }
+          value = value * 10 + c - '0';
+              }
+      }
 
       read();  // consume the character we got with peek
       c = timedPeek(); }
@@ -2396,7 +2427,9 @@ namespace mjz_ard {
     return ( uint32_t )( index + 1 ) % N; }
   template <int N>
   bool mjz_RingBufferN<N>::isFull() {
-    return ( _numElems == N ); } } // namespace mjz_ard
+    return ( _numElems == N ); }
 
+ } // namespace mjz_ard
 
+    
 #endif  // asdfghjklkjhgfdsasdfghjkjhgfdfghj
