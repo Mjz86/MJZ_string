@@ -18,5 +18,16 @@
     <ClCompile Include="example_that_is_not_used.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="failed.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="start.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="start.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

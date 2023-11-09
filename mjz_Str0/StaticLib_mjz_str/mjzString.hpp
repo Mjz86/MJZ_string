@@ -457,7 +457,7 @@ class static_str_algo {
       term *= x_mines_one / x;
       retval += term / i;
     }
-    return integer_component + retval;
+    return (float)integer_component + retval;
   }
   constexpr static inline double powUD(double base, double exponent) {
     if (base == 0) return 0;
@@ -488,13 +488,13 @@ class static_str_algo {
   }
   constexpr static inline uint64_t ceiling(double x) {
     uint64_t fx = floor(x);
-    if (fx == x) return fx;
+    if ((double)fx == x) return fx;
     return fx + 1;
   }
 
   constexpr static inline uint64_t round(double x) {
     uint64_t fx = floor(x);
-    return ((0.5 < (x - fx)) ? (fx + 1) : (fx));
+    return ((0.5 < (x - (double)fx)) ? (fx + 1) : (fx));
   }
 
   template <typename T>
@@ -609,7 +609,7 @@ class static_str_algo {
       term *= x_mines_one / x;
       retval += term / i;
     }
-    return integer_component + retval;
+    return (float)integer_component + retval;
   }
   constexpr static inline float powUF(float base, float exponent) {
     if (base == 0) return 0;
@@ -645,7 +645,7 @@ class static_str_algo {
   constexpr static inline float ReLU(float x) { return (x > 0) ? x : 0; }
 
   constexpr static inline float LeakyReLU(float x) {
-    return (x > 0) ? x : AlphaLeaky * x;
+    return LeakyELU( x);
   }
   constexpr static inline float LeakyReLUDer(const float &fx) {
     return (fx > 0) ? 1 : AlphaLeaky;
@@ -668,8 +668,8 @@ class static_str_algo {
     double nag_x_sqr = -(x * x);
 
     for (uint32_t i{}; i < number_of_terms; i++) {
-      double retval_buff = x / (2 * i + 1);
-      for (uint32_t j{1}; j <= i; j++) {
+      double retval_buff = x / ((2 * i) + 1);
+      for (uint32_t j=1; j <= i; j++) {
         retval_buff *= nag_x_sqr / j;
       }
       retval += retval_buff;
@@ -950,11 +950,131 @@ enum Dealocation_state : uint8_t {
   dont_deallocate_on_free = MJZ_frm_stack_ovf_BIT(0),
   is_moved = MJZ_frm_stack_ovf_BIT(1)
 };
+template <typename T>
+class heap_obj_warper {
+    protected:
+  uint8_t m_data[sizeof(T)]{};
+  bool m_Has_data{};
+
+ public:
+  constexpr inline heap_obj_warper()  = default;
+  inline ~heap_obj_warper() { data_de_init(); }
+   inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
+          operator*() =std::move(h_obj_w.operator*());
+        return *this;
+        }
+   inline heap_obj_warper &operator=(const heap_obj_warper &h_obj_w) {
+        operator*()= h_obj_w.operator*();
+      return *this;
+      }
+
+ inline heap_obj_warper(heap_obj_warper &&h_obj_w) {
+     if( new (pointer_to_unsafe_data()) T(std::move(h_obj_w.operator*())))m_Has_data=1;
+      }
+ inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
+     if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
+      }
+ inline heap_obj_warper(heap_obj_warper &h_obj_w) {
+      if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
+      }
+      
+   inline heap_obj_warper(const T &obj) {
+      if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
+      }
+   inline heap_obj_warper(T &obj) {
+      if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
+       }
+   inline heap_obj_warper(T &&obj) {
+      if (new (pointer_to_unsafe_data()) T (std::move(obj))) m_Has_data = 1;
+     
+       }
+
+    inline heap_obj_warper &operator=(T &&obj) {
+      operator*() = std::move(obj);
+      return *this;
+       }
+    inline heap_obj_warper &operator=(T &obj) {
+      operator*() = obj;
+      return *this;
+       }
+    inline heap_obj_warper &operator=(const T &obj) {
+      operator*() = obj;
+      return *this;
+       }
+  
+    template <typename... arguments_types>
+  inline  void data_init(arguments_types... args) {
+    data_de_init();
+    if (new (m_data) T(args...)) m_Has_data = 1;
+    }
+    template <typename... arguments_types>
+    inline void data_init_mv(arguments_types &&...args) {
+    data_de_init();
+    if (new (m_data) T(std::move(args...))) m_Has_data = 1;
+    }
+    template <typename... arguments_types>
+    inline void data_init_r(const arguments_types &...args) {
+    data_de_init();
+    if (new (m_data) T(args...)) m_Has_data = 1;
+    }
+    template <typename... arguments_types>
+    inline void data_init_ct(const arguments_types &...args) {
+    data_de_init();
+    if (new (m_data) T( args...)) m_Has_data = 1;
+    }
+
+    inline void data_de_init() {
+    if (m_Has_data) pointer_to_data()->~T();
+    m_Has_data = 0;
+    }
+ 
+  constexpr inline bool has_data() { 
+    return m_Has_data;
+    }
+    constexpr inline T *
+    pointer_to_unsafe_data() {  // this may be uninitialized initialized...
+    return (T*)(m_data);
+        }
+    constexpr inline T *pointer_to_data() {
+    if (!m_Has_data) throw std::exception(" bad access");
+    return pointer_to_unsafe_data();
+        }
+
+  
+
+  constexpr inline T *operator->() {
+    return pointer_to_data();
+        }
+  constexpr inline T &operator*() {
+      return *operator->();
+      }
+ 
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class malloc_wrapper {
   malloc_wrapper &move(malloc_wrapper &otr) {
     if (otr.is_moved_state()) {
       if (otr.m_data_ptr && otr.m_cap_size) {
-        static_str_algo::memmove(malloc(otr.m_cap_size), otr.m_data_ptr,
+ m_data_ptr =malloc(otr.m_cap_size);
+        if (m_data_ptr)
+   static_str_algo::memmove(m_data_ptr, otr.m_data_ptr,
                                  otr.m_cap_size);
       }
       return *this;
@@ -976,26 +1096,26 @@ class malloc_wrapper {
  protected:
   void *m_data_ptr{};
   size_t m_cap_size{};
-  uint8_t m_Dealocation_state{};
+  uint8_t m_Deallocation_state{};
 
   constexpr inline void obj_is_moved() {
-    m_Dealocation_state |= Dealocation_state::is_moved |
+    m_Deallocation_state |= Dealocation_state::is_moved |
                            Dealocation_state::dont_deallocate_on_free;
   }
 
  public:
   constexpr inline bool do_deallocation_on_free_state() {
-    return !(m_Dealocation_state & Dealocation_state::dont_deallocate_on_free);
+    return !(m_Deallocation_state & Dealocation_state::dont_deallocate_on_free);
   }
   constexpr inline bool is_moved_state() {
-    return !!(m_Dealocation_state & Dealocation_state::is_moved);
+    return !!(m_Deallocation_state & Dealocation_state::is_moved);
   }
   constexpr inline void dont_do_deallocation_on_free() {
-    m_Dealocation_state |= Dealocation_state::dont_deallocate_on_free;
+    m_Deallocation_state |= Dealocation_state::dont_deallocate_on_free;
   }
   constexpr inline void do_deallocation_on_free() {
-    m_Dealocation_state &=
-        ((!(m_Dealocation_state & Dealocation_state::is_moved))
+    m_Deallocation_state &=
+        ((!(m_Deallocation_state & Dealocation_state::is_moved))
              ? ~Dealocation_state::dont_deallocate_on_free
              : Dealocation_state::dont_deallocate_on_free);
   }
@@ -1074,10 +1194,10 @@ class malloc_wrapper {
     }
   }
 
-  malloc_wrapper(void *data_ptr, const size_t &cap_size, uint8_t DO_deallocate)
+  malloc_wrapper(void *data_ptr,  size_t cap_size, uint8_t DO_deallocate)
       : m_data_ptr(data_ptr),
         m_cap_size(cap_size),
-        m_Dealocation_state(DO_deallocate) {}
+        m_Deallocation_state(DO_deallocate) {}
 };
 
 // iterator_template Class
@@ -1327,6 +1447,7 @@ struct SHA256_CTX {
     return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
   }
   friend inline bool operator!=(const SHA256_CTX &rhs, const void *lhs) {
+    if (lhs == 0) return 1;
     return SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
   }
   friend inline bool operator==(const void *rhs, const SHA256_CTX &lhs) {
@@ -1376,8 +1497,8 @@ struct SHA256_CTX {
     WORD a{}, b{}, c{}, d{}, e{}, f{}, g{}, h{}, i{}, j{}, t1{}, t2{}, m[64]{};
 
     for (i = 0, j = 0; i < 16; ++i, j += 4)
-      m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) |
-             (data[j + 3]);
+      m[i] = (WORD)((data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) |
+                  (data[j + 3]));
 
     for (; i < 64; ++i) {
       m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
@@ -1549,8 +1670,8 @@ struct SHA1_CTX : public SHA256_CTX {
     WORD a{}, b{}, c{}, d{}, e{}, i{}, j{}, t{}, m[80]{};
 
     for (i = 0, j = 0; i < 16; ++i, j += 4)
-      m[i] = (data[j] << 24) + (data[j + 1] << 16) + (data[j + 2] << 8) +
-             (data[j + 3]);
+      m[i] = (WORD)((data[j] << 24) + (data[j + 1] << 16) + (data[j + 2] << 8) +
+                    (data[j + 3]));
 
     for (; i < 80; ++i) {
       m[i] = (m[i - 3] ^ m[i - 8] ^ m[i - 14] ^ m[i - 16]);
@@ -1749,8 +1870,8 @@ class basic_mjz_Str_view : protected static_str_algo {
 
  public:
   constexpr explicit operator const bool() const { return !is_blank(); }
-  constexpr char operator[](int64_t index) const {
-    index = signed_index_to_unsigned(index);
+  constexpr char operator[](int64_t index_) const {
+  size_t  index = signed_index_to_unsigned(index_);
 
     if ((size_t)index >= m_length || !m_buffer) {
       return 0;
@@ -1882,15 +2003,13 @@ class basic_mjz_Str_view : protected static_str_algo {
     return equals(cstr, strlen(cstr));
   }
   constexpr inline size_t signed_index_to_unsigned(int64_t input) const {
+    size_t index{length()};
     if (input < 0) {
-      input += length();
+      index = (size_t)(input + (int64_t)length());
+    } else if (input <= (int64_t)length()) {
+      index = (size_t)input;
     }
-
-    if (length() < (size_t)(input)) {
-      input = length();
-    }
-
-    return (size_t)(input);
+    return index;
   }
 
   constexpr size_t UN_ORDERED_compare(const basic_mjz_Str_view &s) const {
@@ -1980,9 +2099,7 @@ class basic_mjz_Str_view : protected static_str_algo {
   // Function that return the length
   constexpr size_t size() const { return length(); }
   constexpr if_virtual_then_virtual char charAt(int64_t loc) const {
-    //
-    loc = signed_index_to_unsigned(loc);
-    return operator[](loc);
+    return operator[](signed_index_to_unsigned(loc));
   }
   constexpr char charAt(size_t loc) const {
     //
@@ -2389,6 +2506,7 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual size_t write(const char *buf, size_t size_);
   if_virtual_then_virtual size_t write(const char *buf);
   if_virtual_then_virtual size_t write(uint8_t) if_ard_then_override;
+  inline size_t write(char cr) { return write((uint8_t)cr); }
   if_virtual_then_virtual size_t write(const uint8_t *buf,
                                        size_t size_) if_ard_then_override;
   if_virtual_then_virtual int64_t availableLL() if_ard_then_override;
@@ -3072,6 +3190,7 @@ class mjz_Str : public basic_mjz_String,
   char &at(int64_t i) { return operator[](i); }
   char &front() { return operator[]((int64_t)-1); }
   char &back() { return buffer_ref()[0]; }
+
   mjz_Str &push_back(char cr_) {
     write(cr_);
     return *this;
@@ -3732,7 +3851,7 @@ class Vector2 {
   };
   constexpr inline Vector2 &operator()(const T &x, const T &y) {
     m_x = (x);
-    m_x = (y);
+    m_y = (y);
     return *this;
   };
   template <typename FNC_T>
@@ -3854,8 +3973,8 @@ class Vector2 {
     return *this;
   }
   inline constexpr Vector2<T> unit() const {
-    T length = length();
-    return Vector2<T>(m_x / length, m_y / length);
+    T length_ = length();
+    return Vector2<T>(m_x / length_, m_y / length_);
   }
   inline constexpr T dot(const Vector2<T> &v) const {
     return m_x * v.m_x + m_y * v.m_y;
@@ -4083,8 +4202,8 @@ class Vector3 {
     return *this;
   }
   inline constexpr Vector3<T> unit() const {
-    T length = length();
-    return Vector3<T>(m_x / length, m_y / length, m_z / length);
+    T length_ = length();
+    return Vector3<T>(m_x / length_, m_y / length_, m_z / length_);
   }
   inline constexpr T dot(const Vector3<T> &v) const {
     return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;

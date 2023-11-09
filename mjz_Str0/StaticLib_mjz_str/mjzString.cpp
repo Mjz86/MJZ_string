@@ -348,11 +348,11 @@ namespace mjz_ard {
   void mjz_Str::realloc_new_ns::operator delete[]( void * ptr ) { ::free( ptr ); }
   void * mjz_Str::realloc_new_ns::operator new ( size_t size_, void * where ) {
     return ::realloc( where, size_ ); }
-  mjz_Str::mjz_Str( const char * cstr, size_t length ) {
+  mjz_Str::mjz_Str( const char * cstr, size_t len_ ) {
     init();
 
     if ( cstr ) {
-      copy( cstr, length,
+      copy( cstr, len_,
             1 ); // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/
       // Calling the 'free' virtual function indirectly in the
       // constructor may lead to unexpected result at runtime. Check
@@ -951,11 +951,11 @@ namespace mjz_ard {
       return dummy_writable_char; }
 
     return m_buffer[index]; }
-  char & mjz_Str::operator[]( int64_t index ) {
-    index = signed_index_to_unsigned( index );
+  char & mjz_Str::operator[]( int64_t index_ ) {
+    size_t index = signed_index_to_unsigned(index_);
     static char dummy_writable_char;
 
-    if ( ( size_t )index >= m_length || !m_buffer ) {
+    if ( index >= m_length || !m_buffer ) {
       dummy_writable_char = 0;
       return dummy_writable_char; }
 
@@ -1019,13 +1019,13 @@ namespace mjz_ard {
     return substring_beg_n( ( size_t )beginIndex, ( size_t )number ); }
   mjz_Str basic_mjz_Str_view::substring_beg_n( int64_t beginIndex,
       size_t number ) const {
-    beginIndex = signed_index_to_unsigned( beginIndex );
-    return substring_beg_n( ( size_t )beginIndex, number ); }
+    return substring_beg_n(signed_index_to_unsigned(beginIndex), number);
+  }
   mjz_Str basic_mjz_Str_view::substring( int64_t beginIndex,
                                          int64_t endIndex ) const {
-    beginIndex = signed_index_to_unsigned( beginIndex );
-    endIndex = signed_index_to_unsigned( endIndex );
-    return substring( ( size_t )beginIndex, ( size_t )endIndex ); }
+    return substring(signed_index_to_unsigned(beginIndex),
+                     signed_index_to_unsigned(endIndex));
+  }
   mjz_Str basic_mjz_Str_view::substring( int64_t beginIndex ) const {
     beginIndex = signed_index_to_unsigned( beginIndex );
     return substring( ( size_t )beginIndex, length() ); }
@@ -1302,7 +1302,7 @@ namespace mjz_ard {
     char * bfr = ( char * )my_bfr_obj_ptr.get_ptr();
     uint8_t is_reinterpreted{ };
     constexpr uint8_t is_reinterpreted_and_is_int = 2;
-    uint8_t value_reinterpreted_and_is_int{ };
+    int8_t value_reinterpreted_and_is_int{ };
     auto & reinterpret_char_char_ref =
       rhs.drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
     auto continue_event_is_reinterpreted_and_is_int = [&]( uint16_t & i ) -> bool {
@@ -1379,9 +1379,9 @@ namespace mjz_ard {
   std::istream & helper__op_shift_input_( const mjz_Str & rhs, std::istream & CIN,
                                           mjz_Str & get_shift_op_s ) {
     char bfr[2050] { };
-    uint8_t is_reinterpreted{ };
+    int8_t is_reinterpreted{ };
     constexpr uint8_t is_reinterpreted_and_is_int = 2;
-    uint8_t value_reinterpreted_and_is_int{ };
+    int8_t value_reinterpreted_and_is_int{ };
 
     for ( uint16_t i{0 }; i < 2047; i++ ) {
       uint8_t is_reinterpreted_do_not_forbid{ };
@@ -1560,6 +1560,7 @@ namespace mjz_ard {
     drived_mjz_Str_DATA_storage_Obj_ptr_set()->reinterpret_char_char = x;
     return 1; }
   bool mjz_Str::char_to_char_for_reinterpret( char & c_char ) const {
+    if (!drived_mjz_Str_DATA_storage_Obj_ptr) return 1;
     if ( c_char == drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char ) {
       return drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char; }
 
@@ -1827,7 +1828,9 @@ namespace mjz_ard {
     *data_in_array &= ( 1 << ofset ) ^ ( -1 ); // number &= ~(1UL << ofset);
 
     if ( set_to ) {
-      *data_in_array = *data_in_array | ( 1 << ofset ); } }
+      *data_in_array = static_cast<uint8_t>(*data_in_array | (1 << ofset));
+    }
+  }
   void tgl_nth_bit_andret8( void * data, uint64_t nthbt ) { // set_to is a bool
     uint8_t * data_in_array = ( ( uint8_t * )data ) + ( nthbt / 8 );
     const uint8_t ofset = nthbt % 8;
@@ -1844,8 +1847,8 @@ namespace mjz_ard {
     return 0; }
   UINT64_X2_32_t mjz_random() {
     UINT64_X2_32_t ret{ };
-    ret.data32[0] = esp_random();
-    ret.data32[1] = esp_random();
+    ret.data32[0] = (int32_t)esp_random();
+    ret.data32[1] = (int32_t)esp_random();
     return ret; }
   bool get_random_chanch_bool( double chance_var ) {
     double random_var = ( double )( abs( mjz_random().data64 ) % 1000001 );
