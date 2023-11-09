@@ -251,7 +251,7 @@ class static_str_algo {
   constexpr static void *memcpy(void *dest, const void *src, size_t len) {
     return memmove(dest, src, len);
   }
-  static inline size_t strlen(const char *str) {
+  constexpr static inline size_t strlen(const char *str) {
     if (!(str && *str)) {
       return 0;
     }
@@ -263,6 +263,12 @@ class static_str_algo {
         return str_i - str;
       }
     }
+  }
+  constexpr static void *strncpy(void *dest, const char *src, size_t len) {
+    return memcpy(dest, src, min(strlen(src), len));
+  }
+  constexpr static void *strcpy(void *dest, const char *src) {
+    return memcpy(dest, src, strlen(src));
   }
   constexpr static inline const char *strchr(const char *str, size_t len_,
                                              char ch) {
@@ -407,9 +413,7 @@ class static_str_algo {
     ~stack_str_buf() { STR_is_in_stack = 0; }
   };
 
-  public:
- 
-
+ public:
   constexpr static uint8_t number_of_terms = 100;
 
   constexpr static inline uint64_t floor(double x) { return (uint64_t)x; }
@@ -464,7 +468,6 @@ class static_str_algo {
     uint32_t exponent_int_component = (uint32_t)floor(exponent);
     exponent -= exponent_int_component;
     return exp(exponent * log(base)) * powUL(base, exponent_int_component);
-    
   }
 
   constexpr static inline double powUL(double base, uint32_t exponent) {
@@ -534,7 +537,7 @@ class static_str_algo {
     T integer_component{0};
     T EULER_T = EULER;
     for (; EULER_T < x; x /= EULER_T) {
-      integer_component+=1;
+      integer_component += 1;
     }
     T retval{0};
     T term{1};
@@ -599,7 +602,7 @@ class static_str_algo {
     if (x == 1) return 0;
     if (x == 0) return NAN;
     uint64_t integer_component{0};
-    for (; EULER < x; x /=(float) EULER) {
+    for (; EULER < x; x /= (float)EULER) {
       integer_component++;
     }
     float retval{0};
@@ -644,9 +647,7 @@ class static_str_algo {
   }
   constexpr static inline float ReLU(float x) { return (x > 0) ? x : 0; }
 
-  constexpr static inline float LeakyReLU(float x) {
-    return LeakyELU( x);
-  }
+  constexpr static inline float LeakyReLU(float x) { return LeakyELU(x); }
   constexpr static inline float LeakyReLUDer(const float &fx) {
     return (fx > 0) ? 1 : AlphaLeaky;
   }
@@ -663,13 +664,13 @@ class static_str_algo {
   constexpr static inline double erf(double x) {
     if (x <= 0) return 0.0;
     if (4 < x) return 1.0;
-    constexpr double retval_c =2.0 / (sqrt(( double)PI));
+    constexpr double retval_c = 2.0 / (sqrt((double)PI));
     double retval{0};
     double nag_x_sqr = -(x * x);
 
     for (uint32_t i{}; i < number_of_terms; i++) {
       double retval_buff = x / ((2 * i) + 1);
-      for (uint32_t j=1; j <= i; j++) {
+      for (uint32_t j = 1; j <= i; j++) {
         retval_buff *= nag_x_sqr / j;
       }
       retval += retval_buff;
@@ -704,9 +705,9 @@ class static_str_algo {
                   x_2 *
                       neg_1ovr_fact6));  // we dont do all the polonomial just 4
     if (HALF_PI - abs(x) < 0.01) {
-       double x_8 = powUL(x_2, 4);
-      retval += x_8*_1ovr_fact8;
-       retval += x_8*x_2*neg_1ovr_fact10;
+      double x_8 = powUL(x_2, 4);
+      retval += x_8 * _1ovr_fact8;
+      retval += x_8 * x_2 * neg_1ovr_fact10;
     }
     if (1 < retval) return 1;
     if (retval < -1) return -1;
@@ -730,10 +731,10 @@ class static_str_algo {
                                 x_2 * neg_1ovr_fact7)));  // we dont do all the
                                                           // polonomial just 4
 
-     if (HALF_PI - abs(x) < 0.01) {
-       double x_9 = powUL(x_2, 4) * x;
-       retval += x_9* _1ovr_fact9;
-       retval += x_9 * x_2 * neg_1ovr_fact11;
+    if (HALF_PI - abs(x) < 0.01) {
+      double x_9 = powUL(x_2, 4) * x;
+      retval += x_9 * _1ovr_fact9;
+      retval += x_9 * x_2 * neg_1ovr_fact11;
     }
     if (1 < retval) return 1;
     if (retval < -1) return -1;
@@ -773,8 +774,7 @@ class static_str_algo {
     while (TWO_PI < x) x -= TWO_PI;
     return x;
   }
-  constexpr static inline double radians_adjust_sin(
-      double x) {
+  constexpr static inline double radians_adjust_sin(double x) {
     if (x == NAN) return 0;
     if (x == INFINITY) return 0;
     if (x == -INFINITY) return 0;
@@ -784,8 +784,8 @@ class static_str_algo {
       x = -x;
     }
     while (TWO_PI < x) x -= TWO_PI;
-    return  was_neg? x+PI:x;
-      }
+    return was_neg ? x + PI : x;
+  }
   constexpr static inline double cos_rad(double x) {
     return cos_rad_until_2_pi(radians_adjust_cos(x));
   }
@@ -795,20 +795,19 @@ class static_str_algo {
   }
   constexpr static inline double tan_rad(double x) {
     return sin_rad(x) / cos_rad(x);
-      }
-  constexpr static inline double cot_rad(double x) {
-    return cos_rad(x) / sin_rad(x) ;
   }
- 
-  constexpr static inline float 
-      log(float x) { return (float)log((double)x); }
+  constexpr static inline double cot_rad(double x) {
+    return cos_rad(x) / sin_rad(x);
+  }
+
+  constexpr static inline float log(float x) { return (float)log((double)x); }
 
   constexpr static inline float erf(float x) { return (float)erf((double)x); }
-  constexpr static inline double acos(double x) {
-    return fastest_acos(x) ;
+  constexpr static inline double acos(double x) { return fastest_acos(x); }
+  template <typename T>
+  constexpr static inline auto abs(const T &x) {
+    return x < 0 ? -x : x;
   }
-  template<typename T>
-  constexpr static inline auto abs(const T& x) { return x < 0 ? -x : x;}
   constexpr static inline double fastest_normal_acos(double x) {
     x = ((-0.69813170079773212 * x * x - 0.87266462599716477) * x +
          1.5707963267948966);
@@ -824,7 +823,6 @@ class static_str_algo {
          1.5707963267948966);
     return x;
   }
-  private :
 
   constexpr static inline double sl_acos(double x) {
     double negate = double(x < 0);
@@ -859,6 +857,28 @@ class static_str_algo {
     r = C * u * s + s;      // or fmaf (C * u, s, s) if FMA support in hardware
     if (a < 0) r = PI - r;  // handle negative arguments
     return r;
+  }
+  static constexpr inline long bit_cast_f_to_l(float x) { return *(long *)&x; }
+  static constexpr inline float bit_cast_l_to_f(long x) { return *(float *)&x; }
+  static constexpr inline long divide_by_2(long x) { return (x >> 1); }
+  static constexpr float Q_rsqrt_unsafe(float number) {
+    const float three_halfs = 1.5F;
+    constexpr uint32_t magic_constant = 0x5f3759df;
+    float x2 = number * 0.5F;
+    float y = number;
+    long i = bit_cast_f_to_l(y);          // log base 2
+    i = magic_constant - divide_by_2(i);  // some magic
+    y = bit_cast_l_to_f(i);
+    y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method
+
+    return y;
+  }
+  static constexpr float Q_rsqrt(float number) {
+    if (number == 0) return 0;
+    if (number == 1) return 1;
+    if (number < 0) return NAN;
+    if (number == NAN) return NAN;
+    return Q_rsqrt_unsafe(number);
   }
 };
 template <int N>
@@ -952,130 +972,130 @@ enum Dealocation_state : uint8_t {
 };
 template <typename T>
 class heap_obj_warper {
-    protected:
+ protected:
   uint8_t m_data[sizeof(T)]{};
   bool m_Has_data{};
 
  public:
-  constexpr inline heap_obj_warper()  = default;
+  constexpr inline heap_obj_warper() = default;
   inline ~heap_obj_warper() { data_de_init(); }
-   inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
-          operator*() =std::move(h_obj_w.operator*());
-        return *this;
-        }
-   inline heap_obj_warper &operator=(const heap_obj_warper &h_obj_w) {
-        operator*()= h_obj_w.operator*();
-      return *this;
-      }
+  inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
+    operator*() = std::move(h_obj_w.operator*());
+    return *this;
+  }
+  inline heap_obj_warper &operator=(const heap_obj_warper &h_obj_w) {
+    operator*() = h_obj_w.operator*();
+    return *this;
+  }
 
- inline heap_obj_warper(heap_obj_warper &&h_obj_w) {
-     if( new (pointer_to_unsafe_data()) T(std::move(h_obj_w.operator*())))m_Has_data=1;
-      }
- inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
-     if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
-      }
- inline heap_obj_warper(heap_obj_warper &h_obj_w) {
-      if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
-      }
-      
-   inline heap_obj_warper(const T &obj) {
-      if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
-      }
-   inline heap_obj_warper(T &obj) {
-      if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
-       }
-   inline heap_obj_warper(T &&obj) {
-      if (new (pointer_to_unsafe_data()) T (std::move(obj))) m_Has_data = 1;
-     
-       }
+  inline heap_obj_warper(heap_obj_warper &&h_obj_w) {
+    if (new (pointer_to_unsafe_data()) T(std::move(h_obj_w.operator*())))
+      m_Has_data = 1;
+  }
+  inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
+    if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
+  }
+  inline heap_obj_warper(heap_obj_warper &h_obj_w) {
+    if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
+  }
 
-    inline heap_obj_warper &operator=(T &&obj) {
-      operator*() = std::move(obj);
-      return *this;
-       }
-    inline heap_obj_warper &operator=(T &obj) {
-      operator*() = obj;
-      return *this;
-       }
-    inline heap_obj_warper &operator=(const T &obj) {
-      operator*() = obj;
-      return *this;
-       }
-  
-    template <typename... arguments_types>
-  inline  void data_init(arguments_types... args) {
+  inline heap_obj_warper(const T &obj) {
+    if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
+  }
+  inline heap_obj_warper(T &obj) {
+    if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
+  }
+  inline heap_obj_warper(T &&obj) {
+    if (new (pointer_to_unsafe_data()) T(std::move(obj))) m_Has_data = 1;
+  }
+
+  inline heap_obj_warper &operator=(T &&obj) {
+    operator*() = std::move(obj);
+    return *this;
+  }
+  inline heap_obj_warper &operator=(T &obj) {
+    operator*() = obj;
+    return *this;
+  }
+  inline heap_obj_warper &operator=(const T &obj) {
+    operator*() = obj;
+    return *this;
+  }
+
+  template <typename... arguments_types>
+  inline void data_init(arguments_types... args) {
     data_de_init();
     if (new (m_data) T(args...)) m_Has_data = 1;
-    }
-    template <typename... arguments_types>
-    inline void data_init_mv(arguments_types &&...args) {
+  }
+  template <typename... arguments_types>
+  inline void data_init_mv(arguments_types &&...args) {
     data_de_init();
     if (new (m_data) T(std::move(args...))) m_Has_data = 1;
-    }
-    template <typename... arguments_types>
-    inline void data_init_r(const arguments_types &...args) {
+  }
+  template <typename... arguments_types>
+  inline void data_init_r(const arguments_types &...args) {
     data_de_init();
     if (new (m_data) T(args...)) m_Has_data = 1;
-    }
-    template <typename... arguments_types>
-    inline void data_init_ct(const arguments_types &...args) {
+  }
+  template <typename... arguments_types>
+  inline void data_init_ct(const arguments_types &...args) {
     data_de_init();
-    if (new (m_data) T( args...)) m_Has_data = 1;
-    }
+    if (new (m_data) T(args...)) m_Has_data = 1;
+  }
 
-    inline void data_de_init() {
+  inline void data_de_init() {
     if (m_Has_data) pointer_to_data()->~T();
     m_Has_data = 0;
-    }
- 
-  constexpr inline bool has_data() { 
-    return m_Has_data;
-    }
-    constexpr inline T *
-    pointer_to_unsafe_data() {  // this may be uninitialized initialized...
-    return (T*)(m_data);
-        }
-    constexpr inline T *pointer_to_data() {
+  }
+
+  constexpr inline bool has_data() { return m_Has_data; }
+  constexpr inline T *
+  pointer_to_unsafe_data() {  // this may be uninitialized initialized...
+    return (T *)(m_data);
+  }
+  constexpr inline T *pointer_to_data() {
     if (!m_Has_data) throw std::exception(" bad access");
     return pointer_to_unsafe_data();
-        }
+  }
 
-  
+  constexpr inline T *operator->() { return pointer_to_data(); }
+  constexpr inline T &operator*() { return *operator->(); }
 
-  constexpr inline T *operator->() {
-    return pointer_to_data();
-        }
-  constexpr inline T &operator*() {
-      return *operator->();
-      }
- 
-    };
+  inline bool operator==(const heap_obj_warper &other) const {
+    return operator() == other.operator();
+  }
+  inline bool operator!=(const heap_obj_warper &other) const {
+    return operator() != other.operator();
+  }
+  inline bool operator<(const heap_obj_warper &other) const {
+    return (operator()) < (other.operator());
+  }
+  inline bool operator<=(const heap_obj_warper &other) const {
+    return (operator()) <= (other.operator());
+  }
+  inline bool operator>(const heap_obj_warper &other) const {
+    return (operator()) > (other.operator());
+  }
+  inline bool operator>=(const heap_obj_warper &other) const {
+    return (operator()) >= (other.operator());
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifndef Arduino
+  inline bool operator<=>(const heap_obj_warper &other) const {
+    return operator() <=> other.operator();
+  }
+#endif  // ! Arduino
+  bool operator!() const { return !m_Has_data; }
+  operator bool() const { return m_Has_data; }
+};
 
 class malloc_wrapper {
   malloc_wrapper &move(malloc_wrapper &otr) {
     if (otr.is_moved_state()) {
       if (otr.m_data_ptr && otr.m_cap_size) {
- m_data_ptr =malloc(otr.m_cap_size);
+        m_data_ptr = malloc(otr.m_cap_size);
         if (m_data_ptr)
-   static_str_algo::memmove(m_data_ptr, otr.m_data_ptr,
-                                 otr.m_cap_size);
+          static_str_algo::memmove(m_data_ptr, otr.m_data_ptr, otr.m_cap_size);
       }
       return *this;
     }
@@ -1100,7 +1120,7 @@ class malloc_wrapper {
 
   constexpr inline void obj_is_moved() {
     m_Deallocation_state |= Dealocation_state::is_moved |
-                           Dealocation_state::dont_deallocate_on_free;
+                            Dealocation_state::dont_deallocate_on_free;
   }
 
  public:
@@ -1194,7 +1214,7 @@ class malloc_wrapper {
     }
   }
 
-  malloc_wrapper(void *data_ptr,  size_t cap_size, uint8_t DO_deallocate)
+  malloc_wrapper(void *data_ptr, size_t cap_size, uint8_t DO_deallocate)
       : m_data_ptr(data_ptr),
         m_cap_size(cap_size),
         m_Deallocation_state(DO_deallocate) {}
@@ -1263,10 +1283,7 @@ class iterator_template {
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     return *this;
   }
-  constexpr ~iterator_template() {
-    throw_if_bad();
-    m_iterator = 0;
-  }
+  constexpr ~iterator_template() { m_iterator = 0; }
   constexpr bool operator==(const iterator_template &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
@@ -1281,6 +1298,17 @@ class iterator_template {
     throw_if_bad();
     return m_iterator;
   }
+
+  constexpr iterator_template begin() const {
+    return iterator_template(m_iterator_begin_ptr, m_iterator_begin_ptr,
+                             m_iterator_end_ptr);
+  }
+  constexpr iterator_template end() const {
+    return iterator_template(m_iterator_end_ptr, m_iterator_begin_ptr,
+                             m_iterator_end_ptr);
+  }
+  constexpr iterator_template base() { return begin(); }
+
   constexpr iterator_template &operator++() noexcept {
     ++m_iterator;
     return *this;
@@ -1353,17 +1381,13 @@ class iterator_template {
   }
   constexpr friend iterator_template operator+(
       const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(
-        me.m_iterator + other,
-        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
-        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+    return iterator_template(me.m_iterator + other, me.m_iterator_begin_ptr,
+                             me.m_iterator_end_ptr);
   }
   constexpr friend iterator_template operator-(
       const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(
-        me.m_iterator - other,
-        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
-        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+    return iterator_template(me.m_iterator - other, me.m_iterator_begin_ptr,
+                             me.m_iterator_end_ptr);
   }
   constexpr friend iterator_template operator+(
       const difference_type other, const iterator_template &me) noexcept {
@@ -1399,6 +1423,7 @@ class iterator_template {
     rhs = lhsm_;
   }
 };
+
 /*********************************************************************
    Filename:   sha256.h
    Author:     Brad Conte (brad AT bradconte.com)
@@ -1421,13 +1446,14 @@ typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
 
 struct SHA256_CTX {
  protected:
-  char* to_string(char*buf) const;
+  char *to_string(char *buf) const;
+
  public:
   char *copy_to_c_string(char *buf, size_t len) const {
     if (len < 1024) return 0;
     static_str_algo::memset(buf, 0, len);
     return to_string(buf);
-      }
+  }
   union {
     BYTE data[64]{};
     BYTE hashed_data[SHA256_BLOCK_SIZE];
@@ -1498,7 +1524,7 @@ struct SHA256_CTX {
 
     for (i = 0, j = 0; i < 16; ++i, j += 4)
       m[i] = (WORD)((data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) |
-                  (data[j + 3]));
+                    (data[j + 3]));
 
     for (; i < 64; ++i) {
       m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
@@ -1871,7 +1897,7 @@ class basic_mjz_Str_view : protected static_str_algo {
  public:
   constexpr explicit operator const bool() const { return !is_blank(); }
   constexpr char operator[](int64_t index_) const {
-  size_t  index = signed_index_to_unsigned(index_);
+    size_t index = signed_index_to_unsigned(index_);
 
     if ((size_t)index >= m_length || !m_buffer) {
       return 0;
@@ -3108,28 +3134,28 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual void setCharAt(size_t index, char c);
   // character access
   if_virtual_then_virtual void setCharAt(int64_t index, char c);
-  inline if_virtual_then_virtual char *begin_c_str() { return C_str(); }
-  if_virtual_then_virtual char *end_c_str() { return buffer_ref() + length(); }
+  inline if_virtual_then_virtual char *begin_c_str() { return m_buffer; }
+  if_virtual_then_virtual char *end_c_str() { return m_buffer + length(); }
   if_virtual_then_virtual char *endAST_c_str() { return end_c_str(); }
-  if_virtual_then_virtual const char *begin_c_str() const { return c_str(); }
+  if_virtual_then_virtual const char *begin_c_str() const { return m_buffer; }
   if_virtual_then_virtual const char *endAST_c_str() const {
     return end_c_str();
   }
   if_virtual_then_virtual const char *end_c_str() const {
-    return c_str() + length();
+    return m_buffer + length();
   }
 
   // Iterator Class
-  using iterator_template_CC = iterator_template<const char>;
-  using iterator_template_C = iterator_template<char>;
-  using const_iterator = iterator_template_CC;
-  using iterator = iterator_template_C;
+  using const_iterator = mjz_ard::iterator_template<const char>;
+  using iterator = mjz_ard::iterator_template<char>;
 
-  const_iterator begin() const {
+  const_iterator begin() const { return cbegin(); }
+  inline const_iterator end() const { return cend(); }
+  const_iterator cbegin() const {
     return const_iterator(begin_c_str(), begining_of_str_ptr(),
                           ending_of_str_ptr());
   }
-  const_iterator end() const {
+  const_iterator cend() const {
     return const_iterator(end_c_str(), begining_of_str_ptr(),
                           ending_of_str_ptr());
   }
@@ -3144,17 +3170,19 @@ class mjz_Str : public basic_mjz_String,
   rev_iterator rbegin() {
     return rev_iterator({end(), begining_of_str_ptr(), ending_of_str_ptr()});
   }
-  const_rev_iterator rbegin() const {
-    return const_rev_iterator(
-        {end(), begining_of_str_ptr(), ending_of_str_ptr()});
-  };
   rev_iterator rend() {
     return rev_iterator({begin(), begining_of_str_ptr(), ending_of_str_ptr()});
   }
-  const_rev_iterator rend() const {
+  const_rev_iterator crend() const {
     return const_rev_iterator(
         {begin(), begining_of_str_ptr(), ending_of_str_ptr()});
   };
+  const_rev_iterator crbegin() const {
+    return const_rev_iterator(
+        {end(), begining_of_str_ptr(), ending_of_str_ptr()});
+  };
+  inline const_rev_iterator rend() const { return crend(); };
+  inline const_rev_iterator rbegin() const { return crbegin(); };
   // erase
   mjz_Str &erase(size_t pos_ = 0, size_t len_ = -1);
   iterator erase(iterator p);
@@ -3270,10 +3298,9 @@ class mjz_Str : public basic_mjz_String,
                  (size_t)return_val.length());
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual size_t write(const arguments_types &...arguments_arr) {
-    mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
-    return write((const uint8_t *)return_val.c_str(),
-                 (size_t)return_val.length());
+  if_virtual_then_virtual size_t write(const arguments_types &...arguments_arr)
+  { mjz_Str return_val = std::move(mjz_Str(arguments_arr...)); return
+  write((const uint8_t *)return_val.c_str(), (size_t)return_val.length());
   }
   template <typename... arguments_types>
   if_virtual_then_virtual size_t write(arguments_types &&...arguments_arr) {
@@ -3307,7 +3334,8 @@ class mjz_Str : public basic_mjz_String,
     return ret;
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator-=(arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator-=(
+      arguments_types &...arguments_arr) {
     return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
@@ -3316,7 +3344,8 @@ class mjz_Str : public basic_mjz_String,
     return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator/=(arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator/=(
+      arguments_types &...arguments_arr) {
     return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
@@ -3330,7 +3359,8 @@ class mjz_Str : public basic_mjz_String,
     return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str operator-(const arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str
+  operator-(const arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator-=(arguments_arr...);
   }
@@ -3340,43 +3370,52 @@ class mjz_Str : public basic_mjz_String,
     return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str operator/(const arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str
+  operator/(const arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator-=(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator-=(
+      arguments_types &&...arguments_arr) {
     return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str operator-(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str
+  operator-(arguments_types &&...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator/=(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator/=(
+      arguments_types &&...arguments_arr) {
     return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str operator/(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str
+  operator/(arguments_types &&...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<(arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator<<(
+      arguments_types &...arguments_arr) {
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<=(arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator<<=(
+      arguments_types &...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator=(arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator=(
+      arguments_types &...arguments_arr) {
     return operator=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator+=(arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator+=(
+      arguments_types &...arguments_arr) {
     return operator+=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
@@ -3387,7 +3426,8 @@ class mjz_Str : public basic_mjz_String,
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual const mjz_Str &run_code(
-      your_FUNCTION_Type your__function_, arguments_types &...arguments_arr) const {
+      your_FUNCTION_Type your__function_,
+      arguments_types &...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
@@ -3398,7 +3438,8 @@ class mjz_Str : public basic_mjz_String,
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, arguments_types &...arguments_arr) const {
+      your_FUNCTION_Type your__function_,
+      arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
@@ -3413,8 +3454,9 @@ class mjz_Str : public basic_mjz_String,
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          arguments_types &...arguments_arr) const {
+  if_virtual_then_virtual auto operator()(
+      your_FUNCTION_Type your__function_,
+      arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
   template <typename... arguments_types>
@@ -3439,8 +3481,9 @@ class mjz_Str : public basic_mjz_String,
     return operator+=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                                            const arguments_types &...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &run_code(
+      your_FUNCTION_Type your__function_,
+      const arguments_types &...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
@@ -3453,7 +3496,8 @@ class mjz_Str : public basic_mjz_String,
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, const arguments_types &...arguments_arr) {
+      your_FUNCTION_Type your__function_,
+      const arguments_types &...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
@@ -3465,8 +3509,9 @@ class mjz_Str : public basic_mjz_String,
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          const arguments_types &...arguments_arr) {
+  if_virtual_then_virtual auto operator()(
+      your_FUNCTION_Type your__function_,
+      const arguments_types &...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
@@ -3476,31 +3521,36 @@ class mjz_Str : public basic_mjz_String,
     return your__function_(*this, arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator<<(
+      arguments_types &&...arguments_arr) {
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<=(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator<<=(
+      arguments_types &&...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator=(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator=(
+      arguments_types &&...arguments_arr) {
     return operator=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator+=(arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &operator+=(
+      arguments_types &&...arguments_arr) {
     return operator+=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                                            arguments_types &&...arguments_arr) {
+  if_virtual_then_virtual mjz_Str &run_code(
+      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual const mjz_Str &run_code(
-      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) const {
+      your_FUNCTION_Type your__function_,
+      arguments_types &&...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
@@ -3511,7 +3561,8 @@ class mjz_Str : public basic_mjz_String,
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) const {
+      your_FUNCTION_Type your__function_,
+      arguments_types &&...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
@@ -3522,8 +3573,9 @@ class mjz_Str : public basic_mjz_String,
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          arguments_types &&...arguments_arr) const {
+  if_virtual_then_virtual auto operator()(
+      your_FUNCTION_Type your__function_,
+      arguments_types &&...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
 };
@@ -3732,7 +3784,8 @@ template <class _function>
 class type_fn_class {
  public:
   template <class T>
-  bool operator()(const T &x) { return _function(x);
+  bool operator()(const T &x) {
+    return _function(x);
   }
 };
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
@@ -3827,7 +3880,7 @@ inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
     Description: Implementation of vector classes
 ************************************************************/
 
-}  // namespace mjz_ard 
+}  // namespace mjz_ard
 
 namespace mjz_ard {
 
@@ -3967,14 +4020,10 @@ class Vector2 {
   inline constexpr T length() const { return std::sqrt(m_x * m_x + m_y * m_y); }
   inline constexpr T lengthSq() const { return m_x * m_x + m_y * m_y; }
   inline constexpr Vector2<T> &normalize() {
-    T length = this->length();
-    m_x /= length;
-    m_y /= length;
-    return *this;
+    return operator*=((T)static_str_algo::Q_rsqrt(lengthSq()));
   }
   inline constexpr Vector2<T> unit() const {
-    T length_ = length();
-    return Vector2<T>(m_x / length_, m_y / length_);
+    return operator*((T)static_str_algo::Q_rsqrt(lengthSq()));
   }
   inline constexpr T dot(const Vector2<T> &v) const {
     return m_x * v.m_x + m_y * v.m_y;
@@ -3983,18 +4032,17 @@ class Vector2 {
       const Vector2<T> &v) const {     // 3-D cross product with z assumed 0
     return m_x * v.m_y + v.m_x * m_y;  // return magnitude of resulting vector
   }
-  
+
   friend std::ostream &operator<<(std::ostream &outs, const Vector2<T> &v) {
     outs << "<" << v.m_x << ", " << v.m_y << ">";
     return outs;
   }
-  
+
   friend std::istream &operator>>(std::istream &ins, Vector2<T> &v) {
     ins >> v.m_x >> v.m_y;
     return ins;
   }
 
-  
   friend inline constexpr Vector2<T> operator*(T s, const Vector2<T> &v) {
     return Vector2<T>(s * v.m_x, s * v.m_y);
   }
@@ -4002,28 +4050,27 @@ class Vector2 {
   /********************************************************
    Basic Trig functions of angle between vectors
   ********************************************************/
-  
+
   friend inline constexpr T cos(const Vector2<T> &v1, const Vector2<T> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
   }
-  
+
   friend inline constexpr T sin(const Vector2<T> &v1, const Vector2<T> &v2) {
     return cross(v1, v2) / v1.length() / v2.length();
   }
-  
+
   friend inline constexpr T tan(const Vector2<T> &v1, const Vector2<T> &v2) {
     return sin(v1, v2) / cos(v1, v2);
   }
-  
+
   friend inline constexpr T angle(const Vector2<T> &v1, const Vector2<T> &v2) {
     return std::acos(cos(v1, v2));
   }
 
-  
   friend inline constexpr T dot(const Vector2<T> &v1, const Vector2<T> &v2) {
     return v1.dot(v2);
   }
-  
+
   friend inline constexpr T cross(const Vector2<T> &v1, const Vector2<T> &v2) {
     return v1.cross(v2);
   }
@@ -4135,7 +4182,7 @@ class Vector3 {
     return Vector3<T>(m_x / s, m_y / s, m_z / s);
   }
   inline constexpr Vector3<T> operator/(const Vector3<T> &v) const {
-    return Vector3<T>(m_x/v.m_x, m_y / v.m_y, m_z / v.m_z);
+    return Vector3<T>(m_x / v.m_x, m_y / v.m_y, m_z / v.m_z);
   }
 
   /*******************************************
@@ -4195,15 +4242,10 @@ class Vector3 {
     return m_x * m_x + m_y * m_y + m_z * m_z;
   }
   inline constexpr Vector3<T> &normalize() {
-    T length = this->length();
-    m_x /= length;
-    m_y /= length;
-    m_z /= length;
-    return *this;
+    return operator*=((T)static_str_algo::Q_rsqrt(lengthSq()));
   }
   inline constexpr Vector3<T> unit() const {
-    T length_ = length();
-    return Vector3<T>(m_x / length_, m_y / length_, m_z / length_);
+    return operator*((T)static_str_algo::Q_rsqrt(lengthSq()));
   }
   inline constexpr T dot(const Vector3<T> &v) const {
     return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
@@ -4217,26 +4259,26 @@ class Vector3 {
     m_y = z_ * v.m_x - x_ * v.m_z;
     m_z = x_ * v.m_y - y_ * v.m_x;
     return *this;
-  } 
+  }
   friend std::ostream &operator<<(std::ostream &outs, const Vector3<T> &v) {
     outs << "<" << v.m_x << ", " << v.m_y << ", " << v.m_z << ">";
     return outs;
-  } 
+  }
   friend std::istream &operator>>(std::istream &ins, Vector3<T> &v) {
     ins >> v.m_x >> v.m_y >> v.m_z;
     return ins;
-  } 
+  }
   inline constexpr friend Vector3<T> operator*(T s, const Vector3<T> &v) {
     return Vector3<T>(s * v.m_x, s * v.m_y, s * v.m_z);
   }
 
   /********************************************************
    Basic Trig functions of angle between vectors
-  ********************************************************/ 
+  ********************************************************/
   inline constexpr friend T cos(const Vector3<T> &v1, const Vector3<T> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
-  } 
-  inline constexpr friend  T sin(const Vector3<T> &v1, const Vector3<T> &v2) {
+  }
+  inline constexpr friend T sin(const Vector3<T> &v1, const Vector3<T> &v2) {
     return cross(v1, v2).length() / v1.length() / v2.length();
   }
 
@@ -4248,11 +4290,10 @@ class Vector3 {
     return std::acos(cos(v1, v2));
   }
 
-
   inline constexpr friend T dot(const Vector3<T> &v1, const Vector3<T> &v2) {
     return v1.dot(v2);
   }
-  
+
   inline constexpr friend Vector3<T> cross(const Vector3<T> &v1,
                                            const Vector3<T> &v2) {
     return Vector3<T>(v1.m_y * v2.m_z - v1.m_z * v2.m_y,
@@ -4357,4 +4398,3 @@ inline mjz_ard::Vector3<T> sqrt(mjz_ard::Vector3<T> v) {
 #undef NO_IGNORE_CHAR
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus
-

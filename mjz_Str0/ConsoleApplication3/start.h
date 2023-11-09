@@ -2,12 +2,14 @@
 
 #include "mjzString.hpp"
 class main_class {
-  main_class* run();
+  main_class* run(int argc, const char* const* const argv);
 
  protected:
- inline virtual int main() { return 0; }
+  inline virtual int main(int argc, const char* const* const argv) { return 0; }
  public:
- inline int setup() { return run()->main(); }
+  inline int setup(int argc, const char* const* const argv) {
+    return run(argc, argv)->main(argc, argv);
+ }
   inline virtual ~main_class() = default;
   main_class() = default;
   main_class(main_class&&) = delete;

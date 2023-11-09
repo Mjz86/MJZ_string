@@ -1,7 +1,7 @@
 #include "start.h"
 
 
-int main() {
+int main(int argc, const char* const* const argv) {
   main_class user;
-  return user.setup();
+  return user.setup(argc, argv);
 }
