@@ -46,6 +46,9 @@ constexpr inline int sprintf_alt_(char* const buffer_for_print, size_t size_of_m
   return sprintf(buffer_for_print, forming__, argumentes...);
   #endif
 }
+
+
+
 #ifdef Arduino
 #include <sys/time.h>
 #else

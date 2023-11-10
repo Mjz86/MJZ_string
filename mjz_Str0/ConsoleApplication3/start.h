@@ -2,7 +2,7 @@
 
 #include "mjzString.hpp"
 class main_class {
-  main_class* run(int argc, const char* const* const argv);
+  std::unique_ptr<main_class> run(int argc, const char* const* const argv);
 
  protected:
   inline virtual int main(int argc, const char* const* const argv) { return 0; }

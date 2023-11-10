@@ -178,6 +178,8 @@ namespace mjz_ard {
 
     ret_var.addto_length( ( uint64_t )strlen( ptr_ ), 1 );
     return ret_var; }
+
+   
   uint8_t get_num_from_char( uint8_t in_CHAR_, bool * to_neg ) {
     if ( in_CHAR_ >= '0' && in_CHAR_ <= '9' ) {
       return ( uint8_t )( in_CHAR_ - '0' ); }

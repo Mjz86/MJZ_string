@@ -10,12 +10,33 @@
 /* fstream header file for ifstream, ofstream, 
   fstream classes */
 #include <fstream>
+mjz_ard::mjz_Str float_get_bits_interpretation(float x) {
+  auto bits = mjz_ard::get_bit_representation<float>(x);
+  mjz_ard::mjz_Str str("  ");
+  for (auto cr : bits) {
+    str.print((char)cr);
+    str.write(' ');
+  }
+  str.print(
+      "\n |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|\n "
+      "|s|      exp      |                  mantissa                   |\n\n");
+  return str;
 
+	}
+class my_main : public main_class {
+  int main(int argc, const char* const* const argv) override;
+    };
 
-
-main_class* main_class::run(int argc, const char* const* const argv) {
-  for (float x{};x<101;x++)
-    std::cout << 1/mjz_ard::static_str_algo::Q_rsqrt(x) << "\n";
-  return this;
+std::unique_ptr<main_class> main_class::run(int ,const char* const* const ) {
+  return std::make_unique<my_main>();
 	}
 
+
+int my_main::main(int argc, const char* const* const argv) {
+ mjz_ard::iterator_template<const char*const> it(argv, argv, argv + argc);
+  for (auto arg : it) {
+    std::cout << arg << '\n';
+      }
+  return 0;
+      }
+        

@@ -381,7 +381,61 @@ class static_str_algo {
     //
     return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
   }
+  struct _char_8_a {
+    union {
+      bool data_b[8]{};
+      char8_t data_c[8];
+      uint8_t data_u[8];
+    };
 
+    inline constexpr  _char_8_a() = default;
+    inline constexpr bool &operator[](uint8_t i) { return data_b[i]; }
+  };
+
+   inline constexpr static _char_8_a char_get_bits(uint8_t val, bool to_char) {
+    _char_8_a ret_val{};
+    uint8_t i{};
+    for (; i < 8; i++) {
+      ret_val[i] = !!(val & (1 << (7 - i)));
+    }
+    if (to_char) {
+      for (i = 0; i < 8; i++) {
+        ret_val.data_c[i] = ret_val[i] ? '1' : '0';
+      }
+    }
+    return ret_val;
+  }
+
+  inline constexpr static char *get_bit_representation(
+      char *buffer, size_t buffer_len,
+                               const void *data_ptr, size_t len,
+                               bool in_reverse = (std::endian::little ==
+                                                  std::endian::native)) {
+    if (buffer_len < len * 8) return 0;
+
+    const char *data = (const char *)data_ptr;
+    const char *data_end = data + len;
+    uint64_t *buffer_ptr = (uint64_t *)buffer;
+    _char_8_a arr_buf;
+    if (in_reverse)
+      for (const char *ptr{data_end - 1}, *ptr_end{data - 1}; ptr_end < ptr;
+           ptr--) {
+        arr_buf = char_get_bits(*ptr, 1);
+        memmove(buffer_ptr++, arr_buf.data_u, 8);
+      }
+    else
+      for (const char *ptr = data; ptr < data_end; ptr++) {
+        arr_buf = char_get_bits(*ptr, 1);
+        memmove(buffer_ptr++, arr_buf.data_u, 8);
+      }
+
+    return buffer;
+  }
+  template <typename T>
+  inline constexpr static char *get_bit_representation(char *buffer, const T &data) {
+    return get_bit_representation(buffer, sizeof(T) * 8, &data, sizeof(T),
+                                  std::endian::little == std::endian::native);
+  }
  public:
   static constexpr int64_t stack_buffer_size = 15;
   class stack_str_buf {
@@ -412,10 +466,114 @@ class static_str_algo {
     // virtual //i dont need it
     ~stack_str_buf() { STR_is_in_stack = 0; }
   };
-
+  template <typename T2, typename T1>
+ inline static constexpr T2 bit_cast(const T1 &data) {
+    T2 data2{};
+    data2.~T2();
+    memcpy(memset(&data2, 0, sizeof(T2)), &data, min(sizeof(T2), sizeof(T1)));
+    return data2;
+      }
  public:
   constexpr static uint8_t number_of_terms = 100;
+  static constexpr inline long divide_by_2(long x) { return (x >> 1); }
 
+ private:
+  constexpr static float three_halfs = 1.5F;
+  inline static constexpr float Q_rsqrt_unsafe_logic(float &y, float x2) {
+    constexpr uint32_t magic_constant = 0x5f3759df;
+ //   long &i = *(long *)&y;                 // log base 2
+    //long i = *(long *)&y;
+    long i = std::bit_cast<long>(y);
+    i = magic_constant - divide_by_2(i);   // some magic
+   //  y = *(float *)&i;
+    y = std::bit_cast<float>(i);
+    
+    y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method\
+
+    return y;
+  }
+  static constexpr inline bool check_number_for_r_sqrt(float &number) {
+    if (number == 0) {
+      number = INFINITY;
+      return 1;
+    }
+    if (number == 1) {
+      number = 1;
+      return 1;
+    }
+    if (number < 0 || number == NAN) {
+      number = NAN;
+      return 1;
+    }
+    return 0;
+  }
+ 
+
+ public:
+  static constexpr float accurate_Q_rsqrt_unsafe(float number) {
+    float x2 = number * 0.5F;
+    Q_rsqrt_unsafe_logic(number, x2);
+    // 2nd iteration, this can be removed
+    return number * (three_halfs - (x2 * number * number));
+  }
+  static constexpr float super_accurate_Q_rsqrt_unsafe(float number_) {
+    float x2_ = number_ * 0.5F;
+    Q_rsqrt_unsafe_logic(number_, x2_);
+    double x2 = x2_;
+    double number = number_;
+    number *= (1.5 - (x2 * number * number));
+    number *= (1.5 - (x2 * number * number));
+    long flr = floor(number);
+    if (abs(number - (double)flr) < 0.0001) return flr;
+    return number;
+  }
+  static constexpr double scientifically_accurate_Q_rsqrt_unsafe(
+      double number) {
+    float x2_ = number * 0.5F;
+    float number_ = number;
+    Q_rsqrt_unsafe_logic(number_, x2_);
+    double x2 = x2_;
+    number = number_;
+    number *= (1.5 - (x2 * number * number));
+    number *= (1.5 - (x2 * number * number));
+    number *= (1.5 - (x2 * number * number));
+    number *= (1.5 - (x2 * number * number));
+    number *= (1.5 - (x2 * number * number));
+    number *= (1.5 - (x2 * number * number));
+    long flr = floor(number);
+    if (abs(number - (double)flr) < 0.0001) return flr;
+    return number;
+  }
+
+  static constexpr float Q_rsqrt_unsafe(float number) {
+    float x2 = number * 0.5F;
+    return Q_rsqrt_unsafe_logic(number, x2);
+  }
+
+  static constexpr float Q_rsqrt(float number) {
+    if (check_number_for_r_sqrt(number)) return number;
+    return Q_rsqrt_unsafe(number);
+  }
+  static constexpr float accurate_Q_rsqrt(float number) {
+    if (check_number_for_r_sqrt(number)) return number;
+    return accurate_Q_rsqrt_unsafe(number);
+  }
+  static constexpr float super_accurate_Q_rsqrt(float number) {
+    if (check_number_for_r_sqrt(number)) return number;
+    return super_accurate_Q_rsqrt_unsafe(number);
+  }
+  static constexpr double scientifically_accurate_Q_rsqrt(double number) {
+    if (number == 0.0) {
+      return INFINITY;
+    }
+    if (number == 1.0) {
+      return 1;
+    }
+    if (number < 0.0 || number == NAN) {
+      return  NAN;
+    }
+    return scientifically_accurate_Q_rsqrt_unsafe(number);
+  }
   constexpr static inline uint64_t floor(double x) { return (uint64_t)x; }
   constexpr static inline double expUL(uint32_t number) {
     double retval{1};
@@ -481,8 +639,7 @@ class static_str_algo {
   }
 
   constexpr static inline double sqrt(double x) {
-    if (!x) return 0;
-    return expUD(log(x) * 0.5);
+return  1/scientifically_accurate_Q_rsqrt(x);
   }
   template <typename T>
   constexpr static inline T sqrtt(T x) {
@@ -664,7 +821,8 @@ class static_str_algo {
   constexpr static inline double erf(double x) {
     if (x <= 0) return 0.0;
     if (4 < x) return 1.0;
-    constexpr double retval_c = 2.0 / (sqrt((double)PI));
+    const constexpr double _2_ovr_sqrt_pi = 2.0 / 1.7724538509055160272981674833411;
+    
     double retval{0};
     double nag_x_sqr = -(x * x);
 
@@ -676,7 +834,7 @@ class static_str_algo {
       retval += retval_buff;
     }
 
-    return retval * retval_c;
+    return retval * _2_ovr_sqrt_pi;
   }
   constexpr static inline uint32_t factorial(uint32_t x) {
     uint32_t ret_val{1};
@@ -858,28 +1016,7 @@ class static_str_algo {
     if (a < 0) r = PI - r;  // handle negative arguments
     return r;
   }
-  static constexpr inline long bit_cast_f_to_l(float x) { return *(long *)&x; }
-  static constexpr inline float bit_cast_l_to_f(long x) { return *(float *)&x; }
-  static constexpr inline long divide_by_2(long x) { return (x >> 1); }
-  static constexpr float Q_rsqrt_unsafe(float number) {
-    const float three_halfs = 1.5F;
-    constexpr uint32_t magic_constant = 0x5f3759df;
-    float x2 = number * 0.5F;
-    float y = number;
-    long i = bit_cast_f_to_l(y);          // log base 2
-    i = magic_constant - divide_by_2(i);  // some magic
-    y = bit_cast_l_to_f(i);
-    y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method
 
-    return y;
-  }
-  static constexpr float Q_rsqrt(float number) {
-    if (number == 0) return 0;
-    if (number == 1) return 1;
-    if (number < 0) return NAN;
-    if (number == NAN) return NAN;
-    return Q_rsqrt_unsafe(number);
-  }
 };
 template <int N>
 class mjz_RingBufferN {
@@ -2532,7 +2669,7 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual size_t write(const char *buf, size_t size_);
   if_virtual_then_virtual size_t write(const char *buf);
   if_virtual_then_virtual size_t write(uint8_t) if_ard_then_override;
-  inline size_t write(char cr) { return write((uint8_t)cr); }
+  inline size_t write(char cr) { return concat(cr); }
   if_virtual_then_virtual size_t write(const uint8_t *buf,
                                        size_t size_) if_ard_then_override;
   if_virtual_then_virtual int64_t availableLL() if_ard_then_override;
@@ -2916,11 +3053,11 @@ class mjz_Str : public basic_mjz_String,
     return operator<<(new_temp);
   }
   if_virtual_then_virtual mjz_Str &operator>>(char &var) {
-    get_s_shift_op_r().scanf("%c", &var);
+    get_s_shift_op_r().scanf_s("%c", &var,1);
     return get_s_shift_op_r();
   }
   if_virtual_then_virtual mjz_Str &operator>>(int &var) {
-    get_s_shift_op_r().scanf("%d", &var);
+    get_s_shift_op_r().scanf_s("%d", &var);
     return get_s_shift_op_r();
   }
   if_virtual_then_virtual mjz_Str &operator>>(double &var) {
@@ -3309,30 +3446,52 @@ class mjz_Str : public basic_mjz_String,
                  (size_t)return_val.length());
   }
   */
+  
   template <typename... arguments_types>
   int scanf(const char *format, arguments_types &...arguments_arr) {
-    int ret = sprintf_alt_((char *)buffer_ref(), (size_t)length(), format,
-                           arguments_arr...);
+    int ret = sscanf((char *)buffer_ref(), format, arguments_arr...);
     return ret;
   }
   template <typename... arguments_types>
   int scanf(const mjz_Str &format, arguments_types &...arguments_arr) {
-    int ret = sprintf_alt_((char *)buffer_ref(), length(), format.buffer_ref(),
-                           arguments_arr...);
+    int ret =
+        sscanf((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
     return ret;
   }
   template <typename... arguments_types>
   int scanf(const char *format, const arguments_types &...arguments_arr) {
-    int ret = sprintf_alt_((char *)buffer_ref(), (size_t)length(), format,
-                           arguments_arr...);
+    int ret = sscanf((char *)buffer_ref(), format, arguments_arr...);
     return ret;
   }
   template <typename... arguments_types>
   int scanf(const mjz_Str &format, const arguments_types &...arguments_arr) {
-    int ret = sprintf_alt_((char *)buffer_ref(), length(), format.buffer_ref(),
-                           arguments_arr...);
+    int ret =
+        sscanf((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
     return ret;
   }
+  template <typename... arguments_types>
+  int scanf_s(const char *format, arguments_types &...arguments_arr) {
+    int ret = sscanf_s((char *)buffer_ref(), format, arguments_arr...);
+    return ret;
+  }
+  template <typename... arguments_types>
+  int scanf_s(const mjz_Str &format, arguments_types &...arguments_arr) {
+    int ret =
+        sscanf_s((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
+    return ret;
+  }
+  template <typename... arguments_types>
+  int scanf_s(const char *format, const arguments_types &...arguments_arr) {
+    int ret = sscanf_s((char *)buffer_ref(), format, arguments_arr...);
+    return ret;
+  }
+  template <typename... arguments_types>
+  int scanf_s(const mjz_Str &format, const arguments_types &...arguments_arr) {
+    int ret =
+        sscanf_s((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
+    return ret;
+  }
+  
   template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator-=(
       arguments_types &...arguments_arr) {
@@ -3790,6 +3949,16 @@ class type_fn_class {
 };
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
                       bool force_neg = 0);
+template <typename T>
+inline  mjz_Str get_bit_representation(
+                                                     const T &data) {
+  mjz_Str buffer;
+  buffer.addto_length(sizeof(T) * 8);
+   static_str_algo::get_bit_representation(buffer.C_str(), buffer.length(), &data,
+                                sizeof(T),
+                                std::endian::little == std::endian::native);
+  return buffer;
+}
 
 inline mjz_Str operator"" _m_str(const char *p) { return mjz_Str(p); }
 inline mjz_Str operator"" _m_str(char c) { return mjz_Str(c); }
@@ -4017,13 +4186,13 @@ class Vector2 {
   /********************************************
     Useful Vector Operations
   ********************************************/
-  inline constexpr T length() const { return std::sqrt(m_x * m_x + m_y * m_y); }
+  inline constexpr T length() const { return 1/static_str_algo::Q_rsqrt_unsafe(m_x * m_x + m_y * m_y); }
   inline constexpr T lengthSq() const { return m_x * m_x + m_y * m_y; }
   inline constexpr Vector2<T> &normalize() {
-    return operator*=((T)static_str_algo::Q_rsqrt(lengthSq()));
+    return operator*=((T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
   inline constexpr Vector2<T> unit() const {
-    return operator*((T)static_str_algo::Q_rsqrt(lengthSq()));
+    return operator*((T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
   inline constexpr T dot(const Vector2<T> &v) const {
     return m_x * v.m_x + m_y * v.m_y;
@@ -4235,17 +4404,18 @@ class Vector3 {
     Useful Vector Operations
   ********************************************/
   inline constexpr T length() const {
-    return std::sqrt(m_x * m_x + m_y * m_y + m_z * m_z);
+    return 1 /
+           static_str_algo::Q_rsqrt_unsafe(lengthSq());
   }
-
   inline constexpr T lengthSq() const {
     return m_x * m_x + m_y * m_y + m_z * m_z;
   }
   inline constexpr Vector3<T> &normalize() {
-    return operator*=((T)static_str_algo::Q_rsqrt(lengthSq()));
+    return operator*=(
+        (T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
   inline constexpr Vector3<T> unit() const {
-    return operator*((T)static_str_algo::Q_rsqrt(lengthSq()));
+    return operator*((T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
   inline constexpr T dot(const Vector3<T> &v) const {
     return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
