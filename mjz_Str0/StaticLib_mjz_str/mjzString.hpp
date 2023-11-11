@@ -1223,10 +1223,11 @@ class heap_obj_warper {
   }
 #endif  // ! Arduino
   bool operator!() const { return !m_Has_data; }
-  operator bool() const { return m_Has_data; }
+ explicit operator bool() const { return m_Has_data; }
+  inline operator T &()  { return *pointer_to_data(); }
 };
 
-class malloc_wrapper {
+class malloc_wrapper  {
   malloc_wrapper &move(malloc_wrapper &otr) {
     if (otr.is_moved_state()) {
       if (otr.m_data_ptr && otr.m_cap_size) {
@@ -4046,7 +4047,7 @@ inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 
     Date:   July 20, 2015
 
-    Description: Implementation of vector classes
+    Description: Implementation of mjz_vector classes
 ************************************************************/
 
 }  // namespace mjz_ard
@@ -4054,7 +4055,7 @@ inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 namespace mjz_ard {
 
 /***************************************************************************************
-  Vector2  -- 2-D vector class
+  Vector2  -- 2-D mjz_vector class
 ***************************************************************************************/
 template <class T>
 class Vector2 {
@@ -4199,7 +4200,7 @@ class Vector2 {
   }
   inline constexpr T cross(
       const Vector2<T> &v) const {     // 3-D cross product with z assumed 0
-    return m_x * v.m_y + v.m_x * m_y;  // return magnitude of resulting vector
+    return m_x * v.m_y + v.m_x * m_y;  // return magnitude of resulting mjz_vector
   }
 
   friend std::ostream &operator<<(std::ostream &outs, const Vector2<T> &v) {
@@ -4246,7 +4247,7 @@ class Vector2 {
 };
 
 /*********************************************************************************
- Vector3 -- 3D vector
+ Vector3 -- 3D mjz_vector
 *********************************************************************************/
 
 template <class T>
@@ -4422,7 +4423,7 @@ class Vector3 {
   }
 
   inline constexpr Vector3<T> cross_with_this(
-      const Vector3<T> &v) { /* NOTE this function modifies the vector unlike 2D
+      const Vector3<T> &v) { /* NOTE this function modifies the mjz_vector unlike 2D
                                 and non-member versions */
     T x_(m_x), y_(m_y), z_(m_z);
     m_x = y_ * v.m_z - z_ * v.m_y;
@@ -4497,6 +4498,20 @@ class Point3D {
   inline constexpr Point3D(const Point3D<T> &p, const Vector3<T> &v)
       : x(p.x + v.m_x), y(p.y + v.m_y), z(p.z + v.m_z), w(p.w) {}
 };
+
+ //
+//  mjz_vector.h
+//  Vector
+//
+//  Created by Emilis Baliukonis on 05/05/2019.
+//  Copyright © 2019 Emilis Baliukonis. All rights reserved.
+//
+
+
+
+
+
+
 
 namespace short_string_names {
 typedef mjz_ard::mjz_Str Str;

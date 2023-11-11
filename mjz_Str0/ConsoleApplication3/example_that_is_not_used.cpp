@@ -31,12 +31,18 @@ std::unique_ptr<main_class> main_class::run(int ,const char* const* const ) {
   return std::make_unique<my_main>();
 	}
 
-
+#include"fstream"
 int my_main::main(int argc, const char* const* const argv) {
- mjz_ard::iterator_template<const char*const> it(argv, argv, argv + argc);
-  for (auto arg : it) {
-    std::cout << arg << '\n';
+  std::vector<mjz_ard::heap_obj_warper<mjz_ard::mjz_Str>> str_v(1000);
+
+  for (auto& str_r : str_v) {
+    str_r.data_init(std::rand());
       }
+  for (mjz_ard::mjz_Str& str_b : str_v) {
+    std::cout << ++str_b;
+  }
   return 0;
+
+
       }
         
