@@ -240,10 +240,9 @@ long long C_STR_to_LL(const char *buffer, uint8_t buffer_len, int radix,
   }
 
   bool is_neg_bool{};
-  bool stack_ovf_prtt = !MJZ_frm_stack_ovf_BIT_CHECK(error_level, 0);
-  bool LL_ovf_prtt = !MJZ_frm_stack_ovf_BIT_CHECK(error_level, 1);
-  bool len_ovf_prtt =
-      (!MJZ_frm_stack_ovf_BIT_CHECK(error_level, 2) && stack_ovf_prtt);
+  bool stack_ovf_prtt = !MJZ_logic_BIT_CHECK(error_level, 0);
+  bool LL_ovf_prtt = !MJZ_logic_BIT_CHECK(error_level, 1);
+  bool len_ovf_prtt = (!MJZ_logic_BIT_CHECK(error_level, 2) && stack_ovf_prtt);
 
   if ((len_ovf_prtt &&
        (std::pow((double)buffer_len - 2, (double)radix) > MAX_LL_IN_D ||
@@ -372,29 +371,30 @@ int MJZ_STRCMP(const char *p1, const char *p2) {
 
   return c1 - c2;
 }
-void *mjz_Str::operator new(size_t size_) {
+[[nodiscard]] void *mjz_Str::operator new(size_t size_) {
   void *p = ::operator new(size_);
   // void * p = malloc(size_); will also work fine
   return p;
 }
-void *mjz_Str::operator new[](size_t size_) {
+[[nodiscard]] void *mjz_Str::operator new[](size_t size_) {
   void *p = ::operator new(size_);
   // void * p = malloc(size_); will also work fine
   return p;
 }
 void mjz_Str::operator delete(void *p) { ::free(p); }
 void mjz_Str::operator delete[](void *ptr) { ::free(ptr); }
-void *mjz_Str::realloc_new_ns::operator new(size_t size_) {
+[[nodiscard]] void *mjz_Str::realloc_new_ns::operator new(size_t size_) {
   void *p = ::realloc(0, size_);
   return p;
 }
-void *mjz_Str::realloc_new_ns::operator new[](size_t size_) {
+[[nodiscard]] void *mjz_Str::realloc_new_ns::operator new[](size_t size_) {
   void *p = ::realloc(0, size_);
   return p;
 }
 void mjz_Str::realloc_new_ns::operator delete(void *p) { ::free(p); }
 void mjz_Str::realloc_new_ns::operator delete[](void *ptr) { ::free(ptr); }
-void *mjz_Str::realloc_new_ns::operator new(size_t size_, void *where) {
+[[nodiscard]] void *mjz_Str::realloc_new_ns::operator new(size_t size_,
+                                                          void *where) {
   return ::realloc(where, size_);
 }
 mjz_Str::mjz_Str(const char *cstr, size_t len_) {
@@ -675,7 +675,8 @@ bool mjz_Str::addto_length(size_t addition_tolen, bool just_size) {
 bool mjz_Str::realloc_helper_is_in_stack(void *ptr) {
   return (stack_obj_buf.get() || stack_obj_buf.stack_buffer == (char *)ptr);
 }
-void *mjz_Str::realloc_pv(void *ptr, size_t new_size, bool constructor) {
+[[nodiscard]] void *mjz_Str::realloc_pv(void *ptr, size_t new_size,
+                                        bool constructor) {
   bool ptr_is_in_stack = realloc_helper_is_in_stack(ptr);
   bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr));  //(buffer == ptr);
   bool ptr_Can_set_to_stack = (new_size <= (stack_buffer_size + 1));
@@ -1221,11 +1222,10 @@ mjz_Str basic_mjz_Str_view::substring(size_t left, size_t right) const {
   //
   return out;
 }
-mjz_Str basic_mjz_Str_view::substr(size_t pos , size_t len ) const {
+mjz_Str basic_mjz_Str_view::substr(size_t pos, size_t len) const {
   if (len == npos) len = length();
   return substring_beg_n(pos, len);
 }
-
 
 /*********************************************/
 /* Modification */
@@ -1234,8 +1234,7 @@ mjz_Str &mjz_Str::insert(size_t pos, const basic_mjz_Str_view &other) {
   return insert(pos, other, 0, length());
 }
 mjz_Str &mjz_Str::insert(size_t pos, const basic_mjz_Str_view &other,
-                         size_t subpos,
-                         size_t sublen) {
+                         size_t subpos, size_t sublen) {
   return insert(pos, other.c_str() + subpos, sublen);
 }
 mjz_Str &mjz_Str::insert(size_t pos, const char *s, size_t n) {
@@ -1249,29 +1248,27 @@ mjz_Str &mjz_Str::insert(size_t pos, size_t n, char c) {
   buffer_str_.append(n, c);
   buffer_str_ += substr_view(pos, length());
   return (*this = std::move(buffer_str_));
-
 }
 
 mjz_Str &mjz_Str::replace_ll(int64_t pos, size_t len,
-                        const basic_mjz_Str_view &str) {
-  return replace(signed_index_to_unsigned(pos),  len,str);
-    }
+                             const basic_mjz_Str_view &str) {
+  return replace(signed_index_to_unsigned(pos), len, str);
+}
 
 mjz_Str &mjz_Str::replace(size_t pos, size_t len, const char *s, size_t n) {
-  return replace(pos, len, mjz_str_view(s,n));
-    }
-    mjz_Str& mjz_Str::replace(size_t pos, size_t len, const char* s) {
-  return replace(pos, len, s,strlen(s));
-    }
-    mjz_Str &mjz_Str::replace(size_t pos, size_t len, const basic_mjz_Str_view &str,
-                 size_t subpos, size_t sublen) {
+  return replace(pos, len, mjz_str_view(s, n));
+}
+mjz_Str &mjz_Str::replace(size_t pos, size_t len, const char *s) {
+  return replace(pos, len, s, strlen(s));
+}
+mjz_Str &mjz_Str::replace(size_t pos, size_t len, const basic_mjz_Str_view &str,
+                          size_t subpos, size_t sublen) {
   return replace(pos, len,
                  mjz_str_view(str.c_str(), str.length())
                      .substr_view_beg_n(subpos, sublen));
-    }
+}
 
-    
-    mjz_Str &mjz_Str::replace(size_t pos, size_t len, size_t n, char c) {
+mjz_Str &mjz_Str::replace(size_t pos, size_t len, size_t n, char c) {
   if (length() <= pos) return *this;
   if (len == n) {
     memset(m_buffer + pos, c, len);
@@ -1284,25 +1281,24 @@ mjz_Str &mjz_Str::replace(size_t pos, size_t len, const char *s, size_t n) {
   if (n > len) {
     memset(m_buffer + pos, c, len);
     insert(pos + len, n - len, 0);
-    memset(m_buffer + pos + len, c , n - len);
+    memset(m_buffer + pos + len, c, n - len);
   }
   return *this;
-       }
- mjz_Str &mjz_Str::replace(iterator i1, iterator i2, const char *s, size_t n) {
+}
+mjz_Str &mjz_Str::replace(iterator i1, iterator i2, const char *s, size_t n) {
   return replace(i1, i2, mjz_str_view(s, n));
-    }
-    mjz_Str &mjz_Str::replace(iterator i1, iterator i2,
+}
+mjz_Str &mjz_Str::replace(iterator i1, iterator i2,
                           const basic_mjz_Str_view &str) {
   if (i1.end() != end() || i2.end() != end()) return *this;
-  return replace(i1.get_pointer()-m_buffer, i2-i1, str);
-    }
+  return replace(i1.get_pointer() - m_buffer, i2 - i1, str);
+}
 
-    mjz_Str &mjz_Str::replace(iterator i1, iterator i2, size_t n, char c) {
-        
-         if (i1.end() != end() || i2.end() != end()) return *this;
-  return replace(i1.get_pointer() - m_buffer,i2-i1, n, c);
-    }
-    mjz_Str &mjz_Str::replace(size_t pos, size_t len,
+mjz_Str &mjz_Str::replace(iterator i1, iterator i2, size_t n, char c) {
+  if (i1.end() != end() || i2.end() != end()) return *this;
+  return replace(i1.get_pointer() - m_buffer, i2 - i1, n, c);
+}
+mjz_Str &mjz_Str::replace(size_t pos, size_t len,
                           const basic_mjz_Str_view &str) {
   if (length() <= pos) return *this;
   if (len == str.length()) {
@@ -1315,8 +1311,8 @@ mjz_Str &mjz_Str::replace(size_t pos, size_t len, const char *s, size_t n) {
   }
   if (str.length() > len) {
     memmove(m_buffer + pos, str.c_str(), len);
-    insert(pos+len, str.length() - len,0);
-    memmove(m_buffer + pos + len, str.c_str()+len, str.length() - len);
+    insert(pos + len, str.length() - len, 0);
+    memmove(m_buffer + pos + len, str.c_str() + len, str.length() - len);
   }
   return *this;
 }
@@ -2579,13 +2575,14 @@ bool mjz_Str::find_in_stream(const char *target, size_t length) {
 }
 // as find but search ends if the terminator string is found
 bool mjz_Str::find_in_stream_Until(const char *target, const char *terminator) {
-  return find_in_stream_Until(target, strlen(target), terminator, strlen(terminator));
+  return find_in_stream_Until(target, strlen(target), terminator,
+                              strlen(terminator));
 }
 // reads data from the stream until the target string of the given length is
 // found search terminated if the terminator string is found returns true if
 // target string is found, false if terminated or timed out
 bool mjz_Str::find_in_stream_Until(const char *target, size_t targetLen,
-                        const char *terminator, size_t termLen) {
+                                   const char *terminator, size_t termLen) {
   if (terminator == NULL) {
     MultiTarget t[1] = {{target, targetLen, 0}};
     return findMulti(t, 1) == 0;
@@ -2867,52 +2864,14 @@ bool mjz_RingBufferN<N>::isFull() {
   return (_numElems == N);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-mjz_Str &getline(mjz_Str &is, mjz_Str &str,
-                          char delim) {
+mjz_Str &getline(mjz_Str &is, mjz_Str &str, char delim) {
   size_t index_of_delim = is.find_first_of(delim);
   str = is.substr_view(0ULL, index_of_delim);
   is.erase_from_f_to_l(0, index_of_delim);
   return is;
 }
-mjz_Str &getline(mjz_Str &is, mjz_Str &str) {
-  return getline(is, str, '\n');
-}
-
+mjz_Str &getline(mjz_Str &is, mjz_Str &str) { return getline(is, str, '\n'); }
 
 }  // namespace mjz_ard
-
 
 #endif  // asdfghjklkjhgfdsasdfghjkjhgfdfghj

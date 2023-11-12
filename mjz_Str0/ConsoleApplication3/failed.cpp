@@ -6,14 +6,14 @@ using namespace have_mjz_ard_removed;
 
 class mjz_Str_dir_test_class : public mjz_Str {
 public:
-  virtual void *realloc(void *ptr, size_t new_size) override {
+  [[nodiscard]]  void *realloc(void *ptr, size_t new_size)  {
     void *retval_ = ::realloc(ptr, new_size);
     ::printf("\n\n mjz_Str_dir_test_class realloces in heap %d bytes ",
              (int)new_size);
     return retval_;
   }
 
-  virtual void free(void *ptr) override {
+    void free(void *ptr)   {
     ::free(ptr);
     ::print("\n\n mjz_Str_dir_test_class frees \n\n");
     return;
@@ -656,7 +656,7 @@ void mjz_print(const std::vector<float> &v) {
   std::cout << "{";
   std::cout << *it;
   ++it;
-  for (; it < end; it++) {
+  for (; it < end; ++it) {
     std::cout << "," << *it;
   }
   std::cout << "}";
@@ -668,7 +668,7 @@ void mjz_print(const std::vector<std::vector<float>> &v) {
   std::cout << "{";
   mjz_print(*it);
   ++it;
-  for (; it < end; it++) {
+  for (; it < end; ++it) {
     std::cout << ",";
     mjz_print(*it);
   }
@@ -680,7 +680,7 @@ void mjz_print(const std::vector<std::vector<std::vector<float>>> &v) {
   std::cout << "{";
   mjz_print(*it);
   ++it;
-  for (; it < end; it++) {
+  for (; it < end; ++it) {
     std::cout << ",\n";
     mjz_print(*it);
   }

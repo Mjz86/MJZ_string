@@ -78,9 +78,9 @@ char *b_U_lltoa(uint64_t value, char *BFR_buffer, int radix, bool is_signed,
 uint8_t get_num_from_char(uint8_t in_CHAR_, bool *to_neg = 0);
 enum uint8_t_error_level : uint8_t {
   on = 0,
-  stack_ovf_prtt_off = MJZ_frm_stack_ovf_BIT(0),
-  LL_ovf_prtt_off = MJZ_frm_stack_ovf_BIT(1),
-  len_ovf_prtt_off = MJZ_frm_stack_ovf_BIT(2)
+  stack_ovf_prtt_off = MJZ_logic_BIT(0),
+  LL_ovf_prtt_off = MJZ_logic_BIT(1),
+  len_ovf_prtt_off = MJZ_logic_BIT(2)
 };
 template <typename cmpr_type>
 size_t MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
@@ -261,10 +261,10 @@ class static_str_algo {
     }
   }
   constexpr static void *strncpy(void *dest, const char *src, size_t len) {
-    return memcpy(dest, src, min(strlen(src), len));
+    return memcpy(dest, src, min(strlen(src) + 1, len));
   }
   constexpr static void *strcpy(void *dest, const char *src) {
-    return memcpy(dest, src, strlen(src));
+    return memcpy(dest, src, strlen(src) + 1);
   }
   constexpr static inline const char *strchr(const char *str, size_t len_,
                                              char ch) {
@@ -375,7 +375,7 @@ class static_str_algo {
     }
 
     return !memcmp(rhs, lhs, rhs_l);
-   // return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
+    // return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
   }
   struct _char_8_a {
     union {
@@ -466,7 +466,8 @@ class static_str_algo {
   inline static constexpr T2 bit_cast(const T1 &data) {
     T2 data2{};
     data2.~T2();
-    memcpy(memset(&data2, 0, sizeof(T2)), &data, min(sizeof(T2), sizeof(T1)));
+    memset(&data2, 0, sizeof(T2));
+    memcpy(&data2, &data, min(sizeof(T2), sizeof(T1)));
     return data2;
   }
 
@@ -862,7 +863,7 @@ class static_str_algo {
   constexpr static inline float ReLU(float x) { return (x > 0) ? x : 0; }
 
   constexpr static inline float LeakyReLU(float x) { return LeakyELU(x); }
-  constexpr static inline float LeakyReLUDer(const float &fx) {
+  constexpr static inline float LeakyReLUDer(const float fx) {
     return (fx > 0) ? 1 : AlphaLeaky;
   }
 
@@ -886,7 +887,8 @@ class static_str_algo {
 
     for (uint32_t i{}; i < number_of_terms; i++) {
       double retval_buff = x / ((2 * i) + 1);
-      for (uint32_t j = 1; j <= i; j++) {
+      uint32_t j{1};
+      for (j = 1; j <= i; j++) {
         retval_buff *= nag_x_sqr / j;
       }
       retval += retval_buff;
@@ -903,7 +905,7 @@ class static_str_algo {
   }
 
   constexpr static inline double cos_rad_until_pi_over_2(double x) {
-    if (x == HALF_PI) return 0;
+    if (abs(x - HALF_PI) < 0.001) return 0;
     constexpr double neg_1ovr_fact2 = -1.0 / factorial(2);
     constexpr double _1ovr_fact4 = 1.0 / factorial(4);
     constexpr double neg_1ovr_fact6 = -1.0 / factorial(6);
@@ -931,7 +933,7 @@ class static_str_algo {
   }
 
   constexpr static inline double sin_rad_until_pi_over_2(double x) {
-    if (x == HALF_PI) return 1;
+    if (abs(x - HALF_PI) < 0.001) return 1;
     constexpr double _1ovr_fact1 = 1.0 / factorial(1);
     constexpr double neg_1ovr_fact3 = -1.0 / factorial(3);
     constexpr double _1ovr_fact5 = 1.0 / factorial(5);
@@ -1161,8 +1163,8 @@ class mjz_Str_DATA_storage_cls
   // mjz_Str_DATA_storage_cls() = default;
 };
 enum Dealocation_state : uint8_t {
-  dont_deallocate_on_free = MJZ_frm_stack_ovf_BIT(0),
-  is_moved = MJZ_frm_stack_ovf_BIT(1)
+  dont_deallocate_on_free = MJZ_logic_BIT(0),
+  is_moved = MJZ_logic_BIT(1)
 };
 template <class Type>
 struct Mallocator {
@@ -1212,7 +1214,6 @@ inline constexpr bool operator!=(const Mallocator<Type> &,
 // iterator_template Class
 template <typename Type>
 class iterator_template {
-
  protected:
   Type *m_iterator;
   Type *m_iterator_begin_ptr;
@@ -1233,8 +1234,7 @@ class iterator_template {
       : iterator_template(nullptr, nullptr, (Type *)-1) {}
   // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
 
-
- inline constexpr iterator_template(Type *iter, Type *min_end,
+  inline constexpr iterator_template(Type *iter, Type *min_end,
                                      Type *max_end) noexcept
       : m_iterator{iter},
         m_iterator_begin_ptr{min_end},
@@ -1245,14 +1245,15 @@ class iterator_template {
         m_iterator_begin_ptr(arr),
         m_iterator_end_ptr(arr + len) {}
 
- inline constexpr iterator_template(const Type *First_arg,
-                              const Type *Last_arg) noexcept
+  inline constexpr iterator_template(const Type *First_arg,
+                                     const Type *Last_arg) noexcept
       : iterator_template(First_arg, First_arg, Last_arg) {}
 
-
- // inline constexpr iterator_template(std::initializer_list<Type>list) noexcept
- //   : iterator_template((Type *)(list.begin()), (size_t)list.size()) {} 
- //this is bad for class types  becuse  ~list => ~Type => }   code... => use after free
+  // inline constexpr iterator_template(std::initializer_list<Type>list)
+  // noexcept
+  //   : iterator_template((Type *)(list.begin()), (size_t)list.size()) {}
+  // this is bad for class types  becuse  ~list => ~Type => }   code... => use
+  // after free
 
   constexpr void throw_if_bad(Type *_iterator) const {
     if (_iterator == (Type *)-1) {
@@ -1478,7 +1479,7 @@ class heap_obj_warper {
     if (!!h_obj_w) operator*() = h_obj_w.operator*();
     return *this;
   }
-  inline heap_obj_warper &operator=( heap_obj_warper &h_obj_w) {
+  inline heap_obj_warper &operator=(heap_obj_warper &h_obj_w) {
     if (!!h_obj_w) operator*() = h_obj_w.operator*();
     return *this;
   }
@@ -1489,15 +1490,15 @@ class heap_obj_warper {
   inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
     if (!!h_obj_w)
       if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
-      m_Has_data = 1;
+        m_Has_data = 1;
   }
   inline heap_obj_warper(heap_obj_warper &h_obj_w) {
     if (!!h_obj_w)
       if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
-      m_Has_data = 1;
+        m_Has_data = 1;
   }
   inline heap_obj_warper(const Type &obj) {
-      if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
+    if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
   }
   inline heap_obj_warper(Type &obj) {
     if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
@@ -1571,7 +1572,7 @@ class heap_obj_warper {
   // a small inline pointer_to_unsafe_data_buffer
   constexpr inline uint8_t *PTUDB() { return pointer_to_unsafe_data_buffer(); }
 
-   // this may be uninitialized initialized...
+  // this may be uninitialized initialized...
   constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const {
     return (uint8_t *)(m_data);
   }
@@ -1624,7 +1625,6 @@ class heap_obj_warper {
   }
 
   constexpr inline Type &operator*() { return *operator->(); }
-
 
   constexpr inline const Type *operator->() const { return pointer_to_data(); }
   template <typename my_type>
@@ -1987,7 +1987,7 @@ struct SHA256_CTX {
       }
 
       sha256_transform(ctx, ctx->data);
-      static_str_algo::memset(ctx->data, 0, 56);
+      static_str_algo::memset(ctx->data, 0, 64);
     }
 
     // Append to the padding the total message's length in bits and transform.
@@ -2179,7 +2179,7 @@ struct SHA1_CTX : public SHA256_CTX {
       }
 
       sha1_transform(ctx, ctx->data);
-      static_str_algo::memset(ctx->data, 0, 56);
+      static_str_algo::memset(ctx->data, 0, 64);
     }
 
     // Append to the padding the total message's length in bits and transform.
@@ -2207,7 +2207,7 @@ struct SHA1_CTX : public SHA256_CTX {
   }
 
  public:
-  constexpr SHA1_CTX() {}
+  constexpr SHA1_CTX() = default;
   static constexpr SHA1_CTX SHA_1(const void *ptr, size_t len) {
     SHA1_CTX ctx{}, buffer{};
     sha1_init(&ctx);
@@ -2271,7 +2271,6 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
   constexpr inline const char *c_str() const { return buffer_ref(); }
   constexpr inline const char *c_str() { return buffer_ref(); }
-  constexpr inline const char *C_str() const { return buffer_ref(); }
   constexpr inline char *C_str() { return m_buffer; }
   constexpr inline size_t length(void) const { return m_length; }
   constexpr inline char *data() { return m_buffer; }
@@ -2448,7 +2447,7 @@ class basic_mjz_Str_view : protected static_str_algo {
     return starts_with(s, strlen(s));
   }
 
-    constexpr inline bool ends_with(const char *s, size_t n)const {
+  constexpr inline bool ends_with(const char *s, size_t n) const {
     return substr_view(length() - n, length()).equals(s, n);
   }
   constexpr inline bool ends_with(const basic_mjz_Str_view &s) const {
@@ -2940,7 +2939,8 @@ class basic_mjz_String : public basic_mjz_Str_view {
   inline basic_mjz_String(const char *bfr, size_t cap, size_t len)
       : basic_mjz_String(const_cast<char *>(bfr), cap, len){};
   inline basic_mjz_String() : basic_mjz_String(empty_STRING_C_STR, 0, 0) {}
-  inline ~basic_mjz_String(){};
+  inline ~basic_mjz_String() = default;
+  ;
   basic_mjz_String(basic_mjz_String &&) = delete;
   basic_mjz_String(const basic_mjz_String &) = delete;
   basic_mjz_String(basic_mjz_String &) = delete;
@@ -2985,16 +2985,19 @@ class mjz_Str : public basic_mjz_String,
   }
   mjz_Str &copy(const __FlashStringHelper *pstr, size_t length);
   void move(mjz_Str &rhs);
-  void *realloc_pv(void *ptr, size_t new_size, bool constructor);
+  [[nodiscard]] void *realloc_pv(void *ptr, size_t new_size, bool constructor);
   void free_pv(void *&ptr, bool constructor);
   void free_pv(void *const &ptr, bool constructor);
   mjz_Str &copy(const char *cstr, size_t length, bool constructor);
 
  protected:
-  virtual void *realloc(void *ptr, size_t new_size) {
+  [[nodiscard]]  // virtual
+  void *
+  realloc(void *ptr, size_t new_size) {
     return get_realloc_alloc_function()(ptr, new_size);
   }
-  virtual void free(void *ptr) { return get_free_alloc_function()(ptr); }
+  // virtual
+  void free(void *ptr) { return get_free_alloc_function()(ptr); }
 
   stack_str_buf stack_obj_buf;
 
@@ -3172,8 +3175,8 @@ class mjz_Str : public basic_mjz_String,
   // stream
 
   // new and delete
-  static void *operator new(size_t size_);
-  static void *operator new[](size_t size_);
+  [[nodiscard]] static void *operator new(size_t size_);
+  [[nodiscard]] static void *operator new[](size_t size_);
   static void operator delete(void *p);
   static void operator delete[](void *ptr);
   inline static void *operator new(size_t, void *where) { return where; }
@@ -3198,8 +3201,8 @@ class mjz_Str : public basic_mjz_String,
   // this class is a namespace in this part
   class realloc_new_ns {
    public:
-    static void *operator new(size_t size_);
-    static void *operator new[](size_t size_);
+    [[nodiscard]] static void *operator new(size_t size_);
+    [[nodiscard]] static void *operator new[](size_t size_);
     static void operator delete(void *p);
     static void operator delete[](void *ptr);
     static void *operator new(size_t, void *where);
@@ -3242,11 +3245,16 @@ class mjz_Str : public basic_mjz_String,
     init();
     size_t newlen{};
     InputIterator begin_it = first;
-    while (begin_it != last) {  // not using last-first for compatibility
-      first++;
+    while (begin_it !=
+           last) {  // not using last-first for compatibility //TODO: V776
+                    // https://pvs-studio.com/en/docs/warnings/V776/ Potentially
+                    // infinite loop. The variable in the loop exit condition
+                    // 'begin_it != last' does not change its value between
+                    // iterations.
+      begin_it++;
       newlen++;
     }
-    if (!addto_length(newlen)) return;
+    if (!addto_length(newlen, 1)) return;
     char *ptr_{m_buffer};
     while (first != last) {
       *ptr_++ = *first++;
@@ -3391,10 +3399,10 @@ class mjz_Str : public basic_mjz_String,
   explicit operator const std__string_view_if_is() const {
     return std__string_view_if_is((const char *)buffer_ref());
   }
-  explicit operator std::string() const {
+  [[nodiscard]] explicit operator std::string() const {
     return std::string((const char *)buffer_ref(), length());
   }
-  explicit operator const std::string() const {
+  [[nodiscard]] explicit operator const std::string() const {
     return std::string((const char *)buffer_ref(), length());
   }
   operator const char *() const { return buffer_ref(); }
@@ -3407,10 +3415,10 @@ class mjz_Str : public basic_mjz_String,
   std__string_view_if_is &&std_sv_temp() const {
     return std::move(std__string_view_if_is((const char *)buffer_ref()));
   }
-  const std::string std_s() const {
+  [[nodiscard]] const std::string std_s() const {
     return std::string((const char *)buffer_ref());
   }
-  const std::string &&std_st() const {
+  [[nodiscard]] const std::string &&std_st() const {
     return std::move(std::string((const char *)buffer_ref()));
   }
   // creates a copy of the assigned value. if the value is null or
@@ -3715,11 +3723,13 @@ class mjz_Str : public basic_mjz_String,
   friend std::istream &helper__op_shift_input_(const mjz_Str &rhs,
                                                std::istream &CIN,
                                                mjz_Str &get_shift_op_s);
-  static mjz_Str create_mjz_Str_char_array(size_t size_, char filler = 0,
-                                           bool do_fill = 1);
-  static mjz_Str create_mjz_Str_2D_char_array(size_t size_col, size_t size_row,
-                                              char filler = 0,
-                                              bool do_fill = 1);
+  [[nodiscard]] static mjz_Str create_mjz_Str_char_array(size_t size_,
+                                                         char filler = 0,
+                                                         bool do_fill = 1);
+  [[nodiscard]] static mjz_Str create_mjz_Str_2D_char_array(size_t size_col,
+                                                            size_t size_row,
+                                                            char filler = 0,
+                                                            bool do_fill = 1);
   friend const mjz_Str &helper__op_shift_input_(const mjz_Str &rhs,
                                                 const mjz_Str &CIN,
                                                 mjz_Str &get_shift_op_s);
@@ -3844,6 +3854,7 @@ class mjz_Str : public basic_mjz_String,
                    InputIterator last) {
     mjz_ard::mjz_Str str(first, last);
     replace(i1, i2, str.c_str(), str.length());
+    return *this;
   }
 
   void remove(size_t index);
@@ -3896,7 +3907,10 @@ class mjz_Str : public basic_mjz_String,
     if (p.end() != end()) return;
     insert((size_t)(p.get_pointer() - m_buffer), c, n);
   }
-  iterator insert(iterator p, char c) { insert(p, 1, c); }
+  iterator insert(iterator p, char c) {
+    insert(p, 1, c);
+    return p;
+  }
   // slow(becuse of compatibility) dont run
   template <class InputIterator>
   void insert(iterator p, InputIterator first, InputIterator last) {
@@ -4601,9 +4615,15 @@ class Vector2 {
   Type m_x;
   Type m_y;
   constexpr inline ~Vector2() = default;
-  constexpr inline Vector2 &operator=(Vector2 &) = default;
-  constexpr inline Vector2 &operator=(Vector2 &&) = default;
-  constexpr inline Vector2 &operator=(const Vector2 &) = default;
+  constexpr inline Vector2 &operator=(const Vector2 &v) {
+    m_x = (v.m_x);
+    m_y = (v.m_y);
+    return *this;
+  }
+  constexpr inline Vector2 &operator=(Vector2 &v) {
+    return operator=((const Vector2<Type> &)v);
+  }
+  constexpr inline Vector2 &operator=(Vector2 &&v) { return operator=(v); }
 
   constexpr inline Vector2 &operator()(Vector2 &obj) { return *this = obj; };
   constexpr inline Vector2 &operator()(Vector2 &&obj) { return *this = obj; };
@@ -4652,11 +4672,15 @@ class Vector2 {
   inline constexpr Vector2(const Type &s = Type()) : m_x(s), m_y(s) {}
   inline constexpr Vector2(const Type &x, const Type &y) : m_x(x), m_y(y) {}
   inline constexpr Vector2(const Vector2<Type> &v) : m_x(v.m_x), m_y(v.m_y) {}
+
+  inline constexpr Vector2(Vector2 &v) : Vector2((const Vector2<Type> &)v){};
+
+  inline constexpr Vector2(Vector2 &&v) : Vector2(v){};
   inline constexpr bool operator==(const Vector2<Type> &v) const {
-    return m_x == v.m_x && m_y == v.m_y;
+    return abs(m_x - v.m_x) < 0.01 && abs(m_y - v.m_y) < 0.01;
   }
   inline constexpr bool operator!=(const Vector2<Type> &v) const {
-    return m_x != v.m_x || m_y != v.m_y;
+    return !(operator==(v));
   }
 
   /**********************************************
@@ -4807,9 +4831,6 @@ class Vector3 {
   Type m_y;
   Type m_z;
   constexpr inline ~Vector3() = default;
-  constexpr inline Vector3 &operator=(Vector3 &) = default;
-  constexpr inline Vector3 &operator=(Vector3 &&) = default;
-  constexpr inline Vector3 &operator=(const Vector3 &) = default;
 
   constexpr inline Vector3 &operator()(Vector3 &obj) { return *this = obj; };
   constexpr inline Vector3 &operator()(Vector3 &&obj) { return *this = obj; };
@@ -4868,11 +4889,27 @@ class Vector3 {
   inline constexpr Vector3(const Vector3<Type> &v)
       : m_x(v.m_x), m_y(v.m_y), m_z(v.m_z) {}
 
+  inline constexpr Vector3(Vector3 &v) : Vector3((const Vector3<Type> &)v){};
+
+  inline constexpr Vector3(Vector3 &&v) : Vector3(v){};
+
+  constexpr inline Vector3 &operator=(const Vector3 &v) {
+    m_x = (v.m_x);
+    m_y = (v.m_y);
+    m_z = (v.m_z);
+    return *this;
+  }
+  constexpr inline Vector3 &operator=(Vector3 &v) {
+    return operator=((const Vector3<Type> &)v);
+  }
+  constexpr inline Vector3 &operator=(Vector3 &&v) { return operator=(v); }
+
   inline constexpr bool operator==(const Vector3<Type> &v) const {
-    return m_x == v.m_x && m_y == v.m_y && m_z == v.m_z;
+    return abs(m_x - v.m_x) < 0.01 && abs(m_y - v.m_y) < 0.01 &&
+           abs(m_z - v.m_z) < 0.01;
   }
   inline constexpr bool operator!=(const Vector3<Type> &v) const {
-    return m_x != v.m_x || m_y != v.m_y || m_z != v.m_z;
+    return !operator==(v);
   }
 
   /**********************************************
@@ -5042,19 +5079,39 @@ class Vector3 {
 template <class Type>
 class Point3D {
  public:
-  Type x;
-  Type y;
-  Type z;
-  Type w;
+  Type m_x;
+  Type m_y;
+  Type m_z;
+  Type m_w;
 
-  inline constexpr Point3D(const Type &s = Type()) : x(s), y(s), z(s), w(s) {}
+  inline constexpr Point3D(const Type &s = Type())
+      : m_x(s), m_y(s), m_z(s), m_w(s) {}
   inline constexpr Point3D(const Type &x, const Type &y, const Type &z,
                            const Type &w)
-      : x(x), y(y), z(z), w(w) {}
+      : m_x(x), m_y(y), m_z(z), m_w(w) {}
   inline constexpr Point3D(const Point3D<Type> &p)
-      : x(p.x), y(p.y), z(p.z), w(p.w) {}
+      : m_x(p.m_x), m_y(p.m_y), m_z(p.m_z), m_w(p.m_w) {}
   inline constexpr Point3D(const Point3D<Type> &p, const Vector3<Type> &v)
-      : x(p.x + v.m_x), y(p.y + v.m_y), z(p.z + v.m_z), w(p.w) {}
+      : m_x(p.m_x + v.m_x),
+        m_y(p.m_y + v.m_y),
+        m_z(p.m_z + v.m_z),
+        m_w(p.m_w) {}
+
+  inline constexpr Point3D(Point3D &p) : Point3D((const Point3D<Type> &)p){};
+
+  inline constexpr Point3D(Point3D &&p) : Point3D(p){};
+
+  constexpr inline Point3D &operator=(const Point3D &p) {
+    m_x = (p.m_x);
+    m_y = (p.m_y);
+    m_z = (p.m_z);
+    m_w = (p.m_w);
+    return *this;
+  }
+  constexpr inline Point3D &operator=(Point3D &p) {
+    return operator=((const Point3D<Type> &)p);
+  }
+  constexpr inline Point3D &operator=(Point3D &&p) { return operator=(p); }
 };
 
 //
@@ -5070,7 +5127,6 @@ typedef mjz_ard::mjz_Str Str;
 typedef mjz_ard::mjz_Str str;
 typedef mjz_ard::mjz_Str s;
 typedef mjz_ard::mjz_Str S;
-typedef std::string sstr;
 typedef mjz_ard::StringSumHelper StrSH;
 typedef mjz_ard::mjz_str_view sv;
 typedef mjz_ard::mjz_str_view strv;

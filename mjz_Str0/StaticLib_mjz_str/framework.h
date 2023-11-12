@@ -29,9 +29,9 @@ inline bool operator<( timer_info rhs, timer_info lhs ) {
   return ( rhs.Time_ns / rhs.atempt_num ) < ( lhs.Time_ns / lhs.atempt_num ); }
 enum timer_cmd : uint8_t {
   NONE = 0,
-  Force_log = MJZ_frm_stack_ovf_BIT( 0 ),
-  NO_Stop = MJZ_frm_stack_ovf_BIT( 1 ),
-  just_Stop = MJZ_frm_stack_ovf_BIT( 2 ), };
+  Force_log = MJZ_logic_BIT( 0 ),
+  NO_Stop = MJZ_logic_BIT( 1 ),
+  just_Stop = MJZ_logic_BIT( 2 ), };
 class Scoped_speed_Timer {
   public:
    
