@@ -6,8 +6,8 @@
 /* To write the Content in File*/
 /* Then to read the content of file*/
 #include <iostream>
- 
-/* fstream header file for ifstream, ofstream, 
+
+/* fstream header file for ifstream, ofstream,
   fstream classes */
 #include <fstream>
 mjz_ard::mjz_Str float_get_bits_interpretation(float x) {
@@ -21,28 +21,33 @@ mjz_ard::mjz_Str float_get_bits_interpretation(float x) {
       "\n |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|\n "
       "|s|      exp      |                  mantissa                   |\n\n");
   return str;
+}
 
-	}
 class my_main : public main_class {
+ public:
   int main(int argc, const char* const* const argv) override;
-    };
+};
 
-std::unique_ptr<main_class> main_class::run(int ,const char* const* const ) {
+std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
   return std::make_unique<my_main>();
-	}
+}
 
-#include"fstream"
+#include "fstream"
+
 int my_main::main(int argc, const char* const* const argv) {
-  std::vector<mjz_ard::heap_obj_warper<mjz_ard::mjz_Str>> str_v(1000);
-
-  for (auto& str_r : str_v) {
-    str_r.data_init(std::rand());
-      }
-  for (mjz_ard::mjz_Str& str_b : str_v) {
-    std::cout << ++str_b;
-  }
+  mjz_ard::heap_obj_warper<std::string> obj;
+  obj.data_init();
+auto ptr =obj.PTUDB();
+  std::string& str = obj;
+std::cin >> str;
+std::cin.ignore();
+  std::cout << "\n";
+std::cout << "\n";
+  mjz_ard::iterator_template<uint8_t> it(ptr, ptr, ptr + obj.size);
+for (auto c : it) {
+    std::cout << c;
+    }
+std::cout << "\n";
+std::cin.get();
   return 0;
-
-
-      }
-        
+}

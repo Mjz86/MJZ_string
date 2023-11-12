@@ -37,9 +37,9 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
-template <typename... T>
+template <typename... Type>
 constexpr inline int sprintf_alt_(char* const buffer_for_print, size_t size_of_msg,
-                 const char* const forming__, T... argumentes) {
+                 const char* const forming__, Type... argumentes) {
   #ifndef Arduino
   return sprintf_s(buffer_for_print, size_of_msg, forming__, argumentes...);
   #else
@@ -58,8 +58,8 @@ union my_data_randomizer_union {
   uint32_t my_data_randomizer;
   double my_data_randomizer_d; };
 extern my_data_randomizer_union my_data_randomizer_uni;
-template <typename... T>
-uint32_t esp_random( T... arggs ) {
+template <typename... Type>
+uint32_t esp_random( Type... arggs ) {
   ++my_data_randomizer_uni.my_data_randomizer_d;
   my_data_randomizer_uni.my_data_randomizer_d *=
     my_data_randomizer_uni.my_data_randomizer_u;
@@ -68,12 +68,12 @@ uint32_t esp_random( T... arggs ) {
     my_data_randomizer_uni.my_data_randomizer_u;
   return my_data_randomizer_uni.my_data_randomizer; }
 
-template <class T, class L>
-auto min( const T & a, const L & b ) -> decltype( ( b < a ) ? b : a ) {
+template <class Type, class L>
+auto min( const Type & a, const L & b ) -> decltype( ( b < a ) ? b : a ) {
   return ( b < a ) ? b : a; }
 
-template <class T, class L>
-auto max( const T & a, const L & b ) -> decltype( ( b < a ) ? b : a ) {
+template <class Type, class L>
+auto max( const Type & a, const L & b ) -> decltype( ( b < a ) ? b : a ) {
   return ( a < b ) ? b : a; }
 
 #define __attribute__(x)

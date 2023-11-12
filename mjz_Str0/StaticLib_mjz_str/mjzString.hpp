@@ -388,11 +388,11 @@ class static_str_algo {
       uint8_t data_u[8];
     };
 
-    inline constexpr  _char_8_a() = default;
+    inline constexpr _char_8_a() = default;
     inline constexpr bool &operator[](uint8_t i) { return data_b[i]; }
   };
 
-   inline constexpr static _char_8_a char_get_bits(uint8_t val, bool to_char) {
+  inline constexpr static _char_8_a char_get_bits(uint8_t val, bool to_char) {
     _char_8_a ret_val{};
     uint8_t i{};
     for (; i < 8; i++) {
@@ -407,10 +407,8 @@ class static_str_algo {
   }
 
   inline constexpr static char *get_bit_representation(
-      char *buffer, size_t buffer_len,
-                               const void *data_ptr, size_t len,
-                               bool in_reverse = (std::endian::little ==
-                                                  std::endian::native)) {
+      char *buffer, size_t buffer_len, const void *data_ptr, size_t len,
+      bool in_reverse = (std::endian::little == std::endian::native)) {
     if (buffer_len < len * 8) return 0;
 
     const char *data = (const char *)data_ptr;
@@ -431,11 +429,13 @@ class static_str_algo {
 
     return buffer;
   }
-  template <typename T>
-  inline constexpr static char *get_bit_representation(char *buffer, const T &data) {
-    return get_bit_representation(buffer, sizeof(T) * 8, &data, sizeof(T),
+  template <typename Type>
+  inline constexpr static char *get_bit_representation(char *buffer,
+                                                       const Type &data) {
+    return get_bit_representation(buffer, sizeof(Type) * 8, &data, sizeof(Type),
                                   std::endian::little == std::endian::native);
   }
+
  public:
   static constexpr int64_t stack_buffer_size = 15;
   class stack_str_buf {
@@ -467,12 +467,13 @@ class static_str_algo {
     ~stack_str_buf() { STR_is_in_stack = 0; }
   };
   template <typename T2, typename T1>
- inline static constexpr T2 bit_cast(const T1 &data) {
+  inline static constexpr T2 bit_cast(const T1 &data) {
     T2 data2{};
     data2.~T2();
     memcpy(memset(&data2, 0, sizeof(T2)), &data, min(sizeof(T2), sizeof(T1)));
     return data2;
-      }
+  }
+
  public:
   constexpr static uint8_t number_of_terms = 100;
   static constexpr inline long divide_by_2(long x) { return (x >> 1); }
@@ -481,13 +482,13 @@ class static_str_algo {
   constexpr static float three_halfs = 1.5F;
   inline static constexpr float Q_rsqrt_unsafe_logic(float &y, float x2) {
     constexpr uint32_t magic_constant = 0x5f3759df;
- //   long &i = *(long *)&y;                 // log base 2
-    //long i = *(long *)&y;
+    //   long &i = *(long *)&y;                 // log base 2
+    // long i = *(long *)&y;
     long i = std::bit_cast<long>(y);
-    i = magic_constant - divide_by_2(i);   // some magic
-   //  y = *(float *)&i;
+    i = magic_constant - divide_by_2(i);  // some magic
+                                          //  y = *(float *)&i;
     y = std::bit_cast<float>(i);
-    
+
     y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method\
 
     return y;
@@ -507,7 +508,6 @@ class static_str_algo {
     }
     return 0;
   }
- 
 
  public:
   static constexpr float accurate_Q_rsqrt_unsafe(float number) {
@@ -570,7 +570,7 @@ class static_str_algo {
       return 1;
     }
     if (number < 0.0 || number == NAN) {
-      return  NAN;
+      return NAN;
     }
     return scientifically_accurate_Q_rsqrt_unsafe(number);
   }
@@ -639,12 +639,12 @@ class static_str_algo {
   }
 
   constexpr static inline double sqrt(double x) {
-return  1/scientifically_accurate_Q_rsqrt(x);
+    return 1 / scientifically_accurate_Q_rsqrt(x);
   }
-  template <typename T>
-  constexpr static inline T sqrtt(T x) {
+  template <typename Type>
+  constexpr static inline Type sqrtt(Type x) {
     if (!x) return 0;
-    return expUt(logt(x) * (T)0.5);
+    return expUt(logt(x) * (Type)0.5);
   }
   constexpr static inline uint64_t ceiling(double x) {
     uint64_t fx = floor(x);
@@ -657,19 +657,19 @@ return  1/scientifically_accurate_Q_rsqrt(x);
     return ((0.5 < (x - (double)fx)) ? (fx + 1) : (fx));
   }
 
-  template <typename T>
-  constexpr static inline T expULt(uint32_t number) {
-    T retval{1};
+  template <typename Type>
+  constexpr static inline Type expULt(uint32_t number) {
+    Type retval{1};
     for (uint32_t i{}; i < number; i++) {
-      retval *= (T)EULER;
+      retval *= (Type)EULER;
     }
     return retval;
   }
-  template <typename T>
-  constexpr static inline T expUt(T x) {
-    T retval{1};
+  template <typename Type>
+  constexpr static inline Type expUt(Type x) {
+    Type retval{1};
     for (int64_t i = 1; i <= number_of_terms; i++) {
-      T term{1};
+      Type term{1};
       for (int64_t j = 1; j <= i; j++) {
         term *= x / j;
       }
@@ -678,49 +678,49 @@ return  1/scientifically_accurate_Q_rsqrt(x);
     return retval;
   }
 
-  template <typename T>
-  constexpr static inline T expt(int32_t number) {
-    return ((0 < number) ? expULt(number) : (T)1 / expULt(-(number)));
+  template <typename Type>
+  constexpr static inline Type expt(int32_t number) {
+    return ((0 < number) ? expULt(number) : (Type)1 / expULt(-(number)));
   }
-  template <typename T>
-  constexpr static inline T expt(T number) {
-    return ((0 < number) ? expUt(number) : (T)1 / expUt(-(number)));
+  template <typename Type>
+  constexpr static inline Type expt(Type number) {
+    return ((0 < number) ? expUt(number) : (Type)1 / expUt(-(number)));
   }
 
-  template <typename T>
-  constexpr static inline T logt(T x) {
-    if (x == (T)1) return 0;
-    if (x == (T)0) return NAN;
-    T integer_component{0};
-    T EULER_T = EULER;
+  template <typename Type>
+  constexpr static inline Type logt(Type x) {
+    if (x == (Type)1) return 0;
+    if (x == (Type)0) return NAN;
+    Type integer_component{0};
+    Type EULER_T = EULER;
     for (; EULER_T < x; x /= EULER_T) {
       integer_component += 1;
     }
-    T retval{0};
-    T term{1};
-    T x_mines_one = (x - 1.0f);
+    Type retval{0};
+    Type term{1};
+    Type x_mines_one = (x - 1.0f);
     for (int64_t i{1}; i <= number_of_terms; i++) {
       term *= x_mines_one / x;
       retval += term / i;
     }
     return integer_component + retval;
   }
-  template <typename T>
-  constexpr static inline T powUt(T base, T exponent) {
+  template <typename Type>
+  constexpr static inline Type powUt(Type base, Type exponent) {
     if (base == 0) return 0;
     uint32_t exponent_int_component = (uint32_t)floor(exponent);
     exponent -= exponent_int_component;
     return expt(exponent * logt(base)) * powULt(base, exponent_int_component);
   }
 
-  template <typename T>
-  constexpr static inline T powULt(T base, uint32_t exponent) {
-    T result{1};
+  template <typename Type>
+  constexpr static inline Type powULt(Type base, uint32_t exponent) {
+    Type result{1};
     for (uint64_t i{}; i < exponent; i++) result *= base;
     return result;
   }
-  template <typename T>
-  constexpr static inline T powt(T base, T exponent) {
+  template <typename Type>
+  constexpr static inline Type powt(Type base, Type exponent) {
     return ((0 < exponent) ? (powUt(base, exponent))
                            : (1 / powUt(base, -exponent)));
   }
@@ -821,8 +821,9 @@ return  1/scientifically_accurate_Q_rsqrt(x);
   constexpr static inline double erf(double x) {
     if (x <= 0) return 0.0;
     if (4 < x) return 1.0;
-    const constexpr double _2_ovr_sqrt_pi = 2.0 / 1.7724538509055160272981674833411;
-    
+    const constexpr double _2_ovr_sqrt_pi =
+        2.0 / 1.7724538509055160272981674833411;
+
     double retval{0};
     double nag_x_sqr = -(x * x);
 
@@ -962,8 +963,8 @@ return  1/scientifically_accurate_Q_rsqrt(x);
 
   constexpr static inline float erf(float x) { return (float)erf((double)x); }
   constexpr static inline double acos(double x) { return fastest_acos(x); }
-  template <typename T>
-  constexpr static inline auto abs(const T &x) {
+  template <typename Type>
+  constexpr static inline auto abs(const Type &x) {
     return x < 0 ? -x : x;
   }
   constexpr static inline double fastest_normal_acos(double x) {
@@ -1016,7 +1017,6 @@ return  1/scientifically_accurate_Q_rsqrt(x);
     if (a < 0) r = PI - r;  // handle negative arguments
     return r;
   }
-
 };
 template <int N>
 class mjz_RingBufferN {
@@ -1107,13 +1107,68 @@ enum Dealocation_state : uint8_t {
   dont_deallocate_on_free = MJZ_frm_stack_ovf_BIT(0),
   is_moved = MJZ_frm_stack_ovf_BIT(1)
 };
-template <typename T>
+template <class Type>
+struct Mallocator {
+  typedef Type value_type;
+
+  Mallocator() = default;
+
+  template <class U>
+  constexpr Mallocator(const Mallocator<U> &) noexcept {}
+
+  [[nodiscard]] Type *allocate(std::size_t n) {
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type))
+      throw std::bad_array_new_length();
+
+    if (auto p = static_cast<Type *>(std::malloc(n * sizeof(Type)))) {
+      report(p, n);
+      return p;
+    }
+
+    throw std::bad_alloc();
+  }
+
+  void deallocate(Type *p, std::size_t n) noexcept {
+    report(p, n, 0);
+    std::free(p);
+  }
+
+ private:
+  void report(Type *p, std::size_t n, bool alloc = true) const {
+    std::cout << (alloc ? "Alloc: " : "Dealloc: ") << sizeof(Type) * n
+              << " bytes at " << std::hex << std::showbase
+              << reinterpret_cast<void *>(p) << std::dec << '\n';
+  }
+};
+
+template <class Type, class U>
+inline constexpr bool operator==(const Mallocator<Type> &,
+                                 const Mallocator<U> &) {
+  return true;
+}
+
+template <class Type, class U>
+inline constexpr bool operator!=(const Mallocator<Type> &,
+                                 const Mallocator<U> &) {
+  return false;
+}
+
+template <typename Type>
 class heap_obj_warper {
+ public:
+  // note this static is NOT  THE SAME   for int , bool ,... becuse this is a template
+ static constexpr size_t size = sizeof(Type);
  protected:
-  uint8_t m_data[sizeof(T)]{};
+  uint8_t m_data[size]{};
   bool m_Has_data{};
+  constexpr inline Type *init_with_unsafe_data(bool initialized) {
+    m_Has_data = initialized;
+    return (Type *)(m_data);
+  }
 
  public:
+  using T = Type;
+  using type = Type;
   constexpr inline heap_obj_warper() = default;
   inline ~heap_obj_warper() { data_de_init(); }
   inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
@@ -1124,110 +1179,173 @@ class heap_obj_warper {
     operator*() = h_obj_w.operator*();
     return *this;
   }
-
   inline heap_obj_warper(heap_obj_warper &&h_obj_w) {
-    if (new (pointer_to_unsafe_data()) T(std::move(h_obj_w.operator*())))
+    if (new (pointer_to_unsafe_data()) Type(std::move(h_obj_w.operator*())))
       m_Has_data = 1;
   }
   inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
-    if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
+    if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
+      m_Has_data = 1;
   }
   inline heap_obj_warper(heap_obj_warper &h_obj_w) {
-    if (new (pointer_to_unsafe_data()) T(h_obj_w.operator*())) m_Has_data = 1;
+    if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
+      m_Has_data = 1;
   }
-
-  inline heap_obj_warper(const T &obj) {
-    if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
+  inline heap_obj_warper(const Type &obj) {
+    if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
   }
-  inline heap_obj_warper(T &obj) {
-    if (new (pointer_to_unsafe_data()) T(obj)) m_Has_data = 1;
+  inline heap_obj_warper(Type &obj) {
+    if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
   }
-  inline heap_obj_warper(T &&obj) {
-    if (new (pointer_to_unsafe_data()) T(std::move(obj))) m_Has_data = 1;
+  inline heap_obj_warper(Type &&obj) {
+    if (new (pointer_to_unsafe_data()) Type(std::move(obj))) m_Has_data = 1;
   }
-
-  inline heap_obj_warper &operator=(T &&obj) {
+  inline heap_obj_warper &operator=(Type &&obj) {
     operator*() = std::move(obj);
     return *this;
   }
-  inline heap_obj_warper &operator=(T &obj) {
+  inline heap_obj_warper &operator=(Type &obj) {
     operator*() = obj;
     return *this;
   }
-  inline heap_obj_warper &operator=(const T &obj) {
+  inline heap_obj_warper &operator=(const Type &obj) {
     operator*() = obj;
     return *this;
   }
 
+  template <typename arg_T>
+  inline void data_init(std::initializer_list<arg_T> list) {
+    data_de_init();
+    if (new (m_data) Type(list)) m_Has_data = 1;
+  }
   template <typename... arguments_types>
   inline void data_init(arguments_types... args) {
     data_de_init();
-    if (new (m_data) T(args...)) m_Has_data = 1;
+    if (new (m_data) Type(args...)) m_Has_data = 1;
   }
   template <typename... arguments_types>
   inline void data_init_mv(arguments_types &&...args) {
     data_de_init();
-    if (new (m_data) T(std::move(args...))) m_Has_data = 1;
+    if (new (m_data) Type(std::move(args)...)) m_Has_data = 1;
   }
   template <typename... arguments_types>
   inline void data_init_r(const arguments_types &...args) {
     data_de_init();
-    if (new (m_data) T(args...)) m_Has_data = 1;
+    if (new (m_data) Type(args...)) m_Has_data = 1;
   }
   template <typename... arguments_types>
   inline void data_init_ct(const arguments_types &...args) {
     data_de_init();
-    if (new (m_data) T(args...)) m_Has_data = 1;
+    if (new (m_data) Type(args...)) m_Has_data = 1;
   }
-
+  template <typename  Type = T>
   inline void data_de_init() {
-    if (m_Has_data) pointer_to_data()->~T();
+    if (m_Has_data) pointer_to_data()->~Type();
     m_Has_data = 0;
   }
-
-  constexpr inline bool has_data() { return m_Has_data; }
-  constexpr inline T *
-  pointer_to_unsafe_data() {  // this may be uninitialized initialized...
-    return (T *)(m_data);
+  template <typename  Type = T>
+  inline void data_de_init( int fill_VAL) {
+    if (m_Has_data) pointer_to_data()->~Type();
+    m_Has_data = 0;
+    static_str_algo::memset(m_data, fill_VAL, size);
   }
-  constexpr inline T *pointer_to_data() {
+  template <typename  Type = T>
+  constexpr inline bool has_data() { return m_Has_data; }
+
+  template <typename Type = T>
+  // this may be uninitialized initialized...
+  constexpr inline uint8_t *pointer_to_unsafe_data_buffer() {
+    return (uint8_t *)(m_data);
+  }
+  template <typename Type = T>
+  // a small inline pointer_to_unsafe_data_buffer
+  constexpr inline uint8_t *PTUDB() {
+    return pointer_to_unsafe_data_buffer();
+  }
+
+  template <typename  Type = T>
+  // this may be uninitialized initialized...
+  constexpr inline Type *pointer_to_unsafe_data() { return (Type *)(m_data); }
+  template <typename  Type = T>
+  // a small inline pointer_to_unsafe_data
+  constexpr inline Type *PTUD() { return pointer_to_unsafe_data(); }
+
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  // use like init_with_unsafe_new(new (init_with_unsafe_data()) Type());
+  template <typename  Type = T>
+  constexpr inline Type *init_with_unsafe_new(
+      Type *ptr) {  // placement new  "new (ptr) Type();"
+    return init_with_unsafe_data(ptr == pointer_to_unsafe_data());
+  }
+  template <typename  Type = T>
+  // a small inline init_with_unsafe_new
+  constexpr inline Type *IWUN(Type *ptr) {
+    return init_with_unsafe_new(ptr);
+  }
+  template <typename  Type = T>
+  constexpr inline Type *pointer_to_data() {
     if (!m_Has_data) throw std::exception(" bad access");
     return pointer_to_unsafe_data();
   }
-
-  constexpr inline T *operator->() { return pointer_to_data(); }
-  constexpr inline T &operator*() { return *operator->(); }
-
+  template <typename  Type = T>
+  constexpr inline Type *operator->() {
+    return pointer_to_data();
+  }
+  template <typename my_type, typename Type = T>
+  inline auto operator->*(my_type my_var) {
+    return pointer_to_data()->*my_var;
+  }
+  template <typename  Type = T>
+  constexpr inline Type &operator*() { return *operator->(); }
+  template <typename  Type = T>
   inline bool operator==(const heap_obj_warper &other) const {
     return operator() == other.operator();
   }
+  template <typename  Type = T>
   inline bool operator!=(const heap_obj_warper &other) const {
     return operator() != other.operator();
   }
+  template <typename  Type = T>
   inline bool operator<(const heap_obj_warper &other) const {
     return (operator()) < (other.operator());
   }
+  template <typename  Type = T>
   inline bool operator<=(const heap_obj_warper &other) const {
     return (operator()) <= (other.operator());
   }
+  template <typename  Type = T>
   inline bool operator>(const heap_obj_warper &other) const {
     return (operator()) > (other.operator());
   }
+  template <typename  Type = T>
   inline bool operator>=(const heap_obj_warper &other) const {
     return (operator()) >= (other.operator());
   }
 
 #ifndef Arduino
+
+  template <typename  Type = T>
   inline bool operator<=>(const heap_obj_warper &other) const {
     return operator() <=> other.operator();
   }
 #endif  // ! Arduino
-  bool operator!() const { return !m_Has_data; }
- explicit operator bool() const { return m_Has_data; }
-  inline operator T &()  { return *pointer_to_data(); }
+  template <typename  Type = T>
+  bool operator!() const {
+    return !m_Has_data;
+  }
+  template <typename  Type = T>
+  explicit operator bool() const {
+    return m_Has_data;
+  }
+  template <typename  Type = T>
+  inline operator Type &() { return *pointer_to_data(); }
 };
 
-class malloc_wrapper  {
+class malloc_wrapper {
   malloc_wrapper &move(malloc_wrapper &otr) {
     if (otr.is_moved_state()) {
       if (otr.m_data_ptr && otr.m_cap_size) {
@@ -1305,9 +1423,9 @@ class malloc_wrapper  {
     return move(otr);
   };
   malloc_wrapper &operator=(const malloc_wrapper &) = delete;
-  template <typename T>
-  constexpr inline T *get_ptr_as() {
-    return (T *)m_data_ptr;
+  template <typename Type>
+  constexpr inline Type *get_ptr_as() {
+    return (Type *)m_data_ptr;
   }
   constexpr inline void *get_ptr() { return m_data_ptr; }
   constexpr inline size_t get_size() { return m_cap_size; }
@@ -1435,6 +1553,10 @@ class iterator_template {
   constexpr pointer operator->() const {
     throw_if_bad();
     return m_iterator;
+  }
+  template <typename my_type, typename Type = value_type>
+  inline auto operator->*(my_type my_var) {
+    return operator->()->*my_var;
   }
 
   constexpr iterator_template begin() const {
@@ -2510,7 +2632,14 @@ class mjz_Str : public basic_mjz_String,
   typedef void (mjz_Str::*StringIfHelperType)() const;
   if_virtual_then_virtual void StringIfHelper() const {}
   inline bool realloc_helper_is_in_stack(void *ptr);
-  // private:
+
+ private:
+  // copy and move
+  mjz_Str &copy(const char *cstr, size_t length) {
+    return copy(cstr, length, 0);
+  }
+  mjz_Str &copy(const __FlashStringHelper *pstr, size_t length);
+  void move(mjz_Str &rhs);
   void *realloc_pv(void *ptr, size_t new_size, bool constructor);
   void free_pv(void *&ptr, bool constructor);
   void free_pv(void *const &ptr, bool constructor);
@@ -2755,6 +2884,8 @@ class mjz_Str : public basic_mjz_String,
   inline mjz_Str(const __FlashStringHelper *str);
   inline explicit mjz_Str(const char *cstr)
       : mjz_Str(cstr, (size_t)strlen(cstr)) {}
+  mjz_Str(std::initializer_list<const char>);
+
   explicit mjz_Str(mjz_Str &&rval) noexcept;
   // explicit mjz_Str(const mjz_Str *&&rval) : mjz_Str(std::move(*rval)) {
   // }// this will give me headaches in the long run so i dont move it
@@ -3054,7 +3185,7 @@ class mjz_Str : public basic_mjz_String,
     return operator<<(new_temp);
   }
   if_virtual_then_virtual mjz_Str &operator>>(char &var) {
-    get_s_shift_op_r().scanf_s("%c", &var,1);
+    get_s_shift_op_r().scanf_s("%c", &var, 1);
     return get_s_shift_op_r();
   }
   if_virtual_then_virtual mjz_Str &operator>>(int &var) {
@@ -3399,13 +3530,6 @@ class mjz_Str : public basic_mjz_String,
   if_virtual_then_virtual void init(bool constructor = 1);
   if_virtual_then_virtual void invalidate(bool constructor = 1);
   if_virtual_then_virtual bool changeBuffer(size_t maxStrLen, bool constructor);
-  // copy and move
-  if_virtual_then_virtual mjz_Str &copy(const char *cstr, size_t length) {
-    return copy(cstr, length, 0);
-  }
-  if_virtual_then_virtual mjz_Str &copy(const __FlashStringHelper *pstr,
-                                        size_t length);
-  if_virtual_then_virtual void move(mjz_Str &rhs);
 
  public:
   // easy quality of life
@@ -3447,7 +3571,7 @@ class mjz_Str : public basic_mjz_String,
                  (size_t)return_val.length());
   }
   */
-  
+
   template <typename... arguments_types>
   int scanf(const char *format, arguments_types &...arguments_arr) {
     int ret = sscanf((char *)buffer_ref(), format, arguments_arr...);
@@ -3492,7 +3616,7 @@ class mjz_Str : public basic_mjz_String,
         sscanf_s((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
     return ret;
   }
-  
+
   template <typename... arguments_types>
   if_virtual_then_virtual mjz_Str &operator-=(
       arguments_types &...arguments_arr) {
@@ -3943,21 +4067,20 @@ class type_cmp_fn_class {
 template <class _function>
 class type_fn_class {
  public:
-  template <class T>
-  bool operator()(const T &x) {
+  template <class Type>
+  bool operator()(const Type &x) {
     return _function(x);
   }
 };
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
                       bool force_neg = 0);
-template <typename T>
-inline  mjz_Str get_bit_representation(
-                                                     const T &data) {
+template <typename Type>
+inline mjz_Str get_bit_representation(const Type &data) {
   mjz_Str buffer;
-  buffer.addto_length(sizeof(T) * 8);
-   static_str_algo::get_bit_representation(buffer.C_str(), buffer.length(), &data,
-                                sizeof(T),
-                                std::endian::little == std::endian::native);
+  buffer.addto_length(sizeof(Type) * 8);
+  static_str_algo::get_bit_representation(
+      buffer.C_str(), buffer.length(), &data, sizeof(Type),
+      std::endian::little == std::endian::native);
   return buffer;
 }
 
@@ -4057,11 +4180,11 @@ namespace mjz_ard {
 /***************************************************************************************
   Vector2  -- 2-D mjz_vector class
 ***************************************************************************************/
-template <class T>
+template <class Type>
 class Vector2 {
  public:
-  T m_x;
-  T m_y;
+  Type m_x;
+  Type m_y;
   constexpr inline ~Vector2() = default;
   constexpr inline Vector2 &operator=(Vector2 &) = default;
   constexpr inline Vector2 &operator=(Vector2 &&) = default;
@@ -4072,7 +4195,7 @@ class Vector2 {
   constexpr inline Vector2 &operator()(const Vector2 &obj) {
     return *this = obj;
   };
-  constexpr inline Vector2 &operator()(const T &x, const T &y) {
+  constexpr inline Vector2 &operator()(const Type &x, const Type &y) {
     m_x = (x);
     m_y = (y);
     return *this;
@@ -4106,142 +4229,154 @@ class Vector2 {
     return your_function_returning(operator()(0, your_function));
   };
 
-  inline constexpr T &x() { return m_x; }
-  inline constexpr T &y() { return m_y; }
-  inline constexpr const T &x() const { return m_x; }
-  inline constexpr const T &y() const { return m_y; }
+  inline constexpr Type &x() { return m_x; }
+  inline constexpr Type &y() { return m_y; }
+  inline constexpr const Type &x() const { return m_x; }
+  inline constexpr const Type &y() const { return m_y; }
 
-  inline constexpr Vector2(const T &s = T()) : m_x(s), m_y(s) {}
-  inline constexpr Vector2(const T &x, const T &y) : m_x(x), m_y(y) {}
-  inline constexpr Vector2(const Vector2<T> &v) : m_x(v.m_x), m_y(v.m_y) {}
-  inline constexpr bool operator==(const Vector2<T> &v) const {
+  inline constexpr Vector2(const Type &s = Type()) : m_x(s), m_y(s) {}
+  inline constexpr Vector2(const Type &x, const Type &y) : m_x(x), m_y(y) {}
+  inline constexpr Vector2(const Vector2<Type> &v) : m_x(v.m_x), m_y(v.m_y) {}
+  inline constexpr bool operator==(const Vector2<Type> &v) const {
     return m_x == v.m_x && m_y == v.m_y;
   }
-  inline constexpr bool operator!=(const Vector2<T> &v) const {
+  inline constexpr bool operator!=(const Vector2<Type> &v) const {
     return m_x != v.m_x || m_y != v.m_y;
   }
 
   /**********************************************
     Indexing operator
   **********************************************/
-  inline constexpr T &operator[](int i) { return *(&m_x + i); }
-  inline constexpr const T operator[](int i) const { return *(&m_x + i); }
+  inline constexpr Type &operator[](int i) { return *(&m_x + i); }
+  inline constexpr const Type operator[](int i) const { return *(&m_x + i); }
 
   /*********************************************
     Non modifying math operators
   *********************************************/
-  inline constexpr Vector2<T> operator-() const {
-    return Vector2<T>(-m_x, -m_y);
+  inline constexpr Vector2<Type> operator-() const {
+    return Vector2<Type>(-m_x, -m_y);
   }
-  inline constexpr Vector2<T> operator+(const Vector2<T> &v) const {
-    return Vector2<T>(m_x + v.m_x, m_y + v.m_y);
+  inline constexpr Vector2<Type> operator+(const Vector2<Type> &v) const {
+    return Vector2<Type>(m_x + v.m_x, m_y + v.m_y);
   }
-  inline constexpr Vector2<T> operator-(const Vector2<T> &v) const {
-    return Vector2<T>(m_x - v.m_x, m_y - v.m_y);
+  inline constexpr Vector2<Type> operator-(const Vector2<Type> &v) const {
+    return Vector2<Type>(m_x - v.m_x, m_y - v.m_y);
   }
-  inline constexpr Vector2<T> operator*(const T &s) const {
-    return Vector2<T>(m_x * s, m_y * s);
+  inline constexpr Vector2<Type> operator*(const Type &s) const {
+    return Vector2<Type>(m_x * s, m_y * s);
   }
-  inline constexpr Vector2<T> operator*(const Vector2<T> &v) const {
-    return Vector2<T>(m_x * v.m_x, m_y * v.m_y);
+  inline constexpr Vector2<Type> operator*(const Vector2<Type> &v) const {
+    return Vector2<Type>(m_x * v.m_x, m_y * v.m_y);
   }
-  inline constexpr Vector2<T> operator/(const T &s) const {
-    return Vector2<T>(m_x / s, m_y / s);
+  inline constexpr Vector2<Type> operator/(const Type &s) const {
+    return Vector2<Type>(m_x / s, m_y / s);
   }
 
   /*******************************************
     Modifying Math Operators
   *******************************************/
-  inline constexpr Vector2<T> &operator+=(const Vector2<T> &v) {
+  inline constexpr Vector2<Type> &operator+=(const Vector2<Type> &v) {
     m_x += v.m_x;
     m_y += v.m_y;
     return *this;
   }
-  inline constexpr Vector2<T> &operator-=(const Vector2<T> &v) {
+  inline constexpr Vector2<Type> &operator-=(const Vector2<Type> &v) {
     m_x -= v.m_x;
     m_y -= v.m_y;
     return *this;
   }
-  inline constexpr Vector2<T> &operator*=(const T &s) {
+  inline constexpr Vector2<Type> &operator*=(const Type &s) {
     m_x *= s;
     m_y *= s;
     return *this;
   }
-  inline constexpr Vector2<T> &operator*=(const Vector2<T> &v) {
+  inline constexpr Vector2<Type> &operator*=(const Vector2<Type> &v) {
     m_x *= v.m_x;
     m_y *= v.m_y;
     return *this;
   }
-  inline constexpr Vector2<T> &operator/=(const T &s) {
+  inline constexpr Vector2<Type> &operator/=(const Type &s) {
     m_x /= s;
     m_y /= s;
     return *this;
   }
 
   /*******************************************
-    Cast to T* (lets you use vec2 as T array)
+    Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
-  inline constexpr operator const T *() const { return static_cast<T *>(&m_x); }
-  inline constexpr operator T *() { return static_cast<T *>(&m_x); }
+  inline constexpr operator const Type *() const {
+    return static_cast<Type *>(&m_x);
+  }
+  inline constexpr operator Type *() { return static_cast<Type *>(&m_x); }
 
   /********************************************
     Useful Vector Operations
   ********************************************/
-  inline constexpr T length() const { return 1/static_str_algo::Q_rsqrt_unsafe(m_x * m_x + m_y * m_y); }
-  inline constexpr T lengthSq() const { return m_x * m_x + m_y * m_y; }
-  inline constexpr Vector2<T> &normalize() {
-    return operator*=((T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
+  inline constexpr Type length() const {
+    return 1 / static_str_algo::Q_rsqrt_unsafe(m_x * m_x + m_y * m_y);
   }
-  inline constexpr Vector2<T> unit() const {
-    return operator*((T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
+  inline constexpr Type lengthSq() const { return m_x * m_x + m_y * m_y; }
+  inline constexpr Vector2<Type> &normalize() {
+    return operator*=((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
-  inline constexpr T dot(const Vector2<T> &v) const {
+  inline constexpr Vector2<Type> unit() const {
+    return operator*((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
+  }
+  inline constexpr Type dot(const Vector2<Type> &v) const {
     return m_x * v.m_x + m_y * v.m_y;
   }
-  inline constexpr T cross(
-      const Vector2<T> &v) const {     // 3-D cross product with z assumed 0
-    return m_x * v.m_y + v.m_x * m_y;  // return magnitude of resulting mjz_vector
+  inline constexpr Type cross(
+      const Vector2<Type> &v) const {  // 3-D cross product with z assumed 0
+    return m_x * v.m_y +
+           v.m_x * m_y;  // return magnitude of resulting mjz_vector
   }
 
-  friend std::ostream &operator<<(std::ostream &outs, const Vector2<T> &v) {
+  friend std::ostream &operator<<(std::ostream &outs, const Vector2<Type> &v) {
     outs << "<" << v.m_x << ", " << v.m_y << ">";
     return outs;
   }
 
-  friend std::istream &operator>>(std::istream &ins, Vector2<T> &v) {
+  friend std::istream &operator>>(std::istream &ins, Vector2<Type> &v) {
     ins >> v.m_x >> v.m_y;
     return ins;
   }
 
-  friend inline constexpr Vector2<T> operator*(T s, const Vector2<T> &v) {
-    return Vector2<T>(s * v.m_x, s * v.m_y);
+  friend inline constexpr Vector2<Type> operator*(Type s,
+                                                  const Vector2<Type> &v) {
+    return Vector2<Type>(s * v.m_x, s * v.m_y);
   }
 
   /********************************************************
    Basic Trig functions of angle between vectors
   ********************************************************/
 
-  friend inline constexpr T cos(const Vector2<T> &v1, const Vector2<T> &v2) {
+  friend inline constexpr Type cos(const Vector2<Type> &v1,
+                                   const Vector2<Type> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
   }
 
-  friend inline constexpr T sin(const Vector2<T> &v1, const Vector2<T> &v2) {
+  friend inline constexpr Type sin(const Vector2<Type> &v1,
+                                   const Vector2<Type> &v2) {
     return cross(v1, v2) / v1.length() / v2.length();
   }
 
-  friend inline constexpr T tan(const Vector2<T> &v1, const Vector2<T> &v2) {
+  friend inline constexpr Type tan(const Vector2<Type> &v1,
+                                   const Vector2<Type> &v2) {
     return sin(v1, v2) / cos(v1, v2);
   }
 
-  friend inline constexpr T angle(const Vector2<T> &v1, const Vector2<T> &v2) {
+  friend inline constexpr Type angle(const Vector2<Type> &v1,
+                                     const Vector2<Type> &v2) {
     return std::acos(cos(v1, v2));
   }
 
-  friend inline constexpr T dot(const Vector2<T> &v1, const Vector2<T> &v2) {
+  friend inline constexpr Type dot(const Vector2<Type> &v1,
+                                   const Vector2<Type> &v2) {
     return v1.dot(v2);
   }
 
-  friend inline constexpr T cross(const Vector2<T> &v1, const Vector2<T> &v2) {
+  friend inline constexpr Type cross(const Vector2<Type> &v1,
+                                     const Vector2<Type> &v2) {
     return v1.cross(v2);
   }
 };
@@ -4250,12 +4385,12 @@ class Vector2 {
  Vector3 -- 3D mjz_vector
 *********************************************************************************/
 
-template <class T>
+template <class Type>
 class Vector3 {
  public:
-  T m_x;
-  T m_y;
-  T m_z;
+  Type m_x;
+  Type m_y;
+  Type m_z;
   constexpr inline ~Vector3() = default;
   constexpr inline Vector3 &operator=(Vector3 &) = default;
   constexpr inline Vector3 &operator=(Vector3 &&) = default;
@@ -4266,7 +4401,8 @@ class Vector3 {
   constexpr inline Vector3 &operator()(const Vector3 &obj) {
     return *this = obj;
   };
-  constexpr inline Vector3 &operator()(const T &x, const T &y, const T &z) {
+  constexpr inline Vector3 &operator()(const Type &x, const Type &y,
+                                       const Type &z) {
     m_x = (x);
     m_x = (y);
     m_x = (z);
@@ -4302,93 +4438,93 @@ class Vector3 {
     return your_function_returning(operator()(0, your_function));
   };
 
-  inline constexpr T &x() { return m_x; }
-  inline constexpr T &y() { return m_y; }
-  inline constexpr T &z() { return m_z; }
-  inline constexpr const T &x() const { return m_x; }
-  inline constexpr const T &y() const { return m_y; }
-  inline constexpr const T &z() const { return m_z; }
+  inline constexpr Type &x() { return m_x; }
+  inline constexpr Type &y() { return m_y; }
+  inline constexpr Type &z() { return m_z; }
+  inline constexpr const Type &x() const { return m_x; }
+  inline constexpr const Type &y() const { return m_y; }
+  inline constexpr const Type &z() const { return m_z; }
 
-  inline constexpr Vector3(const T &s = T()) : m_x(s), m_y(s), m_z(s) {}
-  inline constexpr Vector3(const T &x, const T &y, const T &z)
+  inline constexpr Vector3(const Type &s = Type()) : m_x(s), m_y(s), m_z(s) {}
+  inline constexpr Vector3(const Type &x, const Type &y, const Type &z)
       : m_x(x), m_y(y), m_z(z) {}
-  inline constexpr Vector3(const Vector2<T> &v, const T &s = T())
+  inline constexpr Vector3(const Vector2<Type> &v, const Type &s = Type())
       : m_x(v.m_x), m_y(v.m_y), m_z(s) {}
-  inline constexpr Vector3(const Vector3<T> &v)
+  inline constexpr Vector3(const Vector3<Type> &v)
       : m_x(v.m_x), m_y(v.m_y), m_z(v.m_z) {}
 
-  inline constexpr bool operator==(const Vector3<T> &v) const {
+  inline constexpr bool operator==(const Vector3<Type> &v) const {
     return m_x == v.m_x && m_y == v.m_y && m_z == v.m_z;
   }
-  inline constexpr bool operator!=(const Vector3<T> &v) const {
+  inline constexpr bool operator!=(const Vector3<Type> &v) const {
     return m_x != v.m_x || m_y != v.m_y || m_z != v.m_z;
   }
 
   /**********************************************
     Indexing operator
   **********************************************/
-  inline constexpr T &operator[](int i) { return *(&m_x + i); }
-  const T operator[](int i) const { return *(&m_x + i); }
+  inline constexpr Type &operator[](int i) { return *(&m_x + i); }
+  const Type operator[](int i) const { return *(&m_x + i); }
 
   /*********************************************
     Non modifying math operators
   *********************************************/
-  inline constexpr Vector3<T> operator-() const {
-    return Vector3<T>(-m_x, -m_y, -m_z);
+  inline constexpr Vector3<Type> operator-() const {
+    return Vector3<Type>(-m_x, -m_y, -m_z);
   }
-  inline constexpr Vector3<T> operator+(const Vector3<T> &v) const {
-    return Vector3<T>(m_x + v.m_x, m_y + v.m_y, m_z + v.m_z);
+  inline constexpr Vector3<Type> operator+(const Vector3<Type> &v) const {
+    return Vector3<Type>(m_x + v.m_x, m_y + v.m_y, m_z + v.m_z);
   }
-  inline constexpr Vector3<T> operator-(const Vector3<T> &v) const {
-    return Vector3<T>(m_x - v.m_x, m_y - v.m_y, m_z - v.m_z);
+  inline constexpr Vector3<Type> operator-(const Vector3<Type> &v) const {
+    return Vector3<Type>(m_x - v.m_x, m_y - v.m_y, m_z - v.m_z);
   }
-  inline constexpr Vector3<T> operator*(const T &s) const {
-    return Vector3<T>(m_x * s, m_y * s, m_z * s);
+  inline constexpr Vector3<Type> operator*(const Type &s) const {
+    return Vector3<Type>(m_x * s, m_y * s, m_z * s);
   }
-  inline constexpr Vector3<T> operator*(const Vector3<T> &v) const {
-    return Vector3<T>(m_x * v.m_x, m_y * v.m_y, m_z * v.m_z);
+  inline constexpr Vector3<Type> operator*(const Vector3<Type> &v) const {
+    return Vector3<Type>(m_x * v.m_x, m_y * v.m_y, m_z * v.m_z);
   }
-  inline constexpr Vector3<T> operator/(const T &s) const {
-    return Vector3<T>(m_x / s, m_y / s, m_z / s);
+  inline constexpr Vector3<Type> operator/(const Type &s) const {
+    return Vector3<Type>(m_x / s, m_y / s, m_z / s);
   }
-  inline constexpr Vector3<T> operator/(const Vector3<T> &v) const {
-    return Vector3<T>(m_x / v.m_x, m_y / v.m_y, m_z / v.m_z);
+  inline constexpr Vector3<Type> operator/(const Vector3<Type> &v) const {
+    return Vector3<Type>(m_x / v.m_x, m_y / v.m_y, m_z / v.m_z);
   }
 
   /*******************************************
     Modifying Math Operators
   *******************************************/
-  inline constexpr Vector3<T> &operator+=(const Vector3<T> &v) {
+  inline constexpr Vector3<Type> &operator+=(const Vector3<Type> &v) {
     m_x += v.m_x;
     m_y += v.m_y;
     m_z += v.m_z;
     return *this;
   }
-  inline constexpr Vector3<T> &operator-=(const Vector3<T> &v) {
+  inline constexpr Vector3<Type> &operator-=(const Vector3<Type> &v) {
     m_x -= v.m_x;
     m_y -= v.m_y;
     m_y -= v.m_z;
     return *this;
   }
-  inline constexpr Vector3<T> &operator*=(const T &s) {
+  inline constexpr Vector3<Type> &operator*=(const Type &s) {
     m_x *= s;
     m_y *= s;
     m_z *= s;
     return *this;
   }
-  inline constexpr Vector3<T> &operator*=(const Vector3<T> &v) {
+  inline constexpr Vector3<Type> &operator*=(const Vector3<Type> &v) {
     m_x *= v.m_x;
     m_y *= v.m_y;
     m_z *= v.m_z;
     return *this;
   }
-  inline constexpr Vector3<T> &operator/=(const Vector3<T> &v) {
+  inline constexpr Vector3<Type> &operator/=(const Vector3<Type> &v) {
     m_x /= v.m_x;
     m_y /= v.m_y;
     m_z /= v.m_z;
     return *this;
   }
-  inline constexpr Vector3<T> &operator/=(const T &s) {
+  inline constexpr Vector3<Type> &operator/=(const Type &s) {
     m_x /= s;
     m_y /= s;
     m_z /= s;
@@ -4396,80 +4532,86 @@ class Vector3 {
   }
 
   /*******************************************
-    Cast to T* (lets you use vec2 as T array)
+    Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
-  inline constexpr operator const T *() const { return static_cast<T *>(&m_x); }
-  inline constexpr operator T *() { return static_cast<T *>(&m_x); }
+  inline constexpr operator const Type *() const {
+    return static_cast<Type *>(&m_x);
+  }
+  inline constexpr operator Type *() { return static_cast<Type *>(&m_x); }
 
   /********************************************
     Useful Vector Operations
   ********************************************/
-  inline constexpr T length() const {
-    return 1 /
-           static_str_algo::Q_rsqrt_unsafe(lengthSq());
+  inline constexpr Type length() const {
+    return 1 / static_str_algo::Q_rsqrt_unsafe(lengthSq());
   }
-  inline constexpr T lengthSq() const {
+  inline constexpr Type lengthSq() const {
     return m_x * m_x + m_y * m_y + m_z * m_z;
   }
-  inline constexpr Vector3<T> &normalize() {
-    return operator*=(
-        (T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
+  inline constexpr Vector3<Type> &normalize() {
+    return operator*=((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
-  inline constexpr Vector3<T> unit() const {
-    return operator*((T)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
+  inline constexpr Vector3<Type> unit() const {
+    return operator*((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
-  inline constexpr T dot(const Vector3<T> &v) const {
+  inline constexpr Type dot(const Vector3<Type> &v) const {
     return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
   }
 
-  inline constexpr Vector3<T> cross_with_this(
-      const Vector3<T> &v) { /* NOTE this function modifies the mjz_vector unlike 2D
-                                and non-member versions */
-    T x_(m_x), y_(m_y), z_(m_z);
+  inline constexpr Vector3<Type> cross_with_this(
+      const Vector3<Type> &v) { /* NOTE this function modifies the mjz_vector
+                                unlike 2D and non-member versions */
+    Type x_(m_x), y_(m_y), z_(m_z);
     m_x = y_ * v.m_z - z_ * v.m_y;
     m_y = z_ * v.m_x - x_ * v.m_z;
     m_z = x_ * v.m_y - y_ * v.m_x;
     return *this;
   }
-  friend std::ostream &operator<<(std::ostream &outs, const Vector3<T> &v) {
+  friend std::ostream &operator<<(std::ostream &outs, const Vector3<Type> &v) {
     outs << "<" << v.m_x << ", " << v.m_y << ", " << v.m_z << ">";
     return outs;
   }
-  friend std::istream &operator>>(std::istream &ins, Vector3<T> &v) {
+  friend std::istream &operator>>(std::istream &ins, Vector3<Type> &v) {
     ins >> v.m_x >> v.m_y >> v.m_z;
     return ins;
   }
-  inline constexpr friend Vector3<T> operator*(T s, const Vector3<T> &v) {
-    return Vector3<T>(s * v.m_x, s * v.m_y, s * v.m_z);
+  inline constexpr friend Vector3<Type> operator*(Type s,
+                                                  const Vector3<Type> &v) {
+    return Vector3<Type>(s * v.m_x, s * v.m_y, s * v.m_z);
   }
 
   /********************************************************
    Basic Trig functions of angle between vectors
   ********************************************************/
-  inline constexpr friend T cos(const Vector3<T> &v1, const Vector3<T> &v2) {
+  inline constexpr friend Type cos(const Vector3<Type> &v1,
+                                   const Vector3<Type> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
   }
-  inline constexpr friend T sin(const Vector3<T> &v1, const Vector3<T> &v2) {
+  inline constexpr friend Type sin(const Vector3<Type> &v1,
+                                   const Vector3<Type> &v2) {
     return cross(v1, v2).length() / v1.length() / v2.length();
   }
 
-  inline constexpr friend T tan(const Vector3<T> &v1, const Vector3<T> &v2) {
+  inline constexpr friend Type tan(const Vector3<Type> &v1,
+                                   const Vector3<Type> &v2) {
     return sin(v1, v2) / cos(v1, v2);
   }
 
-  inline constexpr friend T angle(const Vector3<T> &v1, const Vector3<T> &v2) {
+  inline constexpr friend Type angle(const Vector3<Type> &v1,
+                                     const Vector3<Type> &v2) {
     return std::acos(cos(v1, v2));
   }
 
-  inline constexpr friend T dot(const Vector3<T> &v1, const Vector3<T> &v2) {
+  inline constexpr friend Type dot(const Vector3<Type> &v1,
+                                   const Vector3<Type> &v2) {
     return v1.dot(v2);
   }
 
-  inline constexpr friend Vector3<T> cross(const Vector3<T> &v1,
-                                           const Vector3<T> &v2) {
-    return Vector3<T>(v1.m_y * v2.m_z - v1.m_z * v2.m_y,
-                      v1.m_z * v2.m_x - v1.m_x * v2.m_z,
-                      v1.m_x * v2.m_y - v1.m_y * v2.m_x);
+  inline constexpr friend Vector3<Type> cross(const Vector3<Type> &v1,
+                                              const Vector3<Type> &v2) {
+    return Vector3<Type>(v1.m_y * v2.m_z - v1.m_z * v2.m_y,
+                         v1.m_z * v2.m_x - v1.m_x * v2.m_z,
+                         v1.m_x * v2.m_y - v1.m_y * v2.m_x);
   }
 };
 
@@ -4482,36 +4624,31 @@ class Vector3 {
     Description: Defines point class.
 ******************************************************************************************/
 
-template <class T>
+template <class Type>
 class Point3D {
  public:
-  T x;
-  T y;
-  T z;
-  T w;
+  Type x;
+  Type y;
+  Type z;
+  Type w;
 
-  inline constexpr Point3D(const T &s = T()) : x(s), y(s), z(s), w(s) {}
-  inline constexpr Point3D(const T &x, const T &y, const T &z, const T &w)
+  inline constexpr Point3D(const Type &s = Type()) : x(s), y(s), z(s), w(s) {}
+  inline constexpr Point3D(const Type &x, const Type &y, const Type &z,
+                           const Type &w)
       : x(x), y(y), z(z), w(w) {}
-  inline constexpr Point3D(const Point3D<T> &p)
+  inline constexpr Point3D(const Point3D<Type> &p)
       : x(p.x), y(p.y), z(p.z), w(p.w) {}
-  inline constexpr Point3D(const Point3D<T> &p, const Vector3<T> &v)
+  inline constexpr Point3D(const Point3D<Type> &p, const Vector3<Type> &v)
       : x(p.x + v.m_x), y(p.y + v.m_y), z(p.z + v.m_z), w(p.w) {}
 };
 
- //
+//
 //  mjz_vector.h
 //  Vector
 //
 //  Created by Emilis Baliukonis on 05/05/2019.
 //  Copyright © 2019 Emilis Baliukonis. All rights reserved.
 //
-
-
-
-
-
-
 
 namespace short_string_names {
 typedef mjz_ard::mjz_Str Str;
@@ -4575,9 +4712,9 @@ struct hash<mjz_ard::mjz_virtual_string_view> {
   }
 };  // namespace std::hash
 
-template <typename T>
-inline mjz_ard::Vector3<T> sqrt(mjz_ard::Vector3<T> v) {
-  return mjz_ard::Vector3<T>(sqrt(v.x()), sqrt(v.y()), sqrt(v.z()));
+template <typename Type>
+inline mjz_ard::Vector3<Type> sqrt(mjz_ard::Vector3<Type> v) {
+  return mjz_ard::Vector3<Type>(sqrt(v.x()), sqrt(v.y()), sqrt(v.z()));
 }
 }  // namespace std
 #undef NO_IGNORE_CHAR
