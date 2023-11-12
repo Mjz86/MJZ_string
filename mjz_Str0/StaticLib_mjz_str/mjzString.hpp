@@ -437,7 +437,7 @@ class static_str_algo {
   }
 
  public:
-  static constexpr int64_t stack_buffer_size = 15;
+  static constexpr int64_t stack_buffer_size = sizeof(std::string);
   class stack_str_buf {
     mutable bool STR_is_in_stack{};
 
@@ -1238,35 +1238,35 @@ class heap_obj_warper {
     data_de_init();
     if (new (m_data) Type(args...)) m_Has_data = 1;
   }
-  template <typename  Type = T>
+  
   inline void data_de_init() {
     if (m_Has_data) pointer_to_data()->~Type();
     m_Has_data = 0;
   }
-  template <typename  Type = T>
+  
   inline void data_de_init( int fill_VAL) {
     if (m_Has_data) pointer_to_data()->~Type();
     m_Has_data = 0;
     static_str_algo::memset(m_data, fill_VAL, size);
   }
-  template <typename  Type = T>
+  
   constexpr inline bool has_data() { return m_Has_data; }
 
-  template <typename Type = T>
+ 
   // this may be uninitialized initialized...
   constexpr inline uint8_t *pointer_to_unsafe_data_buffer() {
     return (uint8_t *)(m_data);
   }
-  template <typename Type = T>
+
   // a small inline pointer_to_unsafe_data_buffer
   constexpr inline uint8_t *PTUDB() {
     return pointer_to_unsafe_data_buffer();
   }
 
-  template <typename  Type = T>
+  
   // this may be uninitialized initialized...
   constexpr inline Type *pointer_to_unsafe_data() { return (Type *)(m_data); }
-  template <typename  Type = T>
+  
   // a small inline pointer_to_unsafe_data
   constexpr inline Type *PTUD() { return pointer_to_unsafe_data(); }
 
@@ -1276,73 +1276,75 @@ class heap_obj_warper {
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
   // use like init_with_unsafe_new(new (init_with_unsafe_data()) Type());
-  template <typename  Type = T>
+  
   constexpr inline Type *init_with_unsafe_new(
       Type *ptr) {  // placement new  "new (ptr) Type();"
     return init_with_unsafe_data(ptr == pointer_to_unsafe_data());
   }
-  template <typename  Type = T>
+  
   // a small inline init_with_unsafe_new
   constexpr inline Type *IWUN(Type *ptr) {
     return init_with_unsafe_new(ptr);
   }
-  template <typename  Type = T>
+  constexpr inline const Type *pointer_to_data()const {
+    if (!m_Has_data) throw std::exception(" bad access");
+    return pointer_to_unsafe_data();
+  }
   constexpr inline Type *pointer_to_data() {
     if (!m_Has_data) throw std::exception(" bad access");
     return pointer_to_unsafe_data();
   }
-  template <typename  Type = T>
+  
   constexpr inline Type *operator->() {
     return pointer_to_data();
   }
-  template <typename my_type, typename Type = T>
+  template <typename my_type >
   inline auto operator->*(my_type my_var) {
     return pointer_to_data()->*my_var;
   }
-  template <typename  Type = T>
+  
   constexpr inline Type &operator*() { return *operator->(); }
-  template <typename  Type = T>
+  
   inline bool operator==(const heap_obj_warper &other) const {
     return operator() == other.operator();
   }
-  template <typename  Type = T>
+  
   inline bool operator!=(const heap_obj_warper &other) const {
     return operator() != other.operator();
   }
-  template <typename  Type = T>
+  
   inline bool operator<(const heap_obj_warper &other) const {
     return (operator()) < (other.operator());
   }
-  template <typename  Type = T>
+  
   inline bool operator<=(const heap_obj_warper &other) const {
     return (operator()) <= (other.operator());
   }
-  template <typename  Type = T>
+  
   inline bool operator>(const heap_obj_warper &other) const {
     return (operator()) > (other.operator());
   }
-  template <typename  Type = T>
+  
   inline bool operator>=(const heap_obj_warper &other) const {
     return (operator()) >= (other.operator());
   }
 
 #ifndef Arduino
 
-  template <typename  Type = T>
+  
   inline bool operator<=>(const heap_obj_warper &other) const {
     return operator() <=> other.operator();
   }
 #endif  // ! Arduino
-  template <typename  Type = T>
+  
   bool operator!() const {
     return !m_Has_data;
   }
-  template <typename  Type = T>
   explicit operator bool() const {
     return m_Has_data;
   }
-  template <typename  Type = T>
   inline operator Type &() { return *pointer_to_data(); }
+  inline operator const Type &()const { return *pointer_to_data(); }
 };
 
 class malloc_wrapper {

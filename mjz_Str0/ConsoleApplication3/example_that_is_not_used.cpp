@@ -35,19 +35,6 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 #include "fstream"
 
 int my_main::main(int argc, const char* const* const argv) {
-  mjz_ard::heap_obj_warper<std::string> obj;
-  obj.data_init();
-auto ptr =obj.PTUDB();
-  std::string& str = obj;
-std::cin >> str;
-std::cin.ignore();
-  std::cout << "\n";
-std::cout << "\n";
-  mjz_ard::iterator_template<uint8_t> it(ptr, ptr, ptr + obj.size);
-for (auto c : it) {
-    std::cout << c;
-    }
-std::cout << "\n";
-std::cin.get();
+  std::basic_string<int, std::char_traits<int>,std:: allocator<char>>
   return 0;
 }
