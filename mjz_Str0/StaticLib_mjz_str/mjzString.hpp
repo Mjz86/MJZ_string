@@ -374,8 +374,8 @@ class static_str_algo {
       return 0;
     }
 
-    //
-    return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
+    return !memcmp(rhs, lhs, rhs_l);
+   // return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
   }
   struct _char_8_a {
     union {
@@ -491,7 +491,6 @@ class static_str_algo {
                                                      size_t needle_len) {
     for (const char *ptr_i_end{hay_stack - 1}, *ptr_i{ptr_i_end + hay_len};
          ptr_i_end < ptr_i; ptr_i--) {
-      
       for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
            ptr_j < ptr_j_end; ptr_j++) {
         if (*ptr_i == *ptr_j) {
@@ -522,7 +521,6 @@ class static_str_algo {
                                                          size_t needle_len) {
     for (const char *ptr_i_end{hay_stack - 1}, *ptr_i{ptr_i_end + hay_len};
          ptr_i_end < ptr_i; ptr_i--) {
-     
       for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
            ptr_j < ptr_j_end; ptr_j++) {
         if (*ptr_i != *ptr_j) {
@@ -1214,6 +1212,7 @@ inline constexpr bool operator!=(const Mallocator<Type> &,
 // iterator_template Class
 template <typename Type>
 class iterator_template {
+
  protected:
   Type *m_iterator;
   Type *m_iterator_begin_ptr;
@@ -1230,17 +1229,31 @@ class iterator_template {
   using size_type = size_t;
 
   // using iterator_concept = std::contiguous_iterator_tag;
-  constexpr iterator_template() noexcept
+  inline constexpr iterator_template() noexcept
       : iterator_template(nullptr, nullptr, (Type *)-1) {}
   // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
-  constexpr iterator_template(Type *iter, Type *min_end, Type *max_end) noexcept
+
+
+ inline constexpr iterator_template(Type *iter, Type *min_end,
+                                     Type *max_end) noexcept
       : m_iterator{iter},
         m_iterator_begin_ptr{min_end},
         m_iterator_end_ptr{max_end} {}
 
-  constexpr iterator_template(const Type *_First_arg,
-                              const Type *_Last_arg) noexcept
-      : iterator_template(_First_arg, _First_arg, _Last_arg) {}
+  inline constexpr iterator_template(Type *arr, size_t len) noexcept
+      : m_iterator(arr),
+        m_iterator_begin_ptr(arr),
+        m_iterator_end_ptr(arr + len) {}
+
+ inline constexpr iterator_template(const Type *First_arg,
+                              const Type *Last_arg) noexcept
+      : iterator_template(First_arg, First_arg, Last_arg) {}
+
+
+ // inline constexpr iterator_template(std::initializer_list<Type>list) noexcept
+ //   : iterator_template((Type *)(list.begin()), (size_t)list.size()) {} 
+ //this is bad for class types  becuse  ~list => ~Type => }   code... => use after free
+
   constexpr void throw_if_bad(Type *_iterator) const {
     if (_iterator == (Type *)-1) {
       _iterator = m_iterator;
@@ -1301,16 +1314,14 @@ class iterator_template {
   inline auto operator->*(my_type my_var) {
     return operator->()->*my_var;
   }
-
-  constexpr iterator_template begin() const {
+  inline constexpr const Type *begin() const { return m_iterator_begin_ptr; }
+  inline constexpr const Type *end() const { return m_iterator_end_ptr; }
+  inline constexpr Type *begin() { return m_iterator_begin_ptr; }
+  inline constexpr Type *end() { return m_iterator_end_ptr; }
+  inline constexpr iterator_template base() {
     return iterator_template(m_iterator_begin_ptr, m_iterator_begin_ptr,
                              m_iterator_end_ptr);
   }
-  constexpr iterator_template end() const {
-    return iterator_template(m_iterator_end_ptr, m_iterator_begin_ptr,
-                             m_iterator_end_ptr);
-  }
-  constexpr iterator_template base() { return begin(); }
 
   constexpr size_t size() const noexcept {
     return static_cast<size_t>(m_iterator_end_ptr - m_iterator_begin_ptr);
@@ -1430,6 +1441,15 @@ class iterator_template {
   }
 };
 
+template <class T>
+inline constexpr const T *begin(iterator_template<T> it) noexcept {
+  return it.begin();
+}
+
+template <class T>
+inline constexpr const T *end(iterator_template<T> it) noexcept {
+  return it.end();
+}
 template <typename Type>
 class heap_obj_warper {
  public:
@@ -1451,11 +1471,15 @@ class heap_obj_warper {
   constexpr inline heap_obj_warper() = default;
   inline ~heap_obj_warper() { data_de_init(); }
   inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
-    operator*() = std::move(h_obj_w.operator*());
+    if (!!h_obj_w) operator*() = std::move(h_obj_w.operator*());
     return *this;
   }
   inline heap_obj_warper &operator=(const heap_obj_warper &h_obj_w) {
-    operator*() = h_obj_w.operator*();
+    if (!!h_obj_w) operator*() = h_obj_w.operator*();
+    return *this;
+  }
+  inline heap_obj_warper &operator=( heap_obj_warper &h_obj_w) {
+    if (!!h_obj_w) operator*() = h_obj_w.operator*();
     return *this;
   }
   inline heap_obj_warper(heap_obj_warper &&h_obj_w) {
@@ -1463,15 +1487,17 @@ class heap_obj_warper {
       m_Has_data = 1;
   }
   inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
-    if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
+    if (!!h_obj_w)
+      if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
       m_Has_data = 1;
   }
   inline heap_obj_warper(heap_obj_warper &h_obj_w) {
-    if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
+    if (!!h_obj_w)
+      if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
       m_Has_data = 1;
   }
   inline heap_obj_warper(const Type &obj) {
-    if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
+      if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
   }
   inline heap_obj_warper(Type &obj) {
     if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
@@ -1545,11 +1571,28 @@ class heap_obj_warper {
   // a small inline pointer_to_unsafe_data_buffer
   constexpr inline uint8_t *PTUDB() { return pointer_to_unsafe_data_buffer(); }
 
+   // this may be uninitialized initialized...
+  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const {
+    return (uint8_t *)(m_data);
+  }
+
+  // a small inline pointer_to_unsafe_data_buffer
+  constexpr inline const uint8_t *PTUDB() const {
+    return pointer_to_unsafe_data_buffer();
+  }
+
   // this may be uninitialized initialized...
   constexpr inline Type *pointer_to_unsafe_data() { return (Type *)(m_data); }
 
   // a small inline pointer_to_unsafe_data
   constexpr inline Type *PTUD() { return pointer_to_unsafe_data(); }
+  // this may be uninitialized initialized...
+  constexpr inline const Type *pointer_to_unsafe_data() const {
+    return (const Type *const)(m_data);
+  }
+
+  // a small inline pointer_to_unsafe_data
+  constexpr inline const Type *PTUD() const { return pointer_to_unsafe_data(); }
 
   using value_type = Type;
   using reference = value_type &;
@@ -1581,6 +1624,14 @@ class heap_obj_warper {
   }
 
   constexpr inline Type &operator*() { return *operator->(); }
+
+
+  constexpr inline const Type *operator->() const { return pointer_to_data(); }
+  template <typename my_type>
+  inline auto operator->*(my_type my_var) const {
+    return pointer_to_data()->*my_var;
+  }
+  constexpr inline const Type &operator*() const { return *operator->(); }
 
   inline bool operator==(const heap_obj_warper &other) const {
     return operator() == other.operator();
@@ -2385,6 +2436,30 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr inline int compare(const char *s) const {
     return compare(s, strlen(s));
   }
+  constexpr inline bool starts_with(const char *s, size_t n) const {
+    return substr_view(0ULL, n).equals(s, n);
+  }
+  constexpr inline bool starts_with(const basic_mjz_Str_view &s) const {
+    return starts_with(s.c_str(), s.length());
+  }
+  constexpr inline bool starts_with(char c) const { return c == *c_str(); }
+
+  constexpr inline bool starts_with(const char *s) const {
+    return starts_with(s, strlen(s));
+  }
+
+    constexpr inline bool ends_with(const char *s, size_t n)const {
+    return substr_view(length() - n, length()).equals(s, n);
+  }
+  constexpr inline bool ends_with(const basic_mjz_Str_view &s) const {
+    return ends_with(s.c_str(), s.length());
+  }
+  constexpr inline bool ends_with(char c) const {
+    return c == c_str()[length() - 1];
+  }
+  constexpr inline bool ends_with(const char *s) const {
+    return ends_with(s, strlen(s));
+  }
 
   inline constexpr int64_t indexOf(const basic_mjz_Str_view &s2) const {
     return indexOf(s2, 0);
@@ -2454,7 +2529,7 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
 
   constexpr inline size_t find_first_of(char c, size_t pos = 0) const {
-    return find_first_of(&c,pos, 1);
+    return find_first_of(&c, pos, 1);
   }
 
   constexpr inline size_t find_last_of(const basic_mjz_Str_view &str,
@@ -3575,7 +3650,6 @@ class mjz_Str : public basic_mjz_String,
   friend StringSumHelper operator+(StringSumHelper &&lhs,
                                    const __FlashStringHelper *rhs);
 
-
   typedef void *(*function_ptr)(const mjz_Str &, void *);
   operator StringIfHelperType() const {
     return buffer_ref() ? &mjz_Str::StringIfHelper : 0;
@@ -3719,18 +3793,20 @@ class mjz_Str : public basic_mjz_String,
   typedef std::reverse_iterator<iterator> rev_iterator;
   typedef std::reverse_iterator<const_iterator> const_rev_iterator;
   rev_iterator rbegin() {
-    return rev_iterator({end(), begining_of_str_ptr(), ending_of_str_ptr()});
+    return rev_iterator(
+        iterator{end(), begining_of_str_ptr(), ending_of_str_ptr()});
   }
   rev_iterator rend() {
-    return rev_iterator({begin(), begining_of_str_ptr(), ending_of_str_ptr()});
+    return rev_iterator(
+        iterator{begin(), begining_of_str_ptr(), ending_of_str_ptr()});
   }
   const_rev_iterator crend() const {
     return const_rev_iterator(
-        {begin(), begining_of_str_ptr(), ending_of_str_ptr()});
+        const_iterator{begin(), begining_of_str_ptr(), ending_of_str_ptr()});
   };
   const_rev_iterator crbegin() const {
     return const_rev_iterator(
-        {end(), begining_of_str_ptr(), ending_of_str_ptr()});
+        const_iterator{end(), begining_of_str_ptr(), ending_of_str_ptr()});
   };
   inline const_rev_iterator rend() const { return crend(); };
   inline const_rev_iterator rbegin() const { return crbegin(); };
@@ -4399,8 +4475,7 @@ class type_fn_class {
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
                       bool force_neg = 0);
 
-mjz_Str &getline(mjz_Str &is, mjz_Str &str,
-                          char delim);
+mjz_Str &getline(mjz_Str &is, mjz_Str &str, char delim);
 mjz_Str &getline(mjz_Str &is, mjz_Str &str);
 template <size_t buffer_len = 2048>
 std::istream &getline(std::istream &is, mjz_Str &str, char delim) {

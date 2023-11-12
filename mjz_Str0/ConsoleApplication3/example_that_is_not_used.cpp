@@ -35,5 +35,6 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 #include "fstream"
 
 int my_main::main(int argc, const char* const* const argv) {
+ using namespace  mjz_ard;
   return 0;
 }
