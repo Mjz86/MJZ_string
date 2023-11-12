@@ -282,7 +282,7 @@ int main79() {
         std::cin >> obj();
         obj.change_reinterpret_char_char('\\');
         obj <<= mjz_Str(obj);
-        obj.replace(" ", 1, "", 0);
+        obj.find_and_replace(" ", 1, "", 0);
         obj.toLowerCase();
 
         if ((obj.is_blank()))

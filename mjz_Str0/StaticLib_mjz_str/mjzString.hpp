@@ -32,13 +32,8 @@
 #define std__string_view_if_is std::string_view
 #include "framework.h"
 #endif
-// #define if_virtual_then_virtual virtual
+// #define  virtual
 // use final if want to not be virtualized again
-// virtual
-#ifndef if_virtual_then_virtual
-#define if_virtual_then_virtual
-#endif  // if_virtual_then_virtual
-// virtual
 // #define if_override_then_override override
 // override
 #ifndef if_override_then_override
@@ -54,6 +49,7 @@ unsigned long millis();
 #define log_mjz_str(Function, ...) (Function((const char *)__VA_ARGS__))
 inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
+
 namespace mjz_ard {
 struct UINT64_X2_32_t {
   union {
@@ -472,6 +468,69 @@ class static_str_algo {
     data2.~T2();
     memcpy(memset(&data2, 0, sizeof(T2)), &data, min(sizeof(T2), sizeof(T1)));
     return data2;
+  }
+
+  static constexpr inline size_t find_first_of_in_str(const char *hay_stack,
+                                                      size_t hay_len,
+                                                      const char *needle,
+                                                      size_t needle_len) {
+    for (const char *ptr_i{hay_stack}, *ptr_i_end{ptr_i + hay_len};
+         ptr_i < ptr_i_end; ptr_i++) {
+      for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
+           ptr_j < ptr_j_end; ptr_j++) {
+        if (*ptr_i == *ptr_j) {
+          return ptr_i - hay_stack;
+        }
+      }
+    }
+    return -1;
+  }
+  static constexpr inline size_t find_last_of_in_str(const char *hay_stack,
+                                                     size_t hay_len,
+                                                     const char *needle,
+                                                     size_t needle_len) {
+    for (const char *ptr_i_end{hay_stack - 1}, *ptr_i{ptr_i_end + hay_len};
+         ptr_i_end < ptr_i; ptr_i--) {
+      
+      for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
+           ptr_j < ptr_j_end; ptr_j++) {
+        if (*ptr_i == *ptr_j) {
+          return ptr_i - hay_stack;
+        }
+      }
+    }
+    return -1;
+  }
+  static constexpr inline size_t find_first_of_not_in_str(const char *hay_stack,
+                                                          size_t hay_len,
+                                                          const char *needle,
+                                                          size_t needle_len) {
+    for (const char *ptr_i{hay_stack}, *ptr_i_end{ptr_i + hay_len};
+         ptr_i < ptr_i_end; ptr_i++) {
+      for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
+           ptr_j < ptr_j_end; ptr_j++) {
+        if (*ptr_i != *ptr_j) {
+          return ptr_i - hay_stack;
+        }
+      }
+    }
+    return -1;
+  }
+  static constexpr inline size_t find_last_of_not_in_str(const char *hay_stack,
+                                                         size_t hay_len,
+                                                         const char *needle,
+                                                         size_t needle_len) {
+    for (const char *ptr_i_end{hay_stack - 1}, *ptr_i{ptr_i_end + hay_len};
+         ptr_i_end < ptr_i; ptr_i--) {
+     
+      for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
+           ptr_j < ptr_j_end; ptr_j++) {
+        if (*ptr_i != *ptr_j) {
+          return ptr_i - hay_stack;
+        }
+      }
+    }
+    return -1;
   }
 
  public:
@@ -1152,12 +1211,232 @@ inline constexpr bool operator!=(const Mallocator<Type> &,
                                  const Mallocator<U> &) {
   return false;
 }
+// iterator_template Class
+template <typename Type>
+class iterator_template {
+ protected:
+  Type *m_iterator;
+  Type *m_iterator_begin_ptr;
+  Type *m_iterator_end_ptr;
+
+ public:
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using value_type = Type;
+  using const_reference = const Type &;
+  using size_type = size_t;
+
+  // using iterator_concept = std::contiguous_iterator_tag;
+  constexpr iterator_template() noexcept
+      : iterator_template(nullptr, nullptr, (Type *)-1) {}
+  // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
+  constexpr iterator_template(Type *iter, Type *min_end, Type *max_end) noexcept
+      : m_iterator{iter},
+        m_iterator_begin_ptr{min_end},
+        m_iterator_end_ptr{max_end} {}
+
+  constexpr iterator_template(const Type *_First_arg,
+                              const Type *_Last_arg) noexcept
+      : iterator_template(_First_arg, _First_arg, _Last_arg) {}
+  constexpr void throw_if_bad(Type *_iterator) const {
+    if (_iterator == (Type *)-1) {
+      _iterator = m_iterator;
+    }
+
+    if ((m_iterator_begin_ptr <= _iterator) &&
+        (_iterator <= m_iterator_end_ptr)) {
+      return;
+    }
+
+    throw std::exception(
+        "bad ptr access : mjz_ard::iterator_template::throw_if_bad ");
+  }
+  constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
+
+  constexpr iterator_template(const iterator_template &p) noexcept
+      : m_iterator(p.m_iterator),
+        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
+  constexpr iterator_template(iterator_template &&p) noexcept
+      : m_iterator(p.m_iterator),
+        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
+  constexpr iterator_template &operator=(Type *iter) {
+    m_iterator = iter;
+    throw_if_bad();
+    return *this;
+  }
+  constexpr iterator_template &operator=(const iterator_template &p) {
+    m_iterator = (p.m_iterator);
+    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
+    m_iterator_end_ptr = p.m_iterator_end_ptr;
+    throw_if_bad();
+    return *this;
+  }
+  constexpr iterator_template &operator=(iterator_template &&p) noexcept {
+    m_iterator = (p.m_iterator);
+    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
+    m_iterator_end_ptr = p.m_iterator_end_ptr;
+    return *this;
+  }
+  constexpr ~iterator_template() { m_iterator = 0; }
+  constexpr bool operator==(const iterator_template &other) const noexcept {
+    return m_iterator == other.m_iterator;
+  }
+  constexpr bool operator!=(const iterator_template &other) const noexcept {
+    return m_iterator != other.m_iterator;
+  }
+  constexpr reference operator*() const {
+    throw_if_bad();
+    return *m_iterator;
+  }
+  constexpr pointer operator->() const {
+    throw_if_bad();
+    return m_iterator;
+  }
+  template <typename my_type, typename Type = value_type>
+  inline auto operator->*(my_type my_var) {
+    return operator->()->*my_var;
+  }
+
+  constexpr iterator_template begin() const {
+    return iterator_template(m_iterator_begin_ptr, m_iterator_begin_ptr,
+                             m_iterator_end_ptr);
+  }
+  constexpr iterator_template end() const {
+    return iterator_template(m_iterator_end_ptr, m_iterator_begin_ptr,
+                             m_iterator_end_ptr);
+  }
+  constexpr iterator_template base() { return begin(); }
+
+  constexpr size_t size() const noexcept {
+    return static_cast<size_t>(m_iterator_end_ptr - m_iterator_begin_ptr);
+  }
+  constexpr iterator_template &operator++() noexcept {
+    ++m_iterator;
+    return *this;
+  }
+  constexpr iterator_template operator++(int) noexcept {
+    iterator_template tmp(*this);
+    ++(*this);
+    return tmp;
+  }
+  constexpr iterator_template &operator--() noexcept {
+    --m_iterator;
+    return *this;
+  }
+  constexpr iterator_template operator--(int) noexcept {
+    iterator_template tmp(*this);
+    --(*this);
+    return tmp;
+  }
+  constexpr iterator_template &operator+=(
+      const difference_type other) noexcept {
+    m_iterator += other;
+    return *this;
+  }
+  constexpr iterator_template &operator-=(
+      const difference_type other) noexcept {
+    m_iterator -= other;
+    return *this;
+  }
+  constexpr iterator_template &operator+=(
+      const iterator_template &other) noexcept {
+    m_iterator += other.m_iterator;
+    return *this;
+  }
+  constexpr iterator_template &operator-=(
+      const iterator_template &other) noexcept {
+    m_iterator -= other.m_iterator;
+    return *this;
+  }
+  constexpr reference operator[](std::size_t index) const {
+    throw_if_bad(m_iterator + index);
+    return m_iterator[index];
+  }
+  constexpr bool operator<(const iterator_template &other) const noexcept {
+    return m_iterator < other.m_iterator;
+  }
+  constexpr bool operator>(const iterator_template &other) const noexcept {
+    return m_iterator > other.m_iterator;
+  }
+  constexpr bool operator<=(const iterator_template &other) const noexcept {
+    return m_iterator <= other.m_iterator;
+  }
+  constexpr bool operator>=(const iterator_template &other) const noexcept {
+    return m_iterator >= other.m_iterator;
+  }
+  constexpr operator pointer() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr explicit operator pointer &() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr pointer get_pointer() const {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr pointer &get_pointer() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr friend iterator_template operator+(
+      const iterator_template &me, const difference_type other) noexcept {
+    return iterator_template(me.m_iterator + other, me.m_iterator_begin_ptr,
+                             me.m_iterator_end_ptr);
+  }
+  constexpr friend iterator_template operator-(
+      const iterator_template &me, const difference_type other) noexcept {
+    return iterator_template(me.m_iterator - other, me.m_iterator_begin_ptr,
+                             me.m_iterator_end_ptr);
+  }
+  constexpr friend iterator_template operator+(
+      const difference_type other, const iterator_template &me) noexcept {
+    return iterator_template(
+        other + me.m_iterator,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  // friend iterator_template operator-(const difference_type other, const
+  // iterator_template& me) noexcept { // bad function dont use
+  // return iterator_template(me.m_iterator - (pointer)other);
+  // }
+  constexpr friend iterator_template operator+(
+      const iterator_template &other, const iterator_template &me) noexcept {
+    return iterator_template(
+        other.m_iterator + me,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  constexpr friend difference_type operator-(
+      const iterator_template &other, const iterator_template &me) noexcept {
+    return std::distance(other.m_iterator, me.m_iterator);
+  }
+  constexpr friend void swap(iterator_template &lhs,
+                             iterator_template &rhs) noexcept {
+    iterator_template lhsm_iterator = lhs;
+    lhs = rhs;
+    rhs = lhsm_iterator;
+  }
+  constexpr friend void swap(reference lhs, reference rhs) noexcept {
+    value_type lhsm_ = lhs;
+    lhs = rhs;
+    rhs = lhsm_;
+  }
+};
 
 template <typename Type>
 class heap_obj_warper {
  public:
-  // note this static is NOT  THE SAME   for int , bool ,... becuse this is a template
- static constexpr size_t size = sizeof(Type);
+  // note this static is NOT  THE SAME   for int , bool ,... becuse this is a
+  // template
+  static constexpr size_t size = sizeof(Type);
+
  protected:
   uint8_t m_data[size]{};
   bool m_Has_data{};
@@ -1213,11 +1492,17 @@ class heap_obj_warper {
     return *this;
   }
 
-  template <typename arg_T>
+  template <typename arg_T, typename Type>
   inline void data_init(std::initializer_list<arg_T> list) {
     data_de_init();
     if (new (m_data) Type(list)) m_Has_data = 1;
   }
+  template <typename arg_T>
+  inline void data_init(iterator_template<arg_T> list) {
+    data_de_init();
+    if (new (m_data) Type(list)) m_Has_data = 1;
+  }
+
   template <typename... arguments_types>
   inline void data_init(arguments_types... args) {
     data_de_init();
@@ -1238,35 +1523,31 @@ class heap_obj_warper {
     data_de_init();
     if (new (m_data) Type(args...)) m_Has_data = 1;
   }
-  
+
   inline void data_de_init() {
     if (m_Has_data) pointer_to_data()->~Type();
     m_Has_data = 0;
   }
-  
-  inline void data_de_init( int fill_VAL) {
+
+  inline void data_de_init(int fill_VAL) {
     if (m_Has_data) pointer_to_data()->~Type();
     m_Has_data = 0;
     static_str_algo::memset(m_data, fill_VAL, size);
   }
-  
+
   constexpr inline bool has_data() { return m_Has_data; }
 
- 
   // this may be uninitialized initialized...
   constexpr inline uint8_t *pointer_to_unsafe_data_buffer() {
     return (uint8_t *)(m_data);
   }
 
   // a small inline pointer_to_unsafe_data_buffer
-  constexpr inline uint8_t *PTUDB() {
-    return pointer_to_unsafe_data_buffer();
-  }
+  constexpr inline uint8_t *PTUDB() { return pointer_to_unsafe_data_buffer(); }
 
-  
   // this may be uninitialized initialized...
   constexpr inline Type *pointer_to_unsafe_data() { return (Type *)(m_data); }
-  
+
   // a small inline pointer_to_unsafe_data
   constexpr inline Type *PTUD() { return pointer_to_unsafe_data(); }
 
@@ -1276,17 +1557,15 @@ class heap_obj_warper {
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
   // use like init_with_unsafe_new(new (init_with_unsafe_data()) Type());
-  
+
   constexpr inline Type *init_with_unsafe_new(
       Type *ptr) {  // placement new  "new (ptr) Type();"
     return init_with_unsafe_data(ptr == pointer_to_unsafe_data());
   }
-  
+
   // a small inline init_with_unsafe_new
-  constexpr inline Type *IWUN(Type *ptr) {
-    return init_with_unsafe_new(ptr);
-  }
-  constexpr inline const Type *pointer_to_data()const {
+  constexpr inline Type *IWUN(Type *ptr) { return init_with_unsafe_new(ptr); }
+  constexpr inline const Type *pointer_to_data() const {
     if (!m_Has_data) throw std::exception(" bad access");
     return pointer_to_unsafe_data();
   }
@@ -1294,57 +1573,50 @@ class heap_obj_warper {
     if (!m_Has_data) throw std::exception(" bad access");
     return pointer_to_unsafe_data();
   }
-  
-  constexpr inline Type *operator->() {
-    return pointer_to_data();
-  }
-  template <typename my_type >
+
+  constexpr inline Type *operator->() { return pointer_to_data(); }
+  template <typename my_type>
   inline auto operator->*(my_type my_var) {
     return pointer_to_data()->*my_var;
   }
-  
+
   constexpr inline Type &operator*() { return *operator->(); }
-  
+
   inline bool operator==(const heap_obj_warper &other) const {
     return operator() == other.operator();
   }
-  
+
   inline bool operator!=(const heap_obj_warper &other) const {
     return operator() != other.operator();
   }
-  
+
   inline bool operator<(const heap_obj_warper &other) const {
     return (operator()) < (other.operator());
   }
-  
+
   inline bool operator<=(const heap_obj_warper &other) const {
     return (operator()) <= (other.operator());
   }
-  
+
   inline bool operator>(const heap_obj_warper &other) const {
     return (operator()) > (other.operator());
   }
-  
+
   inline bool operator>=(const heap_obj_warper &other) const {
     return (operator()) >= (other.operator());
   }
 
 #ifndef Arduino
 
-  
   inline bool operator<=>(const heap_obj_warper &other) const {
     return operator() <=> other.operator();
   }
 #endif  // ! Arduino
-  
-  bool operator!() const {
-    return !m_Has_data;
-  }
-  explicit operator bool() const {
-    return m_Has_data;
-  }
+
+  bool operator!() const { return !m_Has_data; }
+  explicit operator bool() const { return m_Has_data; }
   inline operator Type &() { return *pointer_to_data(); }
-  inline operator const Type &()const { return *pointer_to_data(); }
+  inline operator const Type &() const { return *pointer_to_data(); }
 };
 
 class malloc_wrapper {
@@ -1476,214 +1748,6 @@ class malloc_wrapper {
       : m_data_ptr(data_ptr),
         m_cap_size(cap_size),
         m_Deallocation_state(DO_deallocate) {}
-};
-
-// iterator_template Class
-template <typename Type>
-class iterator_template {
- protected:
-  Type *m_iterator;
-  Type *m_iterator_begin_ptr;
-  Type *m_iterator_end_ptr;
-
- public:
-  using value_type = Type;
-  using reference = value_type &;
-  using pointer = value_type *;
-  using iterator_category = std::random_access_iterator_tag;
-  using difference_type = std::ptrdiff_t;
-  // using iterator_concept = std::contiguous_iterator_tag;
-  constexpr iterator_template() noexcept
-      : iterator_template(nullptr, nullptr, (Type *)-1) {}
-  // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
-  constexpr iterator_template(Type *iter, Type *min_end, Type *max_end) noexcept
-      : m_iterator{iter},
-        m_iterator_begin_ptr{min_end},
-        m_iterator_end_ptr{max_end} {}
-  constexpr void throw_if_bad(Type *_iterator) const {
-    if (_iterator == (Type *)-1) {
-      _iterator = m_iterator;
-    }
-
-    if ((m_iterator_begin_ptr <= _iterator) &&
-        (_iterator <= m_iterator_end_ptr)) {
-      return;
-    }
-
-    throw std::exception(
-        "bad ptr access : mjz_ard::iterator_template::throw_if_bad ");
-  }
-  constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
-
-  constexpr iterator_template(const iterator_template &p) noexcept
-      : m_iterator(p.m_iterator),
-        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
-        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template(iterator_template &&p) noexcept
-      : m_iterator(p.m_iterator),
-        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
-        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template &operator=(Type *iter) {
-    m_iterator = iter;
-    throw_if_bad();
-    return *this;
-  }
-  constexpr iterator_template &operator=(const iterator_template &p) {
-    m_iterator = (p.m_iterator);
-    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
-    m_iterator_end_ptr = p.m_iterator_end_ptr;
-    throw_if_bad();
-    return *this;
-  }
-  constexpr iterator_template &operator=(iterator_template &&p) noexcept {
-    m_iterator = (p.m_iterator);
-    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
-    m_iterator_end_ptr = p.m_iterator_end_ptr;
-    return *this;
-  }
-  constexpr ~iterator_template() { m_iterator = 0; }
-  constexpr bool operator==(const iterator_template &other) const noexcept {
-    return m_iterator == other.m_iterator;
-  }
-  constexpr bool operator!=(const iterator_template &other) const noexcept {
-    return m_iterator != other.m_iterator;
-  }
-  constexpr reference operator*() const {
-    throw_if_bad();
-    return *m_iterator;
-  }
-  constexpr pointer operator->() const {
-    throw_if_bad();
-    return m_iterator;
-  }
-  template <typename my_type, typename Type = value_type>
-  inline auto operator->*(my_type my_var) {
-    return operator->()->*my_var;
-  }
-
-  constexpr iterator_template begin() const {
-    return iterator_template(m_iterator_begin_ptr, m_iterator_begin_ptr,
-                             m_iterator_end_ptr);
-  }
-  constexpr iterator_template end() const {
-    return iterator_template(m_iterator_end_ptr, m_iterator_begin_ptr,
-                             m_iterator_end_ptr);
-  }
-  constexpr iterator_template base() { return begin(); }
-
-  constexpr iterator_template &operator++() noexcept {
-    ++m_iterator;
-    return *this;
-  }
-  constexpr iterator_template operator++(int) noexcept {
-    iterator_template tmp(*this);
-    ++(*this);
-    return tmp;
-  }
-  constexpr iterator_template &operator--() noexcept {
-    --m_iterator;
-    return *this;
-  }
-  constexpr iterator_template operator--(int) noexcept {
-    iterator_template tmp(*this);
-    --(*this);
-    return tmp;
-  }
-  constexpr iterator_template &operator+=(
-      const difference_type other) noexcept {
-    m_iterator += other;
-    return *this;
-  }
-  constexpr iterator_template &operator-=(
-      const difference_type other) noexcept {
-    m_iterator -= other;
-    return *this;
-  }
-  constexpr iterator_template &operator+=(
-      const iterator_template &other) noexcept {
-    m_iterator += other.m_iterator;
-    return *this;
-  }
-  constexpr iterator_template &operator-=(
-      const iterator_template &other) noexcept {
-    m_iterator -= other.m_iterator;
-    return *this;
-  }
-  constexpr reference operator[](std::size_t index) const {
-    throw_if_bad(m_iterator + index);
-    return m_iterator[index];
-  }
-  constexpr bool operator<(const iterator_template &other) const noexcept {
-    return m_iterator < other.m_iterator;
-  }
-  constexpr bool operator>(const iterator_template &other) const noexcept {
-    return m_iterator > other.m_iterator;
-  }
-  constexpr bool operator<=(const iterator_template &other) const noexcept {
-    return m_iterator <= other.m_iterator;
-  }
-  constexpr bool operator>=(const iterator_template &other) const noexcept {
-    return m_iterator >= other.m_iterator;
-  }
-  constexpr operator pointer() {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr explicit operator pointer &() {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr pointer get_pointer() const {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr pointer &get_pointer() {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr friend iterator_template operator+(
-      const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(me.m_iterator + other, me.m_iterator_begin_ptr,
-                             me.m_iterator_end_ptr);
-  }
-  constexpr friend iterator_template operator-(
-      const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(me.m_iterator - other, me.m_iterator_begin_ptr,
-                             me.m_iterator_end_ptr);
-  }
-  constexpr friend iterator_template operator+(
-      const difference_type other, const iterator_template &me) noexcept {
-    return iterator_template(
-        other + me.m_iterator,
-        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
-        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
-  }
-  // friend iterator_template operator-(const difference_type other, const
-  // iterator_template& me) noexcept { // bad function dont use
-  // return iterator_template(me.m_iterator - (pointer)other);
-  // }
-  constexpr friend iterator_template operator+(
-      const iterator_template &other, const iterator_template &me) noexcept {
-    return iterator_template(
-        other.m_iterator + me,
-        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
-        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
-  }
-  constexpr friend difference_type operator-(
-      const iterator_template &other, const iterator_template &me) noexcept {
-    return std::distance(other.m_iterator, me.m_iterator);
-  }
-  constexpr friend void swap(iterator_template &lhs,
-                             iterator_template &rhs) noexcept {
-    iterator_template lhsm_iterator = lhs;
-    lhs = rhs;
-    rhs = lhsm_iterator;
-  }
-  constexpr friend void swap(reference lhs, reference rhs) noexcept {
-    value_type lhsm_ = lhs;
-    lhs = rhs;
-    rhs = lhsm_;
-  }
 };
 
 /*********************************************************************
@@ -2105,6 +2169,7 @@ struct SHA1_CTX : public SHA256_CTX {
 #endif  // SHA1_Hstatic
 class basic_mjz_Str_view : protected static_str_algo {
  public:
+  constexpr static size_t npos = -1;
   constexpr inline const char *begining_of_str_ptr() const { return m_buffer; }
   constexpr inline const char *ending_of_str_ptr() const {
     return m_buffer + m_length;
@@ -2121,13 +2186,16 @@ class basic_mjz_Str_view : protected static_str_algo {
  public:
   constexpr basic_mjz_Str_view(char *buffer, size_t length)
       : m_buffer(buffer), m_length(length) {}
+  constexpr basic_mjz_Str_view()
+      : m_buffer(const_cast<char *>(empty_STRING_C_STR)), m_length(0) {}
+
   constexpr basic_mjz_Str_view(const char *buffer, size_t length)
       : basic_mjz_Str_view(const_cast<char *>(buffer), length) {}
   constexpr ~basic_mjz_Str_view() = default;
   constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = delete;
   constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = delete;
   constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = delete;
-  constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = delete;
+  constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
   constexpr basic_mjz_Str_view(basic_mjz_Str_view &) = delete;
   constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = delete;
 
@@ -2155,6 +2223,8 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr inline const char *C_str() const { return buffer_ref(); }
   constexpr inline char *C_str() { return m_buffer; }
   constexpr inline size_t length(void) const { return m_length; }
+  constexpr inline char *data() { return m_buffer; }
+  constexpr inline const char *data() const { return m_buffer; }
 
  public:
   constexpr explicit operator const bool() const { return !is_blank(); }
@@ -2268,18 +2338,188 @@ class basic_mjz_Str_view : protected static_str_algo {
     return !(a < b);
   }
 
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  const basic_mjz_Str_view &s) {
+    COUT.write(s.data(), s.length());
+    return COUT;
+  }
+
   // hash function
   constexpr hash_sha256 mjz_hash(uint8_t n = 0) const {
     return SHA256_CTX::hash_msg_to_sha_512_n(c_str(), length(), n);
   }
   constexpr hash_sha256 hash() const { return mjz_hash(0); }
   constexpr int64_t compareTo(const basic_mjz_Str_view &s) const {
-    return compare_two_str(m_buffer, m_length, s.m_buffer, m_length);
+    return compare_two_str(m_buffer, m_length, s.m_buffer, s.m_length);
   }
 
   constexpr int64_t compareTo(const char *cstr) const {
     return compare_two_str(m_buffer, m_length, cstr, strlen(cstr));
   }
+
+  constexpr inline int compare(const basic_mjz_Str_view &str) const {
+    return compareTo(str);
+  }
+
+  constexpr inline int compare(size_t pos, size_t len,
+                               const basic_mjz_Str_view &str) const {
+    return substr_view_beg_n(pos, len).compareTo(str);
+  }
+
+  constexpr inline int compare(size_t pos, size_t len,
+                               const basic_mjz_Str_view &str, size_t subpos,
+                               size_t sublen) const {
+    return substr_view_beg_n(pos, len).compareTo(
+        str.substr_view_beg_n(subpos, sublen));
+  }
+  constexpr inline int compare(const char *s, size_t n) const {
+    return compare_two_str(m_buffer, m_length, s, n);
+  }
+  constexpr inline int compare(size_t pos, size_t len, const char *s,
+                               size_t n) const {
+    return substr_view_beg_n(pos, len).compare(s, n);
+  }
+  constexpr inline int compare(size_t pos, size_t len, const char *s) const {
+    return compare(pos, len, s, strlen(s));
+  }
+  constexpr inline int compare(const char *s) const {
+    return compare(s, strlen(s));
+  }
+
+  inline constexpr int64_t indexOf(const basic_mjz_Str_view &s2) const {
+    return indexOf(s2, 0);
+  }
+  inline constexpr int64_t indexOf(const basic_mjz_Str_view &s2,
+                                   size_t fromIndex) const {
+    return indexOf_cstr(s2.data(), s2.length(), fromIndex);
+  }
+
+  inline constexpr int64_t lastIndexOf(const basic_mjz_Str_view &s2) const {
+    return lastIndexOf(s2, m_length - s2.m_length);
+  }
+
+  inline constexpr int64_t lastIndexOf(const basic_mjz_Str_view &s2,
+                                       size_t fromIndex) const {
+    return lastIndexOf_cstr(s2.c_str(), s2.length(), fromIndex);
+  }
+  constexpr inline size_t find(const basic_mjz_Str_view &str,
+                               size_t pos = 0) const {
+    return indexOf(str, pos);
+  }
+  constexpr inline size_t find(const char *s, size_t pos = 0) const {
+    return indexOf_cstr(s, strlen(s), pos);
+  }
+  constexpr inline size_t find(const char *s, size_t pos, size_t n) const {
+    return indexOf_cstr(s, n, pos);
+  }
+  constexpr inline size_t find(char c, size_t pos = 0) const {
+    return indexOf(c, pos);
+  }
+
+  constexpr inline size_t rfind(const basic_mjz_Str_view &str,
+                                size_t pos = npos) const {
+    return lastIndexOf(str, pos);
+  }
+  constexpr inline size_t rfind(const char *s, size_t pos = npos) const {
+    return lastIndexOf_cstr(s, strlen(s), pos);
+  }
+  constexpr inline size_t rfind(const char *s, size_t pos, size_t n) const {
+    return lastIndexOf_cstr(s, n, pos);
+  }
+  constexpr inline size_t rfind(char c, size_t pos = npos) const {
+    return lastIndexOf(c, pos);
+  }
+  constexpr inline size_t find_first_of_in_str(const char *s, size_t n) const {
+    return static_str_algo::find_first_of_in_str(m_buffer, m_length, s, n);
+  }
+  constexpr inline size_t find_last_of_in_str(const char *s, size_t n) const {
+    return static_str_algo::find_last_of_in_str(m_buffer, m_length, s, n);
+  }
+
+  constexpr inline size_t find_first_of_in_str(
+      const basic_mjz_Str_view &str) const {
+    return find_first_of_in_str(str.m_buffer, str.m_length);
+  }
+
+  constexpr inline size_t find_first_of(const basic_mjz_Str_view &str,
+                                        size_t pos = 0) const {
+    return substr_view(pos).find_first_of_in_str(str);
+  }
+  constexpr inline size_t find_first_of(const char *s, size_t pos,
+                                        size_t n) const {
+    return substr_view(pos).find_first_of_in_str(s, n);
+  }
+  constexpr inline size_t find_first_of(const char *s, size_t pos = 0) const {
+    return find_first_of(s, pos, strlen(s));
+  }
+
+  constexpr inline size_t find_first_of(char c, size_t pos = 0) const {
+    return find_first_of(&c,pos, 1);
+  }
+
+  constexpr inline size_t find_last_of(const basic_mjz_Str_view &str,
+                                       size_t pos = npos) const {
+    return substr_view(pos).find_last_of_in_str(str.data(), str.length());
+  }
+
+  constexpr inline size_t find_last_of(const char *s, size_t pos = npos) const {
+    return substr_view(pos).find_last_of_in_str(s, strlen(s));
+  }
+  constexpr inline size_t find_last_of(const char *s, size_t pos,
+                                       size_t n) const {
+    return substr_view(pos).find_last_of_in_str(s, n);
+  }
+
+  constexpr inline size_t find_last_of(char c, size_t pos = npos) const {
+    return find_last_of(&c, pos, 1);
+  }
+
+  inline constexpr size_t find_last_not_of_in_str(const char *s,
+                                                  size_t n) const {
+    return static_str_algo::find_last_of_not_in_str(m_buffer, m_length, s, n);
+  }
+
+  inline constexpr size_t find_last_not_of(const basic_mjz_Str_view &str,
+                                           size_t pos = npos) const {
+    return substr_view(pos).find_last_not_of_in_str(str.c_str(), str.length());
+  }
+
+  inline constexpr size_t find_last_not_of(const char *s,
+                                           size_t pos = npos) const {
+    return substr_view(pos).find_last_not_of_in_str(s, strlen(s));
+  }
+
+  inline constexpr size_t find_last_not_of(const char *s, size_t pos,
+                                           size_t n) const {
+    return substr_view(pos).find_last_not_of_in_str(s, n);
+  }
+
+  inline constexpr size_t find_last_not_of(char c, size_t pos = npos) const {
+    return substr_view(pos).find_last_not_of_in_str(&c, 1);
+  }
+
+  inline constexpr size_t find_first_not_of_in_str(const char *s,
+                                                   size_t n) const {
+    return static_str_algo::find_first_of_not_in_str(m_buffer, m_length, s, n);
+  }
+
+  inline constexpr size_t find_first_not_of(const basic_mjz_Str_view &str,
+                                            size_t pos = 0) const {
+    return substr_view(pos).find_first_not_of_in_str(str.c_str(), str.length());
+  }
+
+  inline constexpr size_t find_first_not_of(const char *s,
+                                            size_t pos = 0) const {
+    return substr_view(pos).find_first_not_of_in_str(s, strlen(s));
+  }
+  inline constexpr size_t find_first_not_of(const char *s, size_t pos,
+                                            size_t n) const {
+    return substr_view(pos).find_first_not_of_in_str(s, n);
+  }
+  inline constexpr size_t find_first_not_of(char c, size_t pos = 0) const {
+    return substr_view(pos).find_first_not_of_in_str(&c, 1);
+  }
+
   constexpr bool equals(const char *cstr, size_t cstr_len) const {
     return are_two_str_equale(m_buffer, m_length, cstr, cstr_len);
   }
@@ -2386,7 +2626,7 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
   // Function that return the length
   constexpr size_t size() const { return length(); }
-  constexpr if_virtual_then_virtual char charAt(int64_t loc) const {
+  constexpr char charAt(int64_t loc) const {
     return operator[](signed_index_to_unsigned(loc));
   }
   constexpr char charAt(size_t loc) const {
@@ -2536,50 +2776,79 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr const char &back() const { return buffer_ref()[0]; }
   constexpr const char &front() const { return operator[]((int64_t)-1); }
 
- public:  // non constexpr
-  mjz_str_view substr_view(size_t beginIndex);
-  mjz_str_view substr_view(size_t beginIndex, size_t endIndex) const;
-  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number);
-  mjz_str_view substr_view(int64_t beginIndex, int64_t endIndex) const;
-  mjz_str_view substr_view(int64_t beginIndex) const;
-  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number);
-  mjz_str_view substr_view_beg_n(unsigned int beginIndex,
-                                 unsigned int number) const;
-  mjz_str_view substr_view(int beginIndex) const;
-  mjz_str_view substr_view(int beginIndex, int endIndex) const;
-  mjz_str_view substr_view_beg_n(int beginIndex, int number) const;
-  mjz_str_view substr_view_beg_n(size_t beginIndex, size_t number) const;
-  mjz_str_view substr_view(size_t beginIndex) const;
-  mjz_str_view substr_view_beg_n(int64_t beginIndex, size_t number) const;
+  inline constexpr basic_mjz_Str_view substr_view(size_t beginIndex) {
+    return substr_view(beginIndex, length() - beginIndex);
+  }
+  inline constexpr basic_mjz_Str_view substr_view(size_t beginIndex,
+                                                  size_t endIndex) const {
+    const char *out_ptr{};
+    size_t out_len{};
+    substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
+    return out_len ? basic_mjz_Str_view(out_ptr, out_len)
+                   : basic_mjz_Str_view();
+  }
+  inline constexpr basic_mjz_Str_view substr_view_beg_n(size_t beginIndex,
+                                                        size_t number) {
+    return substr_view(beginIndex, number + beginIndex);
+  }
+  inline constexpr basic_mjz_Str_view substr_view(int64_t beginIndex,
+                                                  int64_t endIndex) const {
+    return substr_view(signed_index_to_unsigned(beginIndex),
+                       signed_index_to_unsigned(endIndex));
+  }
+  inline constexpr basic_mjz_Str_view substr_view(int64_t beginIndex) const {
+    return substr_view(signed_index_to_unsigned(beginIndex));
+  }
+  inline constexpr basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
+                                                        size_t number) {
+    return substr_view(signed_index_to_unsigned(beginIndex),
+                       signed_index_to_unsigned(beginIndex) + number);
+  }
+  inline constexpr basic_mjz_Str_view substr_view_beg_n(
+      unsigned int beginIndex, unsigned int number) const {
+    return substr_view_beg_n((size_t)beginIndex, (size_t)number);
+  }
+  inline constexpr basic_mjz_Str_view substr_view(int beginIndex) const {
+    return substr_view((int64_t)beginIndex);
+  }
+  inline constexpr basic_mjz_Str_view substr_view(int beginIndex,
+                                                  int endIndex) const {
+    return substr_view((int64_t)beginIndex, (int64_t)endIndex);
+  }
+  inline constexpr basic_mjz_Str_view substr_view_beg_n(int beginIndex,
+                                                        int number) const {
+    return substr_view_beg_n((int64_t)beginIndex, (size_t)number);
+  }
+  inline constexpr basic_mjz_Str_view substr_view_beg_n(size_t beginIndex,
+                                                        size_t number) const {
+    return substr_view(beginIndex, number + beginIndex);
+  }
+  inline constexpr basic_mjz_Str_view substr_view(size_t beginIndex) const {
+    return substr_view(beginIndex, length() - beginIndex);
+  }
+  inline constexpr basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
+                                                        size_t number) const {
+    return substr_view(signed_index_to_unsigned(beginIndex),
+                       signed_index_to_unsigned(beginIndex) + number);
+  }
 
  public:
   std::pair<hash_sha256, mjz_Str> hash_with_output(uint8_t n = 0) const;
-
-  if_virtual_then_virtual int64_t indexOf(const mjz_Str &str) const;
-  if_virtual_then_virtual int64_t indexOf(const mjz_Str &str,
-                                          size_t fromIndex) const;
-  if_virtual_then_virtual mjz_Str substring(size_t beginIndex);
-  if_virtual_then_virtual mjz_Str substring(size_t beginIndex,
-                                            size_t endIndex) const;
-  if_virtual_then_virtual mjz_Str substring_beg_n(size_t beginIndex,
-                                                  size_t number);
-  if_virtual_then_virtual mjz_Str substring(int64_t beginIndex,
-                                            int64_t endIndex) const;
-  if_virtual_then_virtual mjz_Str substring(int64_t beginIndex) const;
-  if_virtual_then_virtual mjz_Str substring_beg_n(int64_t beginIndex,
-                                                  size_t number);
-  if_virtual_then_virtual mjz_Str substring_beg_n(unsigned int beginIndex,
-                                                  unsigned int number) const;
-  if_virtual_then_virtual mjz_Str substring(int beginIndex) const;
-  if_virtual_then_virtual mjz_Str substring(int beginIndex, int endIndex) const;
-  if_virtual_then_virtual mjz_Str substring_beg_n(int beginIndex,
-                                                  int number) const;
+  mjz_Str substring(size_t beginIndex);
+  mjz_Str substring(size_t beginIndex, size_t endIndex) const;
   mjz_Str substring_beg_n(size_t beginIndex, size_t number) const;
+  mjz_Str substr(size_t pos = 0, size_t len = npos) const;
+  mjz_Str substring(int64_t beginIndex, int64_t endIndex) const;
+  mjz_Str substring(int64_t beginIndex) const;
+  mjz_Str substring_beg_n(int64_t beginIndex, size_t number);
+  mjz_Str substring_beg_n(unsigned int beginIndex, unsigned int number) const;
+  mjz_Str substring(int beginIndex) const;
+  mjz_Str substring(int beginIndex, int endIndex) const;
+  mjz_Str substring_beg_n(int beginIndex, int number) const;
   mjz_Str substring(size_t beginIndex) const;
   mjz_Str substring_beg_n(int64_t beginIndex, size_t number) const;
-  if_virtual_then_virtual int64_t lastIndexOf(const mjz_Str &str) const;
-  if_virtual_then_virtual int64_t lastIndexOf(const mjz_Str &str,
-                                              size_t fromIndex) const;
+
+  constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
 };
 
 class mjz_Str;
@@ -2605,7 +2874,6 @@ class basic_mjz_String : public basic_mjz_Str_view {
   basic_mjz_String &operator=(basic_mjz_String &) = delete;
 
  public:
-  inline size_t max_size() const { return m_capacity; }
 };
 #ifndef Arduino
 class mjz_Str : public basic_mjz_String {
@@ -2615,7 +2883,7 @@ class mjz_Str : public basic_mjz_String {
 #endif
 #else
 class mjz_Str : public basic_mjz_String,
-                public if_virtual_then_virtual Stream {  //
+                public Stream {  //
 #endif  // Arduino
  protected:
   static std::shared_ptr<mjz_Str_DATA_storage_cls>
@@ -2632,7 +2900,7 @@ class mjz_Str : public basic_mjz_String,
   // complications of an operator bool(). for more information,see:
   // http://www.artima.com/cppsource/safebool.html
   typedef void (mjz_Str::*StringIfHelperType)() const;
-  if_virtual_then_virtual void StringIfHelper() const {}
+  void StringIfHelper() const {}
   inline bool realloc_helper_is_in_stack(void *ptr);
 
  private:
@@ -2748,30 +3016,38 @@ class mjz_Str : public basic_mjz_String,
   unsigned long getTimeout(void) {
     return drived_mjz_Str_DATA_storage_Obj_ptr->_timeout;
   }
-  bool find(const char *target);  // reads data from the stream until the target
+  bool find_in_stream(
+      const char *target);  // reads data from the stream until the target
   // string is found
-  bool find(const uint8_t *target) { return find((const char *)target); }
+  bool find_in_stream(const uint8_t *target) {
+    return find_in_stream((const char *)target);
+  }
   // returns true if target string is found, false if timed out (see setTimeout)
-  bool find(const char *target,
-            size_t length);  // reads data from the stream until the target
+  bool find_in_stream(
+      const char *target,
+      size_t length);  // reads data from the stream until the target
   // string of given length is found
-  bool find(const uint8_t *target, size_t length) {
-    return find((const char *)target, length);
+  bool find_in_stream(const uint8_t *target, size_t length) {
+    return find_in_stream((const char *)target, length);
   }
   // returns true if target string is found, false if timed out
-  bool find(char target) { return find(&target, 1); }
-  bool findUntil(const char *target,
-                 const char *terminator);  // as find but search ends if the
+  bool find_in_stream(char target) { return find_in_stream(&target, 1); }
+
+  bool find_in_stream_Until(
+      const char *target,
+      const char *terminator);  // as find but search ends if the
   // terminator string is found
-  bool findUntil(const uint8_t *target, const char *terminator) {
-    return findUntil((const char *)target, terminator);
+  bool find_in_stream_Until(const uint8_t *target, const char *terminator) {
+    return find_in_stream_Until((const char *)target, terminator);
   }
-  bool findUntil(const char *target, size_t targetLen, const char *terminate,
-                 size_t termLen);  // as above but search ends if the terminate
+  bool find_in_stream_Until(
+      const char *target, size_t targetLen, const char *terminate,
+      size_t termLen);  // as above but search ends if the terminate
   // string is found
-  bool findUntil(const uint8_t *target, size_t targetLen, const char *terminate,
-                 size_t termLen) {
-    return findUntil((const char *)target, targetLen, terminate, termLen);
+  bool find_in_stream_Until(const uint8_t *target, size_t targetLen,
+                            const char *terminate, size_t termLen) {
+    return find_in_stream_Until((const char *)target, targetLen, terminate,
+                                termLen);
   }
   long parseInt(LookaheadMode lookahead = SKIP_ALL,
                 char ignore = NO_IGNORE_CHAR);
@@ -2798,29 +3074,26 @@ class mjz_Str : public basic_mjz_String,
   // Arduino mjz_Str functions to be added here
   mjz_Str read_mjz_Str();
   mjz_Str read_mjz_Str_Until(char terminator);
-  if_virtual_then_virtual size_t write(const char *buf, size_t size_);
-  if_virtual_then_virtual size_t write(const char *buf);
-  if_virtual_then_virtual size_t write(uint8_t) if_ard_then_override;
+  size_t write(const char *buf, size_t size_);
+  size_t write(const char *buf);
+  size_t write(uint8_t) if_ard_then_override;
   inline size_t write(char cr) { return concat(cr); }
-  if_virtual_then_virtual size_t write(const uint8_t *buf,
-                                       size_t size_) if_ard_then_override;
-  if_virtual_then_virtual int64_t availableLL() if_ard_then_override;
-  if_virtual_then_virtual int available() if_ard_then_override {
-    return (int)availableLL();
-  }
-  if_virtual_then_virtual int read() if_ard_then_override;
-  if_virtual_then_virtual int peek() if_ard_then_override;
-  if_virtual_then_virtual void flush() if_ard_then_override;
-  if_virtual_then_virtual size_t read(uint8_t *buf, size_t size_);
-  if_virtual_then_virtual size_t readBytes(char *buffer_, size_t length) {
+  size_t write(const uint8_t *buf, size_t size_) if_ard_then_override;
+  int64_t availableLL() if_ard_then_override;
+  int available() if_ard_then_override { return (int)availableLL(); }
+  int read() if_ard_then_override;
+  int peek() if_ard_then_override;
+  void flush() if_ard_then_override;
+  size_t read(uint8_t *buf, size_t size_);
+  size_t readBytes(char *buffer_, size_t length) {
     return read((uint8_t *)buffer_, length);
   }
   size_t readBytes(uint8_t *buffer_, size_t length) {
     return readBytes((char *)buffer_, length);
   }
-  if_virtual_then_virtual void begin(unsigned long);
-  if_virtual_then_virtual void begin(unsigned long, uint16_t);
-  // if_virtual_then_virtual void end(); used
+  void begin(unsigned long);
+  void begin(unsigned long, uint16_t);
+  //  void end(); used
   // stream
 
   // new and delete
@@ -2887,6 +3160,23 @@ class mjz_Str : public basic_mjz_String,
   inline explicit mjz_Str(const char *cstr)
       : mjz_Str(cstr, (size_t)strlen(cstr)) {}
   mjz_Str(std::initializer_list<const char>);
+  mjz_Str(iterator_template<const char>);
+
+  template <class InputIterator>
+  mjz_Str(InputIterator first, InputIterator last) {
+    init();
+    size_t newlen{};
+    InputIterator begin_it = first;
+    while (begin_it != last) {  // not using last-first for compatibility
+      first++;
+      newlen++;
+    }
+    if (!addto_length(newlen)) return;
+    char *ptr_{m_buffer};
+    while (first != last) {
+      *ptr_++ = *first++;
+    }
+  }
 
   explicit mjz_Str(mjz_Str &&rval) noexcept;
   // explicit mjz_Str(const mjz_Str *&&rval) : mjz_Str(std::move(*rval)) {
@@ -2908,16 +3198,18 @@ class mjz_Str : public basic_mjz_String,
   explicit inline mjz_Str(const basic_mjz_Str_view &otr)
       : mjz_Str(otr.c_str(), otr.length()) {}
 #ifndef Arduino
-  if_virtual_then_virtual mjz_Str &operator=(std::string_view &x) {
+  mjz_Str &operator=(std::string_view &x) {
     return operator=(std::string(x).c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator=(std::string_view &&x) {
+  mjz_Str &operator=(std::string_view &&x) {
     return operator=(std::string(x).c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(std::string_view &x) {
+  mjz_Str &assign_range(std::initializer_list<const char> list);
+  mjz_Str &assign_range(iterator_template<const char> list);
+  mjz_Str &operator+=(std::string_view &x) {
     return operator+=(std::string(x).c_str());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(std::string_view &&x) {
+  mjz_Str &operator+=(std::string_view &&x) {
     return operator+=(std::string(x).c_str());
   }
 #else
@@ -2930,36 +3222,24 @@ class mjz_Str : public basic_mjz_String,
   mjz_Str(const String &x)
       : mjz_Str(((x.c_str() != 0) ? (x.c_str())
                                   : ((const char *)empty_STRING_C_STR))) {}
-  if_virtual_then_virtual mjz_Str &operator=(String &x) {
-    return operator=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator=(const String &x) {
-    return operator=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator=(String &&x) {
-    return operator=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator+=(String &x) {
-    return operator+=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator+=(const String &x) {
-    return operator+=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator+=(String &&x) {
-    return operator+=(x.c_str());
-  }
+  mjz_Str &operator=(String &x) { return operator=(x.c_str()); }
+  mjz_Str &operator=(const String &x) { return operator=(x.c_str()); }
+  mjz_Str &operator=(String &&x) { return operator=(x.c_str()); }
+  mjz_Str &operator+=(String &x) { return operator+=(x.c_str()); }
+  mjz_Str &operator+=(const String &x) { return operator+=(x.c_str()); }
+  mjz_Str &operator+=(String &&x) { return operator+=(x.c_str()); }
 #endif
-  if_virtual_then_virtual mjz_Str &operator=(basic_mjz_String &x) {
+  mjz_Str &operator=(basic_mjz_String &x) {
     return (*this)(x.c_str(), x.length());
   }
-  if_virtual_then_virtual mjz_Str &operator=(basic_mjz_String &&x) {
+  mjz_Str &operator=(basic_mjz_String &&x) {
     return (*this)(x.c_str(), x.length());
   }
-  if_virtual_then_virtual mjz_Str &operator+=(basic_mjz_String &x) {
+  mjz_Str &operator+=(basic_mjz_String &x) {
     concat(x.c_str(), x.length());
     return *this;
   }
-  if_virtual_then_virtual mjz_Str &operator+=(basic_mjz_String &&x) {
+  mjz_Str &operator+=(basic_mjz_String &&x) {
     concat(x.c_str(), x.length());
     return *this;
   }
@@ -2968,34 +3248,33 @@ class mjz_Str : public basic_mjz_String,
   mjz_Str(const std::string &x) : mjz_Str(x.c_str()) {}
   virtual ~mjz_Str(void);  // make all drived destructors called
   void adjust_cap();
-  if_virtual_then_virtual mjz_Str &operator-=(const mjz_Str &othr_);
-  if_virtual_then_virtual mjz_Str &operator-=(mjz_Str &&othr_);
-  if_virtual_then_virtual mjz_Str &operator*=(unsigned int number_of_it);
-  if_virtual_then_virtual mjz_Str operator*(unsigned int number_of_it);
-  if_virtual_then_virtual mjz_Str &operator/=(const mjz_Str &othr_);
-  if_virtual_then_virtual mjz_Str &operator/=(mjz_Str &&othr_);
-  if_virtual_then_virtual mjz_Str &operator++();  // print empty line
-  if_virtual_then_virtual mjz_Str operator++(int);
-  if_virtual_then_virtual mjz_Str &operator--();  // read one character
+  mjz_Str &operator-=(const mjz_Str &othr_);
+  mjz_Str &operator-=(mjz_Str &&othr_);
+  mjz_Str &operator*=(unsigned int number_of_it);
+  mjz_Str operator*(unsigned int number_of_it);
+  mjz_Str &operator/=(const mjz_Str &othr_);
+  mjz_Str &operator/=(mjz_Str &&othr_);
+  mjz_Str &operator++();  // print empty line
+  mjz_Str operator++(int);
+  mjz_Str &operator--();  // read one character
   inline char operator-() { return (char)read(); }
   inline mjz_Str &operator+() { return ++(*this); }
 
-  if_virtual_then_virtual mjz_Str operator--(int);
-  inline if_virtual_then_virtual mjz_Str &operator()() {
-    this->operator=(empty_STRING_C_STR);
+  mjz_Str operator--(int);
+  inline mjz_Str &operator()() {
+    operator()(empty_STRING_C_STR, (size_t)0);
     return *this;
   };
-  inline if_virtual_then_virtual mjz_Str &operator()(const mjz_Str &other) {
+  inline mjz_Str &operator()(const mjz_Str &other) {
     this->operator=(other);
     return *this;
   };
-  inline if_virtual_then_virtual mjz_Str &operator()(const char *other) {
+  inline mjz_Str &operator()(const char *other) {
     operator()(other, (size_t)strlen(other));
     return *this;
   };
-  inline if_virtual_then_virtual mjz_Str &operator()(const char *other,
-                                                     size_t size_len);
-  inline if_virtual_then_virtual mjz_Str &operator()(mjz_Str &&other) {
+  inline mjz_Str &operator()(const char *other, size_t size_len);
+  inline mjz_Str &operator()(mjz_Str &&other) {
     this->operator=(std::move(other));
     return *this;
   };
@@ -3003,160 +3282,161 @@ class mjz_Str : public basic_mjz_String,
   // return true on success,false on failure (in which case,the string
   // is left unchanged). reserve(0),if successful,will validate an
   // invalid string (i.e.,"if (s)" will be true afterwards)
-  if_virtual_then_virtual bool reserve(size_t size_, bool just_size = 0,
-                                       bool constructor = 0);
+  bool reserve(size_t size_, bool just_size = 0, bool constructor = 0);
   bool addto_length(size_t addition_tolen, bool just_size = 0);
-  if_virtual_then_virtual explicit operator char *() { return buffer_ref(); }
-  if_virtual_then_virtual explicit operator const uint8_t *() const {
+  explicit operator char *() { return buffer_ref(); }
+  explicit operator const uint8_t *() const {
     return (const uint8_t *)buffer_ref();
   }
-  if_virtual_then_virtual explicit operator uint8_t *() {
-    return (uint8_t *)buffer_ref();
-  }
-  if_virtual_then_virtual explicit operator void *() {
-    return (void *)buffer_ref();
-  }
-  if_virtual_then_virtual explicit operator uint16_t *() {
+  explicit operator uint8_t *() { return (uint8_t *)buffer_ref(); }
+  explicit operator void *() { return (void *)buffer_ref(); }
+  explicit operator uint16_t *() { return (uint16_t *)buffer_ref(); }
+  explicit operator uint32_t *() { return (uint32_t *)buffer_ref(); }
+  explicit operator uint64_t *() { return (uint64_t *)buffer_ref(); }
+  explicit operator const void *() const { return (void *)buffer_ref(); }
+  explicit operator const uint16_t *() const {
     return (uint16_t *)buffer_ref();
   }
-  if_virtual_then_virtual explicit operator uint32_t *() {
+  explicit operator const uint32_t *() const {
     return (uint32_t *)buffer_ref();
   }
-  if_virtual_then_virtual explicit operator uint64_t *() {
+  explicit operator const uint64_t *() const {
     return (uint64_t *)buffer_ref();
   }
-  if_virtual_then_virtual explicit operator const void *() const {
-    return (void *)buffer_ref();
-  }
-  if_virtual_then_virtual explicit operator const uint16_t *() const {
-    return (uint16_t *)buffer_ref();
-  }
-  if_virtual_then_virtual explicit operator const uint32_t *() const {
-    return (uint32_t *)buffer_ref();
-  }
-  if_virtual_then_virtual explicit operator const uint64_t *() const {
-    return (uint64_t *)buffer_ref();
-  }
-  if_virtual_then_virtual explicit operator const size_t() const {
-    return m_length;
-  }
-  if_virtual_then_virtual explicit operator size_t() const { return m_length; }
-  if_virtual_then_virtual explicit operator size_t &() {
-    return (size_t &)m_length;
-  }
-  if_virtual_then_virtual explicit operator const long() const {
-    return toInt();
-  }
-  if_virtual_then_virtual explicit operator const long long() const {
-    return toLL();
-  }
-  if_virtual_then_virtual explicit operator const float() const {
-    return toFloat();
-  }
-  if_virtual_then_virtual explicit operator const double() const {
-    return toDouble();
-  }
-  if_virtual_then_virtual explicit operator std__string_view_if_is() const {
+  explicit operator const size_t() const { return m_length; }
+  explicit operator size_t() const { return m_length; }
+  explicit operator size_t &() { return (size_t &)m_length; }
+  explicit operator const long() const { return toInt(); }
+  explicit operator const long long() const { return toLL(); }
+  explicit operator const float() const { return toFloat(); }
+  explicit operator const double() const { return toDouble(); }
+  explicit operator std__string_view_if_is() const {
     return std__string_view_if_is((const char *)buffer_ref());
   }
-  if_virtual_then_virtual explicit operator const std__string_view_if_is()
-      const {
+  explicit operator const std__string_view_if_is() const {
     return std__string_view_if_is((const char *)buffer_ref());
   }
-  if_virtual_then_virtual explicit operator std::string() const {
+  explicit operator std::string() const {
     return std::string((const char *)buffer_ref(), length());
   }
-  if_virtual_then_virtual explicit operator const std::string() const {
+  explicit operator const std::string() const {
     return std::string((const char *)buffer_ref(), length());
   }
-  if_virtual_then_virtual operator const char *() const { return buffer_ref(); }
-  if_virtual_then_virtual char &operator[](size_t index);
-  if_virtual_then_virtual char &operator[](int64_t index);
-  if_virtual_then_virtual std__string_view_if_is std_new_sv() = delete;
-  if_virtual_then_virtual std__string_view_if_is std_sv() const {
+  operator const char *() const { return buffer_ref(); }
+  char &operator[](size_t index);
+  char &operator[](int64_t index);
+  std__string_view_if_is std_new_sv() = delete;
+  std__string_view_if_is std_sv() const {
     return std__string_view_if_is((const char *)buffer_ref());
   }
-  if_virtual_then_virtual std__string_view_if_is &&std_sv_temp() const {
+  std__string_view_if_is &&std_sv_temp() const {
     return std::move(std__string_view_if_is((const char *)buffer_ref()));
   }
-  if_virtual_then_virtual const std::string std_s() const {
+  const std::string std_s() const {
     return std::string((const char *)buffer_ref());
   }
-  if_virtual_then_virtual const std::string &&std_st() const {
+  const std::string &&std_st() const {
     return std::move(std::string((const char *)buffer_ref()));
   }
   // creates a copy of the assigned value. if the value is null or
   // invalid,or if the memory allocation fails,the string will be
   // marked as invalid ("if (s)" will be false).
-  if_virtual_then_virtual mjz_Str &operator=(const mjz_Str &rhs);
-  if_virtual_then_virtual mjz_Str &operator=(std::string &x) {
-    return operator=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator=(std::string &&x) {
-    return operator=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator=(const std::string &x) {
-    return operator=(x.c_str());
-  }
-  if_virtual_then_virtual mjz_Str &operator=(const char *cstr);
-  if_virtual_then_virtual mjz_Str &operator=(const __FlashStringHelper *str);
-  if_virtual_then_virtual mjz_Str &operator=(mjz_Str &&rval) noexcept;
-  if_virtual_then_virtual mjz_Str &operator=(const mjz_Str *rval) {
-    return operator=(*rval);
-  }
-  // if_virtual_then_virtual mjz_Str &operator=( const mjz_Str *&&rval){
+  mjz_Str &operator=(const mjz_Str &rhs);
+  mjz_Str &operator=(std::string &x) { return operator=(x.c_str()); }
+  mjz_Str &operator=(std::string &&x) { return operator=(x.c_str()); }
+  mjz_Str &operator=(const std::string &x) { return operator=(x.c_str()); }
+  mjz_Str &operator=(const char *cstr);
+  mjz_Str &operator=(const __FlashStringHelper *str);
+  mjz_Str &operator=(mjz_Str &&rval) noexcept;
+  mjz_Str &operator=(const mjz_Str *rval) { return operator=(*rval); }
+  //  mjz_Str &operator=( const mjz_Str *&&rval){
   // return operator=(std::move(*rval));
   // }// this will give me headaches in the long run so i dont move it
   // concatenate (works w/ built-in types)
   // returns true on success,false on failure (in which case,the string
   // is left unchanged). if the argument is null or invalid,the
   // concatenation is considered unsuccessful.
-  if_virtual_then_virtual bool concat(const mjz_Str &str);
-  if_virtual_then_virtual bool concat(
+  bool concat(const mjz_Str &str);
+  bool concat(
       const char
           *cstr);  // TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/
   // Consider inspecting the 'concat' function. The return value
   // is not always used. Total calls: 11, discarded results: 1.
-  if_virtual_then_virtual bool concat(const char *cstr, size_t length);
-  if_virtual_then_virtual bool concat(const uint8_t *cstr, size_t length) {
+  bool concat(const char *cstr, size_t length);
+
+  inline bool concat(const basic_mjz_Str_view &str) {
+    return concat(str.c_str(), str.length());
+  }
+  bool concat(const uint8_t *cstr, size_t length) {
     return concat((const char *)cstr, length);
   }
-  if_virtual_then_virtual bool concat(char c);
-  if_virtual_then_virtual bool concat(unsigned char num);
-  if_virtual_then_virtual bool concat(int num);
-  if_virtual_then_virtual bool concat(unsigned int num);
-  if_virtual_then_virtual bool concat(long num);
-  if_virtual_then_virtual bool concat(unsigned long num);
-  if_virtual_then_virtual bool concat(long long num);
-  if_virtual_then_virtual bool concat(unsigned long long num);
-  if_virtual_then_virtual bool concat(float num);
-  if_virtual_then_virtual bool concat(double num);
-  if_virtual_then_virtual bool concat(const __FlashStringHelper *str);
-  if_virtual_then_virtual const mjz_Str &operator>>(mjz_Str &typing) const;
-  if_virtual_then_virtual const mjz_Str &operator>>(mjz_Str *typing) const;
-  if_virtual_then_virtual mjz_Str &operator>>(mjz_Str &typing);
-  if_virtual_then_virtual mjz_Str &operator>>(mjz_Str *typing);
-  if_virtual_then_virtual const mjz_Str &operator>>=(mjz_Str &typing) const {
+  bool concat(char c);
+  bool concat(unsigned char num);
+  bool concat(int num);
+  bool concat(unsigned int num);
+  bool concat(long num);
+  bool concat(unsigned long num);
+  bool concat(long long num);
+  bool concat(unsigned long long num);
+  bool concat(float num);
+  bool concat(double num);
+  bool concat(const __FlashStringHelper *str);
+
+  mjz_Str &append(const mjz_Str &str) {
+    concat(str);
+    return *this;
+  }
+  mjz_Str &append(const mjz_Str &str, size_t subpos, size_t sublen);
+  mjz_Str &append(const char *s) {
+    concat(s);
+    return *this;
+  }
+  mjz_Str &append(const char *s, size_t n) {
+    concat(s, n);
+    return *this;
+  }
+  mjz_Str &append(size_t n, char c) {
+    if (!addto_length(n)) return *this;
+    memset(m_buffer + length() - n, c, n);
+    return *this;
+  }
+  template <class InputIterator>
+  mjz_Str &append(InputIterator first, InputIterator last) {
+    size_t newlen = last - first;
+    if (!addto_length(newlen)) return *this;
+
+    char *ptr_{m_buffer + length() - newlen};
+    for (; first != last; first++) {  // i don't like != but :(
+      *ptr_++ = *first;
+    }
+    return *this;
+  }
+
+  const mjz_Str &operator>>(mjz_Str &typing) const;
+  const mjz_Str &operator>>(mjz_Str *typing) const;
+  mjz_Str &operator>>(mjz_Str &typing);
+  mjz_Str &operator>>(mjz_Str *typing);
+  const mjz_Str &operator>>=(mjz_Str &typing) const {
     typing.operator=(empty_STRING_C_STR);
     return operator>>(typing);
   }
-  if_virtual_then_virtual const mjz_Str &operator>>=(mjz_Str *typing) const {
+  const mjz_Str &operator>>=(mjz_Str *typing) const {
     typing->operator=(empty_STRING_C_STR);
     return operator>>(typing);
   }
-  if_virtual_then_virtual mjz_Str &operator>>=(mjz_Str &typing) {
+  mjz_Str &operator>>=(mjz_Str &typing) {
     typing.operator=(empty_STRING_C_STR);
     return operator>>(typing);
   }
-  if_virtual_then_virtual mjz_Str &operator>>=(mjz_Str *typing) {
+  mjz_Str &operator>>=(mjz_Str *typing) {
     typing->operator=(empty_STRING_C_STR);
     return operator>>(typing);
   }
-  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str &typing);
-  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str *typing);
-  if_virtual_then_virtual mjz_Str &operator<<(const mjz_Str &typing);
-  if_virtual_then_virtual mjz_Str &operator<<(mjz_Str &&typing);
-  if_virtual_then_virtual mjz_Str &operator<<=(mjz_Str &typing) {
+  mjz_Str &operator<<(mjz_Str &typing);
+  mjz_Str &operator<<(mjz_Str *typing);
+  mjz_Str &operator<<(const mjz_Str &typing);
+  mjz_Str &operator<<(mjz_Str &&typing);
+  mjz_Str &operator<<=(mjz_Str &typing) {
     if (&typing != this) {
       this->operator=(empty_STRING_C_STR);
       return operator<<(typing);
@@ -3166,7 +3446,7 @@ class mjz_Str : public basic_mjz_String,
     this->operator=(empty_STRING_C_STR);
     return operator<<(new_temp);
   }
-  if_virtual_then_virtual mjz_Str &operator<<=(const mjz_Str &typing) {
+  mjz_Str &operator<<=(const mjz_Str &typing) {
     if (&typing != this) {
       this->operator=(empty_STRING_C_STR);
       return operator<<(typing);
@@ -3176,7 +3456,7 @@ class mjz_Str : public basic_mjz_String,
     this->operator=(empty_STRING_C_STR);
     return operator<<(new_temp);
   }
-  if_virtual_then_virtual mjz_Str &operator<<=(mjz_Str &&typing) {
+  mjz_Str &operator<<=(mjz_Str &&typing) {
     if (&typing != this) {
       this->operator=(empty_STRING_C_STR);
       return operator<<(typing);
@@ -3186,77 +3466,81 @@ class mjz_Str : public basic_mjz_String,
     this->operator=(empty_STRING_C_STR);
     return operator<<(new_temp);
   }
-  if_virtual_then_virtual mjz_Str &operator>>(char &var) {
+  mjz_Str &operator>>(char &var) {
     get_s_shift_op_r().scanf_s("%c", &var, 1);
     return get_s_shift_op_r();
   }
-  if_virtual_then_virtual mjz_Str &operator>>(int &var) {
+  mjz_Str &operator>>(int &var) {
     get_s_shift_op_r().scanf_s("%d", &var);
     return get_s_shift_op_r();
   }
-  if_virtual_then_virtual mjz_Str &operator>>(double &var) {
+  mjz_Str &operator>>(double &var) {
     var = (double)(get_s_shift_op_r());
     return get_s_shift_op_r();
   }
-  if_virtual_then_virtual mjz_Str &operator>>(float &var) {
+  mjz_Str &operator>>(float &var) {
     var = (float)(get_s_shift_op_r());
     return get_s_shift_op_r();
   }
   // if there's not enough memory for the concatenated value,the string
   // will be left unchanged (but this isn't signalled in any way)
-  if_virtual_then_virtual mjz_Str &operator+=(const mjz_Str &rhs) {
+  mjz_Str &operator+=(const mjz_Str &rhs) {
     concat(rhs);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(mjz_Str &&rhs) {
+  mjz_Str &operator+=(mjz_Str &&rhs) {
     concat(rhs);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(const char *cstr) {
+  mjz_Str &operator+=(const char *cstr) {
     concat(cstr);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(char c) {
+  mjz_Str &operator+=(char c) {
     concat(c);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(unsigned char num) {
+  mjz_Str &operator+=(unsigned char num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(int num) {
+  mjz_Str &operator+=(int num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(unsigned int num) {
+  mjz_Str &operator+=(unsigned int num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(long num) {
+  mjz_Str &operator+=(long num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(unsigned long num) {
+  mjz_Str &operator+=(unsigned long num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(long long num) {
+  mjz_Str &operator+=(long long num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(unsigned long long num) {
+  mjz_Str &operator+=(unsigned long long num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(float num) {
+  mjz_Str &operator+=(float num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(double num) {
+  mjz_Str &operator+=(double num) {
     concat(num);
     return (*this);
   }
-  if_virtual_then_virtual mjz_Str &operator+=(const __FlashStringHelper *str) {
+  mjz_Str &operator+=(const __FlashStringHelper *str) {
+    concat(str);
+    return (*this);
+  }
+  mjz_Str &operator+=(const basic_mjz_Str_view &str) {
     concat(str);
     return (*this);
   }
@@ -3290,17 +3574,19 @@ class mjz_Str : public basic_mjz_String,
   friend StringSumHelper operator+(StringSumHelper &&lhs, double num);
   friend StringSumHelper operator+(StringSumHelper &&lhs,
                                    const __FlashStringHelper *rhs);
+
+
   typedef void *(*function_ptr)(const mjz_Str &, void *);
   operator StringIfHelperType() const {
     return buffer_ref() ? &mjz_Str::StringIfHelper : 0;
   }
-  if_virtual_then_virtual void *do_this_for_me(function_ptr, void *x = 0);
+  void *do_this_for_me(function_ptr, void *x = 0);
   // comparison (only works w/ Strings and "strings")
   friend bool is_blank_characteres_default(char);
   friend char char_to_char_for_reinterpret_fnc_ptr_default(char);
   friend bool is_forbiden_character_default(char);
   friend class basic_mjz_String;
-  if_virtual_then_virtual void set_realloc_free_functions(
+  void set_realloc_free_functions(
       std::function<void(void *)> free_,
       std::function<void *(void *, size_t)> realloc_) {
     if (free_ && realloc_) {
@@ -3308,21 +3594,19 @@ class mjz_Str : public basic_mjz_String,
       drived_mjz_Str_DATA_storage_Obj_ptr_set()->free_fnctn = free_;
     }
   }
-  if_virtual_then_virtual void change_is_blank_character_function(
-      std::function<bool(char)> fnction) {
+  void change_is_blank_character_function(std::function<bool(char)> fnction) {
     if (fnction) {
       drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_blank_character = fnction;
     }
   }
-  if_virtual_then_virtual void
-  change_char_to_char_for_reinterpret_fnc_ptr_function(
+  void change_char_to_char_for_reinterpret_fnc_ptr_function(
       std::function<char(char)> fnction) {
     if (fnction) {
       drived_mjz_Str_DATA_storage_Obj_ptr_set()
           ->char_to_char_for_reinterpret_fnc_ptr = fnction;
     }
   }
-  if_virtual_then_virtual void change_is_forbiden_character_function(
+  void change_is_forbiden_character_function(
       std::function<bool(char)> fnction) {
     if (fnction) {
       drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_forbiden_character =
@@ -3350,9 +3634,9 @@ class mjz_Str : public basic_mjz_String,
     return drived_mjz_Str_DATA_storage_Obj_ptr->is_forbiden_character;
   }
   bool is_blank() const;
-  if_virtual_then_virtual bool is_forbiden(char) const;
-  if_virtual_then_virtual bool change_reinterpret_char_char(char);
-  if_virtual_then_virtual bool char_to_char_for_reinterpret(char &c_char) const;
+  bool is_forbiden(char) const;
+  bool change_reinterpret_char_char(char);
+  bool char_to_char_for_reinterpret(char &c_char) const;
   static int8_t char_to_int_for_string(char c_char);
   friend std::istream &helper__op_shift_input_(const mjz_Str &rhs,
                                                std::istream &CIN,
@@ -3402,19 +3686,15 @@ class mjz_Str : public basic_mjz_String,
   }
   friend class STRINGSerial;
   // character access
-  if_virtual_then_virtual void setCharAt(size_t index, char c);
+  void setCharAt(size_t index, char c);
   // character access
-  if_virtual_then_virtual void setCharAt(int64_t index, char c);
-  inline if_virtual_then_virtual char *begin_c_str() { return m_buffer; }
-  if_virtual_then_virtual char *end_c_str() { return m_buffer + length(); }
-  if_virtual_then_virtual char *endAST_c_str() { return end_c_str(); }
-  if_virtual_then_virtual const char *begin_c_str() const { return m_buffer; }
-  if_virtual_then_virtual const char *endAST_c_str() const {
-    return end_c_str();
-  }
-  if_virtual_then_virtual const char *end_c_str() const {
-    return m_buffer + length();
-  }
+  void setCharAt(int64_t index, char c);
+  inline char *begin_c_str() { return m_buffer; }
+  char *end_c_str() { return m_buffer + length(); }
+  char *endAST_c_str() { return end_c_str(); }
+  const char *begin_c_str() const { return m_buffer; }
+  const char *endAST_c_str() const { return end_c_str(); }
+  const char *end_c_str() const { return m_buffer + length(); }
 
   // Iterator Class
   using const_iterator = mjz_ard::iterator_template<const char>;
@@ -3461,19 +3741,42 @@ class mjz_Str : public basic_mjz_String,
   mjz_Str &erase_from_f_to_l(size_t first, size_t last);
   // search
   // modification
-  if_virtual_then_virtual void replace(char find, char replace_);
-  if_virtual_then_virtual void replace(const mjz_Str &find,
-                                       const mjz_Str &replace_);
-  if_virtual_then_virtual void replace(const char *find, size_t find_count,
-                                       const char *replace_,
-                                       size_t replace_count);
-  if_virtual_then_virtual void remove(size_t index);
-  if_virtual_then_virtual void remove(size_t index, size_t count);
-  if_virtual_then_virtual void toLowerCase(void);
-  if_virtual_then_virtual void toUpperCase(void);
-  if_virtual_then_virtual void trim(void);
-  if_virtual_then_virtual mjz_Str string_do_interpret();
-  if_virtual_then_virtual void string_do_interpret(mjz_Str &instr);
+  void find_and_replace(char find, char replace_);
+  void find_and_replace(const mjz_Str &find, const mjz_Str &replace_);
+  void find_and_replace(const char *find, size_t find_count,
+                        const char *replace_, size_t replace_count);
+
+  mjz_Str &replace(size_t pos, size_t len, const basic_mjz_Str_view &str);
+  mjz_Str &replace_ll(int64_t pos, size_t len, const basic_mjz_Str_view &str);
+  mjz_Str &replace(iterator i1, iterator i2, const basic_mjz_Str_view &str);
+
+  mjz_Str &replace(size_t pos, size_t len, const basic_mjz_Str_view &str,
+                   size_t subpos, size_t sublen);
+  mjz_Str &replace(size_t pos, size_t len, const char *s);
+  mjz_Str &replace(size_t pos, size_t len, const char *s, size_t n);
+
+  mjz_Str &replace(iterator i1, iterator i2, const char *s, size_t n);
+  mjz_Str &replace(iterator i1, iterator i2, const char *s) {
+    return replace(i1, i2, s, strlen(s));
+  }
+  mjz_Str &replace(size_t pos, size_t len, size_t n, char c);
+
+  mjz_Str &replace(iterator i1, iterator i2, size_t n, char c);
+
+  template <class InputIterator>
+  mjz_Str &replace(iterator i1, iterator i2, InputIterator first,
+                   InputIterator last) {
+    mjz_ard::mjz_Str str(first, last);
+    replace(i1, i2, str.c_str(), str.length());
+  }
+
+  void remove(size_t index);
+  void remove(size_t index, size_t count);
+  void toLowerCase(void);
+  void toUpperCase(void);
+  void trim(void);
+  mjz_Str string_do_interpret();
+  void string_do_interpret(mjz_Str &instr);
   mjz_Str &ULL_LL_to_str_add(size_t value, int radix, bool is_signed,
                              bool force_neg = 0);
   mjz_Str &ULL_LL_to_str_rep(size_t value, int radix, bool is_signed,
@@ -3494,8 +3797,8 @@ class mjz_Str : public basic_mjz_String,
     write(cr_);
     return *this;
   }
-  mjz_Str &insert(size_t pos, const mjz_Str &other);
-  mjz_Str &insert(size_t pos, const mjz_Str &other, size_t subpos,
+  mjz_Str &insert(size_t pos, const basic_mjz_Str_view &other);
+  mjz_Str &insert(size_t pos, const basic_mjz_Str_view &other, size_t subpos,
                   size_t sublen = -1);
   mjz_Str &insert(size_t pos, const char *s, size_t n);
   mjz_Str &insert(size_t pos, const char *other) {
@@ -3508,30 +3811,56 @@ class mjz_Str : public basic_mjz_String,
 
     return *this;
   }
+  mjz_Str &insert(size_t pos, size_t n, char c);
+  void insert(iterator p, size_t n, const char *s) {
+    if (p.end() != end()) return;
+    insert((size_t)(p.get_pointer() - m_buffer), s, n);
+  }
+  void insert(iterator p, size_t n, char c) {
+    if (p.end() != end()) return;
+    insert((size_t)(p.get_pointer() - m_buffer), c, n);
+  }
+  iterator insert(iterator p, char c) { insert(p, 1, c); }
+  // slow(becuse of compatibility) dont run
+  template <class InputIterator>
+  void insert(iterator p, InputIterator first, InputIterator last) {
+    mjz_ard::mjz_Str str(first, last);
+    insert(p, str.length(), str.c_str());
+  }
+
   friend class basic_mjz_Str_view;
 
+  constexpr size_t capacity() const { return m_capacity; }
+  void clear() { operator()(); }
+  void shrink_to_fit() {
+    auto str = create_mjz_Str_char_array(length(), 0, 1);
+    memmove(str.C_str(), c_str(), str.length());
+    *this = std::move(str);
+  }
+  inline bool empty() const { return is_blank(); }
+
  protected:
-  // if_virtual_then_virtual void update_event();
-  // if_virtual_then_virtual void update_event_ard_string();
-  if_virtual_then_virtual const mjz_Str &get_shift_op_rc() const;
-  if_virtual_then_virtual mjz_Str &get_shift_op_r();
-  if_virtual_then_virtual const mjz_Str &get_shift_op_lc() const;
-  if_virtual_then_virtual mjz_Str &get_shift_op_l();
-  if_virtual_then_virtual const mjz_Str &get_shift_op_r_sc() const;
-  if_virtual_then_virtual mjz_Str &get_shift_op_r_s();
-  if_virtual_then_virtual const mjz_Str &get_shift_op_l_sc() const;
-  if_virtual_then_virtual mjz_Str &get_shift_op_l_s();
-  if_virtual_then_virtual const mjz_Str &get_s_shift_op_rc() const;
-  if_virtual_then_virtual mjz_Str &get_s_shift_op_r();
-  if_virtual_then_virtual const mjz_Str &get_s_shift_op_lc() const;
-  if_virtual_then_virtual mjz_Str &get_s_shift_op_l();
-  if_virtual_then_virtual const mjz_Str &get_s_shift_op_r_sc() const;
-  if_virtual_then_virtual mjz_Str &get_s_shift_op_r_s();
-  if_virtual_then_virtual const mjz_Str &get_s_shift_op_l_sc() const;
-  if_virtual_then_virtual mjz_Str &get_s_shift_op_l_s();
-  if_virtual_then_virtual void init(bool constructor = 1);
-  if_virtual_then_virtual void invalidate(bool constructor = 1);
-  if_virtual_then_virtual bool changeBuffer(size_t maxStrLen, bool constructor);
+  //  void update_event();
+  //  void update_event_ard_string();
+  const mjz_Str &get_shift_op_rc() const;
+  mjz_Str &get_shift_op_r();
+  const mjz_Str &get_shift_op_lc() const;
+  mjz_Str &get_shift_op_l();
+  const mjz_Str &get_shift_op_r_sc() const;
+  mjz_Str &get_shift_op_r_s();
+  const mjz_Str &get_shift_op_l_sc() const;
+  mjz_Str &get_shift_op_l_s();
+  const mjz_Str &get_s_shift_op_rc() const;
+  mjz_Str &get_s_shift_op_r();
+  const mjz_Str &get_s_shift_op_lc() const;
+  mjz_Str &get_s_shift_op_l();
+  const mjz_Str &get_s_shift_op_r_sc() const;
+  mjz_Str &get_s_shift_op_r_s();
+  const mjz_Str &get_s_shift_op_l_sc() const;
+  mjz_Str &get_s_shift_op_l_s();
+  void init(bool constructor = 1);
+  void invalidate(bool constructor = 1);
+  bool changeBuffer(size_t maxStrLen, bool constructor);
 
  public:
   // easy quality of life
@@ -3541,33 +3870,31 @@ class mjz_Str : public basic_mjz_String,
   inline const mjz_Str &operator*() const { return *this; }
   // templated
   template <typename TYPE_>
-  if_virtual_then_virtual mjz_Str substring(TYPE_ beginIndex) const {
+  mjz_Str substring(TYPE_ beginIndex) const {
     return basic_mjz_String::substring((int64_t)beginIndex);
   };
   template <typename TYPE_, typename TYPE_2>
-  if_virtual_then_virtual mjz_Str substring(TYPE_ beginIndex,
-                                            TYPE_2 endIndex) const {
+  mjz_Str substring(TYPE_ beginIndex, TYPE_2 endIndex) const {
     return basic_mjz_String::substring((int64_t)beginIndex, (int64_t)endIndex);
   }
   template <typename TYPE_, typename TYPE_2>
-  if_virtual_then_virtual mjz_Str substring_beg_n(TYPE_ beginIndex,
-                                                  TYPE_2 number) const {
+  mjz_Str substring_beg_n(TYPE_ beginIndex, TYPE_2 number) const {
     return basic_mjz_String::substring_beg_n((int64_t)beginIndex,
                                              (int64_t)number);
   }
   /* template <typename... arguments_types>
-  if_virtual_then_virtual size_t write(arguments_types &...arguments_arr) {
+   size_t write(arguments_types &...arguments_arr) {
     mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
     return write((const uint8_t *)return_val.c_str(),
                  (size_t)return_val.length());
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual size_t write(const arguments_types &...arguments_arr)
+   size_t write(const arguments_types &...arguments_arr)
   { mjz_Str return_val = std::move(mjz_Str(arguments_arr...)); return
   write((const uint8_t *)return_val.c_str(), (size_t)return_val.length());
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual size_t write(arguments_types &&...arguments_arr) {
+   size_t write(arguments_types &&...arguments_arr) {
     mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
     return write((const uint8_t *)return_val.c_str(),
                  (size_t)return_val.length());
@@ -3619,249 +3946,244 @@ class mjz_Str : public basic_mjz_String,
     return ret;
   }
 
+  /*
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator-=(
+   mjz_Str &operator-=(
       arguments_types &...arguments_arr) {
     return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str operator-(arguments_types &...arguments_arr) {
+   mjz_Str operator-(arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator/=(
+   mjz_Str &operator/=(
       arguments_types &...arguments_arr) {
     return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str operator/(arguments_types &...arguments_arr) {
+   mjz_Str operator/(arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator-=(
+   mjz_Str &operator-=(
       const arguments_types &...arguments_arr) {
     return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str
+   mjz_Str
   operator-(const arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator/=(
+   mjz_Str &operator/=(
       const arguments_types &...arguments_arr) {
     return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str
+   mjz_Str
   operator/(const arguments_types &...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator-=(
+   mjz_Str &operator-=(
       arguments_types &&...arguments_arr) {
     return operator-=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str
+   mjz_Str
   operator-(arguments_types &&...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator/=(
+   mjz_Str &operator/=(
       arguments_types &&...arguments_arr) {
     return operator/=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str
+   mjz_Str
   operator/(arguments_types &&...arguments_arr) {
     mjz_Str lhs = mjz_Str(*this);
     return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<(
+   mjz_Str &operator<<(
       arguments_types &...arguments_arr) {
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<=(
+   mjz_Str &operator<<=(
       arguments_types &...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator=(
+   mjz_Str &operator=(
       arguments_types &...arguments_arr) {
     return operator=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator+=(
+   mjz_Str &operator+=(
       arguments_types &...arguments_arr) {
     return operator+=(std::move(mjz_Str(arguments_arr...)));
   }
+   */
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                                            arguments_types &...arguments_arr) {
+  mjz_Str &run_code(your_FUNCTION_Type your__function_,
+                    arguments_types &...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual const mjz_Str &run_code(
-      your_FUNCTION_Type your__function_,
-      arguments_types &...arguments_arr) const {
+  const mjz_Str &run_code(your_FUNCTION_Type your__function_,
+                          arguments_types &...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, arguments_types &...arguments_arr) {
+  auto run_code_and_return(your_FUNCTION_Type your__function_,
+                           arguments_types &...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_,
-      arguments_types &...arguments_arr) const {
+  auto run_code_and_return(your_FUNCTION_Type your__function_,
+                           arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
   template <typename your_FUNCTION_Type>
-  if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_) {
+  auto operator()(your_FUNCTION_Type your__function_) {
     return your__function_(*this);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          arguments_types &...arguments_arr) {
+  auto operator()(your_FUNCTION_Type your__function_,
+                  arguments_types &...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(
-      your_FUNCTION_Type your__function_,
-      arguments_types &...arguments_arr) const {
+  auto operator()(your_FUNCTION_Type your__function_,
+                  arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
+  /*
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<(
+   mjz_Str &operator<<(
       const arguments_types &...arguments_arr) {
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<=(
+   mjz_Str &operator<<=(
       const arguments_types &...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
+  */
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator=(
-      const arguments_types &...arguments_arr) {
-    return operator=(std::move(mjz_Str(arguments_arr...)));
+  inline mjz_Str &operator=(const arguments_types &...arguments_arr) {
+    operator()();
+    concat(arguments_arr...);
+    return *this;
   }
+
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator+=(
-      const arguments_types &...arguments_arr) {
-    return operator+=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str &operator+=(const arguments_types &...arguments_arr) {
+    concat(arguments_arr...);
+    return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &run_code(
-      your_FUNCTION_Type your__function_,
-      const arguments_types &...arguments_arr) {
+  mjz_Str &run_code(your_FUNCTION_Type your__function_,
+                    const arguments_types &...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual const mjz_Str &run_code(
-      your_FUNCTION_Type your__function_,
-      const arguments_types &...arguments_arr) const {
+  const mjz_Str &run_code(your_FUNCTION_Type your__function_,
+                          const arguments_types &...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_,
-      const arguments_types &...arguments_arr) {
+  auto run_code_and_return(your_FUNCTION_Type your__function_,
+                           const arguments_types &...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_,
-      const arguments_types &...arguments_arr) const {
+  auto run_code_and_return(your_FUNCTION_Type your__function_,
+                           const arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(
-      your_FUNCTION_Type your__function_,
-      const arguments_types &...arguments_arr) {
+  auto operator()(your_FUNCTION_Type your__function_,
+                  const arguments_types &...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(
-      your_FUNCTION_Type your__function_,
-      const arguments_types &...arguments_arr) const {
+  auto operator()(your_FUNCTION_Type your__function_,
+                  const arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
+  /*
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<(
+   mjz_Str &operator<<(
       arguments_types &&...arguments_arr) {
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator<<=(
+   mjz_Str &operator<<=(
       arguments_types &&...arguments_arr) {
     this->operator=(empty_STRING_C_STR);
     return operator<<(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator=(
+   mjz_Str &operator=(
       arguments_types &&...arguments_arr) {
     return operator=(std::move(mjz_Str(arguments_arr...)));
   }
   template <typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &operator+=(
+   mjz_Str &operator+=(
       arguments_types &&...arguments_arr) {
     return operator+=(std::move(mjz_Str(arguments_arr...)));
-  }
+  }*/
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual mjz_Str &run_code(
-      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) {
+  mjz_Str &run_code(your_FUNCTION_Type your__function_,
+                    arguments_types &&...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual const mjz_Str &run_code(
-      your_FUNCTION_Type your__function_,
-      arguments_types &&...arguments_arr) const {
+  const mjz_Str &run_code(your_FUNCTION_Type your__function_,
+                          arguments_types &&...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_, arguments_types &&...arguments_arr) {
+  auto run_code_and_return(your_FUNCTION_Type your__function_,
+                           arguments_types &&...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto run_code_and_return(
-      your_FUNCTION_Type your__function_,
-      arguments_types &&...arguments_arr) const {
+  auto run_code_and_return(your_FUNCTION_Type your__function_,
+                           arguments_types &&...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
   // , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(your_FUNCTION_Type your__function_,
-                                          arguments_types &&...arguments_arr) {
+  auto operator()(your_FUNCTION_Type your__function_,
+                  arguments_types &&...arguments_arr) {
     return your__function_(*this, arguments_arr...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  if_virtual_then_virtual auto operator()(
-      your_FUNCTION_Type your__function_,
-      arguments_types &&...arguments_arr) const {
+  auto operator()(your_FUNCTION_Type your__function_,
+                  arguments_types &&...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
 };
@@ -4076,6 +4398,22 @@ class type_fn_class {
 };
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
                       bool force_neg = 0);
+
+mjz_Str &getline(mjz_Str &is, mjz_Str &str,
+                          char delim);
+mjz_Str &getline(mjz_Str &is, mjz_Str &str);
+template <size_t buffer_len = 2048>
+std::istream &getline(std::istream &is, mjz_Str &str, char delim) {
+  char buffer[buffer_len]{};
+  is.getline(buffer, buffer_len, delim);
+  uint32_t available_len = mjz_ard::static_str_algo::strlen(buffer);
+  str.append(buffer, available_len);
+  return is;
+}
+template <size_t buffer_len = 2048>
+std::istream &getline(std::istream &is, mjz_Str &str) {
+  return getline<buffer_len>(is, str, '\n');
+}
 template <typename Type>
 inline mjz_Str get_bit_representation(const Type &data) {
   mjz_Str buffer;

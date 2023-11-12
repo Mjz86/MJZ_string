@@ -35,6 +35,5 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 #include "fstream"
 
 int my_main::main(int argc, const char* const* const argv) {
-  std::basic_string<int, std::char_traits<int>,std:: allocator<char>>
   return 0;
 }

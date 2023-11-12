@@ -421,6 +421,35 @@ mjz_Str::mjz_Str(std::initializer_list<const char> list) {
     *ptr_++ = cr;
   }
 }
+mjz_Str &mjz_Str::assign_range(std::initializer_list<const char> list) {
+  (*this)();
+  size_t newlen = list.size();
+  addto_length(newlen);
+  char *ptr_{m_buffer};
+  for (auto cr : list) {
+    *ptr_++ = cr;
+  }
+  return *this;
+}
+mjz_Str::mjz_Str(iterator_template<const char> list) {
+  init();
+  size_t newlen = list.size();
+  addto_length(newlen);
+  char *ptr_{m_buffer};
+  for (auto cr : list) {
+    *ptr_++ = cr;
+  }
+}
+mjz_Str &mjz_Str::assign_range(iterator_template<const char> list) {
+  (*this)();
+  size_t newlen = list.size();
+  addto_length(newlen);
+  char *ptr_{m_buffer};
+  for (auto cr : list) {
+    *ptr_++ = cr;
+  }
+  return *this;
+}
 
 mjz_Str::mjz_Str(const __FlashStringHelper *pstr) {
   init();
@@ -828,6 +857,10 @@ mjz_Str &mjz_Str::operator=(const __FlashStringHelper *pstr) {
 bool mjz_Str::concat(const mjz_Str &s) {
   return concat(s.m_buffer, s.m_length);
 }
+mjz_Str &mjz_Str::append(const mjz_Str &str, size_t subpos, size_t sublen) {
+  concat(str.substr_view_beg_n(subpos, sublen));
+  return *this;
+}
 bool mjz_Str::concat(const char *cstr, size_t length) {
   size_t newlen = m_length + length;
 
@@ -1135,21 +1168,6 @@ char &mjz_Str::operator[](int64_t index_) {
 /*********************************************/
 /* Search */
 /*********************************************/
-int64_t basic_mjz_Str_view::indexOf(const mjz_Str &s2) const {
-  return indexOf(s2, 0);
-}
-int64_t basic_mjz_Str_view::indexOf(const mjz_Str &s2, size_t fromIndex) const {
-  return indexOf_cstr(s2.c_str(), s2.length(), fromIndex);
-}
-
-int64_t basic_mjz_Str_view::lastIndexOf(const mjz_Str &s2) const {
-  return lastIndexOf(s2, m_length - s2.m_length);
-}
-
-int64_t basic_mjz_Str_view::lastIndexOf(const mjz_Str &s2,
-                                        size_t fromIndex) const {
-  return lastIndexOf_cstr(s2.c_str(), s2.length(), fromIndex);
-}
 
 mjz_Str basic_mjz_Str_view::substring_beg_n(size_t beginIndex,
                                             size_t number) const {
@@ -1203,86 +1221,106 @@ mjz_Str basic_mjz_Str_view::substring(size_t left, size_t right) const {
   //
   return out;
 }
-
-mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) {
-  return basic_mjz_Str_view::substr_view(beginIndex, length() - beginIndex);
-}
-mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex,
-                                             size_t endIndex) const {
-  const char *out_ptr{};
-  size_t out_len{};
-  substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
-  return out_len ? mjz_str_view(out_ptr, out_len) : mjz_str_view();
+mjz_Str basic_mjz_Str_view::substr(size_t pos , size_t len ) const {
+  if (len == npos) len = length();
+  return substring_beg_n(pos, len);
 }
 
-mjz_str_view basic_mjz_Str_view::substr_view_beg_n(size_t beginIndex,
-                                                   size_t number) {
-  return basic_mjz_Str_view::substr_view(beginIndex, number + beginIndex);
-}
-mjz_str_view basic_mjz_Str_view::substr_view(int64_t beginIndex,
-                                             int64_t endIndex) const {
-  return basic_mjz_Str_view::substr_view(signed_index_to_unsigned(beginIndex),
-                                         signed_index_to_unsigned(endIndex));
-}
-mjz_str_view basic_mjz_Str_view::substr_view(int64_t beginIndex) const {
-  return basic_mjz_Str_view::substr_view(signed_index_to_unsigned(beginIndex));
-}
-mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int64_t beginIndex,
-                                                   size_t number) {
-  return basic_mjz_Str_view::substr_view(
-      signed_index_to_unsigned(beginIndex),
-      signed_index_to_unsigned(beginIndex) + number);
-}
-mjz_str_view basic_mjz_Str_view::substr_view_beg_n(unsigned int beginIndex,
-                                                   unsigned int number) const {
-  return basic_mjz_Str_view::substr_view_beg_n((size_t)beginIndex,
-                                               (size_t)number);
-}
-mjz_str_view basic_mjz_Str_view::substr_view(int beginIndex) const {
-  return basic_mjz_Str_view::substr_view((int64_t)beginIndex);
-}
-mjz_str_view basic_mjz_Str_view::substr_view(int beginIndex,
-                                             int endIndex) const {
-  return basic_mjz_Str_view::substr_view((int64_t)beginIndex,
-                                         (int64_t)endIndex);
-}
-mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int beginIndex,
-                                                   int number) const {
-  return basic_mjz_Str_view::substr_view_beg_n((int64_t)beginIndex,
-                                               (size_t)number);
-}
-mjz_str_view basic_mjz_Str_view::substr_view_beg_n(size_t beginIndex,
-                                                   size_t number) const {
-  return basic_mjz_Str_view::substr_view(beginIndex, number + beginIndex);
-}
-
-mjz_str_view basic_mjz_Str_view::substr_view(size_t beginIndex) const {
-  return basic_mjz_Str_view::substr_view(beginIndex, length() - beginIndex);
-}
-mjz_str_view basic_mjz_Str_view::substr_view_beg_n(int64_t beginIndex,
-                                                   size_t number) const {
-  return basic_mjz_Str_view::substr_view(
-      signed_index_to_unsigned(beginIndex),
-      signed_index_to_unsigned(beginIndex) + number);
-}
 
 /*********************************************/
 /* Modification */
 /*********************************************/
-mjz_Str &mjz_Str::insert(size_t pos, const mjz_Str &other) {
+mjz_Str &mjz_Str::insert(size_t pos, const basic_mjz_Str_view &other) {
   return insert(pos, other, 0, length());
 }
-mjz_Str &mjz_Str::insert(size_t pos, const mjz_Str &other, size_t subpos,
+mjz_Str &mjz_Str::insert(size_t pos, const basic_mjz_Str_view &other,
+                         size_t subpos,
                          size_t sublen) {
   return insert(pos, other.c_str() + subpos, sublen);
 }
 mjz_Str &mjz_Str::insert(size_t pos, const char *s, size_t n) {
   mjz_Str buffer_str_ = substring(0, pos);
   buffer_str_.write(s, n);
-  buffer_str_ += substring(pos, length());
+  buffer_str_ += substr_view(pos, length());
   return (*this = std::move(buffer_str_));
 }
-void mjz_Str::replace(char find, char replace_) {
+mjz_Str &mjz_Str::insert(size_t pos, size_t n, char c) {
+  mjz_Str buffer_str_ = substring(0, pos);
+  buffer_str_.append(n, c);
+  buffer_str_ += substr_view(pos, length());
+  return (*this = std::move(buffer_str_));
+
+}
+
+mjz_Str &mjz_Str::replace_ll(int64_t pos, size_t len,
+                        const basic_mjz_Str_view &str) {
+  return replace(signed_index_to_unsigned(pos),  len,str);
+    }
+
+mjz_Str &mjz_Str::replace(size_t pos, size_t len, const char *s, size_t n) {
+  return replace(pos, len, mjz_str_view(s,n));
+    }
+    mjz_Str& mjz_Str::replace(size_t pos, size_t len, const char* s) {
+  return replace(pos, len, s,strlen(s));
+    }
+    mjz_Str &mjz_Str::replace(size_t pos, size_t len, const basic_mjz_Str_view &str,
+                 size_t subpos, size_t sublen) {
+  return replace(pos, len,
+                 mjz_str_view(str.c_str(), str.length())
+                     .substr_view_beg_n(subpos, sublen));
+    }
+
+    
+    mjz_Str &mjz_Str::replace(size_t pos, size_t len, size_t n, char c) {
+  if (length() <= pos) return *this;
+  if (len == n) {
+    memset(m_buffer + pos, c, len);
+    return *this;
+  }
+  if (n < len) {
+    memset(m_buffer + pos, c, n);
+    remove(pos + n, len - n);
+  }
+  if (n > len) {
+    memset(m_buffer + pos, c, len);
+    insert(pos + len, n - len, 0);
+    memset(m_buffer + pos + len, c , n - len);
+  }
+  return *this;
+       }
+ mjz_Str &mjz_Str::replace(iterator i1, iterator i2, const char *s, size_t n) {
+  return replace(i1, i2, mjz_str_view(s, n));
+    }
+    mjz_Str &mjz_Str::replace(iterator i1, iterator i2,
+                          const basic_mjz_Str_view &str) {
+  if (i1.end() != end() || i2.end() != end()) return *this;
+  return replace(i1.get_pointer()-m_buffer, i2-i1, str);
+    }
+
+    mjz_Str &mjz_Str::replace(iterator i1, iterator i2, size_t n, char c) {
+        
+         if (i1.end() != end() || i2.end() != end()) return *this;
+  return replace(i1.get_pointer() - m_buffer,i2-i1, n, c);
+    }
+    mjz_Str &mjz_Str::replace(size_t pos, size_t len,
+                          const basic_mjz_Str_view &str) {
+  if (length() <= pos) return *this;
+  if (len == str.length()) {
+    memmove(m_buffer + pos, str.c_str(), len);
+    return *this;
+  }
+  if (str.length() < len) {
+    memmove(m_buffer + pos, str.c_str(), str.length());
+    remove(pos + str.length(), len - str.length());
+  }
+  if (str.length() > len) {
+    memmove(m_buffer + pos, str.c_str(), len);
+    insert(pos+len, str.length() - len,0);
+    memmove(m_buffer + pos + len, str.c_str()+len, str.length() - len);
+  }
+  return *this;
+}
+void mjz_Str::find_and_replace(char find, char replace_) {
   if (!m_buffer) {
     return;
   }
@@ -1294,8 +1332,9 @@ void mjz_Str::replace(char find, char replace_) {
   }
 }
 // namespace mjz_ard
-void mjz_Str::replace(const mjz_Str &find, const mjz_Str &replace_) {
-  replace(find.c_str(), find.length(), replace_.c_str(), replace_.length());
+void mjz_Str::find_and_replace(const mjz_Str &find, const mjz_Str &replace_) {
+  find_and_replace(find.c_str(), find.length(), replace_.c_str(),
+                   replace_.length());
 }
 void mjz_Str::remove(size_t index) {
   // Pass the biggest integer as the count. The remove method
@@ -1878,8 +1917,8 @@ mjz_Str mjz_Str::create_mjz_Str_2D_char_array(size_t size_col, size_t size_row,
 
   return my_buufer_;
 }
-void mjz_Str::replace(const char *find_cstr, size_t find_count,
-                      const char *replace_cstr, size_t replace_count) {
+void mjz_Str::find_and_replace(const char *find_cstr, size_t find_count,
+                               const char *replace_cstr, size_t replace_count) {
   if (m_length == 0 || find_count == 0) {
     return;
   }
@@ -1982,11 +2021,11 @@ mjz_Str mjz_Str::operator*(unsigned int number_of_it) {
   return lhs.operator*=(number_of_it);
 }
 mjz_Str &mjz_Str::operator/=(const mjz_Str &othr_) {
-  replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
+  find_and_replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
   return *this;
 }
 mjz_Str &mjz_Str::operator/=(mjz_Str &&othr_) {
-  replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
+  find_and_replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
   return *this;
 }
 mjz_Str &mjz_Str::operator++() {
@@ -2530,22 +2569,22 @@ void mjz_Str::setTimeout(
   drived_mjz_Str_DATA_storage_Obj_ptr_set()->_timeout = timeout;
 }
 // find returns true if the target string is found
-bool mjz_Str::find(const char *target) {
-  return findUntil(target, strlen(target), NULL, 0);
+bool mjz_Str::find_in_stream(const char *target) {
+  return find_in_stream_Until(target, strlen(target), NULL, 0);
 }
 // reads data from the stream until the target string of given length is found
 // returns true if target string is found, false if timed out
-bool mjz_Str::find(const char *target, size_t length) {
-  return findUntil(target, length, NULL, 0);
+bool mjz_Str::find_in_stream(const char *target, size_t length) {
+  return find_in_stream_Until(target, length, NULL, 0);
 }
 // as find but search ends if the terminator string is found
-bool mjz_Str::findUntil(const char *target, const char *terminator) {
-  return findUntil(target, strlen(target), terminator, strlen(terminator));
+bool mjz_Str::find_in_stream_Until(const char *target, const char *terminator) {
+  return find_in_stream_Until(target, strlen(target), terminator, strlen(terminator));
 }
 // reads data from the stream until the target string of the given length is
 // found search terminated if the terminator string is found returns true if
 // target string is found, false if terminated or timed out
-bool mjz_Str::findUntil(const char *target, size_t targetLen,
+bool mjz_Str::find_in_stream_Until(const char *target, size_t targetLen,
                         const char *terminator, size_t termLen) {
   if (terminator == NULL) {
     MultiTarget t[1] = {{target, targetLen, 0}};
@@ -2828,6 +2867,52 @@ bool mjz_RingBufferN<N>::isFull() {
   return (_numElems == N);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+mjz_Str &getline(mjz_Str &is, mjz_Str &str,
+                          char delim) {
+  size_t index_of_delim = is.find_first_of(delim);
+  str = is.substr_view(0ULL, index_of_delim);
+  is.erase_from_f_to_l(0, index_of_delim);
+  return is;
+}
+mjz_Str &getline(mjz_Str &is, mjz_Str &str) {
+  return getline(is, str, '\n');
+}
+
+
 }  // namespace mjz_ard
+
 
 #endif  // asdfghjklkjhgfdsasdfghjkjhgfdfghj
