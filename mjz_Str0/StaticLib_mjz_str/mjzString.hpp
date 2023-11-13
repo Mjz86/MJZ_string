@@ -228,13 +228,13 @@ class static_str_algo {
 
  public:
   template <class Type>
-  static inline constexpr Type BL_min(Type a, Type b) {
+  static inline constexpr Type BL__min(Type a, Type b) {
     uint64_t BL = bit_to_64_bits(b < a);
     return (BL & b) + ((~BL) & a);
   }
 
   template <class Type>
-  static inline constexpr Type BL_max(Type a, Type b) {
+  static inline constexpr Type BL__max(Type a, Type b) {
     uint64_t BL = bit_to_64_bits(a<b);
     return (BL & b) + ((~BL) & a);
   }
@@ -248,7 +248,7 @@ class static_str_algo {
     if (!lenght--) return 0;
     while (b) {
       state++;  // 1
-      b = (BL_min(*s1, *s2) == 0);
+      b = (min(*s1, *s2) == 0);
       state++;  // 2
       b = (*s1++ != *s2++);
       state = 0;
@@ -261,15 +261,7 @@ class static_str_algo {
 
   constexpr static int memcmp(const void *str1, const void *str2,
                               size_t count) {
-#ifndef DEBUG
-#ifndef Arduino
-    if (64 < count) {
-      MJZ_memcmp_data ret = MJZ_memcmp<size_t>(str1, str2, count);
-      return (ret.first_delta ? (ret.first_delta < 0 ? -1 : 1)
-                              : 0);  // MJZ_memcmp is faster for larger data
-    }
-#endif  // !Arduino
-#endif
+
     const unsigned char *s1 = (const unsigned char *)str1;
     const unsigned char *s2 = (const unsigned char *)str2;
 
@@ -280,16 +272,6 @@ class static_str_algo {
   }
   constexpr static memcmp_data memcmp_d(const void *str1, const void *str2,
                                         size_t count) {
-#ifndef DEBUG
-#ifndef Arduino
-    if (64 < count) {
-      MJZ_memcmp_data ret = MJZ_memcmp<size_t>(str1, str2, count);
-      return {ret.first_delta_index,
-              (ret.first_delta ? (ret.first_delta < 0 ? -1 : 1)
-                               : 0)};  // MJZ_memcmp is faster for larger data
-    }
-#endif  // !Arduino
-#endif
     const unsigned char *s1 = (const unsigned char *)str1;
     const unsigned char *s1beg = (const unsigned char *)str1;
     const unsigned char *s2 = (const unsigned char *)str2;
@@ -318,7 +300,7 @@ class static_str_algo {
   constexpr static memcmp_data memcmp_d(const void *str1, size_t count1,
                                         const void *str2, size_t count2) {
     if (count1 != count2) {
-      size_t min_len = BL_min(count1, count2);
+      size_t min_len = min(count1, count2);
       memcmp_data cmp = memcmp_d(str1, str2, min_len);
       if (cmp.first_delta == 0)
         return {(int64_t)min_len, count1 < count2 ? -1 : 1};
@@ -376,7 +358,7 @@ class static_str_algo {
     }
   }
   constexpr static void *strncpy(void *dest, const char *src, size_t len) {
-    return memcpy(dest, src, BL_min(strlen(src) + 1, len));
+    return memcpy(dest, src, min(strlen(src) + 1, len));
   }
   constexpr static void *strcpy(void *dest, const char *src) {
     return memcpy(dest, src, strlen(src) + 1);
@@ -582,7 +564,7 @@ class static_str_algo {
     T2 data2{};
     data2.~T2();
     memset(&data2, 0, sizeof(T2));
-    memcpy(&data2, &data, BL_min(sizeof(T2), sizeof(T1)));
+    memcpy(&data2, &data, min(sizeof(T2), sizeof(T1)));
     return data2;
   }
 
