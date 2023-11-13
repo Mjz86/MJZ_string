@@ -192,7 +192,8 @@ mjz_Str ULL_LL_to_str(uint64_t value, int radix, bool is_signed,
                       bool force_neg) {
   mjz_Str ret_var;
   ret_var.reserve(70, 1);
-  auto ptr_ = b_U_lltoa(value, (char *)ret_var, radix, is_signed, force_neg);
+   char *ptr_ =
+      b_U_lltoa(value, (char *)ret_var, radix, is_signed, force_neg);
 
   if (!ptr_) {
     return ret_var;
@@ -417,7 +418,7 @@ mjz_Str::mjz_Str(std::initializer_list<const char> list) {
   size_t newlen = list.size();
   addto_length(newlen);
   char *ptr_{m_buffer};
-  for (auto cr : list) {
+  for (const char cr : list) {
     *ptr_++ = cr;
   }
 }
@@ -426,7 +427,7 @@ mjz_Str &mjz_Str::assign_range(std::initializer_list<const char> list) {
   size_t newlen = list.size();
   addto_length(newlen);
   char *ptr_{m_buffer};
-  for (auto cr : list) {
+  for (const char cr : list) {
     *ptr_++ = cr;
   }
   return *this;
@@ -436,7 +437,7 @@ mjz_Str::mjz_Str(iterator_template<const char> list) {
   size_t newlen = list.size();
   addto_length(newlen);
   char *ptr_{m_buffer};
-  for (auto cr : list) {
+  for (const char cr : list) {
     *ptr_++ = cr;
   }
 }
@@ -445,7 +446,7 @@ mjz_Str &mjz_Str::assign_range(iterator_template<const char> list) {
   size_t newlen = list.size();
   addto_length(newlen);
   char *ptr_{m_buffer};
-  for (auto cr : list) {
+  for (const char cr : list) {
     *ptr_++ = cr;
   }
   return *this;
@@ -1560,7 +1561,8 @@ const mjz_Str &helper__op_shift_input_(const mjz_Str &rhs, const mjz_Str &CIN,
   uint8_t is_reinterpreted{};
   constexpr uint8_t is_reinterpreted_and_is_int = 2;
   int8_t value_reinterpreted_and_is_int{};
-  auto &reinterpret_char_char_ref =
+  
+   char &reinterpret_char_char_ref =
       rhs.drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
   auto continue_event_is_reinterpreted_and_is_int = [&](uint16_t &i) -> bool {
     if (bfr[i] == reinterpret_char_char_ref) {
@@ -1775,7 +1777,7 @@ mjz_Str &mjz_Str::ULL_LL_to_str_rep(uint64_t value, int radix, bool is_signed,
                                     bool force_neg) {
   operator=(empty_STRING_C_STR);
   reserve(70, 1);
-  auto ptr_ = b_U_lltoa(value, buffer_ref(), radix, is_signed, force_neg);
+  char* ptr_ = b_U_lltoa(value, buffer_ref(), radix, is_signed, force_neg);
 
   if (!ptr_) {
     return *this;

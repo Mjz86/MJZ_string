@@ -82,9 +82,22 @@ enum uint8_t_error_level : uint8_t {
   LL_ovf_prtt_off = MJZ_logic_BIT(1),
   len_ovf_prtt_off = MJZ_logic_BIT(2)
 };
+struct memcmp_data {
+  int64_t first_delta_index{-1};
+  int first_delta{};
+  inline constexpr memcmp_data(int64_t i, int in)
+      : first_delta_index(i), first_delta(in) {}
+  inline constexpr memcmp_data() : memcmp_data(-1, 0) {}
+};
+struct MJZ_memcmp_data : public memcmp_data {
+  size_t num_delta{};
+  inline constexpr MJZ_memcmp_data(int64_t i, int in, size_t n)
+      : memcmp_data(i, in), num_delta(n) {}
+  inline constexpr MJZ_memcmp_data() : memcmp_data(-1, 0), num_delta(0) {}
+};
 template <typename cmpr_type>
-size_t MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
-                  size_t size_of_data_in_byte) {
+MJZ_memcmp_data MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
+                           size_t size_of_data_in_byte) {
   const uint8_t *ptr_1 = (const uint8_t *)ptr_1_;
   const uint8_t *ptr_2 = (const uint8_t *)ptr_2_;
   size_t size_of_data = size_of_data_in_byte / sizeof(cmpr_type);
@@ -92,32 +105,76 @@ size_t MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
   size_t diff_of_data{};
   const cmpr_type *ptr_1_rf = (const cmpr_type *)ptr_1;
   const cmpr_type *ptr_2_rf = (const cmpr_type *)ptr_2;
+  const cmpr_type *ptr_1_rf_end = ptr_1_rf + size_of_data;
+  const cmpr_type *ptr_1_rf_begin = ptr_1_rf;
+  size_t first_delta_index[2]{};
 
-  for (size_t i{}; i < size_of_data; i++) {
-    diff_of_data += !(ptr_1_rf[i] == ptr_2_rf[i]);
+  while (ptr_1_rf < ptr_1_rf_end) {
+    bool is_different{(*ptr_1_rf++ != *ptr_2_rf++)};
+    diff_of_data += is_different;
+    first_delta_index[0] +=
+        bit_to_64_bits(is_different && !(first_delta_index[0])) &
+        (size_t)(ptr_1_rf - ptr_1_rf_begin - 1);
   }
 
   size_t first_index_of_last = size_of_data_in_byte - last_char_cmpr_size;
   bool last_diff_of_data{};
 
-  for (size_t i{}; i < last_char_cmpr_size; i++) {
-    last_diff_of_data |=
-        !(ptr_1[i + first_index_of_last] == ptr_2[i + first_index_of_last]);
+  for (const uint8_t *ptr_i[4] = {ptr_1 + first_index_of_last,
+                                  ptr_2 + first_index_of_last,
+                                  last_char_cmpr_size + ptr_1 +
+                                      first_index_of_last,
+                                  ptr_1 + first_index_of_last};
+       ptr_i[0] < ptr_i[2];) {
+    bool is_different = (*ptr_i[0]++ != *ptr_i[1]++);
+    last_diff_of_data |= is_different;
+    first_delta_index[1] +=
+        bit_to_64_bits(is_different && !(first_delta_index[1])) &
+        (size_t)(ptr_i[0] - ptr_i[3] - 1);
+  }
+  int64_t first_delta_index_in_8_t{};
+  if (first_delta_index[0]) {
+    size_t index_8 = first_delta_index[0] * sizeof(cmpr_type);
+    const uint8_t *ptr_i[4] = {ptr_1 + index_8, ptr_2 + index_8,
+                               sizeof(cmpr_type) + ptr_1 + index_8, ptr_1};
+    for (; ptr_i[0] < ptr_i[2];) {
+      bool is_different = (*ptr_i[0]++ != *ptr_i[1]++);
+      first_delta_index_in_8_t +=
+          bit_to_64_bits(is_different && !(first_delta_index_in_8_t)) &
+          (size_t)(ptr_i[0] - ptr_i[3] - 1);
+    }
+
+  } else if (first_delta_index[1]) {
+    first_delta_index_in_8_t = first_delta_index[1] + first_index_of_last;
   }
 
   diff_of_data += last_diff_of_data;
-  return diff_of_data;
+  return {(((first_delta_index_in_8_t == 0) && (*ptr_1 == *ptr_2))
+               ? (-1)
+               : first_delta_index_in_8_t),
+          ptr_1[first_delta_index_in_8_t] - ptr_2[first_delta_index_in_8_t],
+          diff_of_data};
 }
 template <typename cmpr_type>
-size_t MJZ_strcmp(const void *ptr_1, const void *ptr_2) {
+MJZ_memcmp_data MJZ_strcmp(const void *ptr_1, const void *ptr_2) {
   size_t len_1_ = strlen((const char *)ptr_1);
   size_t len_2_ = strlen((const char *)ptr_2);
 
   if (len_2_ != len_1_) {
-    return -1;
+    MJZ_memcmp_data ret =
+        MJZ_memcmp<cmpr_type>(ptr_1, ptr_2, min(len_2_, len_1_));
+    ret.num_delta += abs((int64_t)len_2_ - (int64_t)len_1_);
+    if (ret.first_delta_index == -1) {
+      ret.first_delta_index = min(len_2_, len_1_);
+      ret.first_delta = ((const char *)ptr_1)[ret.first_delta_index] -
+                        ((const char *)ptr_2)[ret.first_delta_index];
+    }
+    return ret;
   }
 
-  return MJZ_memcmp<cmpr_type>(ptr_1, ptr_2, len_1_);
+  MJZ_memcmp_data ret = MJZ_memcmp<cmpr_type>(ptr_1, ptr_2, len_1_);
+  ret.num_delta += (((uint8_t *)ptr_1)[len_1_] != ((uint8_t *)ptr_2)[len_2_]);
+  return ret;
 }
 char GET_CHAR_from_int(uint8_t intager_in, bool is_upper_case);
 int MJZ_STRCMP(const char *p1, const char *p2);
@@ -170,44 +227,86 @@ class static_str_algo {
   static constexpr const char *empty_STRING_C_STR = "";
 
  public:
+  template <class Type>
+  static inline constexpr Type BL_min(Type a, Type b) {
+    uint64_t BL = bit_to_64_bits(b < a);
+    return (BL & b) + ((~BL) & a);
+  }
+
+  template <class Type>
+  static inline constexpr Type BL_max(Type a, Type b) {
+    uint64_t BL = bit_to_64_bits(a<b);
+    return (BL & b) + ((~BL) & a);
+  }
  public:
   static constexpr int MJZ_STRnCMP(const char *p1, const char *p2,
                                    size_t lenght) {
     const unsigned char *s1 = (const unsigned char *)p1;
     const unsigned char *s2 = (const unsigned char *)p2;
-    const unsigned char *END_OF_char = s1 + lenght;
-    unsigned char c1, c2;
-
-    do {
-      c1 = (unsigned char)*s1;
-      s1++;
-      c2 = (unsigned char)*s2;
-      s2++;
-
-      if (END_OF_char < s1) {
-        return c1 - c2;
-      }
-    } while (c1 == c2);
-
-    return c1 - c2;
+    bool b{1};
+    int state{};
+    if (!lenght--) return 0;
+    while (b) {
+      state++;  // 1
+      b = (BL_min(*s1, *s2) == 0);
+      state++;  // 2
+      b = (*s1++ != *s2++);
+      state = 0;
+      b = 0 < lenght--;
+    }
+    if (state==1) return *s1 - *s2;
+    if (state==2) s1[-1] - s2[-1];
+    return 0;
   }
+
   constexpr static int memcmp(const void *str1, const void *str2,
                               size_t count) {
+#ifndef DEBUG
+#ifndef Arduino
+    if (64 < count) {
+      MJZ_memcmp_data ret = MJZ_memcmp<size_t>(str1, str2, count);
+      return (ret.first_delta ? (ret.first_delta < 0 ? -1 : 1)
+                              : 0);  // MJZ_memcmp is faster for larger data
+    }
+#endif  // !Arduino
+#endif
     const unsigned char *s1 = (const unsigned char *)str1;
     const unsigned char *s2 = (const unsigned char *)str2;
 
-    while (0 < count--) {
-      if (*s1++ != *s2++) {
-        return s1[-1] < s2[-1] ? -1 : 1;
-      }
-    }
-
+    while ((0 < count--) && *s1++ != *s2++)
+      ;
+    if (*--s1 != *--s2) return *s1 < *s2 ? -1 : 1;
     return 0;
   }
+  constexpr static memcmp_data memcmp_d(const void *str1, const void *str2,
+                                        size_t count) {
+#ifndef DEBUG
+#ifndef Arduino
+    if (64 < count) {
+      MJZ_memcmp_data ret = MJZ_memcmp<size_t>(str1, str2, count);
+      return {ret.first_delta_index,
+              (ret.first_delta ? (ret.first_delta < 0 ? -1 : 1)
+                               : 0)};  // MJZ_memcmp is faster for larger data
+    }
+#endif  // !Arduino
+#endif
+    const unsigned char *s1 = (const unsigned char *)str1;
+    const unsigned char *s1beg = (const unsigned char *)str1;
+    const unsigned char *s2 = (const unsigned char *)str2;
+
+    while ((0 < count--) && *s1++ != *s2++)
+      ;
+    if (*--s1 != *--s2) return {s1 - s1beg, *s1 < *s2 ? -1 : 1};
+
+    return {};
+  }
+
   constexpr static int memcmp(const void *str1, size_t count1, const void *str2,
                               size_t count2) {
     if (count1 != count2) {
-      return count1 < count2 ? -1 : 1;
+      int cmp = memcmp(str1, str2, min(count1, count2));
+      if (cmp == 0) return count1 < count2 ? -1 : 1;
+      return cmp;
     }
 
     if (str1 == str2) {
@@ -215,6 +314,22 @@ class static_str_algo {
     }
 
     return memcmp(str1, str2, count2);
+  }
+  constexpr static memcmp_data memcmp_d(const void *str1, size_t count1,
+                                        const void *str2, size_t count2) {
+    if (count1 != count2) {
+      size_t min_len = BL_min(count1, count2);
+      memcmp_data cmp = memcmp_d(str1, str2, min_len);
+      if (cmp.first_delta == 0)
+        return {(int64_t)min_len, count1 < count2 ? -1 : 1};
+      return cmp;
+    }
+
+    if (str1 == str2) {
+      return {};
+    }
+
+    return memcmp_d(str1, str2, count2);
   }
   constexpr static void *memset(void *_Dst, int _Val, size_t _Size) {
     if (!(_Dst && _Size)) return _Dst;
@@ -261,7 +376,7 @@ class static_str_algo {
     }
   }
   constexpr static void *strncpy(void *dest, const char *src, size_t len) {
-    return memcpy(dest, src, min(strlen(src) + 1, len));
+    return memcpy(dest, src, BL_min(strlen(src) + 1, len));
   }
   constexpr static void *strcpy(void *dest, const char *src) {
     return memcpy(dest, src, strlen(src) + 1);
@@ -467,7 +582,7 @@ class static_str_algo {
     T2 data2{};
     data2.~T2();
     memset(&data2, 0, sizeof(T2));
-    memcpy(&data2, &data, min(sizeof(T2), sizeof(T1)));
+    memcpy(&data2, &data, BL_min(sizeof(T2), sizeof(T1)));
     return data2;
   }
 
@@ -3923,7 +4038,7 @@ class mjz_Str : public basic_mjz_String,
   constexpr size_t capacity() const { return m_capacity; }
   void clear() { operator()(); }
   void shrink_to_fit() {
-    auto str = create_mjz_Str_char_array(length(), 0, 1);
+    mjz_Str str = create_mjz_Str_char_array(length(), 0, 1);
     memmove(str.C_str(), c_str(), str.length());
     *this = std::move(str);
   }
