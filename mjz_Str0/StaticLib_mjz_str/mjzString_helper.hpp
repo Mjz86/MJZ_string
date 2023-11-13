@@ -1,22 +1,6 @@
 #pragma once
 
-/* a=target variable, b=bit number to act upon 0-n */
-#define MJZ_logic_BIT_SET(a, b) ((a) |= (1ULL << (b)))
-#define MJZ_logic_BIT_CLEAR(a, b) ((a) &= ~(1ULL << (b)))
-#define MJZ_logic_BIT_FLIP(a, b) ((a) ^= (1ULL << (b)))
-#define MJZ_logic_BIT_CHECK(a, b) \
-  (!!((a) & (1ULL << (b))))  // '!!' to make sure this returns 0 or 1
 
-#define MJZ_logic_BIT(b) (1ULL << (b))
-#define MJZ_logic_BIT_NOT(b) (~(1ULL << (b)))
-
-#define MJZ_logic_BITMASK_SET(x, mask) ((x) |= (mask))
-#define MJZ_logic_BITMASK_CLEAR(x, mask) ((x) &= (~(mask)))
-#define MJZ_logic_BITMASK_FLIP(x, mask) ((x) ^= (mask))
-#define MJZ_logic_BITMASK_CHECK_ALL(x, mask) (!(~(x) & (mask)))
-#define MJZ_logic_BITMASK_CHECK_ANY(x, mask) ((x) & (mask))
-
-#define min_macro_(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
 
 // #define Arduino
 
@@ -49,18 +33,25 @@ constexpr inline int sprintf_alt_(char* const buffer_for_print,
 #endif
 }
 
+/* a=target variable, b=bit number to act upon 0-n */
+#define MJZ_logic_BIT_SET(a, b) ((a) |= (1ULL << (b)))
+#define MJZ_logic_BIT_CLEAR(a, b) ((a) &= ~(1ULL << (b)))
+#define MJZ_logic_BIT_FLIP(a, b) ((a) ^= (1ULL << (b)))
+#define MJZ_logic_BIT_CHECK(a, b) \
+  (!!((a) & (1ULL << (b))))  // '!!' to make sure this returns 0 or 1
 
-constexpr inline uint64_t bit_to_64_bits(bool B)                            
- {
-  uint64_t bits[6]{};               
-    bits[5] = !!B;
-    bits[0] = ((bits[5] << 1ULL) | bits[5]);          
-    bits[1] = ((bits[0] <<2ULL ) | bits[0]);          
-    bits[2] = ((bits[1]<< 4ULL ) | bits[1]);          
-    bits[3] = ((bits[2] << 8ULL) | bits[2]);          
-    bits[4] = ((bits[3] << 16ULL) | bits[3]);         
-    return ((bits[4] << 32ULL) | bits[4]);
-}
+#define MJZ_logic_BIT(b) (1ULL << (b))
+#define MJZ_logic_BIT_NOT(b) (~(1ULL << (b)))
+
+#define MJZ_logic_BITMASK_SET(x, mask) ((x) |= (mask))
+#define MJZ_logic_BITMASK_CLEAR(x, mask) ((x) &= (~(mask)))
+#define MJZ_logic_BITMASK_FLIP(x, mask) ((x) ^= (mask))
+#define MJZ_logic_BITMASK_CHECK_ALL(x, mask) (!(~(x) & (mask)))
+#define MJZ_logic_BITMASK_CHECK_ANY(x, mask) ((x) & (mask))
+#define min_macro_(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
+#define MJZ_logic_BL_bit_to_64_bits(B) ((((uint64_t)!(B)) + (uint64_t)(-1)))
+#define MJZ_logic_bit_to_64_bits(B) ((B) ? (uint64_t)(-1) : 0ULL)
+
 
 
 #ifdef Arduino

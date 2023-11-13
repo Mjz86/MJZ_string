@@ -6,10 +6,13 @@ class main_class {
 
  protected:
   inline virtual int main(int argc, const char* const* const argv) { return 0; }
+
  public:
   inline int setup(int argc, const char* const* const argv) {
-    return run(argc, argv)->main(argc, argv);
- }
+    int return_val = run(argc, argv)->main(argc, argv);
+    std::cout << std::endl << std::endl;
+    return return_val;
+  }
   inline virtual ~main_class() = default;
   main_class() = default;
   main_class(main_class&&) = delete;

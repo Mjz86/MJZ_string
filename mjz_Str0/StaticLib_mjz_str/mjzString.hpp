@@ -113,7 +113,7 @@ MJZ_memcmp_data MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
     bool is_different{(*ptr_1_rf++ != *ptr_2_rf++)};
     diff_of_data += is_different;
     first_delta_index[0] +=
-        bit_to_64_bits(is_different && !(first_delta_index[0])) &
+        MJZ_logic_BL_bit_to_64_bits(is_different && !(first_delta_index[0])) &
         (size_t)(ptr_1_rf - ptr_1_rf_begin - 1);
   }
 
@@ -129,7 +129,7 @@ MJZ_memcmp_data MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
     bool is_different = (*ptr_i[0]++ != *ptr_i[1]++);
     last_diff_of_data |= is_different;
     first_delta_index[1] +=
-        bit_to_64_bits(is_different && !(first_delta_index[1])) &
+        MJZ_logic_BL_bit_to_64_bits(is_different && !(first_delta_index[1])) &
         (size_t)(ptr_i[0] - ptr_i[3] - 1);
   }
   int64_t first_delta_index_in_8_t{};
@@ -140,7 +140,7 @@ MJZ_memcmp_data MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
     for (; ptr_i[0] < ptr_i[2];) {
       bool is_different = (*ptr_i[0]++ != *ptr_i[1]++);
       first_delta_index_in_8_t +=
-          bit_to_64_bits(is_different && !(first_delta_index_in_8_t)) &
+          MJZ_logic_BL_bit_to_64_bits(is_different && !(first_delta_index_in_8_t)) &
           (size_t)(ptr_i[0] - ptr_i[3] - 1);
     }
 
@@ -228,40 +228,43 @@ class static_str_algo {
 
  public:
   template <class Type>
-  static inline constexpr Type BL__min(Type a, Type b) {
-    uint64_t BL = bit_to_64_bits(b < a);
+  static inline constexpr Type BL_min(Type a, Type b) {
+    uint64_t BL = MJZ_logic_BL_bit_to_64_bits(b < a);
     return (BL & b) + ((~BL) & a);
   }
 
   template <class Type>
-  static inline constexpr Type BL__max(Type a, Type b) {
-    uint64_t BL = bit_to_64_bits(a<b);
+  static inline constexpr Type BL_max(Type a, Type b) {
+    uint64_t BL = MJZ_logic_BL_bit_to_64_bits(a < b);
     return (BL & b) + ((~BL) & a);
   }
+  template <class Type>
+  static inline constexpr Type BL_abs(Type x) {
+    uint64_t BL = MJZ_logic_BL_bit_to_64_bits(0 < x);
+    return (BL & x) + ((~BL) & (-x));
+  }
+ 
+
  public:
   static constexpr int MJZ_STRnCMP(const char *p1, const char *p2,
-                                   size_t lenght) {
+                                   size_t length_) {
     const unsigned char *s1 = (const unsigned char *)p1;
     const unsigned char *s2 = (const unsigned char *)p2;
     bool b{1};
-    int state{};
-    if (!lenght--) return 0;
+    bool state{1};
+    int64_t length = length_;
     while (b) {
-      state++;  // 1
-      b = (min(*s1, *s2) == 0);
-      state++;  // 2
-      b = (*s1++ != *s2++);
-      state = 0;
-      b = 0 < lenght--;
+      b &= (*s1 != 0 && *s2 != 0);
+      b &= (*s1++ == *s2++);
+      state = b;
+      b &= (0 < length--);
     }
-    if (state==1) return *s1 - *s2;
-    if (state==2) s1[-1] - s2[-1];
+    if (!state) return s1[-1] - s2[-1];
     return 0;
   }
 
   constexpr static int memcmp(const void *str1, const void *str2,
                               size_t count) {
-
     const unsigned char *s1 = (const unsigned char *)str1;
     const unsigned char *s2 = (const unsigned char *)str2;
 
@@ -627,6 +630,18 @@ class static_str_algo {
       }
     }
     return -1;
+  }
+
+  template <typename Type, typename function_type>
+ static inline constexpr Type *do_operation(Type *buffer_, function_type function,
+                                      const Type *a_arr, const Type *b_arr,
+                                      size_t len) {
+    const Type *buffer_end = buffer_ + len;
+    Type *buffer{buffer_};
+    while (buffer < buffer_end) {
+      *buffer++ = function(*a_arr++, *b_arr++);
+    }
+    return buffer_;
   }
 
  public:
@@ -3438,6 +3453,7 @@ class mjz_Str : public basic_mjz_String,
   mjz_Str operator++(int);
   mjz_Str &operator--();  // read one character
   inline char operator-() { return (char)read(); }
+  inline mjz_Str &operator~() { return operator()(); }
   inline mjz_Str &operator+() { return ++(*this); }
 
   mjz_Str operator--(int);
