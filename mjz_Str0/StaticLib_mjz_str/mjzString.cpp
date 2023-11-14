@@ -414,6 +414,12 @@ bool is_forbiden_character_default(char x_char_) {
 
 
 
+ std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr =
+    mjz_Str_DATA_storage_cls::create();
+;
+
+
+
 std::pair<mjz_ard::hash_sha256, mjz_ard::mjz_Str>
 mjz_ard::basic_mjz_Str_view::hash_with_output(uint8_t n) const {
   mjz_ard::hash_sha256 hash_;

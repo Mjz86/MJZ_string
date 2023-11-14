@@ -1274,15 +1274,6 @@ class mjz_Str_DATA_storage_cls;
 class mjz_Str_DATA_storage_cls
     : public std::enable_shared_from_this<mjz_Str_DATA_storage_cls> {
  public:
-  std::function<void(void *)> free_fnctn = [](void *ptr) -> void {
-    ::free(ptr);
-  };
-  std::function<void *(void *, size_t)> realloc_fnctn =
-      [](void *ptr, size_t size_) -> void * {
-    void *ptr_ = ::realloc(ptr, size_);
-    return ptr_;
-  };
-  ;
   std::function<bool(char)> is_blank_character = is_blank_characteres_default;
   std::function<char(char)> char_to_char_for_reinterpret_fnc_ptr =
       char_to_char_for_reinterpret_fnc_ptr_default;
@@ -1290,9 +1281,6 @@ class mjz_Str_DATA_storage_cls
       is_forbiden_character_default;  // like bool
   // (*is_forbiden_character)(char)
   // but better
-  unsigned long _timeout = 1000;  // number of milliseconds to wait for the next
-  // char before aborting timed read
-  int write_error = 0;
   char reinterpret_char_char = '\\';
   template <typename T>
   friend class mjz_str_t;
@@ -1306,13 +1294,6 @@ class mjz_Str_DATA_storage_cls
     // Not using std::make_shared<mjz_Str_DATA_storage_cls> because the c'tor is
     // private.
     return std::make_shared<mjz_Str_DATA_storage_cls>();
-  }
-  void change_free_fnctn_functions(std::function<void(void *)> free_) {
-    free_fnctn = free_;
-  }
-  void change_realloc_fnctn_functions(
-      std::function<void *(void *, size_t)> realloc_) {
-    realloc_fnctn = realloc_;
   }
 
  private:
@@ -3133,15 +3114,9 @@ class mjz_Str : public basic_mjz_String,
                 public Stream {  //
 #endif  // Arduino
  protected:
-  static std::shared_ptr<mjz_Str_DATA_storage_cls>
-      main_mjz_Str_DATA_storage_Obj_ptr;
-  bool did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
   // void (mjz_Str<T>::*update_event_F_p)( void); //departed
   // (object_ptr->*pointer_name)(arguments)//like (this->*update_event_F_p)();
-  std::shared_ptr<mjz_Str_DATA_storage_cls>
-      drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
-  std::shared_ptr<mjz_Str_DATA_storage_cls>
-      &drived_mjz_Str_DATA_storage_Obj_ptr_set();
+
   friend class StringSumHelper_t<T>;
   // use a function pointer to allow for "if (s)" without the
   // complications of an operator bool(). for more information,see:
@@ -3162,43 +3137,18 @@ class mjz_Str : public basic_mjz_String,
   void free_pv(void *const &ptr, bool constructor);
   mjz_str_t<T> &copy(const char *cstr, size_t length, bool constructor);
 
- public:
-  inline const std::function<void *(void *, size_t)>
-      &get_realloc_alloc_function() const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->realloc_fnctn;
-  }
-  inline const std::function<char(char)>
-      &get_char_to_char_for_reinterpret_fnc_ptr_function() const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr
-        ->char_to_char_for_reinterpret_fnc_ptr;
-  }
-  inline const std::function<bool(char)> &get_is_forbiden_character_function()
-      const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->is_forbiden_character;
-  }
-  inline const std::function<bool(char)> &get_is_blank_character_function()
-      const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character;
-  }
-  inline const std::function<void(void *)> &get_free_alloc_function() const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->free_fnctn;
-  }
-
  protected:
-  [[nodiscard]]  // virtual
-  void *
-  realloc(void *ptr, size_t new_size) {
-    return get_realloc_alloc_function()(ptr, new_size);
+  [[nodiscard]] void *realloc(void *ptr, size_t new_size) {
+    return T().reallocate(ptr, new_size);
   }
-  // virtual
-  void free(void *ptr) { return get_free_alloc_function()(ptr); }
+  void free(void *ptr) { return T().deallocate((char*)ptr,m_capacity+1); }
 
   stack_str_buf stack_obj_buf;
 
  public:
+  static int8_t char_to_int_for_string(char c_char);
   // stream
  protected:
-  friend void str_helper__op_shift_input_(mjz_str_t<T> &rhs, mjz_str_t<T> &CIN);
   // This enumeration provides the lookahead options for parseInt(), //
   // parseFloat() The rules set out here are used until either the first valid
   // character is found or a time out occurs due to lack of input.
@@ -3229,22 +3179,14 @@ class mjz_Str : public basic_mjz_String,
   int timedPeek();  // private method to peek stream with timeout
   int peekNextDigit(LookaheadMode lookahead,
                     bool detectDecimal);  // returns the next numeric digit in
-  // the stream or -1 if timeout
-  void setWriteError(int err = 1) if_override_then_override {
-    drived_mjz_Str_DATA_storage_Obj_ptr_set()->write_error = err;
-  }
 
  public:
-  int getWriteError() if_override_then_override {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->write_error;
-  }
-  void clearWriteError() if_override_then_override { setWriteError(0); }
   // default to zero, meaning "a single write may block"
   // should be overridden by subclasses with buffering
-  virtual int availableForWrite() if_ard_then_override {
+   int availableForWrite() if_ard_then_override {
     return (int)availableForWriteLL();
   }
-  virtual int64_t availableForWriteLL() if_ard_then_override { return 1; }
+   int64_t availableForWriteLL() if_ard_then_override { return 1; }
   size_t print(const __FlashStringHelper *) if_override_then_override;
   size_t print(const char[]) if_override_then_override;
   size_t print(char) if_override_then_override;
@@ -3275,12 +3217,7 @@ class mjz_Str : public basic_mjz_String,
   // The return value is not always used. Total
   // calls: 13, discarded results: 1.
   // parsing methods
-  void setTimeout(
-      unsigned long timeout);  // sets maximum milliseconds to wait for
-  // stream data, default is 1 second
-  unsigned long getTimeout(void) {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->_timeout;
-  }
+  
   bool find_in_stream(
       const char *target);  // reads data from the stream until the target
   // string is found
@@ -3463,10 +3400,10 @@ class mjz_Str : public basic_mjz_String,
     concat(x.c_str(), x.length());
     return *this;
   }
-  mjz_str_t<T>(std::string &x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t<T>(std::string &&x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t<T>(const std::string &x) : mjz_str_t<T>(x.c_str()) {}
-  virtual ~mjz_str_t<T>(void);  // make all drived destructors called
+  mjz_str_t(std::string &x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(std::string &&x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(const std::string &x) : mjz_str_t<T>(x.c_str()) {}
+   ~mjz_str_t(void);  // make all drived destructors called
   void adjust_cap();
   mjz_str_t<T> &operator-=(const mjz_str_t<T> &othr_);
   mjz_str_t<T> &operator-=(mjz_str_t<T> &&othr_);
@@ -3753,50 +3690,15 @@ class mjz_Str : public basic_mjz_String,
   }
   void *do_this_for_me(function_ptr, void *x = 0);
   // comparison (only works w/ Strings and "strings")
-  friend bool is_blank_characteres_default(char);
-  friend char char_to_char_for_reinterpret_fnc_ptr_default(char);
-  friend bool is_forbiden_character_default(char);
-  friend class basic_mjz_String;
-  void set_realloc_free_functions(
-      std::function<void(void *)> free_,
-      std::function<void *(void *, size_t)> realloc_) {
-    if (free_ && realloc_) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->realloc_fnctn = realloc_;
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->free_fnctn = free_;
-    }
-  }
-  void change_is_blank_character_function(std::function<bool(char)> fnction) {
-    if (fnction) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_blank_character = fnction;
-    }
-  }
-  void change_char_to_char_for_reinterpret_fnc_ptr_function(
-      std::function<char(char)> fnction) {
-    if (fnction) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()
-          ->char_to_char_for_reinterpret_fnc_ptr = fnction;
-    }
-  }
-  void change_is_forbiden_character_function(
-      std::function<bool(char)> fnction) {
-    if (fnction) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_forbiden_character =
-          fnction;
-    }
-  }
+ 
 
-  bool is_blank() const;
-  bool is_forbiden(char) const;
-  bool change_reinterpret_char_char(char);
-  bool char_to_char_for_reinterpret(char &c_char) const;
-  char get_reinterpret_char_char() const;
-  static int8_t char_to_int_for_string(char c_char);
+
   [[nodiscard]] static mjz_str_t<T> create_mjz_Str_char_array(size_t size_,
                                                               char filler = 0,
                                                               bool do_fill = 1);
   [[nodiscard]] static mjz_str_t<T> create_mjz_Str_2D_char_array(
       size_t size_col, size_t size_row, char filler = 0, bool do_fill = 1);
-  
+
   friend class STRINGSerial;
   // character access
   void setCharAt(size_t index, char c);
@@ -4612,7 +4514,7 @@ class mjz_virtual_string_view : public mjz_str_view {
   }
   virtual inline ~mjz_virtual_string_view(){};
 };
-
+extern std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr;
 template <typename T>
 class extended_mjz_str_t : public mjz_str_t<T> {
  public:
@@ -4657,41 +4559,45 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   }
   virtual ~extended_mjz_str_t(){};
 
-
-
-
-
-  friend std::istream &operator<<(extended_mjz_str_t<T> &rhs, std::istream &CIN) {
+  friend std::istream &operator<<(extended_mjz_str_t<T> &rhs,
+                                  std::istream &CIN) {
     return helper__op_shift_input_(rhs, CIN, rhs.get_s_shift_op_l_s());
   }
-  friend std::istream &operator>>(std::istream &CIN, extended_mjz_str_t<T> &rhs) {
+  friend std::istream &operator>>(std::istream &CIN,
+                                  extended_mjz_str_t<T> &rhs) {
     return helper__op_shift_input_(rhs, CIN, rhs.get_shift_op_r_s());
   }
-  friend std::ostream &operator<<(std::ostream &COUT, const extended_mjz_str_t<T> &rhs) {
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  const extended_mjz_str_t<T> &rhs) {
     COUT.write(rhs.get_shift_op_l_sc().c_str(),
                rhs.get_shift_op_l_sc().length());
     return COUT;
   }
-  friend std::ostream &operator>>(const extended_mjz_str_t<T> &rhs, std::ostream &COUT) {
+  friend std::ostream &operator>>(const extended_mjz_str_t<T> &rhs,
+                                  std::ostream &COUT) {
     COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
                rhs.get_s_shift_op_r_sc().length());
     return COUT;
   }
-  friend std::ostream &operator<<(std::ostream &COUT, extended_mjz_str_t<T> &rhs) {
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  extended_mjz_str_t<T> &rhs) {
     COUT.write(rhs.get_shift_op_l_s().c_str(), rhs.get_shift_op_l_s().length());
     return COUT;
   }
-  friend std::ostream &operator>>(extended_mjz_str_t<T> &rhs, std::ostream &COUT) {
+  friend std::ostream &operator>>(extended_mjz_str_t<T> &rhs,
+                                  std::ostream &COUT) {
     COUT.write(rhs.get_s_shift_op_r_s().c_str(),
                rhs.get_s_shift_op_r_s().length());
     return COUT;
   }
-  friend std::ostream &operator>>(extended_mjz_str_t<T> &&rhs, std::ostream &COUT) {
+  friend std::ostream &operator>>(extended_mjz_str_t<T> &&rhs,
+                                  std::ostream &COUT) {
     COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
                rhs.get_s_shift_op_r_sc().length());
     return COUT;
   }
-  friend std::ostream &operator<<(std::ostream &COUT, extended_mjz_str_t<T> &&rhs) {
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  extended_mjz_str_t<T> &&rhs) {
     COUT.write(rhs.get_shift_op_l_sc().c_str(),
                rhs.get_shift_op_l_sc().length());
     return COUT;
@@ -4771,7 +4677,65 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   extended_mjz_str_t<T> string_do_interpret();
   void string_do_interpret(extended_mjz_str_t<T> &instr);
 
+ public:
+  inline const std::function<char(char)>
+      &get_char_to_char_for_reinterpret_fnc_ptr_function() const {
+    return drived_mjz_Str_DATA_storage_Obj_ptr
+        ->char_to_char_for_reinterpret_fnc_ptr;
+  }
+  inline const std::function<bool(char)> &get_is_forbiden_character_function()
+      const {
+    return drived_mjz_Str_DATA_storage_Obj_ptr->is_forbiden_character;
+  }
+  inline const std::function<bool(char)> &get_is_blank_character_function()
+      const {
+    return drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character;
+  }
+  public:
+  friend bool is_blank_characteres_default(char);
+  friend char char_to_char_for_reinterpret_fnc_ptr_default(char);
+  friend bool is_forbiden_character_default(char);
+  friend class basic_mjz_String;
+  void set_realloc_free_functions(
+      std::function<void(void *)> free_,
+      std::function<void *(void *, size_t)> realloc_) {
+    if (free_ && realloc_) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->realloc_fnctn = realloc_;
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->free_fnctn = free_;
+    }
+  }
+  void change_is_blank_character_function(std::function<bool(char)> fnction) {
+    if (fnction) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_blank_character = fnction;
+    }
+  }
+  void change_char_to_char_for_reinterpret_fnc_ptr_function(
+      std::function<char(char)> fnction) {
+    if (fnction) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()
+          ->char_to_char_for_reinterpret_fnc_ptr = fnction;
+    }
+  }
+  void change_is_forbiden_character_function(
+      std::function<bool(char)> fnction) {
+    if (fnction) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_forbiden_character =
+          fnction;
+    }
+  }
+  bool is_blank() const;
+  bool is_forbiden(char) const;
+  bool change_reinterpret_char_char(char);
+  bool char_to_char_for_reinterpret(char &c_char) const;
+  char get_reinterpret_char_char() const;
+ 
  protected:
+  
+  bool did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
+  std::shared_ptr<mjz_Str_DATA_storage_cls>
+      drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
+  std::shared_ptr<mjz_Str_DATA_storage_cls>
+      &drived_mjz_Str_DATA_storage_Obj_ptr_set();
   const extended_mjz_str_t<T> &get_shift_op_rc() const;
   extended_mjz_str_t<T> &get_shift_op_r();
   const extended_mjz_str_t<T> &get_shift_op_lc() const;
@@ -6770,6 +6734,11 @@ mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
 }
 
 template <typename T>
+void str_helper__op_shift_input_(mjz_ard::extended_mjz_str_t<T> &rhs,
+                                 mjz_ard::extended_mjz_str_t<T> &CIN) {
+  helper__op_shift_input_(rhs, CIN, rhs);
+}
+template <typename T>
 mjz_ard::extended_mjz_str_t<T>
 mjz_ard::extended_mjz_str_t<T>::string_do_interpret() {
   mjz_ard::extended_mjz_str_t<T> out_str;
@@ -6782,11 +6751,6 @@ void mjz_ard::extended_mjz_str_t<T>::string_do_interpret(
   str_helper__op_shift_input_(*this, instr);
 }
 
-template <typename T>
-void str_helper__op_shift_input_(mjz_ard::extended_mjz_str_t<T> &rhs,
-                                 mjz_ard::extended_mjz_str_t<T> &CIN) {
-  helper__op_shift_input_(rhs, CIN, rhs);
-}
 /**********************************************************************/
 // stream stuff
 template <typename T>
@@ -6896,10 +6860,10 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::ULL_LL_to_str_rep(
   return *this;
 }
 template <typename T>
-bool mjz_ard::mjz_str_t<T>::is_blank() const {
-  for (size_t index_i{}; index_i < m_length; index_i++) {
+bool mjz_ard::extended_mjz_str_t<T>::is_blank() const {
+  for (size_t index_i{}; index_i < mjz_str_t<T>::length(); index_i++) {
     if (!drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character(
-            m_buffer[index_i])) {
+            mjz_str_t<T>::c_str()[index_i])) {
       return 0;
     }
   }
@@ -6915,7 +6879,7 @@ int8_t mjz_ard::mjz_str_t<T>::char_to_int_for_string(char c_char) {
   return (int8_t)(c_char - '0');
 }
 template <typename T>
-bool mjz_ard::mjz_str_t<T>::change_reinterpret_char_char(char x) {
+bool mjz_ard::extended_mjz_str_t<T>::change_reinterpret_char_char(char x) {
   if (x == 0) {
     return 0;
   }
@@ -6924,11 +6888,12 @@ bool mjz_ard::mjz_str_t<T>::change_reinterpret_char_char(char x) {
   return 1;
 }
 template <typename T>
-char mjz_ard::mjz_str_t<T>::get_reinterpret_char_char() const {
+char mjz_ard::extended_mjz_str_t<T>::get_reinterpret_char_char() const {
   return drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
 }
 template <typename T>
-bool mjz_ard::mjz_str_t<T>::char_to_char_for_reinterpret(char &c_char) const {
+bool mjz_ard::extended_mjz_str_t<T>::char_to_char_for_reinterpret(
+    char &c_char) const {
   if (!drived_mjz_Str_DATA_storage_Obj_ptr) return 1;
   if (c_char == drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char) {
     return drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
@@ -6946,7 +6911,7 @@ bool mjz_ard::mjz_str_t<T>::char_to_char_for_reinterpret(char &c_char) const {
   return 1;
 }
 template <typename T>
-bool mjz_ard::mjz_str_t<T>::is_forbiden(char x) const {
+bool mjz_ard::extended_mjz_str_t<T>::is_forbiden(char x) const {
   if (!x) {
     return 1;
   }
@@ -7185,13 +7150,10 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_n_with_output(
                                          SHA256_BLOCK_SIZE, output_name);
 }
 
+   
 template <typename T>
 std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls>
-    mjz_ard::mjz_str_t<T>::main_mjz_Str_DATA_storage_Obj_ptr =
-        mjz_Str_DATA_storage_cls::create();
-template <typename T>
-std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls>
-    &mjz_ard::mjz_str_t<T>::drived_mjz_Str_DATA_storage_Obj_ptr_set() {
+    &mjz_ard::extended_mjz_str_t<T>::drived_mjz_Str_DATA_storage_Obj_ptr_set() {
   if (!did_drived_mjz_Str_DATA_storage_Obj_ptr_set) {
     drived_mjz_Str_DATA_storage_Obj_ptr = mjz_Str_DATA_storage_cls::create();
     did_drived_mjz_Str_DATA_storage_Obj_ptr_set = 1;
@@ -7593,11 +7555,7 @@ int mjz_ard::mjz_str_t<T>::peekNextDigit(LookaheadMode lookahead,
 }
 // Public Methods
 //////////////////////////////////////////////////////////////
-template <typename T>
-void mjz_ard::mjz_str_t<T>::setTimeout(
-    unsigned long timeout) {  // sets the maximum number of milliseconds to wait
-  drived_mjz_Str_DATA_storage_Obj_ptr_set()->_timeout = timeout;
-}
+
 // find returns true if the target string is found
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream(const char *target) {
