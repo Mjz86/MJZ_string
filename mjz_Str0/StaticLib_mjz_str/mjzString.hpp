@@ -3119,6 +3119,8 @@ class basic_mjz_String : public basic_mjz_Str_view {
   basic_mjz_String &operator=(const basic_mjz_String &) = delete;
   basic_mjz_String &operator=(basic_mjz_String &) = delete;
 
+  inline basic_mjz_Str_view sv( )const { return *this;
+      }
  public:
   const static char
       the_in_reinterpreted_char_cca[the_reinterpreted_char_cca_size];  // just
@@ -4630,8 +4632,7 @@ class extended_mjz_str_t : public mjz_str_t<T> {
     mjz_str_t::operator=(std::move(s));
     return *this;
   }
-  virtual ~extended_mjz_str_t(){};
-
+  virtual ~extended_mjz_str_t()= default;
   friend std::istream &operator<<(extended_mjz_str_t<T> &rhs,
                                   std::istream &CIN) {
     return helper__op_shift_input_(rhs, CIN, rhs.get_s_shift_op_l_s());
@@ -4847,7 +4848,7 @@ class StringSumHelper_t : public mjz_str_t<T> {
   StringSumHelper_t(float num) : mjz_str_t<T>(num) {}
   StringSumHelper_t(double num) : mjz_str_t<T>(num) {}
   // non virtual
-  ~StringSumHelper_t(){};
+  ~StringSumHelper_t()= default;
 };
 template <typename TYPE_>
 class type_cmp_class {
@@ -4912,15 +4913,7 @@ inline mjz_ard::mjz_Str operator"" _m_str(unsigned long long num) {
 inline mjz_ard::mjz_Str operator"" _m_str(long double num) {
   return mjz_ard::mjz_Str((double)num);
 }
-inline mjz_ard::mjz_Str operator"" _m_pstr(char c) {
-  return mjz_ard::extended_mjz_Str(c).string_do_interpret();
-}
-inline mjz_ard::mjz_Str operator"" _m_pstr(unsigned long long num) {
-  return mjz_ard::mjz_Str(num);
-}
-inline mjz_ard::mjz_Str operator"" _m_pstr(long double num) {
-  return mjz_ard::mjz_Str((double)num);
-}
+
 inline mjz_ard::mjz_Str operator"" _m_pstr(const char *initilizer) {
   return mjz_ard::extended_mjz_Str(initilizer).string_do_interpret();
 }
@@ -4958,15 +4951,6 @@ inline mjz_ard::mjz_Str operator"" _s(unsigned long long num) {
   return mjz_ard::mjz_Str(num);
 }
 inline mjz_ard::mjz_Str operator"" _s(long double num) {
-  return mjz_ard::mjz_Str((double)num);
-}
-inline mjz_ard::mjz_Str operator"" _ps(char c) {
-  return mjz_ard::extended_mjz_Str(c).string_do_interpret();
-}
-inline mjz_ard::mjz_Str operator"" _ps(unsigned long long num) {
-  return mjz_ard::mjz_Str(num);
-}
-inline mjz_ard::mjz_Str operator"" _ps(long double num) {
   return mjz_ard::mjz_Str((double)num);
 }
 inline mjz_ard::mjz_Str operator"" _ps(const char *initilizer) {
@@ -7184,10 +7168,12 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_with_output(
   uint8_t(&shaResult)[SHA256_BLOCK_SIZE] = rtrn.hashed_data;
   rtrn.sha256_the_string(dev_passwoed, dev_passwoedLength);
 
-  if (output_name_in_output_out != "Null") {
-    output_name_in_output_out().print("const char ");
-    output_name_in_output_out.print(output_name_in_output_out);
-    output_name_in_output_out.print(" [] = { ");
+     if (output_name_in_output_out != "Null") {
+
+    output_name_in_output_out =
+        (operator_plus<T>(operator_plus<T>(mjz_str_t<T>("const char "),
+                                           (output_name_in_output_out.sv())),
+                          basic_mjz_Str_view(" [] = { ", 8)));
     output_name_in_output_out.print((int)shaResult[0]);
 
     for (int64_t i = 1; i < sizeof(shaResult); i++) {
