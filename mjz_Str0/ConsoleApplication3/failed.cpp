@@ -2,7 +2,7 @@
 static void print(const char *input) { std::cout << input; }
 namespace dont_use {
 
-using namespace have_mjz_ard_removed;
+using namespace mjz_ard::have_mjz_ard_removed;
 
 class mjz_Str_dir_test_class : public mjz_Str {
 public:
@@ -186,22 +186,29 @@ long loop() {
 
     if (index_of_first_space_after_previos == -1) {
       DO_break = 1;
-      my_words.emplace(
-          my_words.begin() + word_count,
-          std::make_pair(mystr.substring(index_of_first_char_of_word),
-                         word_count));
+      auto it = my_words.begin();
+      it += word_count;
+      my_words.emplace(it,
+                       std::move(std::make_pair(
+                           mystr.substr_view((int)index_of_first_char_of_word),
+                        (size_t) word_count)));
     } else {
+      auto it = my_words.begin();
+      it += word_count;
       my_words.emplace(
-          my_words.begin() + word_count,
-          std::make_pair(mystr.substring(index_of_first_char_of_word,
+          it,
+          std::move( std::make_pair(mystr.substr_view(index_of_first_char_of_word,
                                          index_of_first_space_after_previos),
-                         word_count));
+                         word_count)));
     }
 
     index_of_first_char_of_word = index_of_first_space_after_previos + 1;
 
     if (my_words[word_count++].first.is_blank()) {
-      my_words.erase(my_words.begin() + (--word_count));
+      word_count--;
+      auto it = my_words.begin();
+      it+=word_count;
+      my_words.erase(it);
     }
   }
 
@@ -245,9 +252,9 @@ long loop() {
   }
 
   std::cout << "\n";
-  return mystr()([](auto THis_) -> int {
+  return mystr()([](mjz_Str& THis_) -> int {
     using namespace mjz_ard;
-    mjz_Str &mystr = *THis_;
+    auto &mystr = *THis_;
     mystr =
         "exiting enter some natural number to exit note that size of string \nis \n:"_m_str;
     mystr += sizeof(mjz_Str);
@@ -316,15 +323,15 @@ void test_mstr_vs_sstr(
   timer("mjz alloc");
   mjz_Str my_str(c_str_small);
   timer("mjz dealloc");
-  my_str.~mjz_Str();
+  my_str.~mjz_str_t();
   timer("mjz alloc large");
   new (&my_str) mjz_Str(c_str_large, size_of_large);
   timer("mjz dealloc large");
-  my_str.~mjz_Str();
+  my_str.~mjz_str_t();
   timer("mjz alloc base");
   new (&my_str) mjz_Str();
   timer("mjz dealloc base");
-  my_str.~mjz_Str();
+  my_str.~mjz_str_t();
   timer("mjz alloc base");
   new (&my_str) mjz_Str();
   timer("std alloc");
@@ -404,7 +411,7 @@ int main() {
   using namespace mjz_ard::short_string_names;
   using namespace mjz_ard;
   unsigned char dta[20]{};
-  ("hi mom "_v + " hello "_v).getBytes(dta, 19);
+  ("hi mom "_s + " hello "_v).getBytes(dta, 19);
   auto dt = mjz_str_view(dta);
   std::array<sv, 1000> ar;
 
@@ -434,7 +441,7 @@ int main() {
 // and select the .sln file
 int hash_demo() {
   using namespace mjz_ard::short_string_convestion_operators;
-  using namespace have_mjz_ard_removed;
+  using namespace mjz_ard::have_mjz_ard_removed;
   std::array<uint8_t[32], 4> password_hash = {{
       {94,  136, 72,  152, 218, 40,  4,  113, 81, 208, 229,
        111, 141, 198, 41,  39,  115, 96, 61,  13, 106, 171,
@@ -455,7 +462,7 @@ int hash_demo() {
        106, 27,  138, 16,  25,  232, 87,  120, 105, 31,  158,
        241, 18,  98,  231, 29,  99,  173, 186, 108, 169} // hash of "toor_pass"
   }};
-  mjz_str a;
+  mjz_Str a;
   std::cin >> a;
   auto my_hash = a.hash();
   std::cout << my_hash.to_string();
@@ -486,7 +493,7 @@ bool get_password_thread() {
   return 1;
 }
 int main86469() {
-  mjz_ard::mjz_Str str;
+  mjz_Str str;
   std::thread get_password(get_password_thread);
   get_password.join();
   dont_use::main976();
@@ -495,8 +502,8 @@ int main86469() {
   // auto sv2 = str.substr_view_beg_n( -4LL, (size_t)8);
   auto sv3 = str.substr_view_beg_n(-9LL, str.length());
   std::cout << "\n\n"
-            << sv3 // << sv1 << sv2 << mjz_ard::mjz_Str(sv1) <<
-                   // mjz_ard::mjz_Str(sv2)
+            << sv3 // << sv1 << sv2 << mjz_Str(sv1) <<
+                   // mjz_Str(sv2)
             << "\n\n";
   using namespace mjz_ard::short_string_convestion_operators;
   using namespace mjz_ard::short_string_names;
@@ -516,13 +523,13 @@ int main86469() {
 
 int maint() {
   using namespace mjz_ard;
-  using namespace mjz_ard::short_string_convestion_operators;
-  using namespace mjz_ard::short_string_names;
+  using namespace short_string_convestion_operators;
+  using namespace short_string_names;
 
   std::vector<std::pair<std::pair<double, double>, std::pair<double, double>>>
       num_a;
   for (double x{0}; x < 10; x += 1) { //= 0.01
-    double a = mjz_ard::static_str_algo::sqrt(x);
+    double a = static_str_algo::sqrt(x);
     double b = sqrt(x);
     double del = abs(a - b);
 
@@ -539,13 +546,13 @@ int maint() {
   return 0;
 }
 int maini() {
-  mjz_ard::mjz_Str buffer;
-  mjz_ard::mjz_Str str;
+  mjz_Str buffer;
+  mjz_Str str;
   char buf[1024]{};
   {
     Scoped_speed_Timer tm("tm");
     for (uint32_t i{}; i < 100000; i++) {
-      buffer += (str = std::rand()).hash().copy_to_c_string(buf, 1024);
+      buffer += (str = std::rand()).hash().copy_to_c_str(buf, 1024);
     }
   }
   std::cin.get();
@@ -564,13 +571,11 @@ inline float activation_function_dr(float x) {
   return mjz_ard::static_str_algo::LeakyReLUDer(x);
 }
 inline std::vector<float> activation_function(std::vector<float> sum) {
-  for (auto &x : sum)
-    x = mjz_ard::static_str_algo::LeakyReLU(x);
+  for (auto &x : sum) x = mjz_ard::static_str_algo::LeakyReLU(x);
   return sum;
 }
 inline std::vector<float> activation_function_dr(std::vector<float> sum) {
-  for (auto &x : sum)
-    x = mjz_ard::static_str_algo::LeakyReLUDer(x);
+  for (auto &x : sum) x = mjz_ard::static_str_algo::LeakyReLUDer(x);
   return sum;
 }
 
@@ -707,8 +712,7 @@ forward_propgate_one_layer(std::vector<std::vector<float>> &weights,
                            std::vector<float> &sum) {
   sum = calculate_sum(inputs.size(), inputs, weights);
   std::vector<float> ret = sum;
-  for (auto &x : ret)
-    x = mjz_ard::static_str_algo::LeakyReLU(x);
+  for (auto &x : ret) x = mjz_ard::static_str_algo::LeakyReLU(x);
   return ret;
 }
 
