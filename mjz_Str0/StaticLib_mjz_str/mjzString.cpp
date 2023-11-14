@@ -17,7 +17,7 @@ long long map(long long x, long long in_min, long long in_max,
 uint16_t makeWord(uint16_t w) { return w; }
 uint16_t makeWord(uint8_t h, uint8_t l) { return (h << 8) | l; }
 
-} // namespace mjz_ard
+}  // namespace mjz_ard
 #endif
 /*
   String library for Wiring & Arduino
@@ -52,8 +52,8 @@ unsigned long long millisR() {
       duration_cast<milliseconds>(system_clock::now().time_since_epoch());
   return ms.count();
 }
-} // namespace mjz_ard
-} // namespace std::chrono
+}  // namespace mjz_ard
+}  // namespace std::chrono
 #endif
 #ifndef Arduino
 unsigned long static time_MIlis_{};
@@ -100,7 +100,7 @@ long random(long howsmall, long howbig) {
 char *dtostrf(double __val, signed char __width, unsigned char __prec,
               char *__s) {
   char buffer_for_not_overflowing[65]{};
-  mjz_Str frmt("%"); // be carefull not recursively ... yourself
+  mjz_Str frmt("%");  // be carefull not recursively ... yourself
   frmt += __width;
   frmt += '.';
   frmt += __prec;
@@ -138,7 +138,7 @@ char *b_U_lltoa(uint64_t value, char *BFR_buffer, int radix, bool is_signed,
 
   if (IS_NEGITIVE__) {
     *((int64_t *)&value) =
-        ((-1) * (*((int64_t *)&value))); // use a positive insted of the - sign
+        ((-1) * (*((int64_t *)&value)));  // use a positive insted of the - sign
   }
 
   char buffer[200]{};
@@ -168,7 +168,7 @@ char *b_U_lltoa(uint64_t value, char *BFR_buffer, int radix, bool is_signed,
     if (value == null_char) {
       for (int64_t j = 0, k = 0; j < 129; j++) {
         if (buffer_[j] != end_of_transmission_char) {
-          buffer[k] = buffer_[j]; // when its done we reverse the string
+          buffer[k] = buffer_[j];  // when its done we reverse the string
           k++;
         }
       }
@@ -181,17 +181,15 @@ char *b_U_lltoa(uint64_t value, char *BFR_buffer, int radix, bool is_signed,
 
   if (IS_NEGITIVE__) {
     BFR_buffer[0] = '-';
-    memmove(BFR_buffer + 1, buffer, number_of_numbers + 1); //+null
+    memmove(BFR_buffer + 1, buffer, number_of_numbers + 1);  //+null
   } else {
-    memmove(BFR_buffer, buffer, number_of_numbers + 1); //+null
+    memmove(BFR_buffer, buffer, number_of_numbers + 1);  //+null
   }
 
   return BFR_buffer;
 }
-mjz_Str  ULL_LL_to_str(
-    uint64_t value, int radix,
-                                       bool is_signed,
-                           bool force_neg) {
+mjz_Str ULL_LL_to_str(uint64_t value, int radix, bool is_signed,
+                      bool force_neg) {
   mjz_Str ret_var;
   ret_var.reserve(70, 1);
   char *ptr_ = b_U_lltoa(value, (char *)ret_var, radix, is_signed, force_neg);
@@ -215,7 +213,7 @@ uint8_t get_num_from_char(uint8_t in_CHAR_, bool *to_neg) {
     *to_neg = 1;
     return (uint8_t)127;
   } else {
-    return (uint8_t)127; // note : 127 is delete in ascii
+    return (uint8_t)127;  // note : 127 is delete in ascii
   }
 }
 int64_t mjz_pow_UINT(uint32_t base, uint32_t power_Of_base) {
@@ -277,7 +275,7 @@ long long C_STR_to_LL(const char *buffer, uint8_t buffer_len, int radix,
     } else if (buffer_for_number[WHILE_Index_for_int_buf] == 127) {
       volatile uint16_t HOLDER_does_not_do_any_thing = 0;
       HOLDER_does_not_do_any_thing +=
-          HOLDER_does_not_do_any_thing; // TODO: V2007
+          HOLDER_does_not_do_any_thing;  // TODO: V2007
       // https://pvs-studio.com/en/docs/warnings/V2007/
       // This expression can be simplified.
       // One of the operands in the '+='
@@ -356,8 +354,6 @@ int MJZ_STRCMP(const char *p1, const char *p2) {
   return c1 - c2;
 }
 
-
-
 const char
     mjz_ard::basic_mjz_String::forbiden_chars_cnt[forbiden_chars_cnt_size] = {
         '\r', '\n', 0};
@@ -412,13 +408,9 @@ bool is_forbiden_character_default(char x_char_) {
   return 0;
 }
 
-
-
- std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr =
+std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr =
     mjz_Str_DATA_storage_cls::create();
 ;
-
-
 
 std::pair<mjz_ard::hash_sha256, mjz_ard::mjz_Str>
 mjz_ard::basic_mjz_Str_view::hash_with_output(uint8_t n) const {
@@ -569,12 +561,10 @@ mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substr(size_t pos,
   return substring_beg_n(pos, len);
 }
 
-
-mjz_Str  SHA256_CTX::to_string() const {
+mjz_Str SHA256_CTX::to_string() const {
   char buffer[1024]{};
   return mjz_ard::mjz_Str(SHA256_CTX::to_c_string(buffer));
 }
-
 
 std::ostream &operator<<(std::ostream &CIN, const mjz_ard::SHA256_CTX &obj) {
   char buffer[1024]{};
@@ -594,42 +584,35 @@ bool get_random_chanch_bool(double chance_var) {
   return random_var <= chance_var;
 }
 
-
-
-
-
-  char *ulltoa(uint64_t value, char *buffer, int radix) {
+char *ulltoa(uint64_t value, char *buffer, int radix) {
   return b_U_lltoa((uint64_t)value, buffer, radix, 0);
-} 
-  char *ultoa(uint32_t value, char *buffer, int radix) {
+}
+char *ultoa(uint32_t value, char *buffer, int radix) {
   return ulltoa((uint64_t)value, buffer, radix);
 }
 
-  char *utoa(uint32_t value, char *buffer, int radix) {
+char *utoa(uint32_t value, char *buffer, int radix) {
   return ultoa(value, buffer, radix);
-  }
+}
 
-
-
-  
- char *lltoa(long long value, char *buffer, int radix) {
+char *lltoa(long long value, char *buffer, int radix) {
   return b_U_lltoa((uint64_t)value, buffer, radix, 1);
-  }
+}
 
-   char *ltoa(long value, char *buffer, int radix) {
+char *ltoa(long value, char *buffer, int radix) {
   return lltoa((long long)value, buffer, radix);
-  }
+}
 
-   char *itoa(int value, char *buffer, int radix) {
+char *itoa(int value, char *buffer, int radix) {
   return lltoa((long long)value, buffer, radix);
-  }
+}
 
-   char *SHA256_CTX::copy_to_c_str(char *buf, size_t len) const {
+char *SHA256_CTX::copy_to_c_str(char *buf, size_t len) const {
   if (len < 1024) return 0;
   static_str_algo::memset(buf, 0, len);
   return to_c_string(buf);
-  }
-  char *mjz_ard::SHA256_CTX::to_c_string(char *buf_) const {
+}
+char *mjz_ard::SHA256_CTX::to_c_string(char *buf_) const {
   char *buf = buf_;
   auto paste_str = [&](mjz_ard::mjz_str_view str) {
     static_str_algo::memmove(buf, str.data(), str.length());
@@ -650,25 +633,14 @@ bool get_random_chanch_bool(double chance_var) {
   return buf_;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 typedef mjz_RingBufferN<SERIAL_BUFFER_SIZE> RingBuffer;
-template <int N> mjz_RingBufferN<N>::mjz_RingBufferN(void) {
+template <int N>
+mjz_RingBufferN<N>::mjz_RingBufferN(void) {
   static_str_algo::memset(_aucBuffer, 0, N);
   clear();
 }
-template <int N> void mjz_RingBufferN<N>::store_char(uint8_t c) {
+template <int N>
+void mjz_RingBufferN<N>::store_char(uint8_t c) {
   // if we should be storing the received character into the location
   // just before the tail (meaning that the head would advance to the
   // current location of the tail), we're about to overflow the buffer
@@ -679,12 +651,14 @@ template <int N> void mjz_RingBufferN<N>::store_char(uint8_t c) {
     _numElems = _numElems + 1;
   }
 }
-template <int N> void mjz_RingBufferN<N>::clear() {
+template <int N>
+void mjz_RingBufferN<N>::clear() {
   _iHead = 0;
   _iTail = 0;
   _numElems = 0;
 }
-template <int N> int mjz_RingBufferN<N>::read_char() {
+template <int N>
+int mjz_RingBufferN<N>::read_char() {
   if (isEmpty()) {
     return -1;
   }
@@ -694,21 +668,30 @@ template <int N> int mjz_RingBufferN<N>::read_char() {
   _numElems = _numElems - 1;
   return value;
 }
-template <int N> int mjz_RingBufferN<N>::available() { return _numElems; }
-template <int N> int mjz_RingBufferN<N>::availableForStore() {
+template <int N>
+int mjz_RingBufferN<N>::available() {
+  return _numElems;
+}
+template <int N>
+int mjz_RingBufferN<N>::availableForStore() {
   return (N - _numElems);
 }
-template <int N> int mjz_RingBufferN<N>::peek() {
+template <int N>
+int mjz_RingBufferN<N>::peek() {
   if (isEmpty()) {
     return -1;
   }
 
   return _aucBuffer[_iTail];
 }
-template <int N> int mjz_RingBufferN<N>::nextIndex(int index) {
+template <int N>
+int mjz_RingBufferN<N>::nextIndex(int index) {
   return (uint32_t)(index + 1) % N;
 }
-template <int N> bool mjz_RingBufferN<N>::isFull() { return (_numElems == N); }
+template <int N>
+bool mjz_RingBufferN<N>::isFull() {
+  return (_numElems == N);
+}
 template <typename T>
 mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str, char delim) {
   size_t index_of_delim = is.find_first_of(delim);
@@ -721,6 +704,6 @@ mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str) {
   return getline(is, str, '\n');
 }
 
-} // namespace mjz_ard
+}  // namespace mjz_ard
 
-#endif // asdfghjklkjhgfdsasdfghjkjhgfdfghj
+#endif  // asdfghjklkjhgfdsasdfghjkjhgfdfghj

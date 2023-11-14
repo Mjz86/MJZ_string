@@ -274,10 +274,16 @@ typedef extended_mjz_str_t<reallocator<char>> extended_mjz_Str;
 
 class static_str_algo {
  public:
-  static constexpr int64_t expected_mjz_str_size = 64;// set the wanted size in range of [(expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size),+inf] 
-  static constexpr int64_t expected_basic_mjz_str_size =(sizeof(size_t) * 2 + sizeof(void *));
-  static constexpr int64_t expected_min_stack_obj_buffer_size = sizeof(uint8_t)+sizeof(char);
-  static constexpr int64_t stack_buffer_size =expected_mjz_str_size -(expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size);
+  static constexpr int64_t expected_mjz_str_size =
+      64;  // set the wanted size in range of [(expected_basic_mjz_str_size +
+           // expected_min_stack_obj_buffer_size),+inf]
+  static constexpr int64_t expected_basic_mjz_str_size =
+      (sizeof(size_t) * 2 + sizeof(void *));
+  static constexpr int64_t expected_min_stack_obj_buffer_size =
+      sizeof(uint8_t) + sizeof(char);
+  static constexpr int64_t stack_buffer_size =
+      expected_mjz_str_size -
+      (expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size);
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
   static constexpr int64_t forbiden_chars_cnt_size = 3;
   static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
@@ -592,6 +598,7 @@ class static_str_algo {
  public:
   class stack_str_buf {
     mutable uint8_t STR_is_in_stack{};
+
    public:
     char stack_buffer[stack_buffer_size + 1]{};  // string you're searching for
     stack_str_buf() : STR_is_in_stack(0) {
@@ -3144,8 +3151,7 @@ class mjz_Str : public basic_mjz_String,
   [[nodiscard]] void *realloc(void *ptr, size_t new_size) {
     return T().reallocate(ptr, new_size);
   }
-  void free(void *ptr) { return T().deallocate((char*)ptr,m_capacity+1); }
-
+  void free(void *ptr) { return T().deallocate((char *)ptr, m_capacity + 1); }
 
  public:
   static int8_t char_to_int_for_string(char c_char);
@@ -3185,10 +3191,10 @@ class mjz_Str : public basic_mjz_String,
  public:
   // default to zero, meaning "a single write may block"
   // should be overridden by subclasses with buffering
-   int availableForWrite() if_ard_then_override {
+  int availableForWrite() if_ard_then_override {
     return (int)availableForWriteLL();
   }
-   int64_t availableForWriteLL() if_ard_then_override { return 1; }
+  int64_t availableForWriteLL() if_ard_then_override { return 1; }
   size_t print(const __FlashStringHelper *) if_override_then_override;
   size_t print(const char[]) if_override_then_override;
   size_t print(char) if_override_then_override;
@@ -3219,7 +3225,7 @@ class mjz_Str : public basic_mjz_String,
   // The return value is not always used. Total
   // calls: 13, discarded results: 1.
   // parsing methods
-  
+
   bool find_in_stream(
       const char *target);  // reads data from the stream until the target
   // string is found
@@ -3405,7 +3411,7 @@ class mjz_Str : public basic_mjz_String,
   mjz_str_t(std::string &x) : mjz_str_t<T>(x.c_str()) {}
   mjz_str_t(std::string &&x) : mjz_str_t<T>(x.c_str()) {}
   mjz_str_t(const std::string &x) : mjz_str_t<T>(x.c_str()) {}
-   ~mjz_str_t(void);  // make all drived destructors called
+  ~mjz_str_t(void);  // make all drived destructors called
   void adjust_cap();
   mjz_str_t<T> &operator-=(const mjz_str_t<T> &othr_);
   mjz_str_t<T> &operator-=(mjz_str_t<T> &&othr_);
@@ -3692,8 +3698,6 @@ class mjz_Str : public basic_mjz_String,
   }
   void *do_this_for_me(function_ptr, void *x = 0);
   // comparison (only works w/ Strings and "strings")
- 
-
 
   [[nodiscard]] static mjz_str_t<T> create_mjz_Str_char_array(size_t size_,
                                                               char filler = 0,
@@ -4516,7 +4520,8 @@ class mjz_virtual_string_view : public mjz_str_view {
   }
   virtual inline ~mjz_virtual_string_view(){};
 };
-extern std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr;
+extern std::shared_ptr<mjz_Str_DATA_storage_cls>
+    main_mjz_Str_DATA_storage_Obj_ptr;
 template <typename T>
 class extended_mjz_str_t : public mjz_str_t<T> {
  public:
@@ -4693,7 +4698,8 @@ class extended_mjz_str_t : public mjz_str_t<T> {
       const {
     return drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character;
   }
-  public:
+
+ public:
   friend bool is_blank_characteres_default(char);
   friend char char_to_char_for_reinterpret_fnc_ptr_default(char);
   friend bool is_forbiden_character_default(char);
@@ -4730,9 +4736,8 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   bool change_reinterpret_char_char(char);
   bool char_to_char_for_reinterpret(char &c_char) const;
   char get_reinterpret_char_char() const;
- 
+
  protected:
-  
   uint8_t did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
   std::shared_ptr<mjz_Str_DATA_storage_cls>
       drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
@@ -7152,7 +7157,6 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_n_with_output(
                                          SHA256_BLOCK_SIZE, output_name);
 }
 
-   
 template <typename T>
 std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls>
     &mjz_ard::extended_mjz_str_t<T>::drived_mjz_Str_DATA_storage_Obj_ptr_set() {
