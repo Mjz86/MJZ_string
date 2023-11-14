@@ -504,6 +504,33 @@ class static_str_algo {
     ISO C 99 section 6.2.6.1. */
     return NULL;
   }
+  template <class Type>
+  struct remove_reference {
+    using type = Type;
+  };
+  template <class Type>
+  struct remove_reference<Type &> {
+    using type = Type;
+  };
+  template <class Type>
+  struct remove_reference<Type &&> {
+    using type = Type;
+  };
+  template <class Type>
+using remove_reference_t = typename remove_reference<Type>::type;
+
+  template <class Type>
+  [[nodiscard]]  constexpr remove_reference_t<Type> &&move(
+      Type &&_Arg) noexcept {
+    return static_cast<remove_reference_t<Type> &&>(_Arg);
+  }
+
+  template<typename Type>
+  constexpr void swap(Type &Left, Type &Right){
+    Type _Tmp = move(Left);
+    Left =  move(Right);
+    Right =  move(_Tmp);
+  }
 
   constexpr static int64_t compare_two_str(const char *rhs, size_t rhs_l,
                                            const char *lhs, size_t lhs_l) {
@@ -543,7 +570,7 @@ class static_str_algo {
   struct _char_8_a {
     union {
       bool data_b[8]{};
-      char8_t data_c[8];
+      char data_c[8];
       uint8_t data_u[8];
     };
 
@@ -564,10 +591,18 @@ class static_str_algo {
     }
     return ret_val;
   }
-
+  enum class cpu_endian : uint8_t { little = 0, big = 1 };
+  inline constexpr static cpu_endian get_cpu_endian() {
+    union {
+      int x = 1;
+      uint8_t a[4];
+    };
+    return a[0] ? cpu_endian::little : cpu_endian::big;
+  }
+ static cpu_endian my_endian;
   inline constexpr static char *get_bit_representation(
       char *buffer, size_t buffer_len, const void *data_ptr, size_t len,
-      bool in_reverse = (std::endian::little == std::endian::native)) {
+      bool in_reverse = (my_endian == cpu_endian::little)) {
     if (buffer_len < len * 8) return 0;
 
     const char *data = (const char *)data_ptr;
@@ -591,8 +626,7 @@ class static_str_algo {
   template <typename Type>
   inline constexpr static char *get_bit_representation(char *buffer,
                                                        const Type &data) {
-    return get_bit_representation(buffer, sizeof(Type) * 8, &data, sizeof(Type),
-                                  std::endian::little == std::endian::native);
+    return get_bit_representation(buffer, sizeof(Type) * 8, &data, sizeof(Type));
   }
 
  public:
@@ -717,10 +751,10 @@ class static_str_algo {
     constexpr uint32_t magic_constant = 0x5f3759df;
     // long &i = *(long *)&y; // log base 2
     // long i = *(long *)&y;
-    long i = std::bit_cast<long>(y);
+    long i = bit_cast<long>(y);
     i = magic_constant - divide_by_2(i);  // some magic
     // y = *(float *)&i;
-    y = std::bit_cast<float>(i);
+    y = bit_cast<float>(i);
 
     y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method\
 
@@ -1408,7 +1442,7 @@ class iterator_template {
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     return *this;
   }
-  constexpr ~iterator_template() { m_iterator = 0; }
+  inline ~iterator_template() { m_iterator = 0; }
   constexpr bool operator==(const iterator_template &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
@@ -1805,8 +1839,7 @@ class heap_obj_warper {
     return (operator()) >= (other.operator());
   }
 
-#ifndef Arduino
-
+#if 0
   inline bool operator<=>(const heap_obj_warper &other) const {
     return operator() <=> other.operator();
   }
@@ -2128,7 +2161,7 @@ struct SHA256_CTX {
 
   static constexpr void sha256_update(SHA256_CTX *ctx, const BYTE data[],
                                       size_t len) {
-    WORD i;
+    WORD i{};
 
     for (i = 0; i < len; ++i) {
       ctx->data[ctx->datalen] = data[i];
@@ -2143,7 +2176,7 @@ struct SHA256_CTX {
   }
 
   static constexpr void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
-    WORD i;
+    WORD i{};
     i = ctx->datalen;
 
     // Pad whatever data is left in the buffer.
@@ -2320,7 +2353,7 @@ struct SHA1_CTX : public SHA256_CTX {
 
   static constexpr void sha1_update(SHA1_CTX *ctx, const BYTE data[],
                                     size_t len) {
-    size_t i;
+    size_t i{};
 
     for (i = 0; i < len; ++i) {
       ctx->data[ctx->datalen] = data[i];
@@ -2335,7 +2368,7 @@ struct SHA1_CTX : public SHA256_CTX {
   }
 
   static constexpr void sha1_final(SHA1_CTX *ctx, BYTE hash[]) {
-    WORD i;
+    WORD i{};
     i = ctx->datalen;
 
     // Pad whatever data is left in the buffer.
@@ -2416,12 +2449,10 @@ class basic_mjz_Str_view : protected static_str_algo {
 
   constexpr basic_mjz_Str_view(const char *buffer, size_t length)
       : basic_mjz_Str_view(const_cast<char *>(buffer), length) {}
-  constexpr ~basic_mjz_Str_view() = default;
+  inline ~basic_mjz_Str_view() = default;
   constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = default;
-  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = default;
   constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = default;
   constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
-  constexpr basic_mjz_Str_view(basic_mjz_Str_view &) = default;
   constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = default;
 
  public:
@@ -4482,23 +4513,23 @@ class mjz_str_view : public basic_mjz_Str_view {
       : mjz_str_view(s.c_str(), s.length()) {}
   constexpr mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
   constexpr mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
-  constexpr inline ~mjz_str_view() = default;
+  inline ~mjz_str_view() = default;
   using iterator_template_CC = iterator_template<const char>;
   using const_iterator = iterator_template_CC;
 
-  constexpr const_iterator begin() const {
+  inline const_iterator begin() const {
     return const_iterator(begin_c_str(), begining_of_str_ptr(),
                           ending_of_str_ptr());
   }
-  constexpr const_iterator end() const {
+  inline const_iterator end() const {
     return const_iterator(end_c_str(), begining_of_str_ptr(),
                           ending_of_str_ptr());
   }
   typedef std::reverse_iterator<const_iterator> const_rev_iterator;
-  constexpr const_rev_iterator rbegin() const {
+  inline const_rev_iterator rbegin() const {
     return const_rev_iterator(end());
   };
-  constexpr const_rev_iterator rend() const {
+  inline const_rev_iterator rend() const {
     return const_rev_iterator(begin());
   };
 
@@ -4513,8 +4544,8 @@ class mjz_str_view : public basic_mjz_Str_view {
   }
 
   constexpr void swap(mjz_str_view &rhs) {
-    std::swap(m_length, rhs.m_length);
-    std::swap(m_buffer, rhs.m_buffer);
+    static_str_algo::swap(m_length, rhs.m_length);
+    static_str_algo::swap(m_buffer, rhs.m_buffer);
   }
   constexpr size_t copy(char *dest, size_t count, size_t pos = 0) const {
     if (length() <= pos) {
@@ -4895,8 +4926,7 @@ inline mjz_ard::mjz_Str get_bit_representation(const Type &data) {
   mjz_ard::mjz_Str buffer;
   buffer.addto_length(sizeof(Type) * 8);
   static_str_algo::get_bit_representation(
-      buffer.C_str(), buffer.length(), &data, sizeof(Type),
-      std::endian::little == std::endian::native);
+      buffer.C_str(), buffer.length(), &data, sizeof(Type));
   return buffer;
 }
 
@@ -4997,7 +5027,7 @@ class Vector2 {
  public:
   Type m_x;
   Type m_y;
-  constexpr inline ~Vector2() = default;
+  inline ~Vector2() = default;
   constexpr inline Vector2 &operator=(const Vector2 &v) {
     m_x = (v.m_x);
     m_y = (v.m_y);
@@ -5213,7 +5243,7 @@ class Vector3 {
   Type m_x;
   Type m_y;
   Type m_z;
-  constexpr inline ~Vector3() = default;
+  inline ~Vector3() = default;
 
   constexpr inline Vector3 &operator()(Vector3 &obj) { return *this = obj; };
   constexpr inline Vector3 &operator()(Vector3 &&obj) { return *this = obj; };
@@ -6552,8 +6582,8 @@ _end__:
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T>::iterator mjz_ard::mjz_str_t<T>::erase(
-    mjz_ard::mjz_str_t<T>::iterator p) {
+iterator_template<char> mjz_ard::mjz_str_t<T>::erase(
+    iterator_template<char> p) {
   if (p < begin() || end() < p) {
     return begin();
   }
@@ -6563,9 +6593,8 @@ mjz_ard::mjz_str_t<T>::iterator mjz_ard::mjz_str_t<T>::erase(
   return p;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T>::iterator mjz_ard::mjz_str_t<T>::erase(
-    mjz_ard::mjz_str_t<T>::iterator first,
-    mjz_ard::mjz_str_t<T>::iterator last) {
+iterator_template<char> mjz_ard::mjz_str_t<T>::erase(
+    iterator_template<char> first, iterator_template<char> last) {
   if ((last <= first) || (end() < last) || (first < begin())) {
     return begin();
   }

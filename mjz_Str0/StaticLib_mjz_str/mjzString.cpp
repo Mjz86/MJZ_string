@@ -638,7 +638,7 @@ char* mjz_ard::SHA256_CTX::to_c_string(char* buf_) const {
   buf += sprintf_s(buf, str_left(), " };\n");
   return buf_;
 }
-
+static_str_algo::cpu_endian static_str_algo::my_endian = get_cpu_endian();
 }  // namespace mjz_ard
 
 #endif  // asdfghjklkjhgfdsasdfghjkjhgfdfghj
