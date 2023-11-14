@@ -3119,8 +3119,8 @@ class basic_mjz_String : public basic_mjz_Str_view {
   basic_mjz_String &operator=(const basic_mjz_String &) = delete;
   basic_mjz_String &operator=(basic_mjz_String &) = delete;
 
-  inline basic_mjz_Str_view sv( )const { return *this;
-      }
+  inline basic_mjz_Str_view sv() const { return *this; }
+
  public:
   const static char
       the_in_reinterpreted_char_cca[the_reinterpreted_char_cca_size];  // just
@@ -4632,7 +4632,7 @@ class extended_mjz_str_t : public mjz_str_t<T> {
     mjz_str_t::operator=(std::move(s));
     return *this;
   }
-  virtual ~extended_mjz_str_t()= default;
+  virtual ~extended_mjz_str_t() = default;
   friend std::istream &operator<<(extended_mjz_str_t<T> &rhs,
                                   std::istream &CIN) {
     return helper__op_shift_input_(rhs, CIN, rhs.get_s_shift_op_l_s());
@@ -4848,7 +4848,7 @@ class StringSumHelper_t : public mjz_str_t<T> {
   StringSumHelper_t(float num) : mjz_str_t<T>(num) {}
   StringSumHelper_t(double num) : mjz_str_t<T>(num) {}
   // non virtual
-  ~StringSumHelper_t()= default;
+  ~StringSumHelper_t() = default;
 };
 template <typename TYPE_>
 class type_cmp_class {
@@ -7168,8 +7168,7 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_with_output(
   uint8_t(&shaResult)[SHA256_BLOCK_SIZE] = rtrn.hashed_data;
   rtrn.sha256_the_string(dev_passwoed, dev_passwoedLength);
 
-     if (output_name_in_output_out != "Null") {
-
+  if (output_name_in_output_out != "Null") {
     output_name_in_output_out =
         (operator_plus<T>(operator_plus<T>(mjz_str_t<T>("const char "),
                                            (output_name_in_output_out.sv())),
