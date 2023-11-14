@@ -100,7 +100,7 @@ long random(long howsmall, long howbig) {
 char *dtostrf(double __val, signed char __width, unsigned char __prec,
               char *__s) {
   char buffer_for_not_overflowing[65]{};
-  mjz_str_t frmt("%"); // be carefull not recursively ... yourself
+  mjz_Str frmt("%"); // be carefull not recursively ... yourself
   frmt += __width;
   frmt += '.';
   frmt += __prec;

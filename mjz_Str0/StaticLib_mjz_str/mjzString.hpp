@@ -232,14 +232,19 @@ int64_t C_STR_to_LL(const char *buffer, uint8_t buffer_len, int radix,
 // An inherited class for holding the result of a concatenation. These
 // result objects are assumed to be writable by subsequent concatenations.
 
-template <typename T = reallocator<char>>
+template <typename T>
 class StringSumHelper_t;
 
-template <typename T = reallocator<char>>
+template <typename T>
 class mjz_str_t;
 typedef mjz_str_t<reallocator<char>> mjz_Str;
 
 typedef StringSumHelper_t<reallocator<char>> StringSumHelper;
+
+template <typename T = reallocator<char>>
+class extended_mjz_str_t;
+
+typedef extended_mjz_str_t<reallocator<char>> extended_mjz_Str;
 
 // Define constants and variables for buffering incoming serial data. We're
 // using a ring buffer (I think), in which head is the index of the location
@@ -3626,76 +3631,6 @@ class mjz_Str : public basic_mjz_String,
     return *this;
   }
 
-  const mjz_str_t<T> &operator>>(mjz_str_t<T> &typing) const;
-  const mjz_str_t<T> &operator>>(mjz_str_t<T> *typing) const;
-  mjz_str_t<T> &operator>>(mjz_str_t<T> &typing);
-  mjz_str_t<T> &operator>>(mjz_str_t<T> *typing);
-  const mjz_str_t<T> &operator>>=(mjz_str_t<T> &typing) const {
-    typing.operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  const mjz_str_t<T> &operator>>=(mjz_str_t<T> *typing) const {
-    typing->operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  mjz_str_t<T> &operator>>=(mjz_str_t<T> &typing) {
-    typing.operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  mjz_str_t<T> &operator>>=(mjz_str_t<T> *typing) {
-    typing->operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  mjz_str_t<T> &operator<<(mjz_str_t<T> &typing);
-  mjz_str_t<T> &operator<<(mjz_str_t<T> *typing);
-  mjz_str_t<T> &operator<<(const mjz_str_t<T> &typing);
-  mjz_str_t<T> &operator<<(mjz_str_t<T> &&typing);
-  mjz_str_t<T> &operator<<=(mjz_str_t<T> &typing) {
-    if (&typing != this) {
-      this->operator=(empty_STRING_C_STR);
-      return operator<<(typing);
-    }
-
-    mjz_str_t<T> new_temp = typing;
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(new_temp);
-  }
-  mjz_str_t<T> &operator<<=(const mjz_str_t<T> &typing) {
-    if (&typing != this) {
-      this->operator=(empty_STRING_C_STR);
-      return operator<<(typing);
-    }
-
-    mjz_str_t<T> new_temp = typing;
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(new_temp);
-  }
-  mjz_str_t<T> &operator<<=(mjz_str_t<T> &&typing) {
-    if (&typing != this) {
-      this->operator=(empty_STRING_C_STR);
-      return operator<<(typing);
-    }
-
-    mjz_str_t<T> new_temp = typing;
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(new_temp);
-  }
-  mjz_str_t<T> &operator>>(char &var) {
-    get_s_shift_op_r().scanf_s("%c", &var, 1);
-    return get_s_shift_op_r();
-  }
-  mjz_str_t<T> &operator>>(int &var) {
-    get_s_shift_op_r().scanf_s("%d", &var);
-    return get_s_shift_op_r();
-  }
-  mjz_str_t<T> &operator>>(double &var) {
-    var = (double)(get_s_shift_op_r());
-    return get_s_shift_op_r();
-  }
-  mjz_str_t<T> &operator>>(float &var) {
-    var = (float)(get_s_shift_op_r());
-    return get_s_shift_op_r();
-  }
   // if there's not enough memory for the concatenated value,the string
   // will be left unchanged (but this isn't signalled in any way)
   mjz_str_t<T> &operator+=(const mjz_str_t<T> &rhs) {
@@ -3861,41 +3796,7 @@ class mjz_Str : public basic_mjz_String,
                                                               bool do_fill = 1);
   [[nodiscard]] static mjz_str_t<T> create_mjz_Str_2D_char_array(
       size_t size_col, size_t size_row, char filler = 0, bool do_fill = 1);
-  friend std::istream &operator<<(mjz_str_t<T> &rhs, std::istream &CIN) {
-    return helper__op_shift_input_(rhs, CIN, rhs.get_s_shift_op_l_s());
-  }
-  friend std::istream &operator>>(std::istream &CIN, mjz_str_t<T> &rhs) {
-    return helper__op_shift_input_(rhs, CIN, rhs.get_shift_op_r_s());
-  }
-  friend std::ostream &operator<<(std::ostream &COUT, const mjz_str_t<T> &rhs) {
-    COUT.write(rhs.get_shift_op_l_sc().c_str(),
-               rhs.get_shift_op_l_sc().length());
-    return COUT;
-  }
-  friend std::ostream &operator>>(const mjz_str_t<T> &rhs, std::ostream &COUT) {
-    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
-               rhs.get_s_shift_op_r_sc().length());
-    return COUT;
-  }
-  friend std::ostream &operator<<(std::ostream &COUT, mjz_str_t<T> &rhs) {
-    COUT.write(rhs.get_shift_op_l_s().c_str(), rhs.get_shift_op_l_s().length());
-    return COUT;
-  }
-  friend std::ostream &operator>>(mjz_str_t<T> &rhs, std::ostream &COUT) {
-    COUT.write(rhs.get_s_shift_op_r_s().c_str(),
-               rhs.get_s_shift_op_r_s().length());
-    return COUT;
-  }
-  friend std::ostream &operator>>(mjz_str_t<T> &&rhs, std::ostream &COUT) {
-    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
-               rhs.get_s_shift_op_r_sc().length());
-    return COUT;
-  }
-  friend std::ostream &operator<<(std::ostream &COUT, mjz_str_t<T> &&rhs) {
-    COUT.write(rhs.get_shift_op_l_sc().c_str(),
-               rhs.get_shift_op_l_sc().length());
-    return COUT;
-  }
+  
   friend class STRINGSerial;
   // character access
   void setCharAt(size_t index, char c);
@@ -3992,8 +3893,7 @@ class mjz_Str : public basic_mjz_String,
   void toLowerCase(void);
   void toUpperCase(void);
   void trim(void);
-  mjz_str_t<T> string_do_interpret();
-  void string_do_interpret(mjz_str_t<T> &instr);
+
   mjz_str_t<T> &ULL_LL_to_str_add(size_t value, int radix, bool is_signed,
                                   bool force_neg = 0);
   mjz_str_t<T> &ULL_LL_to_str_rep(size_t value, int radix, bool is_signed,
@@ -4062,22 +3962,7 @@ class mjz_Str : public basic_mjz_String,
  protected:
   // void update_event();
   // void update_event_ard_string();
-  const mjz_str_t<T> &get_shift_op_rc() const;
-  mjz_str_t<T> &get_shift_op_r();
-  const mjz_str_t<T> &get_shift_op_lc() const;
-  mjz_str_t<T> &get_shift_op_l();
-  const mjz_str_t<T> &get_shift_op_r_sc() const;
-  mjz_str_t<T> &get_shift_op_r_s();
-  const mjz_str_t<T> &get_shift_op_l_sc() const;
-  mjz_str_t<T> &get_shift_op_l_s();
-  const mjz_str_t<T> &get_s_shift_op_rc() const;
-  mjz_str_t<T> &get_s_shift_op_r();
-  const mjz_str_t<T> &get_s_shift_op_lc() const;
-  mjz_str_t<T> &get_s_shift_op_l();
-  const mjz_str_t<T> &get_s_shift_op_r_sc() const;
-  mjz_str_t<T> &get_s_shift_op_r_s();
-  const mjz_str_t<T> &get_s_shift_op_l_sc() const;
-  mjz_str_t<T> &get_s_shift_op_l_s();
+
   void init(bool constructor = 1);
   void invalidate(bool constructor = 1);
   bool changeBuffer(size_t maxStrLen, bool constructor);
@@ -4727,15 +4612,187 @@ class mjz_virtual_string_view : public mjz_str_view {
   }
   virtual inline ~mjz_virtual_string_view(){};
 };
+
+template <typename T>
+class extended_mjz_str_t : public mjz_str_t<T> {
+ public:
+  extended_mjz_str_t() : mjz_str_t<T>() {}
+  extended_mjz_str_t(const basic_mjz_String &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(basic_mjz_String &&s) : extended_mjz_str_t(s) {}
+  extended_mjz_str_t(const basic_mjz_Str_view &otr) : mjz_str_t<T>(otr) {}
+  extended_mjz_str_t(const mjz_str_view &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(mjz_str_view &&s) : extended_mjz_str_t(s) {}
+  extended_mjz_str_t(const mjz_str_t<T> &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(mjz_str_t<T> &&s) : mjz_str_t<T>(std::move(s)) {}
+  extended_mjz_str_t(const char *p) : mjz_str_t<T>(p) {}
+  extended_mjz_str_t(const char *p, size_t n) : mjz_str_t<T>(p, n) {}
+  extended_mjz_str_t(char c) : mjz_str_t<T>(c) {}
+  extended_mjz_str_t(unsigned char num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(int num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(unsigned int num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(unsigned long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(long long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(unsigned long long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(float num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(double num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(const extended_mjz_str_t &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(extended_mjz_str_t &&s) : mjz_str_t<T>(std::move(s)) {}
+
+  extended_mjz_str_t &operator=(const extended_mjz_str_t &s) {
+    mjz_str_t::operator=(s);
+    return *this;
+  }
+  extended_mjz_str_t &operator=(extended_mjz_str_t &&s) {
+    mjz_str_t::operator=(std::move(s));
+    return *this;
+  }
+  extended_mjz_str_t &operator=(const mjz_str_t<T> &s) {
+    mjz_str_t::operator=(s);
+    return *this;
+  }
+  extended_mjz_str_t &operator=(mjz_str_t<T> &&s) {
+    mjz_str_t::operator=(std::move(s));
+    return *this;
+  }
+  virtual ~extended_mjz_str_t(){};
+
+
+
+
+
+  friend std::istream &operator<<(extended_mjz_str_t<T> &rhs, std::istream &CIN) {
+    return helper__op_shift_input_(rhs, CIN, rhs.get_s_shift_op_l_s());
+  }
+  friend std::istream &operator>>(std::istream &CIN, extended_mjz_str_t<T> &rhs) {
+    return helper__op_shift_input_(rhs, CIN, rhs.get_shift_op_r_s());
+  }
+  friend std::ostream &operator<<(std::ostream &COUT, const extended_mjz_str_t<T> &rhs) {
+    COUT.write(rhs.get_shift_op_l_sc().c_str(),
+               rhs.get_shift_op_l_sc().length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(const extended_mjz_str_t<T> &rhs, std::ostream &COUT) {
+    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
+               rhs.get_s_shift_op_r_sc().length());
+    return COUT;
+  }
+  friend std::ostream &operator<<(std::ostream &COUT, extended_mjz_str_t<T> &rhs) {
+    COUT.write(rhs.get_shift_op_l_s().c_str(), rhs.get_shift_op_l_s().length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(extended_mjz_str_t<T> &rhs, std::ostream &COUT) {
+    COUT.write(rhs.get_s_shift_op_r_s().c_str(),
+               rhs.get_s_shift_op_r_s().length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(extended_mjz_str_t<T> &&rhs, std::ostream &COUT) {
+    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
+               rhs.get_s_shift_op_r_sc().length());
+    return COUT;
+  }
+  friend std::ostream &operator<<(std::ostream &COUT, extended_mjz_str_t<T> &&rhs) {
+    COUT.write(rhs.get_shift_op_l_sc().c_str(),
+               rhs.get_shift_op_l_sc().length());
+    return COUT;
+  }
+  const extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> &typing) const;
+  const extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> *typing) const;
+  extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> &typing);
+  extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> *typing);
+  const extended_mjz_str_t<T> &operator>>=(
+      extended_mjz_str_t<T> &typing) const {
+    (typing)();
+    return operator>>(typing);
+  }
+  const extended_mjz_str_t<T> &operator>>=(
+      extended_mjz_str_t<T> *typing) const {
+    (*typing)();
+    return operator>>(typing);
+  }
+  extended_mjz_str_t<T> &operator>>=(extended_mjz_str_t<T> &typing) {
+    (typing)();
+    return operator>>(typing);
+  }
+  extended_mjz_str_t<T> &operator>>=(extended_mjz_str_t<T> *typing) {
+    (*typing)();
+    return operator>>(typing);
+  }
+  extended_mjz_str_t<T> &operator<<(extended_mjz_str_t<T> &typing);
+  extended_mjz_str_t<T> &operator<<(extended_mjz_str_t<T> *typing);
+  extended_mjz_str_t<T> &operator<<(const extended_mjz_str_t<T> &typing);
+  extended_mjz_str_t<T> &operator<<(extended_mjz_str_t<T> &&typing);
+  extended_mjz_str_t<T> &operator<<=(extended_mjz_str_t<T> &typing) {
+    if (&typing != this) {
+      (*this)();
+      return operator<<(typing);
+    }
+
+    extended_mjz_str_t<T> new_temp = typing;
+    (*this)();
+    return operator<<(new_temp);
+  }
+  extended_mjz_str_t<T> &operator<<=(const extended_mjz_str_t<T> &typing) {
+    if (&typing != this) {
+      (*this)();
+      return operator<<(typing);
+    }
+
+    extended_mjz_str_t<T> new_temp = typing;
+    (*this)();
+    return operator<<(new_temp);
+  }
+  extended_mjz_str_t<T> &operator<<=(extended_mjz_str_t<T> &&typing) {
+    if (&typing != this) {
+      (*this)();
+      return operator<<(typing);
+    }
+
+    extended_mjz_str_t<T> new_temp = typing;
+    (*this)();
+    return operator<<(new_temp);
+  }
+  extended_mjz_str_t<T> &operator>>(char &var) {
+    get_s_shift_op_r().scanf_s("%c", &var, 1);
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> &operator>>(int &var) {
+    get_s_shift_op_r().scanf_s("%d", &var);
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> &operator>>(double &var) {
+    var = (double)(get_s_shift_op_r());
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> &operator>>(float &var) {
+    var = (float)(get_s_shift_op_r());
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> string_do_interpret();
+  void string_do_interpret(extended_mjz_str_t<T> &instr);
+
+ protected:
+  const extended_mjz_str_t<T> &get_shift_op_rc() const;
+  extended_mjz_str_t<T> &get_shift_op_r();
+  const extended_mjz_str_t<T> &get_shift_op_lc() const;
+  extended_mjz_str_t<T> &get_shift_op_l();
+  const extended_mjz_str_t<T> &get_shift_op_r_sc() const;
+  extended_mjz_str_t<T> &get_shift_op_r_s();
+  const extended_mjz_str_t<T> &get_shift_op_l_sc() const;
+  extended_mjz_str_t<T> &get_shift_op_l_s();
+  const extended_mjz_str_t<T> &get_s_shift_op_rc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_r();
+  const extended_mjz_str_t<T> &get_s_shift_op_lc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_l();
+  const extended_mjz_str_t<T> &get_s_shift_op_r_sc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_r_s();
+  const extended_mjz_str_t<T> &get_s_shift_op_l_sc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_l_s();
+};
 template <typename T>
 class StringSumHelper_t : public mjz_str_t<T> {
  public:
-  StringSumHelper_t(const basic_mjz_String &s)
-      : mjz_str_t<T>(mjz_str_t<T>(s.c_str(), s.length())([](mjz_str_t<T> &obj) {
-          std::cout << obj << "\n";
-          obj.reserve(1);
-          return obj;
-        })) {}
+  StringSumHelper_t(const basic_mjz_String &s) : mjz_str_t<T>(s) {}
   StringSumHelper_t(basic_mjz_String &&s) : StringSumHelper_t(s) {}
   StringSumHelper_t(const basic_mjz_Str_view &otr) : mjz_str_t<T>(otr) {}
   StringSumHelper_t(const mjz_str_view &s) : mjz_str_t<T>(s) {}
@@ -4819,16 +4876,16 @@ inline mjz_ard::mjz_Str operator"" _m_str(long double num) {
   return mjz_ard::mjz_Str((double)num);
 }
 inline mjz_ard::mjz_Str operator"" _m_pstr(char c) {
-  return mjz_ard::mjz_Str(c).string_do_interpret();
+  return mjz_ard::extended_mjz_Str(c).string_do_interpret();
 }
 inline mjz_ard::mjz_Str operator"" _m_pstr(unsigned long long num) {
-  return mjz_ard::mjz_Str(num).string_do_interpret();
+  return mjz_ard::mjz_Str(num);
 }
 inline mjz_ard::mjz_Str operator"" _m_pstr(long double num) {
-  return mjz_ard::mjz_Str((double)num).string_do_interpret();
+  return mjz_ard::mjz_Str((double)num);
 }
 inline mjz_ard::mjz_Str operator"" _m_pstr(const char *initilizer) {
-  return mjz_ard::mjz_Str(initilizer).string_do_interpret();
+  return mjz_ard::extended_mjz_Str(initilizer).string_do_interpret();
 }
 inline mjz_ard::mjz_Str operator""_m_str(const char *initilizer,
                                          size_t length_) {
@@ -4836,7 +4893,7 @@ inline mjz_ard::mjz_Str operator""_m_str(const char *initilizer,
 }
 inline mjz_ard::mjz_Str operator"" _m_pstr(const char *initilizer,
                                            size_t length_) {
-  return mjz_ard::mjz_Str(initilizer, length_).string_do_interpret();
+  return mjz_ard::extended_mjz_Str(initilizer, length_).string_do_interpret();
 }
 inline mjz_str_view operator""_m_strv(const char *initilizer, size_t length_) {
   return mjz_str_view(initilizer, length_);
@@ -4867,22 +4924,22 @@ inline mjz_ard::mjz_Str operator"" _s(long double num) {
   return mjz_ard::mjz_Str((double)num);
 }
 inline mjz_ard::mjz_Str operator"" _ps(char c) {
-  return mjz_ard::mjz_Str(c).string_do_interpret();
+  return mjz_ard::extended_mjz_Str(c).string_do_interpret();
 }
 inline mjz_ard::mjz_Str operator"" _ps(unsigned long long num) {
-  return mjz_ard::mjz_Str(num).string_do_interpret();
+  return mjz_ard::mjz_Str(num);
 }
 inline mjz_ard::mjz_Str operator"" _ps(long double num) {
-  return mjz_ard::mjz_Str((double)num).string_do_interpret();
+  return mjz_ard::mjz_Str((double)num);
 }
 inline mjz_ard::mjz_Str operator"" _ps(const char *initilizer) {
-  return mjz_ard::mjz_Str(initilizer).string_do_interpret();
+  return mjz_ard::mjz_Str(initilizer);
 }
 inline mjz_ard::mjz_Str operator""_s(const char *initilizer, size_t length_) {
   return mjz_ard::mjz_Str(initilizer, length_);
 }
 inline mjz_ard::mjz_Str operator"" _ps(const char *initilizer, size_t length_) {
-  return mjz_ard::mjz_Str(initilizer, length_).string_do_interpret();
+  return mjz_ard::mjz_Str(initilizer, length_);
 }
 inline mjz_str_view operator""_v(const char *initilizer, size_t length_) {
   return mjz_str_view(initilizer, length_);
@@ -5432,6 +5489,10 @@ typedef mjz_str_t<reallocator<char>> Str;
 typedef mjz_str_t<reallocator<char>> str;
 typedef mjz_str_t<reallocator<char>> s;
 typedef mjz_str_t<reallocator<char>> S;
+typedef extended_mjz_str_t<reallocator<char>> es;
+typedef extended_mjz_str_t<reallocator<char>> eS;
+typedef extended_mjz_str_t<reallocator<char>> estr;
+typedef extended_mjz_str_t<reallocator<char>> eStr;
 typedef StringSumHelper_t<reallocator<char>> StrSH;
 typedef mjz_str_view sv;
 typedef mjz_str_view strv;
@@ -5447,6 +5508,8 @@ typedef Vector2<float> Vectorf2;
 namespace have_mjz_ard_removed {
 typedef mjz_str_t<reallocator<char>> mjz_Str;
 typedef mjz_str_t<reallocator<char>> mjz_str;
+typedef extended_mjz_str_t<reallocator<char>> mjz_estr;
+typedef extended_mjz_str_t<reallocator<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
 typedef malloc_wrapper mlc_wrp;
 typedef std::string string;
@@ -6555,149 +6618,177 @@ void mjz_ard::mjz_str_t<T>::trim(void) {
 
   m_buffer[m_length] = 0;
 }
-/*********************************************/
-/* Parsing / Conversion */
-/*********************************************/
+//////////////////////////////////////////////////////////////
 template <typename T>
 void *mjz_ard::mjz_str_t<T>::do_this_for_me(function_ptr function_ptr_,
                                             void *x) {
   return function_ptr_(*this, x);
 }
+/*********************************************/
+/* Parsing / Conversion */
+/*********************************************/
+
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_rc() const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_rc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_r() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r() {
   return *this;
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_lc() const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_lc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_l() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l() {
   return *this;
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_r_sc() const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_sc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_r_s() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_s() {
   return *this;
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_l_sc() const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_sc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_shift_op_l_s() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_s() {
   return *this;
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_rc() const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_rc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_r() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r() {
   return *this;
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_lc() const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_lc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_l() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l() {
   return *this;
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_r_sc()
-    const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_sc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_r_s() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_s() {
   return *this;
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_l_sc()
-    const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_sc() const {
   //
-  return (const mjz_ard::mjz_str_t<T> &)*this;
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::get_s_shift_op_l_s() {
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_s() {
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator>>(
-    mjz_ard::mjz_str_t<T> &typing) {
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator>>(
+    mjz_ard::extended_mjz_str_t<T> &typing) {
   helper__op_shift_input_(*this, get_s_shift_op_r(), typing.get_shift_op_r());
   return get_s_shift_op_r();
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator>>(
-    mjz_ard::mjz_str_t<T> *typing) {
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator>>(
+    mjz_ard::extended_mjz_str_t<T> *typing) {
   helper__op_shift_input_(*this, get_s_shift_op_r(), typing->get_shift_op_r());
   return get_s_shift_op_r();
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator>>(
-    mjz_ard::mjz_str_t<T> &typing) const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::operator>>(
+        mjz_ard::extended_mjz_str_t<T> &typing) const {
   helper__op_shift_input_(*this, get_s_shift_op_rc(), typing.get_shift_op_r());
   //
   return get_s_shift_op_rc();
 }
 template <typename T>
-const mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator>>(
-    mjz_ard::mjz_str_t<T> *typing) const {
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::operator>>(
+        mjz_ard::extended_mjz_str_t<T> *typing) const {
   helper__op_shift_input_(*this, get_s_shift_op_rc(), typing->get_shift_op_r());
   //
   return get_s_shift_op_rc();
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator<<(
-    mjz_ard::mjz_str_t<T> &typing) {
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    mjz_ard::extended_mjz_str_t<T> &typing) {
   helper__op_shift_input_(*this, typing.get_shift_op_l(), get_s_shift_op_l());
   return get_s_shift_op_l();
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator<<(
-    mjz_ard::mjz_str_t<T> *typing) {
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    mjz_ard::extended_mjz_str_t<T> *typing) {
   helper__op_shift_input_(*this, typing->get_shift_op_l(), get_s_shift_op_l());
   return get_s_shift_op_l();
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator<<(
-    const mjz_ard::mjz_str_t<T> &typing) {
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    const mjz_ard::extended_mjz_str_t<T> &typing) {
   helper__op_shift_input_(*this, typing.get_shift_op_lc(), get_s_shift_op_l());
   return get_s_shift_op_l();
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator<<(
-    mjz_ard::mjz_str_t<T> &&typing) {
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    mjz_ard::extended_mjz_str_t<T> &&typing) {
   helper__op_shift_input_(*this, typing.get_shift_op_lc(), get_s_shift_op_l());
   return get_s_shift_op_l();
 }
 
 template <typename T>
-mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::string_do_interpret() {
-  mjz_ard::mjz_str_t<T> out_str;
+mjz_ard::extended_mjz_str_t<T>
+mjz_ard::extended_mjz_str_t<T>::string_do_interpret() {
+  mjz_ard::extended_mjz_str_t<T> out_str;
   str_helper__op_shift_input_(out_str, *this);
   return out_str;
 }
 template <typename T>
-void mjz_ard::mjz_str_t<T>::string_do_interpret(mjz_ard::mjz_str_t<T> &instr) {
+void mjz_ard::extended_mjz_str_t<T>::string_do_interpret(
+    mjz_ard::extended_mjz_str_t<T> &instr) {
   str_helper__op_shift_input_(*this, instr);
 }
+
+template <typename T>
+void str_helper__op_shift_input_(mjz_ard::extended_mjz_str_t<T> &rhs,
+                                 mjz_ard::extended_mjz_str_t<T> &CIN) {
+  helper__op_shift_input_(rhs, CIN, rhs);
+}
+/**********************************************************************/
+// stream stuff
 template <typename T>
 void mjz_ard::mjz_str_t<T>::adjust_cap() {
   if (!m_capacity && !m_buffer) {
@@ -6714,12 +6805,6 @@ void mjz_ard::mjz_str_t<T>::adjust_cap() {
 
   return;
 }
-template <typename T>
-void str_helper__op_shift_input_(mjz_ard::mjz_str_t<T> &rhs,
-                                 mjz_ard::mjz_str_t<T> &CIN) {
-  helper__op_shift_input_(rhs, CIN, rhs);
-}
-// stream stuff
 template <typename T>
 size_t mjz_ard::mjz_str_t<T>::write(uint8_t c) {
   mjz_ard::mjz_str_t<T>::operator+=(c);
@@ -7772,9 +7857,9 @@ int mjz_ard::mjz_str_t<T>::findMulti(
 }
 
 template <typename T>
-std::istream &helper__op_shift_input_(const mjz_ard::mjz_str_t<T> &rhs,
-                                      std::istream &CIN,
-                                      mjz_ard::mjz_str_t<T> &get_shift_op_s) {
+std::istream &helper__op_shift_input_(
+    const mjz_ard::extended_mjz_str_t<T> &rhs, std::istream &CIN,
+    mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
   char bfr[2050]{};
   int8_t is_reinterpreted{};
   constexpr uint8_t is_reinterpreted_and_is_int = 2;
@@ -7843,9 +7928,10 @@ std::istream &helper__op_shift_input_(const mjz_ard::mjz_str_t<T> &rhs,
 }
 
 template <typename T>
-const mjz_ard::mjz_str_t<T> &helper__op_shift_input_(
-    const mjz_ard::mjz_str_t<T> &rhs, const mjz_ard::mjz_str_t<T> &CIN,
-    mjz_ard::mjz_str_t<T> &get_shift_op_s) {
+const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
+    const mjz_ard::extended_mjz_str_t<T> &rhs,
+    const mjz_ard::extended_mjz_str_t<T> &CIN,
+    mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
   if (CIN.is_blank()) {
     return CIN;
   }
@@ -7943,7 +8029,7 @@ template <typename T>
 StringSumHelper_t<T> mjz_str_t<T>::operator-() {
   return *this;
 }
-template <typename T2 >
+template <typename T2>
 class mv_to_T2 {
  public:
   template <typename T>
@@ -7956,9 +8042,7 @@ class mv_to_T2 {
   }
 };
 template <typename Tc1 = mv_to_T2<mjz_Str>,
-          typename Tc2 = mv_to_T2<mjz_str_view>,
-          typename T1,
-          typename T2>
+          typename Tc2 = mv_to_T2<mjz_str_view>, typename T1, typename T2>
 inline StringSumHelper operator+(T1 lhs, T2 rhs) {
   return operator_plus(Tc1()(lhs), Tc2()(rhs));
 }
@@ -7970,10 +8054,14 @@ template StringSumHelper operator+(mjz_Str &&, const StringSumHelper &);
 template StringSumHelper operator+(mjz_Str &&, const basic_mjz_Str_view &);
 template StringSumHelper operator+(StringSumHelper &&, const mjz_str_view &);
 template StringSumHelper operator+(StringSumHelper &&, const StringSumHelper &);
-template StringSumHelper operator+(StringSumHelper &&, const basic_mjz_Str_view &);
-template StringSumHelper operator+(const StringSumHelper &, const mjz_str_view &);
-template StringSumHelper operator+(const StringSumHelper &, const StringSumHelper &);
-template StringSumHelper operator+(const StringSumHelper &, const basic_mjz_Str_view &);
+template StringSumHelper operator+(StringSumHelper &&,
+                                   const basic_mjz_Str_view &);
+template StringSumHelper operator+(const StringSumHelper &,
+                                   const mjz_str_view &);
+template StringSumHelper operator+(const StringSumHelper &,
+                                   const StringSumHelper &);
+template StringSumHelper operator+(const StringSumHelper &,
+                                   const basic_mjz_Str_view &);
 
 template <typename T2>
 inline StringSumHelper operator+(StringSumHelper &&lhs, T2 rhs) {
