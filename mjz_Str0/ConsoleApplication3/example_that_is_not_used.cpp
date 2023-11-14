@@ -38,12 +38,5 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 
 int my_main::main(int argc, const char* const* const argv) {
  using namespace  mjz_ard;
-  for (int i{}; i < 100000; i++) {
-    MJZ_DONT_OPTIMIZE(mjz_Str("abcdefg"));
-      }
-
-   for (int i{}; i < 100000; i++) {
-    MJZ_DONT_OPTIMIZE(mjz_Str("abcdefg"));
-      }
  return 0;
 }
