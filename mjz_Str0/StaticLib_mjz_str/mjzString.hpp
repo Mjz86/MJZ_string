@@ -1,22 +1,22 @@
 /*
-  String library for Wiring & Arduino
-  ...mostly rewritten by Paul Stoffregen...
-  Copyright (c) 2009-10 Hernando Barragan.  All right reserved.
-  Copyright 2011, Paul Stoffregen, paul@pjrc.com
+ String library for Wiring & Arduino
+ ...mostly rewritten by Paul Stoffregen...
+ Copyright (c) 2009-10 Hernando Barragan. All right reserved.
+ Copyright 2011, Paul Stoffregen, paul@pjrc.com
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ Lesser General Public License for more details.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
 #pragma once
 
@@ -32,7 +32,7 @@
 #define std__string_view_if_is std::string_view
 #include "framework.h"
 #endif
-// #define  virtual
+// #define virtual
 // use final if want to not be virtualized again
 // #define if_override_then_override override
 // override
@@ -51,6 +51,40 @@ inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
 
 namespace mjz_ard {
+
+template <class Type>
+struct reallocator {
+  typedef Type value_type;
+
+  reallocator() = default;
+
+  template <class U>
+  constexpr reallocator(const reallocator<U> &) noexcept {}
+
+  [[nodiscard]] Type *allocate(std::size_t n) {
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type))
+      throw std::bad_array_new_length();
+
+    if (auto p = static_cast<Type *>(std::malloc(n * sizeof(Type)))) {
+      return p;
+    }
+
+    throw std::bad_alloc();
+  }
+  [[nodiscard]] Type *reallocate(void *ptr, std::size_t n) {
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type))
+      throw std::bad_array_new_length();
+
+    if (auto p = static_cast<Type *>(std::realloc(ptr, n * sizeof(Type)))) {
+      return p;
+    }
+
+    throw std::bad_alloc();
+  }
+
+  void deallocate(Type *p, std::size_t n) noexcept { std::free(p); }
+};
+
 struct UINT64_X2_32_t {
   union {
     int64_t data64;
@@ -70,7 +104,6 @@ void tgl_nth_bit_andret32(void *data, uint64_t nthbt);
 void Set_nth_bit_andret8(void *data, uint64_t nthbt, bool set_to);
 void tgl_nth_bit_andret8(void *data, uint64_t nthbt);
 bool Get_nth_bit_andret8(const void *data, uint64_t nthbt);
-
 char *ultoa(uint32_t value, char *buffer, int radix);
 char *ulltoa(uint64_t value, char *buffer, int radix);
 char *b_U_lltoa(uint64_t value, char *BFR_buffer, int radix, bool is_signed,
@@ -140,7 +173,8 @@ MJZ_memcmp_data MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
     for (; ptr_i[0] < ptr_i[2];) {
       bool is_different = (*ptr_i[0]++ != *ptr_i[1]++);
       first_delta_index_in_8_t +=
-          MJZ_logic_BL_bit_to_64_bits(is_different && !(first_delta_index_in_8_t)) &
+          MJZ_logic_BL_bit_to_64_bits(is_different &&
+                                      !(first_delta_index_in_8_t)) &
           (size_t)(ptr_i[0] - ptr_i[3] - 1);
     }
 
@@ -179,6 +213,13 @@ MJZ_memcmp_data MJZ_strcmp(const void *ptr_1, const void *ptr_2) {
 char GET_CHAR_from_int(uint8_t intager_in, bool is_upper_case);
 int MJZ_STRCMP(const char *p1, const char *p2);
 int MJZ_STRnCMP(const char *p1, const char *p2, size_t lenght);
+
+char *utoa(uint32_t value, char *buffer, int radix);
+char *lltoa(long long value, char *buffer, int radix);
+char *ltoa(long value, char *buffer, int radix);
+char *itoa(int value, char *buffer, int radix);
+char *dtostrf(double __val, signed char __width, unsigned char __prec,
+              char *__s);
 int64_t C_STR_to_LL(const char *buffer, uint8_t buffer_len, int radix,
                     bool *had_error = 0, uint8_t error_level = 0);
 // When compiling programs with this class,the following gcc parameters
@@ -190,8 +231,21 @@ int64_t C_STR_to_LL(const char *buffer, uint8_t buffer_len, int radix,
 // *>(PSTR(string_literal)))
 // An inherited class for holding the result of a concatenation. These
 // result objects are assumed to be writable by subsequent concatenations.
-class StringSumHelper;
-class mjz_Str;
+
+template <typename T>
+class StringSumHelper_t;
+
+template <typename T>
+class mjz_str_t;
+typedef mjz_str_t<reallocator<char>> mjz_Str;
+
+typedef StringSumHelper_t<reallocator<char>> StringSumHelper;
+
+template <typename T = reallocator<char>>
+class extended_mjz_str_t;
+
+typedef extended_mjz_str_t<reallocator<char>> extended_mjz_Str;
+
 // Define constants and variables for buffering incoming serial data. We're
 // using a ring buffer (I think), in which head is the index of the location
 // to which to write the next incoming character and tail is the index of the
@@ -203,23 +257,27 @@ class mjz_Str;
 #define BIN 2
 #define NO_IGNORE_CHAR '\4'  // a char not found in a valid ASCII numeric field
 /*
-  in a bad case
-  class A {
-  virtual void foo() = 0;
-  };
-  class B {
-  virtual void foo() = 0;
-  };
-  class C : public A, public B {
-  virtual void foo();
-  };
-  void C::foo(){ }
-  void C::A::foo(){ }
-  void C::B::foo(){ }
+ in a bad case
+ class A {
+ virtual void foo() = 0;
+ };
+ class B {
+ virtual void foo() = 0;
+ };
+ class C : public A, public B {
+ virtual void foo();
+ };
+ void C::foo(){ }
+ void C::A::foo(){ }
+ void C::B::foo(){ }
 */
 
 class static_str_algo {
  public:
+  static constexpr int64_t expected_mjz_str_size = 64;// set the wanted size in range of [(expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size),+inf] 
+  static constexpr int64_t expected_basic_mjz_str_size =(sizeof(size_t) * 2 + sizeof(void *));
+  static constexpr int64_t expected_min_stack_obj_buffer_size = sizeof(uint8_t)+sizeof(char);
+  static constexpr int64_t stack_buffer_size =expected_mjz_str_size -(expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size);
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
   static constexpr int64_t forbiden_chars_cnt_size = 3;
   static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
@@ -243,7 +301,6 @@ class static_str_algo {
     uint64_t BL = MJZ_logic_BL_bit_to_64_bits(0 < x);
     return (BL & x) + ((~BL) & (-x));
   }
- 
 
  public:
   static constexpr int MJZ_STRnCMP(const char *p1, const char *p2,
@@ -428,17 +485,17 @@ class static_str_algo {
     }
 
     /* Ensure HAYSTACK length is at least as long as NEEDLE length.
-      Since a match may occur early on in a huge HAYSTACK, use strnlen
-      and read ahead a few cachelines for improved performance. */
+    Since a match may occur early on in a huge HAYSTACK, use strnlen
+    and read ahead a few cachelines for improved performance. */
     /* Check whether we have a match. This improves performance since we avoid
-      the initialization overhead of the two-way algorithm. */
+    the initialization overhead of the two-way algorithm. */
     if (static_str_algo::memcmp(haystack, needle, needle_len) == 0) {
       return (char *)haystack;
     }
 
     /* Perform the search. Abstract memory is considered to be an array
-      of 'unsigned char' values, not an array of 'char' values. See
-      ISO C 99 section 6.2.6.1. */
+    of 'unsigned char' values, not an array of 'char' values. See
+    ISO C 99 section 6.2.6.1. */
     return NULL;
   }
 
@@ -533,10 +590,8 @@ class static_str_algo {
   }
 
  public:
-  static constexpr int64_t stack_buffer_size = sizeof(std::string);
   class stack_str_buf {
-    mutable bool STR_is_in_stack{};
-
+    mutable uint8_t STR_is_in_stack{};
    public:
     char stack_buffer[stack_buffer_size + 1]{};  // string you're searching for
     stack_str_buf() : STR_is_in_stack(0) {
@@ -633,9 +688,10 @@ class static_str_algo {
   }
 
   template <typename Type, typename function_type>
- static inline constexpr Type *do_operation(Type *buffer_, function_type function,
-                                      const Type *a_arr, const Type *b_arr,
-                                      size_t len) {
+  static inline constexpr Type *do_operation(Type *buffer_,
+                                             function_type function,
+                                             const Type *a_arr,
+                                             const Type *b_arr, size_t len) {
     const Type *buffer_end = buffer_ + len;
     Type *buffer{buffer_};
     while (buffer < buffer_end) {
@@ -652,11 +708,11 @@ class static_str_algo {
   constexpr static float three_halfs = 1.5F;
   inline static constexpr float Q_rsqrt_unsafe_logic(float &y, float x2) {
     constexpr uint32_t magic_constant = 0x5f3759df;
-    //   long &i = *(long *)&y;                 // log base 2
+    // long &i = *(long *)&y; // log base 2
     // long i = *(long *)&y;
     long i = std::bit_cast<long>(y);
     i = magic_constant - divide_by_2(i);  // some magic
-                                          //  y = *(float *)&i;
+    // y = *(float *)&i;
     y = std::bit_cast<float>(i);
 
     y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method\
@@ -1059,7 +1115,7 @@ class static_str_algo {
                   x_2 * (neg_1ovr_fact3 +
                          x_2 * (_1ovr_fact5 +
                                 x_2 * neg_1ovr_fact7)));  // we dont do all the
-                                                          // polonomial just 4
+    // polonomial just 4
 
     if (HALF_PI - abs(x) < 0.01) {
       double x_9 = powUL(x_2, 4) * x;
@@ -1215,23 +1271,11 @@ class mjz_RingBufferN {
 bool is_blank_characteres_default(char);
 char char_to_char_for_reinterpret_fnc_ptr_default(char);
 bool is_forbiden_character_default(char);
-std::istream &helper__op_shift_input_(const mjz_Str &rhs, std::istream &CIN,
-                                      mjz_Str &get_shift_op_s);
-const mjz_Str &helper__op_shift_input_(const mjz_Str &rhs, const mjz_Str &CIN,
-                                       mjz_Str &get_shift_op_s);
+
 class mjz_Str_DATA_storage_cls;
 class mjz_Str_DATA_storage_cls
     : public std::enable_shared_from_this<mjz_Str_DATA_storage_cls> {
- protected:
-  std::function<void(void *)> free_fnctn = [](void *ptr) -> void {
-    ::free(ptr);
-  };
-  std::function<void *(void *, size_t)> realloc_fnctn =
-      [](void *ptr, size_t size_) -> void * {
-    void *ptr_ = ::realloc(ptr, size_);
-    return ptr_;
-  };
-  ;
+ public:
   std::function<bool(char)> is_blank_character = is_blank_characteres_default;
   std::function<char(char)> char_to_char_for_reinterpret_fnc_ptr =
       char_to_char_for_reinterpret_fnc_ptr_default;
@@ -1239,20 +1283,10 @@ class mjz_Str_DATA_storage_cls
       is_forbiden_character_default;  // like bool
   // (*is_forbiden_character)(char)
   // but better
-  unsigned long _timeout = 1000;  // number of milliseconds to wait for the next
-  // char before aborting timed read
-  int write_error = 0;
   char reinterpret_char_char = '\\';
-  friend class mjz_Str;
-  friend void str_helper__op_shift_input_(mjz_Str &rhs, mjz_Str &CIN);
-  friend std::istream &helper__op_shift_input_(const mjz_Str &rhs,
-                                               std::istream &CIN,
-                                               mjz_Str &get_shift_op_s);
-  friend const mjz_Str &helper__op_shift_input_(const mjz_Str &rhs,
-                                                const mjz_Str &CIN,
-                                                mjz_Str &get_shift_op_s);
+  template <typename T>
+  friend class mjz_str_t;
 
- public:
   std::shared_ptr<mjz_Str_DATA_storage_cls> getptr() {
     return shared_from_this();
   }
@@ -1263,13 +1297,6 @@ class mjz_Str_DATA_storage_cls
     // private.
     return std::make_shared<mjz_Str_DATA_storage_cls>();
   }
-  void change_free_fnctn_functions(std::function<void(void *)> free_) {
-    free_fnctn = free_;
-  }
-  void change_realloc_fnctn_functions(
-      std::function<void *(void *, size_t)> realloc_) {
-    realloc_fnctn = realloc_;
-  }
 
  private:
   // mjz_Str_DATA_storage_cls() = default;
@@ -1278,49 +1305,16 @@ enum Dealocation_state : uint8_t {
   dont_deallocate_on_free = MJZ_logic_BIT(0),
   is_moved = MJZ_logic_BIT(1)
 };
-template <class Type>
-struct Mallocator {
-  typedef Type value_type;
-
-  Mallocator() = default;
-
-  template <class U>
-  constexpr Mallocator(const Mallocator<U> &) noexcept {}
-
-  [[nodiscard]] Type *allocate(std::size_t n) {
-    if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type))
-      throw std::bad_array_new_length();
-
-    if (auto p = static_cast<Type *>(std::malloc(n * sizeof(Type)))) {
-      report(p, n);
-      return p;
-    }
-
-    throw std::bad_alloc();
-  }
-
-  void deallocate(Type *p, std::size_t n) noexcept {
-    report(p, n, 0);
-    std::free(p);
-  }
-
- private:
-  void report(Type *p, std::size_t n, bool alloc = true) const {
-    std::cout << (alloc ? "Alloc: " : "Dealloc: ") << sizeof(Type) * n
-              << " bytes at " << std::hex << std::showbase
-              << reinterpret_cast<void *>(p) << std::dec << '\n';
-  }
-};
 
 template <class Type, class U>
-inline constexpr bool operator==(const Mallocator<Type> &,
-                                 const Mallocator<U> &) {
+inline constexpr bool operator==(const reallocator<Type> &,
+                                 const reallocator<U> &) {
   return true;
 }
 
 template <class Type, class U>
-inline constexpr bool operator!=(const Mallocator<Type> &,
-                                 const Mallocator<U> &) {
+inline constexpr bool operator!=(const reallocator<Type> &,
+                                 const reallocator<U> &) {
   return false;
 }
 // iterator_template Class
@@ -1363,8 +1357,8 @@ class iterator_template {
 
   // inline constexpr iterator_template(std::initializer_list<Type>list)
   // noexcept
-  //   : iterator_template((Type *)(list.begin()), (size_t)list.size()) {}
-  // this is bad for class types  becuse  ~list => ~Type => }   code... => use
+  // : iterator_template((Type *)(list.begin()), (size_t)list.size()) {}
+  // this is bad for class types becuse ~list => ~Type => } code... => use
   // after free
 
   constexpr void throw_if_bad(Type *_iterator) const {
@@ -1377,8 +1371,7 @@ class iterator_template {
       return;
     }
 
-    throw std::exception(
-        "bad ptr access : mjz_ard::iterator_template::throw_if_bad ");
+    throw std::exception("bad ptr access : iterator_template::throw_if_bad ");
   }
   constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
 
@@ -1566,7 +1559,7 @@ inline constexpr const T *end(iterator_template<T> it) noexcept {
 template <typename Type>
 class heap_obj_warper {
  public:
-  // note this static is NOT  THE SAME   for int , bool ,... becuse this is a
+  // note this static is NOT THE SAME for int , bool ,... becuse this is a
   // template
   static constexpr size_t size = sizeof(Type);
 
@@ -1715,7 +1708,7 @@ class heap_obj_warper {
   // use like init_with_unsafe_new(new (init_with_unsafe_data()) Type());
 
   constexpr inline Type *init_with_unsafe_new(
-      Type *ptr) {  // placement new  "new (ptr) Type();"
+      Type *ptr) {  // placement new "new (ptr) Type();"
     return init_with_unsafe_data(ptr == pointer_to_unsafe_data());
   }
 
@@ -1914,11 +1907,11 @@ class malloc_wrapper {
 };
 
 /*********************************************************************
-   Filename:   sha256.h
-   Author:     Brad Conte (brad AT bradconte.com)
-   Copyright:
-   Disclaimer: This code is presented "as is" without any guarantees.
-   Details:    Defines the API for the corresponding SHA1 implementation.
+ Filename: sha256.h
+ Author: Brad Conte (brad AT bradconte.com)
+ Copyright:
+ Disclaimer: This code is presented "as is" without any guarantees.
+ Details: Defines the API for the corresponding SHA1 implementation.
  *********************************************************************/
 
 #ifndef SHA256_H
@@ -1935,14 +1928,10 @@ typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
 
 struct SHA256_CTX {
  protected:
-  char *to_string(char *buf) const;
+  char *to_c_string(char *buf) const;
 
  public:
-  char *copy_to_c_string(char *buf, size_t len) const {
-    if (len < 1024) return 0;
-    static_str_algo::memset(buf, 0, len);
-    return to_string(buf);
-  }
+  char *copy_to_c_str(char *buf, size_t len) const;
   union {
     BYTE data[64]{};
     BYTE hashed_data[SHA256_BLOCK_SIZE];
@@ -2355,12 +2344,12 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr basic_mjz_Str_view(const char *buffer, size_t length)
       : basic_mjz_Str_view(const_cast<char *>(buffer), length) {}
   constexpr ~basic_mjz_Str_view() = default;
-  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = delete;
-  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = delete;
-  constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = delete;
+  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = default;
+  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &) = default;
+  constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = default;
   constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
-  constexpr basic_mjz_Str_view(basic_mjz_Str_view &) = delete;
-  constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = delete;
+  constexpr basic_mjz_Str_view(basic_mjz_Str_view &) = default;
+  constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = default;
 
  public:
   constexpr inline char *&buffer_ref() { return m_buffer; }
@@ -2982,9 +2971,6 @@ class basic_mjz_Str_view : protected static_str_algo {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(endIndex));
   }
-  inline constexpr basic_mjz_Str_view substr_view(int64_t beginIndex) const {
-    return substr_view(signed_index_to_unsigned(beginIndex));
-  }
   inline constexpr basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
                                                         size_t number) {
     return substr_view(signed_index_to_unsigned(beginIndex),
@@ -2994,8 +2980,8 @@ class basic_mjz_Str_view : protected static_str_algo {
       unsigned int beginIndex, unsigned int number) const {
     return substr_view_beg_n((size_t)beginIndex, (size_t)number);
   }
-  inline constexpr basic_mjz_Str_view substr_view(int beginIndex) const {
-    return substr_view((int64_t)beginIndex);
+  inline constexpr basic_mjz_Str_view substr_view(int64_t beginIndex) const {
+    return substr_view(signed_index_to_unsigned(beginIndex));
   }
   inline constexpr basic_mjz_Str_view substr_view(int beginIndex,
                                                   int endIndex) const {
@@ -3037,11 +3023,11 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
 };
 
-class mjz_Str;
 class mjz_str_view;
 class basic_mjz_String : public basic_mjz_Str_view {
  protected:
-  friend class mjz_Str;
+  template <typename T>
+  friend class mjz_str_t;
   // the array length minus one (for the '\0')
   size_t m_capacity;
 
@@ -3061,59 +3047,6 @@ class basic_mjz_String : public basic_mjz_Str_view {
   basic_mjz_String &operator=(basic_mjz_String &) = delete;
 
  public:
-};
-#ifndef Arduino
-class mjz_Str : public basic_mjz_String {
-#if 0
-
-  }
-#endif
-#else
-class mjz_Str : public basic_mjz_String,
-                public Stream {  //
-#endif  // Arduino
- protected:
-  static std::shared_ptr<mjz_Str_DATA_storage_cls>
-      main_mjz_Str_DATA_storage_Obj_ptr;
-  bool did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
-  // void (mjz_Str::*update_event_F_p)( void); //departed
-  // (object_ptr->*pointer_name)(arguments)//like (this->*update_event_F_p)();
-  std::shared_ptr<mjz_Str_DATA_storage_cls>
-      drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
-  std::shared_ptr<mjz_Str_DATA_storage_cls>
-      &drived_mjz_Str_DATA_storage_Obj_ptr_set();
-  friend class StringSumHelper;
-  // use a function pointer to allow for "if (s)" without the
-  // complications of an operator bool(). for more information,see:
-  // http://www.artima.com/cppsource/safebool.html
-  typedef void (mjz_Str::*StringIfHelperType)() const;
-  void StringIfHelper() const {}
-  inline bool realloc_helper_is_in_stack(void *ptr);
-
- private:
-  // copy and move
-  mjz_Str &copy(const char *cstr, size_t length) {
-    return copy(cstr, length, 0);
-  }
-  mjz_Str &copy(const __FlashStringHelper *pstr, size_t length);
-  void move(mjz_Str &rhs);
-  [[nodiscard]] void *realloc_pv(void *ptr, size_t new_size, bool constructor);
-  void free_pv(void *&ptr, bool constructor);
-  void free_pv(void *const &ptr, bool constructor);
-  mjz_Str &copy(const char *cstr, size_t length, bool constructor);
-
- protected:
-  [[nodiscard]]  // virtual
-  void *
-  realloc(void *ptr, size_t new_size) {
-    return get_realloc_alloc_function()(ptr, new_size);
-  }
-  // virtual
-  void free(void *ptr) { return get_free_alloc_function()(ptr); }
-
-  stack_str_buf stack_obj_buf;
-
- public:
   const static char
       the_in_reinterpreted_char_cca[the_reinterpreted_char_cca_size];  // just
   // me
@@ -3121,9 +3054,103 @@ class mjz_Str : public basic_mjz_String,
       the_out_reinterpreted_char_cca[the_reinterpreted_char_cca_size];  // just
   // me
   const static char forbiden_chars_cnt[forbiden_chars_cnt_size];
+};
+
+template <typename T>
+mjz_str_t<T> &&operator_plus(mjz_str_t<T> &&lhs, const basic_mjz_Str_view &rhs);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(mjz_str_t<T_t> &&lhs,
+                                 const basic_mjz_Str_view &rhs);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(const basic_mjz_Str_view &lhs,
+                                 const basic_mjz_Str_view &rhs);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(mjz_str_t<T_t> &&lhs,
+                                 const StringSumHelper_t<T_t> &rhs);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(const basic_mjz_Str_view &lhs,
+                                 const StringSumHelper_t<T_t> &rhs);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                 const char *cstr);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs, char c);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                 unsigned char num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs, int num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                 unsigned int num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs, long num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                 unsigned long num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs, long long num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                 unsigned long long num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs, float num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs, double num);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                 const __FlashStringHelper *rhs);
+template <typename T_t>
+StringSumHelper_t<T_t> operator+(const mjz_str_view &lhs,
+                                 const StringSumHelper_t<T_t> &rhs);
+
+template <typename T>
+#ifndef Arduino
+class mjz_str_t : public basic_mjz_String {
+#if 0
+
+ }
+#endif
+#else
+class mjz_Str : public basic_mjz_String,
+                public Stream {  //
+#endif  // Arduino
+ protected:
+  // void (mjz_Str<T>::*update_event_F_p)( void); //departed
+  // (object_ptr->*pointer_name)(arguments)//like (this->*update_event_F_p)();
+
+  stack_str_buf stack_obj_buf;
+  friend class StringSumHelper_t<T>;
+  // use a function pointer to allow for "if (s)" without the
+  // complications of an operator bool(). for more information,see:
+  // http://www.artima.com/cppsource/safebool.html
+  typedef void (mjz_str_t<T>::*StringIfHelperType)() const;
+  void StringIfHelper() const {}
+  inline bool realloc_helper_is_in_stack(void *ptr);
+
+ private:
+  // copy and move
+  mjz_str_t<T> &copy(const char *cstr, size_t length) {
+    return copy(cstr, length, 0);
+  }
+  mjz_str_t<T> &copy(const __FlashStringHelper *pstr, size_t length);
+  void move(mjz_str_t<T> &rhs);
+  [[nodiscard]] void *realloc_pv(void *ptr, size_t new_size, bool constructor);
+  void free_pv(void *&ptr, bool constructor);
+  void free_pv(void *const &ptr, bool constructor);
+  mjz_str_t<T> &copy(const char *cstr, size_t length, bool constructor);
+
+ protected:
+  [[nodiscard]] void *realloc(void *ptr, size_t new_size) {
+    return T().reallocate(ptr, new_size);
+  }
+  void free(void *ptr) { return T().deallocate((char*)ptr,m_capacity+1); }
+
+
+ public:
+  static int8_t char_to_int_for_string(char c_char);
   // stream
  protected:
-  friend void str_helper__op_shift_input_(mjz_Str &rhs, mjz_Str &CIN);
   // This enumeration provides the lookahead options for parseInt(), //
   // parseFloat() The rules set out here are used until either the first valid
   // character is found or a time out occurs due to lack of input.
@@ -3137,7 +3164,7 @@ class mjz_Str : public basic_mjz_String,
   int64_t parseInt(char ignore) { return parseInt(SKIP_ALL, ignore); }
   float parseFloat(char ignore) { return parseFloat(SKIP_ALL, ignore); }
   // These overload exists for compatibility with any class that has derived
-  // mjz_Str and used parseFloat/Int with a custom ignore character. To keep
+  // mjz_Str<T> and used parseFloat/Int with a custom ignore character. To keep
   // the public API simple, these overload remains protected.
   struct MultiTarget {
     const char *str;  // string you're searching for
@@ -3154,22 +3181,14 @@ class mjz_Str : public basic_mjz_String,
   int timedPeek();  // private method to peek stream with timeout
   int peekNextDigit(LookaheadMode lookahead,
                     bool detectDecimal);  // returns the next numeric digit in
-  // the stream or -1 if timeout
-  void setWriteError(int err = 1) if_override_then_override {
-    drived_mjz_Str_DATA_storage_Obj_ptr_set()->write_error = err;
-  }
 
  public:
-  int getWriteError() if_override_then_override {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->write_error;
-  }
-  void clearWriteError() if_override_then_override { setWriteError(0); }
   // default to zero, meaning "a single write may block"
   // should be overridden by subclasses with buffering
-  virtual int availableForWrite() if_ard_then_override {
+   int availableForWrite() if_ard_then_override {
     return (int)availableForWriteLL();
   }
-  virtual int64_t availableForWriteLL() if_ard_then_override { return 1; }
+   int64_t availableForWriteLL() if_ard_then_override { return 1; }
   size_t print(const __FlashStringHelper *) if_override_then_override;
   size_t print(const char[]) if_override_then_override;
   size_t print(char) if_override_then_override;
@@ -3181,7 +3200,7 @@ class mjz_Str : public basic_mjz_String,
   size_t print(long long, int = DEC) if_override_then_override;
   size_t print(unsigned long long, int = DEC) if_override_then_override;
   size_t print(double, int = 2) if_override_then_override;
-  size_t print(const mjz_Str &) if_override_then_override;
+  size_t print(const mjz_str_t<T> &) if_override_then_override;
   size_t println(const __FlashStringHelper *) if_override_then_override;
   size_t println(const char[]) if_override_then_override;
   size_t println(char) if_override_then_override;
@@ -3193,19 +3212,14 @@ class mjz_Str : public basic_mjz_String,
   size_t println(long long, int = DEC) if_override_then_override;
   size_t println(unsigned long long, int = DEC) if_override_then_override;
   size_t println(double, int = 2) if_override_then_override;
-  size_t println(const mjz_Str &) if_override_then_override;
+  size_t println(const mjz_str_t<T> &) if_override_then_override;
   size_t println(void) if_override_then_override;  // TODO: V1071
   // https://pvs-studio.com/en/docs/warnings/V1071/
   // Consider inspecting the 'println' function.
   // The return value is not always used. Total
   // calls: 13, discarded results: 1.
   // parsing methods
-  void setTimeout(
-      unsigned long timeout);  // sets maximum milliseconds to wait for
-  // stream data, default is 1 second
-  unsigned long getTimeout(void) {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->_timeout;
-  }
+  
   bool find_in_stream(
       const char *target);  // reads data from the stream until the target
   // string is found
@@ -3261,13 +3275,15 @@ class mjz_Str : public basic_mjz_String,
   // terminates if length characters have been read, timeout, or if the
   // terminator character detected returns the number of characters placed in
   // the buffer (0 means no valid data found)
-  // Arduino mjz_Str functions to be added here
-  mjz_Str read_mjz_Str();
-  mjz_Str read_mjz_Str_Until(char terminator);
+  // Arduino mjz_Str<T> functions to be added here
+  mjz_str_t<T> read_mjz_Str();
+  mjz_str_t<T> read_mjz_Str_Until(char terminator);
   size_t write(const char *buf, size_t size_);
   size_t write(const char *buf);
   size_t write(uint8_t) if_ard_then_override;
-  inline size_t write(char cr) { return concat(cr); }
+  size_t write(char cr);
+  bool reserve(size_t size_, bool just_size = 0, bool constructor = 0);
+  bool addto_length(size_t addition_tolen, bool just_size = 0);
   size_t write(const uint8_t *buf, size_t size_) if_ard_then_override;
   int64_t availableLL() if_ard_then_override;
   int available() if_ard_then_override { return (int)availableLL(); }
@@ -3283,7 +3299,7 @@ class mjz_Str : public basic_mjz_String,
   }
   void begin(unsigned long);
   void begin(unsigned long, uint16_t);
-  //  void end(); used
+  // void end(); used
   // stream
 
   // new and delete
@@ -3293,21 +3309,21 @@ class mjz_Str : public basic_mjz_String,
   static void operator delete[](void *ptr);
   inline static void *operator new(size_t, void *where) { return where; }
   inline static void operator delete(void *ret_piont, void *) {
-    delete (mjz_Str *)ret_piont;
+    delete (mjz_str_t<T> *)ret_piont;
   }
   inline static void operator delete(void *ret_piont, size_t, void *) {
-    delete (mjz_Str *)ret_piont;
+    delete (mjz_str_t<T> *)ret_piont;
   }
-  inline static mjz_Str &replace_with_new_str(mjz_Str &where) {
-    // obj.mjz_Str::~mjz_Str();//bad not calling virtually
-    // obj->~mjz_Str(); // good calls the most derived constructor
-    where.~mjz_Str();  // end lifetime
-    new (&where) mjz_Str;
+  inline static mjz_str_t<T> &replace_with_new_str(mjz_str_t<T> &where) {
+    // obj.mjz_Str<T>::~mjz_Str<T>();//bad not calling virtually
+    // obj->~mjz_Str<T>(); // good calls the most derived constructor
+    where.~mjz_str_t<T>();  // end lifetime
+    new (&where) mjz_str_t<T>;
     return where;
   }
-  inline static mjz_Str *replace_with_new_str(mjz_Str *where) {
-    where->~mjz_Str();  // end lifetime
-    new (where) mjz_Str;
+  inline static mjz_str_t<T> *replace_with_new_str(mjz_str_t<T> *where) {
+    where->~mjz_str_t<T>();  // end lifetime
+    new (where) mjz_str_t<T>;
     return where;
   }
   // this class is a namespace in this part
@@ -3318,14 +3334,16 @@ class mjz_Str : public basic_mjz_String,
     static void operator delete(void *p);
     static void operator delete[](void *ptr);
     static void *operator new(size_t, void *where);
-    inline static mjz_Str &replace_heap_str_with_new_str(mjz_Str &where) {
-      where.~mjz_Str();  // end lifetime
-      new (&where) mjz_Str;
+    inline static mjz_str_t<T> &replace_heap_str_with_new_str(
+        mjz_str_t<T> &where) {
+      where.~mjz_str_t<T>();  // end lifetime
+      new (&where) mjz_str_t<T>;
       return where;
     }
-    inline static mjz_Str *replace_heap_str_with_new_str(mjz_Str *where) {
-      where->~mjz_Str();  // end lifetime
-      new (where) mjz_Str;
+    inline static mjz_str_t<T> *replace_heap_str_with_new_str(
+        mjz_str_t<T> *where) {
+      where->~mjz_str_t<T>();  // end lifetime
+      new (where) mjz_str_t<T>;
       return where;
     }
   };
@@ -3337,140 +3355,86 @@ class mjz_Str : public basic_mjz_String,
   inline auto operator->*(my_type my_var) const {
     return this->*my_var;
   }
-  // constructors
-  // creates a copy of the initial value.
-  // if the initial value is null or invalid,or if memory allocation
-  // fails,the string will be marked as invalid (i.e. "if (s)" will
-  // be false).
-  inline mjz_Str(const char *cstr, size_t length);
-  inline mjz_Str(const uint8_t *cstr, size_t length)
-      : mjz_Str((const char *)cstr, length) {}
-  inline mjz_Str(const mjz_Str &str);
-  inline mjz_Str(const __FlashStringHelper *str);
-  inline explicit mjz_Str(const char *cstr)
-      : mjz_Str(cstr, (size_t)strlen(cstr)) {}
-  mjz_Str(std::initializer_list<const char>);
-  mjz_Str(iterator_template<const char>);
 
-  template <class InputIterator>
-  mjz_Str(InputIterator first, InputIterator last) {
-    init();
-    size_t newlen{};
-    InputIterator begin_it = first;
-    while (begin_it !=
-           last) {  // not using last-first for compatibility //TODO: V776
-                    // https://pvs-studio.com/en/docs/warnings/V776/ Potentially
-                    // infinite loop. The variable in the loop exit condition
-                    // 'begin_it != last' does not change its value between
-                    // iterations.
-      begin_it++;
-      newlen++;
-    }
-    if (!addto_length(newlen, 1)) return;
-    char *ptr_{m_buffer};
-    while (first != last) {
-      *ptr_++ = *first++;
-    }
-  }
-
-  explicit mjz_Str(mjz_Str &&rval) noexcept;
-  // explicit mjz_Str(const mjz_Str *&&rval) : mjz_Str(std::move(*rval)) {
-  // }// this will give me headaches in the long run so i dont move it
-  inline explicit mjz_Str(const mjz_Str *rval) : mjz_Str(*rval) {}
-  explicit mjz_Str(char c);
-  explicit mjz_Str(unsigned char, unsigned char base = 10);
-  explicit mjz_Str(int, unsigned char base = 10);
-  explicit mjz_Str(unsigned int, unsigned char base = 10);
-  explicit mjz_Str(long, unsigned char base = 10);
-  explicit mjz_Str(unsigned long, unsigned char base = 10);
-  explicit mjz_Str(long long int, unsigned char base = 10);
-  explicit mjz_Str(unsigned long long int, unsigned char base = 10);
-  explicit mjz_Str(float, unsigned char decimalPlaces = 2);
-  explicit mjz_Str(double, unsigned char decimalPlaces = 2);
-  inline mjz_Str() : mjz_Str((const char *)empty_STRING_C_STR, 0) {}
-  explicit inline mjz_Str(const basic_mjz_String &otr)
-      : mjz_Str(otr.c_str(), otr.length()) {}
-  explicit inline mjz_Str(const basic_mjz_Str_view &otr)
-      : mjz_Str(otr.c_str(), otr.length()) {}
 #ifndef Arduino
-  mjz_Str &operator=(std::string_view &x) {
+  mjz_str_t<T> &operator=(std::string_view &x) {
     return operator=(std::string(x).c_str());
   }
-  mjz_Str &operator=(std::string_view &&x) {
+  mjz_str_t<T> &operator=(std::string_view &&x) {
     return operator=(std::string(x).c_str());
   }
-  mjz_Str &assign_range(std::initializer_list<const char> list);
-  mjz_Str &assign_range(iterator_template<const char> list);
-  mjz_Str &operator+=(std::string_view &x) {
+  mjz_str_t<T> &assign_range(std::initializer_list<const char> list);
+  mjz_str_t<T> &assign_range(iterator_template<const char> list);
+  mjz_str_t<T> &operator+=(std::string_view &x) {
     return operator+=(std::string(x).c_str());
   }
-  mjz_Str &operator+=(std::string_view &&x) {
+  mjz_str_t<T> &operator+=(std::string_view &&x) {
     return operator+=(std::string(x).c_str());
   }
 #else
-  mjz_Str(String &x)
-      : mjz_Str(((x.c_str() != 0) ? (x.c_str())
-                                  : ((const char *)empty_STRING_C_STR))) {}
-  mjz_Str(String &&x)
-      : mjz_Str(((x.c_str() != 0) ? (x.c_str())
-                                  : ((const char *)empty_STRING_C_STR))) {}
-  mjz_Str(const String &x)
-      : mjz_Str(((x.c_str() != 0) ? (x.c_str())
-                                  : ((const char *)empty_STRING_C_STR))) {}
-  mjz_Str &operator=(String &x) { return operator=(x.c_str()); }
-  mjz_Str &operator=(const String &x) { return operator=(x.c_str()); }
-  mjz_Str &operator=(String &&x) { return operator=(x.c_str()); }
-  mjz_Str &operator+=(String &x) { return operator+=(x.c_str()); }
-  mjz_Str &operator+=(const String &x) { return operator+=(x.c_str()); }
-  mjz_Str &operator+=(String &&x) { return operator+=(x.c_str()); }
+  mjz_Str<T>(String &x)
+      : mjz_Str<T>(((x.c_str() != 0) ? (x.c_str())
+                                     : ((const char *)empty_STRING_C_STR))) {}
+  mjz_Str<T>(String &&x)
+      : mjz_Str<T>(((x.c_str() != 0) ? (x.c_str())
+                                     : ((const char *)empty_STRING_C_STR))) {}
+  mjz_Str<T>(const String &x)
+      : mjz_Str<T>(((x.c_str() != 0) ? (x.c_str())
+                                     : ((const char *)empty_STRING_C_STR))) {}
+  mjz_Str<T> &operator=(String &x) { return operator=(x.c_str()); }
+  mjz_Str<T> &operator=(const String &x) { return operator=(x.c_str()); }
+  mjz_Str<T> &operator=(String &&x) { return operator=(x.c_str()); }
+  mjz_Str<T> &operator+=(String &x) { return operator+=(x.c_str()); }
+  mjz_Str<T> &operator+=(const String &x) { return operator+=(x.c_str()); }
+  mjz_Str<T> &operator+=(String &&x) { return operator+=(x.c_str()); }
 #endif
-  mjz_Str &operator=(basic_mjz_String &x) {
+  mjz_str_t<T> &operator=(basic_mjz_String &x) {
     return (*this)(x.c_str(), x.length());
   }
-  mjz_Str &operator=(basic_mjz_String &&x) {
+  mjz_str_t<T> &operator=(basic_mjz_String &&x) {
     return (*this)(x.c_str(), x.length());
   }
-  mjz_Str &operator+=(basic_mjz_String &x) {
+  mjz_str_t<T> &operator+=(basic_mjz_String &x) {
     concat(x.c_str(), x.length());
     return *this;
   }
-  mjz_Str &operator+=(basic_mjz_String &&x) {
+  mjz_str_t<T> &operator+=(basic_mjz_String &&x) {
     concat(x.c_str(), x.length());
     return *this;
   }
-  mjz_Str(std::string &x) : mjz_Str(x.c_str()) {}
-  mjz_Str(std::string &&x) : mjz_Str(x.c_str()) {}
-  mjz_Str(const std::string &x) : mjz_Str(x.c_str()) {}
-  virtual ~mjz_Str(void);  // make all drived destructors called
+  mjz_str_t(std::string &x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(std::string &&x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(const std::string &x) : mjz_str_t<T>(x.c_str()) {}
+   ~mjz_str_t(void);  // make all drived destructors called
   void adjust_cap();
-  mjz_Str &operator-=(const mjz_Str &othr_);
-  mjz_Str &operator-=(mjz_Str &&othr_);
-  mjz_Str &operator*=(unsigned int number_of_it);
-  mjz_Str operator*(unsigned int number_of_it);
-  mjz_Str &operator/=(const mjz_Str &othr_);
-  mjz_Str &operator/=(mjz_Str &&othr_);
-  mjz_Str &operator++();  // print empty line
-  mjz_Str operator++(int);
-  mjz_Str &operator--();  // read one character
-  inline char operator-() { return (char)read(); }
-  inline mjz_Str &operator~() { return operator()(); }
-  inline mjz_Str &operator+() { return ++(*this); }
+  mjz_str_t<T> &operator-=(const mjz_str_t<T> &othr_);
+  mjz_str_t<T> &operator-=(mjz_str_t<T> &&othr_);
+  mjz_str_t<T> &operator*=(unsigned int number_of_it);
+  mjz_str_t<T> operator*(unsigned int number_of_it);
+  mjz_str_t<T> &operator/=(const mjz_str_t<T> &othr_);
+  mjz_str_t<T> &operator/=(mjz_str_t<T> &&othr_);
+  mjz_str_t<T> &operator++();  // print empty line
+  mjz_str_t<T> operator++(int);
+  mjz_str_t<T> &operator--();        // read one character
+  StringSumHelper_t<T> operator-();  // copy
+  inline mjz_str_t<T> &operator~() { return operator()(); }
+  inline mjz_str_t<T> &operator+() { return ++(*this); }
 
-  mjz_Str operator--(int);
-  inline mjz_Str &operator()() {
+  mjz_str_t<T> operator--(int);
+  inline mjz_str_t<T> &operator()() {
     operator()(empty_STRING_C_STR, (size_t)0);
     return *this;
   };
-  inline mjz_Str &operator()(const mjz_Str &other) {
+  inline mjz_str_t<T> &operator()(const mjz_str_t<T> &other) {
     this->operator=(other);
     return *this;
   };
-  inline mjz_Str &operator()(const char *other) {
+  inline mjz_str_t<T> &operator()(const char *other) {
     operator()(other, (size_t)strlen(other));
     return *this;
   };
-  inline mjz_Str &operator()(const char *other, size_t size_len);
-  inline mjz_Str &operator()(mjz_Str &&other) {
+  inline mjz_str_t<T> &operator()(const char *other, size_t size_len);
+  inline mjz_str_t<T> &operator()(mjz_str_t<T> &&other) {
     this->operator=(std::move(other));
     return *this;
   };
@@ -3478,8 +3442,6 @@ class mjz_Str : public basic_mjz_String,
   // return true on success,false on failure (in which case,the string
   // is left unchanged). reserve(0),if successful,will validate an
   // invalid string (i.e.,"if (s)" will be true afterwards)
-  bool reserve(size_t size_, bool just_size = 0, bool constructor = 0);
-  bool addto_length(size_t addition_tolen, bool just_size = 0);
   explicit operator char *() { return buffer_ref(); }
   explicit operator const uint8_t *() const {
     return (const uint8_t *)buffer_ref();
@@ -3537,22 +3499,22 @@ class mjz_Str : public basic_mjz_String,
   // creates a copy of the assigned value. if the value is null or
   // invalid,or if the memory allocation fails,the string will be
   // marked as invalid ("if (s)" will be false).
-  mjz_Str &operator=(const mjz_Str &rhs);
-  mjz_Str &operator=(std::string &x) { return operator=(x.c_str()); }
-  mjz_Str &operator=(std::string &&x) { return operator=(x.c_str()); }
-  mjz_Str &operator=(const std::string &x) { return operator=(x.c_str()); }
-  mjz_Str &operator=(const char *cstr);
-  mjz_Str &operator=(const __FlashStringHelper *str);
-  mjz_Str &operator=(mjz_Str &&rval) noexcept;
-  mjz_Str &operator=(const mjz_Str *rval) { return operator=(*rval); }
-  //  mjz_Str &operator=( const mjz_Str *&&rval){
+  mjz_str_t<T> &operator=(const mjz_str_t<T> &rhs);
+  mjz_str_t<T> &operator=(std::string &x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(std::string &&x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(const std::string &x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(const char *cstr);
+  mjz_str_t<T> &operator=(const __FlashStringHelper *str);
+  mjz_str_t<T> &operator=(mjz_str_t<T> &&rval) noexcept;
+  mjz_str_t<T> &operator=(const mjz_str_t<T> *rval) { return operator=(*rval); }
+  // mjz_Str<T> &operator=( const mjz_Str<T> *&&rval){
   // return operator=(std::move(*rval));
   // }// this will give me headaches in the long run so i dont move it
   // concatenate (works w/ built-in types)
   // returns true on success,false on failure (in which case,the string
   // is left unchanged). if the argument is null or invalid,the
   // concatenation is considered unsuccessful.
-  bool concat(const mjz_Str &str);
+  bool concat(const mjz_str_t<T> &str);
   bool concat(
       const char
           *cstr);  // TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/
@@ -3578,26 +3540,26 @@ class mjz_Str : public basic_mjz_String,
   bool concat(double num);
   bool concat(const __FlashStringHelper *str);
 
-  mjz_Str &append(const mjz_Str &str) {
+  mjz_str_t<T> &append(const mjz_str_t<T> &str) {
     concat(str);
     return *this;
   }
-  mjz_Str &append(const mjz_Str &str, size_t subpos, size_t sublen);
-  mjz_Str &append(const char *s) {
+  mjz_str_t<T> &append(const mjz_str_t<T> &str, size_t subpos, size_t sublen);
+  mjz_str_t<T> &append(const char *s) {
     concat(s);
     return *this;
   }
-  mjz_Str &append(const char *s, size_t n) {
+  mjz_str_t<T> &append(const char *s, size_t n) {
     concat(s, n);
     return *this;
   }
-  mjz_Str &append(size_t n, char c) {
+  mjz_str_t<T> &append(size_t n, char c) {
     if (!addto_length(n)) return *this;
     memset(m_buffer + length() - n, c, n);
     return *this;
   }
   template <class InputIterator>
-  mjz_Str &append(InputIterator first, InputIterator last) {
+  mjz_str_t<T> &append(InputIterator first, InputIterator last) {
     size_t newlen = last - first;
     if (!addto_length(newlen)) return *this;
 
@@ -3608,279 +3570,137 @@ class mjz_Str : public basic_mjz_String,
     return *this;
   }
 
-  const mjz_Str &operator>>(mjz_Str &typing) const;
-  const mjz_Str &operator>>(mjz_Str *typing) const;
-  mjz_Str &operator>>(mjz_Str &typing);
-  mjz_Str &operator>>(mjz_Str *typing);
-  const mjz_Str &operator>>=(mjz_Str &typing) const {
-    typing.operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  const mjz_Str &operator>>=(mjz_Str *typing) const {
-    typing->operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  mjz_Str &operator>>=(mjz_Str &typing) {
-    typing.operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  mjz_Str &operator>>=(mjz_Str *typing) {
-    typing->operator=(empty_STRING_C_STR);
-    return operator>>(typing);
-  }
-  mjz_Str &operator<<(mjz_Str &typing);
-  mjz_Str &operator<<(mjz_Str *typing);
-  mjz_Str &operator<<(const mjz_Str &typing);
-  mjz_Str &operator<<(mjz_Str &&typing);
-  mjz_Str &operator<<=(mjz_Str &typing) {
-    if (&typing != this) {
-      this->operator=(empty_STRING_C_STR);
-      return operator<<(typing);
-    }
-
-    mjz_Str new_temp = typing;
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(new_temp);
-  }
-  mjz_Str &operator<<=(const mjz_Str &typing) {
-    if (&typing != this) {
-      this->operator=(empty_STRING_C_STR);
-      return operator<<(typing);
-    }
-
-    mjz_Str new_temp = typing;
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(new_temp);
-  }
-  mjz_Str &operator<<=(mjz_Str &&typing) {
-    if (&typing != this) {
-      this->operator=(empty_STRING_C_STR);
-      return operator<<(typing);
-    }
-
-    mjz_Str new_temp = typing;
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(new_temp);
-  }
-  mjz_Str &operator>>(char &var) {
-    get_s_shift_op_r().scanf_s("%c", &var, 1);
-    return get_s_shift_op_r();
-  }
-  mjz_Str &operator>>(int &var) {
-    get_s_shift_op_r().scanf_s("%d", &var);
-    return get_s_shift_op_r();
-  }
-  mjz_Str &operator>>(double &var) {
-    var = (double)(get_s_shift_op_r());
-    return get_s_shift_op_r();
-  }
-  mjz_Str &operator>>(float &var) {
-    var = (float)(get_s_shift_op_r());
-    return get_s_shift_op_r();
-  }
   // if there's not enough memory for the concatenated value,the string
   // will be left unchanged (but this isn't signalled in any way)
-  mjz_Str &operator+=(const mjz_Str &rhs) {
+  mjz_str_t<T> &operator+=(const mjz_str_t<T> &rhs) {
     concat(rhs);
     return (*this);
   }
-  mjz_Str &operator+=(mjz_Str &&rhs) {
+  mjz_str_t<T> &operator+=(mjz_str_t<T> &&rhs) {
     concat(rhs);
     return (*this);
   }
-  mjz_Str &operator+=(const char *cstr) {
+  mjz_str_t<T> &operator+=(const char *cstr) {
     concat(cstr);
     return (*this);
   }
-  mjz_Str &operator+=(char c) {
+  mjz_str_t<T> &operator+=(char c) {
     concat(c);
     return (*this);
   }
-  mjz_Str &operator+=(unsigned char num) {
+  mjz_str_t<T> &operator+=(unsigned char num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(int num) {
+  mjz_str_t<T> &operator+=(int num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(unsigned int num) {
+  mjz_str_t<T> &operator+=(unsigned int num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(long num) {
+  mjz_str_t<T> &operator+=(long num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(unsigned long num) {
+  mjz_str_t<T> &operator+=(unsigned long num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(long long num) {
+  mjz_str_t<T> &operator+=(long long num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(unsigned long long num) {
+  mjz_str_t<T> &operator+=(unsigned long long num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(float num) {
+  mjz_str_t<T> &operator+=(float num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(double num) {
+  mjz_str_t<T> &operator+=(double num) {
     concat(num);
     return (*this);
   }
-  mjz_Str &operator+=(const __FlashStringHelper *str) {
+  mjz_str_t<T> &operator+=(const __FlashStringHelper *str) {
     concat(str);
     return (*this);
   }
-  mjz_Str &operator+=(const basic_mjz_Str_view &str) {
+  mjz_str_t<T> &operator+=(const basic_mjz_Str_view &str) {
     concat(str);
     return (*this);
   }
-  friend mjz_Str &&operator_plus(mjz_Str &&lhs, const basic_mjz_Str_view &rhs);
-  friend StringSumHelper operator+(mjz_Str &&lhs,
-                                   const basic_mjz_Str_view &rhs);
-  friend StringSumHelper operator+(const basic_mjz_Str_view &rhs,
-                                   const basic_mjz_Str_view &lhs);
-  friend StringSumHelper operator+(mjz_Str lhs, const basic_mjz_Str_view &rhs);
-  friend StringSumHelper operator+(const basic_mjz_Str_view &lhs,
-                                   const basic_mjz_Str_view &rhs);
-  friend StringSumHelper operator+(mjz_Str &&lhs, const StringSumHelper &rhs);
-  friend StringSumHelper operator+(mjz_Str lhs, const StringSumHelper &rhs);
-  friend StringSumHelper operator+(const basic_mjz_Str_view &lhs,
-                                   const StringSumHelper &rhs);
-  friend StringSumHelper operator+(const StringSumHelper &lhs,
-                                   const basic_mjz_Str_view &rhs);
-  friend StringSumHelper operator+(StringSumHelper &&lhs,
-                                   const basic_mjz_Str_view &rhs);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, const char *cstr);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, char c);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, unsigned char num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, int num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, unsigned int num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, long num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, unsigned long num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, long long num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs,
-                                   unsigned long long num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, float num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs, double num);
-  friend StringSumHelper operator+(StringSumHelper &&lhs,
-                                   const __FlashStringHelper *rhs);
+  template <typename T_t>
+  friend mjz_str_t<T_t> &&operator_plus(mjz_str_t<T_t> &&lhs,
+                                        const basic_mjz_Str_view &rhs);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(mjz_str_t<T_t> &&lhs,
+                                          const basic_mjz_Str_view &rhs);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(const basic_mjz_Str_view &lhs,
+                                          const basic_mjz_Str_view &rhs);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(mjz_str_t<T_t> &&lhs,
+                                          const StringSumHelper_t<T_t> &rhs);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(const basic_mjz_Str_view &lhs,
+                                          const StringSumHelper_t<T_t> &rhs);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          const char *cstr);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs, char c);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          unsigned char num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          int num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          unsigned int num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          long num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          unsigned long num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          long long num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          unsigned long long num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          float num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          double num);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(StringSumHelper_t<T_t> &&lhs,
+                                          const __FlashStringHelper *rhs);
+  template <typename T_t>
+  friend StringSumHelper_t<T_t> operator+(const mjz_str_view &lhs,
+                                          const StringSumHelper_t<T_t> &rhs);
 
-  typedef void *(*function_ptr)(const mjz_Str &, void *);
+  typedef void *(*function_ptr)(const mjz_str_t<T> &, void *);
   operator StringIfHelperType() const {
-    return buffer_ref() ? &mjz_Str::StringIfHelper : 0;
+    return buffer_ref() ? &mjz_str_t<T>::StringIfHelper : 0;
   }
   void *do_this_for_me(function_ptr, void *x = 0);
   // comparison (only works w/ Strings and "strings")
-  friend bool is_blank_characteres_default(char);
-  friend char char_to_char_for_reinterpret_fnc_ptr_default(char);
-  friend bool is_forbiden_character_default(char);
-  friend class basic_mjz_String;
-  void set_realloc_free_functions(
-      std::function<void(void *)> free_,
-      std::function<void *(void *, size_t)> realloc_) {
-    if (free_ && realloc_) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->realloc_fnctn = realloc_;
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->free_fnctn = free_;
-    }
-  }
-  void change_is_blank_character_function(std::function<bool(char)> fnction) {
-    if (fnction) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_blank_character = fnction;
-    }
-  }
-  void change_char_to_char_for_reinterpret_fnc_ptr_function(
-      std::function<char(char)> fnction) {
-    if (fnction) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()
-          ->char_to_char_for_reinterpret_fnc_ptr = fnction;
-    }
-  }
-  void change_is_forbiden_character_function(
-      std::function<bool(char)> fnction) {
-    if (fnction) {
-      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_forbiden_character =
-          fnction;
-    }
-  }
-  inline const std::function<bool(char)> &get_is_blank_character_function()
-      const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character;
-  }
-  inline const std::function<void(void *)> &get_free_alloc_function() const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->free_fnctn;
-  }
-  inline const std::function<void *(void *, size_t)>
-      &get_realloc_alloc_function() const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->realloc_fnctn;
-  }
-  inline const std::function<char(char)>
-      &get_char_to_char_for_reinterpret_fnc_ptr_function() const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr
-        ->char_to_char_for_reinterpret_fnc_ptr;
-  }
-  inline const std::function<bool(char)> &get_is_forbiden_character_function()
-      const {
-    return drived_mjz_Str_DATA_storage_Obj_ptr->is_forbiden_character;
-  }
-  bool is_blank() const;
-  bool is_forbiden(char) const;
-  bool change_reinterpret_char_char(char);
-  bool char_to_char_for_reinterpret(char &c_char) const;
-  static int8_t char_to_int_for_string(char c_char);
-  friend std::istream &helper__op_shift_input_(const mjz_Str &rhs,
-                                               std::istream &CIN,
-                                               mjz_Str &get_shift_op_s);
-  [[nodiscard]] static mjz_Str create_mjz_Str_char_array(size_t size_,
-                                                         char filler = 0,
-                                                         bool do_fill = 1);
-  [[nodiscard]] static mjz_Str create_mjz_Str_2D_char_array(size_t size_col,
-                                                            size_t size_row,
-                                                            char filler = 0,
-                                                            bool do_fill = 1);
-  friend const mjz_Str &helper__op_shift_input_(const mjz_Str &rhs,
-                                                const mjz_Str &CIN,
-                                                mjz_Str &get_shift_op_s);
-  friend std::istream &operator<<(mjz_Str &rhs, std::istream &CIN) {
-    return helper__op_shift_input_(rhs, CIN, rhs.get_s_shift_op_l_s());
-  }
-  friend std::istream &operator>>(std::istream &CIN, mjz_Str &rhs) {
-    return helper__op_shift_input_(rhs, CIN, rhs.get_shift_op_r_s());
-  }
-  friend std::ostream &operator<<(std::ostream &COUT, const mjz_Str &rhs) {
-    COUT.write(rhs.get_shift_op_l_sc().c_str(),
-               rhs.get_shift_op_l_sc().length());
-    return COUT;
-  }
-  friend std::ostream &operator>>(const mjz_Str &rhs, std::ostream &COUT) {
-    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
-               rhs.get_s_shift_op_r_sc().length());
-    return COUT;
-  }
-  friend std::ostream &operator<<(std::ostream &COUT, mjz_Str &rhs) {
-    COUT.write(rhs.get_shift_op_l_s().c_str(), rhs.get_shift_op_l_s().length());
-    return COUT;
-  }
-  friend std::ostream &operator>>(mjz_Str &rhs, std::ostream &COUT) {
-    COUT.write(rhs.get_s_shift_op_r_s().c_str(),
-               rhs.get_s_shift_op_r_s().length());
-    return COUT;
-  }
-  friend std::ostream &operator>>(mjz_Str &&rhs, std::ostream &COUT) {
-    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
-               rhs.get_s_shift_op_r_sc().length());
-    return COUT;
-  }
-  friend std::ostream &operator<<(std::ostream &COUT, mjz_Str &&rhs) {
-    COUT.write(rhs.get_shift_op_l_sc().c_str(),
-               rhs.get_shift_op_l_sc().length());
-    return COUT;
-  }
+ 
+
+
+  [[nodiscard]] static mjz_str_t<T> create_mjz_Str_char_array(size_t size_,
+                                                              char filler = 0,
+                                                              bool do_fill = 1);
+  [[nodiscard]] static mjz_str_t<T> create_mjz_Str_2D_char_array(
+      size_t size_col, size_t size_row, char filler = 0, bool do_fill = 1);
+
   friend class STRINGSerial;
   // character access
   void setCharAt(size_t index, char c);
@@ -3894,8 +3714,8 @@ class mjz_Str : public basic_mjz_String,
   const char *end_c_str() const { return m_buffer + length(); }
 
   // Iterator Class
-  using const_iterator = mjz_ard::iterator_template<const char>;
-  using iterator = mjz_ard::iterator_template<char>;
+  using const_iterator = iterator_template<const char>;
+  using iterator = iterator_template<char>;
 
   const_iterator begin() const { return cbegin(); }
   inline const_iterator end() const { return cend(); }
@@ -3934,38 +3754,40 @@ class mjz_Str : public basic_mjz_String,
   inline const_rev_iterator rend() const { return crend(); };
   inline const_rev_iterator rbegin() const { return crbegin(); };
   // erase
-  mjz_Str &erase(size_t pos_ = 0, size_t len_ = -1);
+  mjz_str_t<T> &erase(size_t pos_ = 0, size_t len_ = -1);
   iterator erase(iterator p);
   iterator erase(iterator first, iterator last);
-  mjz_Str &erase_from_f_to_l(size_t first, size_t last);
+  mjz_str_t<T> &erase_from_f_to_l(size_t first, size_t last);
   // search
   // modification
   void find_and_replace(char find, char replace_);
-  void find_and_replace(const mjz_Str &find, const mjz_Str &replace_);
+  void find_and_replace(const mjz_str_t<T> &find, const mjz_str_t<T> &replace_);
   void find_and_replace(const char *find, size_t find_count,
                         const char *replace_, size_t replace_count);
 
-  mjz_Str &replace(size_t pos, size_t len, const basic_mjz_Str_view &str);
-  mjz_Str &replace_ll(int64_t pos, size_t len, const basic_mjz_Str_view &str);
-  mjz_Str &replace(iterator i1, iterator i2, const basic_mjz_Str_view &str);
+  mjz_str_t<T> &replace(size_t pos, size_t len, const basic_mjz_Str_view &str);
+  mjz_str_t<T> &replace_ll(int64_t pos, size_t len,
+                           const basic_mjz_Str_view &str);
+  mjz_str_t<T> &replace(iterator i1, iterator i2,
+                        const basic_mjz_Str_view &str);
 
-  mjz_Str &replace(size_t pos, size_t len, const basic_mjz_Str_view &str,
-                   size_t subpos, size_t sublen);
-  mjz_Str &replace(size_t pos, size_t len, const char *s);
-  mjz_Str &replace(size_t pos, size_t len, const char *s, size_t n);
+  mjz_str_t<T> &replace(size_t pos, size_t len, const basic_mjz_Str_view &str,
+                        size_t subpos, size_t sublen);
+  mjz_str_t<T> &replace(size_t pos, size_t len, const char *s);
+  mjz_str_t<T> &replace(size_t pos, size_t len, const char *s, size_t n);
 
-  mjz_Str &replace(iterator i1, iterator i2, const char *s, size_t n);
-  mjz_Str &replace(iterator i1, iterator i2, const char *s) {
+  mjz_str_t<T> &replace(iterator i1, iterator i2, const char *s, size_t n);
+  mjz_str_t<T> &replace(iterator i1, iterator i2, const char *s) {
     return replace(i1, i2, s, strlen(s));
   }
-  mjz_Str &replace(size_t pos, size_t len, size_t n, char c);
+  mjz_str_t<T> &replace(size_t pos, size_t len, size_t n, char c);
 
-  mjz_Str &replace(iterator i1, iterator i2, size_t n, char c);
+  mjz_str_t<T> &replace(iterator i1, iterator i2, size_t n, char c);
 
   template <class InputIterator>
-  mjz_Str &replace(iterator i1, iterator i2, InputIterator first,
-                   InputIterator last) {
-    mjz_ard::mjz_Str str(first, last);
+  mjz_str_t<T> &replace(iterator i1, iterator i2, InputIterator first,
+                        InputIterator last) {
+    mjz_str_t<T> str(first, last);
     replace(i1, i2, str.c_str(), str.length());
     return *this;
   }
@@ -3975,17 +3797,16 @@ class mjz_Str : public basic_mjz_String,
   void toLowerCase(void);
   void toUpperCase(void);
   void trim(void);
-  mjz_Str string_do_interpret();
-  void string_do_interpret(mjz_Str &instr);
-  mjz_Str &ULL_LL_to_str_add(size_t value, int radix, bool is_signed,
-                             bool force_neg = 0);
-  mjz_Str &ULL_LL_to_str_rep(size_t value, int radix, bool is_signed,
-                             bool force_neg = 0);
-  friend void swap(mjz_Str &lhs, mjz_Str &rhs) { lhs.swap(rhs); }
-  void swap(mjz_Str &rhs) {
-    mjz_Str &lhs = *this;
-    mjz_Str lhs_buffer(std::move(lhs));  // be careful
-    new (&lhs) mjz_Str;                  // be careful
+
+  mjz_str_t<T> &ULL_LL_to_str_add(size_t value, int radix, bool is_signed,
+                                  bool force_neg = 0);
+  mjz_str_t<T> &ULL_LL_to_str_rep(size_t value, int radix, bool is_signed,
+                                  bool force_neg = 0);
+  friend void swap(mjz_str_t<T> &lhs, mjz_str_t<T> &rhs) { lhs.swap(rhs); }
+  void swap(mjz_str_t<T> &rhs) {
+    mjz_str_t<T> &lhs = *this;
+    mjz_str_t<T> lhs_buffer(std::move(lhs));  // be careful
+    new (&lhs) mjz_str_t<T>;                  // be careful
     lhs = std::move(rhs);
     rhs = std::move(lhs_buffer);
   }
@@ -3993,25 +3814,25 @@ class mjz_Str : public basic_mjz_String,
   char &front() { return operator[]((int64_t)-1); }
   char &back() { return buffer_ref()[0]; }
 
-  mjz_Str &push_back(char cr_) {
+  mjz_str_t<T> &push_back(char cr_) {
     write(cr_);
     return *this;
   }
-  mjz_Str &insert(size_t pos, const basic_mjz_Str_view &other);
-  mjz_Str &insert(size_t pos, const basic_mjz_Str_view &other, size_t subpos,
-                  size_t sublen = -1);
-  mjz_Str &insert(size_t pos, const char *s, size_t n);
-  mjz_Str &insert(size_t pos, const char *other) {
+  mjz_str_t<T> &insert(size_t pos, const basic_mjz_Str_view &other);
+  mjz_str_t<T> &insert(size_t pos, const basic_mjz_Str_view &other,
+                       size_t subpos, size_t sublen = -1);
+  mjz_str_t<T> &insert(size_t pos, const char *s, size_t n);
+  mjz_str_t<T> &insert(size_t pos, const char *other) {
     return insert(pos, other, strlen(other));
   }
-  mjz_Str &pop_back() {
+  mjz_str_t<T> &pop_back() {
     if (m_length) {
       buffer_ref()[--m_length] = 0;
     }
 
     return *this;
   }
-  mjz_Str &insert(size_t pos, size_t n, char c);
+  mjz_str_t<T> &insert(size_t pos, size_t n, char c);
   void insert(iterator p, size_t n, const char *s) {
     if (p.end() != end()) return;
     insert((size_t)(p.get_pointer() - m_buffer), s, n);
@@ -4027,7 +3848,7 @@ class mjz_Str : public basic_mjz_String,
   // slow(becuse of compatibility) dont run
   template <class InputIterator>
   void insert(iterator p, InputIterator first, InputIterator last) {
-    mjz_ard::mjz_Str str(first, last);
+    mjz_str_t<T> str(first, last);
     insert(p, str.length(), str.c_str());
   }
 
@@ -4036,71 +3857,56 @@ class mjz_Str : public basic_mjz_String,
   constexpr size_t capacity() const { return m_capacity; }
   void clear() { operator()(); }
   void shrink_to_fit() {
-    mjz_Str str = create_mjz_Str_char_array(length(), 0, 1);
+    mjz_str_t<T> str = create_mjz_Str_char_array(length(), 0, 1);
     memmove(str.C_str(), c_str(), str.length());
     *this = std::move(str);
   }
   inline bool empty() const { return is_blank(); }
 
  protected:
-  //  void update_event();
-  //  void update_event_ard_string();
-  const mjz_Str &get_shift_op_rc() const;
-  mjz_Str &get_shift_op_r();
-  const mjz_Str &get_shift_op_lc() const;
-  mjz_Str &get_shift_op_l();
-  const mjz_Str &get_shift_op_r_sc() const;
-  mjz_Str &get_shift_op_r_s();
-  const mjz_Str &get_shift_op_l_sc() const;
-  mjz_Str &get_shift_op_l_s();
-  const mjz_Str &get_s_shift_op_rc() const;
-  mjz_Str &get_s_shift_op_r();
-  const mjz_Str &get_s_shift_op_lc() const;
-  mjz_Str &get_s_shift_op_l();
-  const mjz_Str &get_s_shift_op_r_sc() const;
-  mjz_Str &get_s_shift_op_r_s();
-  const mjz_Str &get_s_shift_op_l_sc() const;
-  mjz_Str &get_s_shift_op_l_s();
+  // void update_event();
+  // void update_event_ard_string();
+
   void init(bool constructor = 1);
   void invalidate(bool constructor = 1);
   bool changeBuffer(size_t maxStrLen, bool constructor);
 
  public:
   // easy quality of life
-  inline mjz_Str *operator->() { return this; }
-  inline const mjz_Str *operator->() const { return this; }
-  inline mjz_Str &operator*() { return *this; }
-  inline const mjz_Str &operator*() const { return *this; }
+  inline mjz_str_t<T> *operator->() { return this; }
+  inline const mjz_str_t<T> *operator->() const { return this; }
+  inline mjz_str_t<T> &operator*() { return *this; }
+  inline const mjz_str_t<T> &operator*() const { return *this; }
   // templated
   template <typename TYPE_>
-  mjz_Str substring(TYPE_ beginIndex) const {
+  mjz_str_t<T> substring(TYPE_ beginIndex) const {
     return basic_mjz_String::substring((int64_t)beginIndex);
   };
   template <typename TYPE_, typename TYPE_2>
-  mjz_Str substring(TYPE_ beginIndex, TYPE_2 endIndex) const {
+  mjz_str_t<T> substring(TYPE_ beginIndex, TYPE_2 endIndex) const {
     return basic_mjz_String::substring((int64_t)beginIndex, (int64_t)endIndex);
   }
   template <typename TYPE_, typename TYPE_2>
-  mjz_Str substring_beg_n(TYPE_ beginIndex, TYPE_2 number) const {
+  mjz_str_t<T> substring_beg_n(TYPE_ beginIndex, TYPE_2 number) const {
     return basic_mjz_String::substring_beg_n((int64_t)beginIndex,
                                              (int64_t)number);
   }
   /* template <typename... arguments_types>
-   size_t write(arguments_types &...arguments_arr) {
-    mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
-    return write((const uint8_t *)return_val.c_str(),
-                 (size_t)return_val.length());
+  size_t write(arguments_types &...arguments_arr) {
+  mjz_Str<T> return_val = std::move(mjz_Str<T>(arguments_arr...));
+  return write((const uint8_t *)return_val.c_str(),
+  (size_t)return_val.length());
   }
   template <typename... arguments_types>
-   size_t write(const arguments_types &...arguments_arr)
-  { mjz_Str return_val = std::move(mjz_Str(arguments_arr...)); return
+  size_t write(const arguments_types &...arguments_arr)
+  { mjz_Str<T> return_val = std::move(mjz_Str<T>(arguments_arr...)); return
   write((const uint8_t *)return_val.c_str(), (size_t)return_val.length());
   }
   template <typename... arguments_types>
-   size_t write(arguments_types &&...arguments_arr) {
-    mjz_Str return_val = std::move(mjz_Str(arguments_arr...));
-    return write((const uint8_t *)return_val.c_str(),
-                 (size_t)return_val.length());
+  size_t write(arguments_types &&...arguments_arr) {
+  mjz_Str<T> return_val = std::move(mjz_Str<T>(arguments_arr...));
+  return write((const uint8_t *)return_val.c_str(),
+  (size_t)return_val.length());
   }
   */
 
@@ -4110,7 +3916,7 @@ class mjz_Str : public basic_mjz_String,
     return ret;
   }
   template <typename... arguments_types>
-  int scanf(const mjz_Str &format, arguments_types &...arguments_arr) {
+  int scanf(const mjz_str_t<T> &format, arguments_types &...arguments_arr) {
     int ret =
         sscanf((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
     return ret;
@@ -4121,7 +3927,8 @@ class mjz_Str : public basic_mjz_String,
     return ret;
   }
   template <typename... arguments_types>
-  int scanf(const mjz_Str &format, const arguments_types &...arguments_arr) {
+  int scanf(const mjz_str_t<T> &format,
+            const arguments_types &...arguments_arr) {
     int ret =
         sscanf((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
     return ret;
@@ -4132,7 +3939,7 @@ class mjz_Str : public basic_mjz_String,
     return ret;
   }
   template <typename... arguments_types>
-  int scanf_s(const mjz_Str &format, arguments_types &...arguments_arr) {
+  int scanf_s(const mjz_str_t<T> &format, arguments_types &...arguments_arr) {
     int ret =
         sscanf_s((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
     return ret;
@@ -4143,7 +3950,8 @@ class mjz_Str : public basic_mjz_String,
     return ret;
   }
   template <typename... arguments_types>
-  int scanf_s(const mjz_Str &format, const arguments_types &...arguments_arr) {
+  int scanf_s(const mjz_str_t<T> &format,
+              const arguments_types &...arguments_arr) {
     int ret =
         sscanf_s((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
     return ret;
@@ -4151,100 +3959,100 @@ class mjz_Str : public basic_mjz_String,
 
   /*
   template <typename... arguments_types>
-   mjz_Str &operator-=(
-      arguments_types &...arguments_arr) {
-    return operator-=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator-=(
+  arguments_types &...arguments_arr) {
+  return operator-=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str operator-(arguments_types &...arguments_arr) {
-    mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator-=(arguments_arr...);
+  mjz_Str<T> operator-(arguments_types &...arguments_arr) {
+  mjz_Str<T> lhs = mjz_Str<T>(*this);
+  return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-   mjz_Str &operator/=(
-      arguments_types &...arguments_arr) {
-    return operator/=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator/=(
+  arguments_types &...arguments_arr) {
+  return operator/=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str operator/(arguments_types &...arguments_arr) {
-    mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator/=(arguments_arr...);
+  mjz_Str<T> operator/(arguments_types &...arguments_arr) {
+  mjz_Str<T> lhs = mjz_Str<T>(*this);
+  return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-   mjz_Str &operator-=(
-      const arguments_types &...arguments_arr) {
-    return operator-=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator-=(
+  const arguments_types &...arguments_arr) {
+  return operator-=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str
+  mjz_Str<T>
   operator-(const arguments_types &...arguments_arr) {
-    mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator-=(arguments_arr...);
+  mjz_Str<T> lhs = mjz_Str<T>(*this);
+  return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-   mjz_Str &operator/=(
-      const arguments_types &...arguments_arr) {
-    return operator/=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator/=(
+  const arguments_types &...arguments_arr) {
+  return operator/=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str
+  mjz_Str<T>
   operator/(const arguments_types &...arguments_arr) {
-    mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator/=(arguments_arr...);
+  mjz_Str<T> lhs = mjz_Str<T>(*this);
+  return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-   mjz_Str &operator-=(
-      arguments_types &&...arguments_arr) {
-    return operator-=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator-=(
+  arguments_types &&...arguments_arr) {
+  return operator-=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str
+  mjz_Str<T>
   operator-(arguments_types &&...arguments_arr) {
-    mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator-=(arguments_arr...);
+  mjz_Str<T> lhs = mjz_Str<T>(*this);
+  return lhs.operator-=(arguments_arr...);
   }
   template <typename... arguments_types>
-   mjz_Str &operator/=(
-      arguments_types &&...arguments_arr) {
-    return operator/=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator/=(
+  arguments_types &&...arguments_arr) {
+  return operator/=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str
+  mjz_Str<T>
   operator/(arguments_types &&...arguments_arr) {
-    mjz_Str lhs = mjz_Str(*this);
-    return lhs.operator/=(arguments_arr...);
+  mjz_Str<T> lhs = mjz_Str<T>(*this);
+  return lhs.operator/=(arguments_arr...);
   }
   template <typename... arguments_types>
-   mjz_Str &operator<<(
-      arguments_types &...arguments_arr) {
-    return operator<<(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator<<(
+  arguments_types &...arguments_arr) {
+  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str &operator<<=(
-      arguments_types &...arguments_arr) {
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator<<=(
+  arguments_types &...arguments_arr) {
+  this->operator=(empty_STRING_C_STR);
+  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str &operator=(
-      arguments_types &...arguments_arr) {
-    return operator=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator=(
+  arguments_types &...arguments_arr) {
+  return operator=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str &operator+=(
-      arguments_types &...arguments_arr) {
-    return operator+=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator+=(
+  arguments_types &...arguments_arr) {
+  return operator+=(std::move(mjz_Str<T>(arguments_arr...)));
   }
-   */
+  */
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                    arguments_types &...arguments_arr) {
+  mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
+                         arguments_types &...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  const mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                          arguments_types &...arguments_arr) const {
+  const mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
+                               arguments_types &...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
@@ -4258,8 +4066,8 @@ class mjz_Str : public basic_mjz_String,
                            arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
-  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
-  // , ... something)),...something)
+  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str<T>
+  // * , ... something)),...something)
   template <typename your_FUNCTION_Type>
   auto operator()(your_FUNCTION_Type your__function_) {
     return your__function_(*this);
@@ -4276,38 +4084,38 @@ class mjz_Str : public basic_mjz_String,
   }
   /*
   template <typename... arguments_types>
-   mjz_Str &operator<<(
-      const arguments_types &...arguments_arr) {
-    return operator<<(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator<<(
+  const arguments_types &...arguments_arr) {
+  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str &operator<<=(
-      const arguments_types &...arguments_arr) {
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator<<=(
+  const arguments_types &...arguments_arr) {
+  this->operator=(empty_STRING_C_STR);
+  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
   }
   */
   template <typename... arguments_types>
-  inline mjz_Str &operator=(const arguments_types &...arguments_arr) {
+  inline mjz_str_t<T> &operator=(const arguments_types &...arguments_arr) {
     operator()();
     concat(arguments_arr...);
     return *this;
   }
 
   template <typename... arguments_types>
-  mjz_Str &operator+=(const arguments_types &...arguments_arr) {
+  mjz_str_t<T> &operator+=(const arguments_types &...arguments_arr) {
     concat(arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                    const arguments_types &...arguments_arr) {
+  mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
+                         const arguments_types &...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  const mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                          const arguments_types &...arguments_arr) const {
+  const mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
+                               const arguments_types &...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
@@ -4321,8 +4129,8 @@ class mjz_Str : public basic_mjz_String,
                            const arguments_types &...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
-  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
-  // , ... something)),...something)
+  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str<T>
+  // * , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... arguments_types>
   auto operator()(your_FUNCTION_Type your__function_,
                   const arguments_types &...arguments_arr) {
@@ -4335,35 +4143,35 @@ class mjz_Str : public basic_mjz_String,
   }
   /*
   template <typename... arguments_types>
-   mjz_Str &operator<<(
-      arguments_types &&...arguments_arr) {
-    return operator<<(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator<<(
+  arguments_types &&...arguments_arr) {
+  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str &operator<<=(
-      arguments_types &&...arguments_arr) {
-    this->operator=(empty_STRING_C_STR);
-    return operator<<(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator<<=(
+  arguments_types &&...arguments_arr) {
+  this->operator=(empty_STRING_C_STR);
+  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str &operator=(
-      arguments_types &&...arguments_arr) {
-    return operator=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator=(
+  arguments_types &&...arguments_arr) {
+  return operator=(std::move(mjz_Str<T>(arguments_arr...)));
   }
   template <typename... arguments_types>
-   mjz_Str &operator+=(
-      arguments_types &&...arguments_arr) {
-    return operator+=(std::move(mjz_Str(arguments_arr...)));
+  mjz_Str<T> &operator+=(
+  arguments_types &&...arguments_arr) {
+  return operator+=(std::move(mjz_Str<T>(arguments_arr...)));
   }*/
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                    arguments_types &&...arguments_arr) {
+  mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
+                         arguments_types &&...arguments_arr) {
     your__function_(*this, arguments_arr...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
-  const mjz_Str &run_code(your_FUNCTION_Type your__function_,
-                          arguments_types &&...arguments_arr) const {
+  const mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
+                               arguments_types &&...arguments_arr) const {
     your__function_(*this, arguments_arr...);
     return *this;
   }
@@ -4377,8 +4185,8 @@ class mjz_Str : public basic_mjz_String,
                            arguments_types &&...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
-  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str *
-  // , ... something)),...something)
+  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str<T>
+  // * , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... arguments_types>
   auto operator()(your_FUNCTION_Type your__function_,
                   arguments_types &&...arguments_arr) {
@@ -4389,12 +4197,173 @@ class mjz_Str : public basic_mjz_String,
                   arguments_types &&...arguments_arr) const {
     return your__function_(*this, arguments_arr...);
   }
+
+ public:
+  // constructors
+  // creates a copy of the initial value.
+  // if the initial value is null or invalid,or if memory allocation
+  // fails,the string will be marked as invalid (i.e. "if (s)" will
+  // be false).
+  mjz_str_t(const char *cstr, size_t len_) {
+    init();
+
+    if (cstr) {
+      copy(cstr, len_,
+           1);  // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/
+      // Calling the 'free' virtual function indirectly in the
+      // constructor may lead to unexpected result at runtime. Check
+      // lines: 'mjzString.cpp:358', 'mjzString.hpp:734'.
+    }
+  }
+  mjz_str_t(const mjz_str_t<T> &value) {
+    init();
+    *this = value;
+  }
+  mjz_str_t(std::initializer_list<const char> list) {
+    init();
+    size_t newlen = list.size();
+    addto_length(newlen);
+    char *ptr_{m_buffer};
+    for (const char cr : list) {
+      *ptr_++ = cr;
+    }
+  }
+  mjz_str_t(mjz_ard::iterator_template<const char> list) {
+    init();
+    size_t newlen = list.size();
+    addto_length(newlen);
+    char *ptr_{m_buffer};
+    for (const char cr : list) {
+      *ptr_++ = cr;
+    }
+  }
+  mjz_str_t(const __FlashStringHelper *pstr) {
+    init();
+    *this = pstr;
+  }
+
+  mjz_str_t(unsigned char value, unsigned char base = 10) {
+    init();
+    char buf[1 + 8 * sizeof(unsigned char)];
+    utoa(value, buf, base);
+    *this = buf;
+  }
+  mjz_str_t(int value, unsigned char base = 10) {
+    init();
+    char buf[2 + 8 * sizeof(int)];
+    itoa(value, buf, base);
+    *this = buf;
+  }
+  mjz_str_t(unsigned int value, unsigned char base = 10) {
+    init();
+    char buf[1 + 8 * sizeof(unsigned int)];
+    utoa(value, buf, base);
+    *this = buf;
+  }
+  mjz_str_t(long value, unsigned char base = 10) {
+    init();
+    char buf[2 + 8 * sizeof(long)];
+    ltoa(value, buf, base);
+    *this = buf;
+  }
+  mjz_str_t(unsigned long value, unsigned char base = 10) {
+    init();
+    char buf[1 + 8 * sizeof(unsigned long)];
+    ultoa(value, buf, base);
+    *this = buf;
+  }
+  mjz_str_t(long long int value, unsigned char base = 10) {
+    init();
+    char buf[2 + 8 * sizeof(long long)];
+    lltoa(value, buf, base);
+    *this = buf;
+  }
+  mjz_str_t(long long unsigned int value, unsigned char base = 10) {
+    init();
+    char buf[1 + 8 * sizeof(unsigned long long)];
+    ulltoa(value, buf, base);
+    *this = buf;
+  }
+  mjz_str_t(float value, unsigned char decimalPlaces = 2) {
+    static size_t const FLOAT_BUF_SIZE = FLT_MAX_10_EXP +
+                                         FLT_MAX_DECIMAL_PLACES + 1 /* '-' */ +
+                                         1 /* '.' */ + 1 /* '\0' */;
+    init();
+    char buf[FLOAT_BUF_SIZE];
+    decimalPlaces = min_macro_(decimalPlaces, FLT_MAX_DECIMAL_PLACES);
+    *this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
+  }
+  mjz_str_t(double value, unsigned char decimalPlaces = 2) {
+    static size_t const DOUBLE_BUF_SIZE = DBL_MAX_10_EXP +
+                                          DBL_MAX_DECIMAL_PLACES + 1 /* '-' */ +
+                                          1 /* '.' */ + 1 /* '\0' */;
+    init();
+    char buf[DOUBLE_BUF_SIZE];
+    decimalPlaces = min_macro_(decimalPlaces, DBL_MAX_DECIMAL_PLACES);
+    *this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
+  }
+  inline mjz_str_t(const uint8_t *cstr, size_t length)
+      : mjz_str_t((const char *)cstr, length) {}
+  inline explicit mjz_str_t(const char *cstr)
+      : mjz_str_t<T>(cstr, (size_t)strlen(cstr)) {}
+
+  template <class InputIterator>
+  mjz_str_t(InputIterator first, InputIterator last) {
+    init();
+    size_t newlen{};
+    InputIterator begin_it = first;
+    while (begin_it !=
+           last) {  // not using last-first for compatibility //TODO: V776
+      // https://pvs-studio.com/en/docs/warnings/V776/ Potentially
+      // infinite loop. The variable in the loop exit condition
+      // 'begin_it != last' does not change its value between
+      // iterations.
+      begin_it++;
+      newlen++;
+    }
+    if (!addto_length(newlen, 1)) return;
+    char *ptr_{m_buffer};
+    while (first != last) {
+      *ptr_++ = *first++;
+    }
+  }
+
+  mjz_str_t(mjz_ard::mjz_str_t<T> &&rval) noexcept
+      : mjz_ard::basic_mjz_String(
+            (rval.stack_obj_buf.get() ? stack_obj_buf.stack_buffer
+                                      : rval.m_buffer),
+            (rval.m_capacity), (rval.m_length)),
+        stack_obj_buf(rval.stack_obj_buf) {
+    // update_event_F_p = &mjz_ard::mjz_str_t<T>::update_event;//departed
+    if (rval.stack_obj_buf.get()) {
+      rval.free_pv(rval.m_buffer, 1);
+    }
+
+    rval.m_buffer = NULL;
+    rval.m_capacity = 0;
+    rval.m_length = 0;
+    rval.stack_obj_buf.set(0);
+  }
+  mjz_str_t(char c) {
+    init();
+    char buf[2] = {c, 0};
+    *this = buf;
+  }
+  // explicit mjz_Str<T>(const mjz_Str<T> *&&rval) :
+  // mjz_Str<T>(std::move(*rval)) {
+  // }// this will give me headaches in the long run so i dont move it
+  inline explicit mjz_str_t(const mjz_str_t<T> *rval) : mjz_str_t(*rval) {}
+  inline mjz_str_t() : mjz_str_t((const char *)empty_STRING_C_STR, 0) {}
+  explicit inline mjz_str_t(const basic_mjz_String &otr)
+      : mjz_str_t(otr.c_str(), otr.length()) {}
+  explicit inline mjz_str_t(const basic_mjz_Str_view &otr)
+      : mjz_str_t(otr.c_str(), otr.length()) {}
 };
 /*
-  please dont use mjz_str_view with temporary strings
-  if the string that it references goes out of scope (delete , ~obj , },free
-  ,...)the string_view will have undefined behavior use this obj like a
-  std::string_view  not like std::string
+ please dont use mjz_str_view with temporary strings
+ if the string that it references goes out of scope (delete , ~obj , },free
+ ,...)the string_view will have undefined behavior use this obj like a
+ std::string_view not like std::string
 */
 class mjz_str_view : public basic_mjz_Str_view {
  protected:
@@ -4412,7 +4381,10 @@ class mjz_str_view : public basic_mjz_Str_view {
 
  public:
   constexpr inline const char *data() const { return m_buffer; }
-  mjz_str_view(const mjz_Str &s) : mjz_str_view(s.c_str(), s.length()) {}
+  template <typename T>
+  mjz_str_view(const mjz_str_t<T> &s) : mjz_str_view(s.c_str(), s.length()) {}
+  constexpr mjz_str_view(const basic_mjz_Str_view &str)
+      : basic_mjz_Str_view(str) {}
   constexpr mjz_str_view(const char *cstr_, size_t len)
       : basic_mjz_Str_view(cstr_, len) {}
   constexpr mjz_str_view(const uint8_t *cstr_, size_t len)
@@ -4425,9 +4397,12 @@ class mjz_str_view : public basic_mjz_Str_view {
   mjz_str_view(mjz_str_view &&s) =
       default;  // we are string views and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
-
-  constexpr mjz_str_view &operator=(mjz_Str &&s) { return copy(s); }
-  mjz_str_view(mjz_Str &&s) : mjz_str_view(s) {}
+  template <typename T>
+  constexpr mjz_str_view &operator=(mjz_str_t<T> &&s) {
+    return copy(s);
+  }
+  template <typename T>
+  mjz_str_view(mjz_str_t<T> &&s) : mjz_str_view(s) {}
 
   constexpr mjz_str_view(const mjz_str_view &s)
       : mjz_str_view(s.c_str(), s.length()) {}
@@ -4481,18 +4456,6 @@ class mjz_str_view : public basic_mjz_Str_view {
   constexpr size_t copy(char *dest, size_t count, int64_t pos) const {
     return copy(dest, count, mjz_str_view::signed_index_to_unsigned(pos));
   }
-  friend StringSumHelper operator+(const mjz_str_view &rhs,
-                                   const mjz_str_view &lhs);
-  friend StringSumHelper operator+(const basic_mjz_Str_view &rhs,
-                                   const basic_mjz_Str_view &lhs);
-  friend StringSumHelper operator+(const StringSumHelper &lhs,
-                                   const mjz_str_view &rhs);
-  friend StringSumHelper operator+(StringSumHelper &&lhs,
-                                   const mjz_str_view &rhs);
-  friend StringSumHelper operator+(const mjz_str_view &lhs,
-                                   const basic_mjz_String &rhs);
-  friend StringSumHelper operator+(const mjz_str_view &lhs,
-                                   const StringSumHelper &rhs);
 
   friend std::ostream &operator<<(std::ostream &COUT, const mjz_str_view &rhs) {
     COUT.write(rhs.c_str(), rhs.length());
@@ -4521,7 +4484,8 @@ class mjz_str_view : public basic_mjz_Str_view {
 };
 
 class mjz_virtual_string_view : public mjz_str_view {
-  mjz_virtual_string_view(const mjz_Str &s)
+  template <typename T>
+  mjz_virtual_string_view(const mjz_str_t<T> &s)
       : mjz_virtual_string_view(s.c_str(), s.length()) {}
   mjz_virtual_string_view(const char *cstr_, size_t len)
       : mjz_str_view(cstr_, len) {}
@@ -4531,12 +4495,13 @@ class mjz_virtual_string_view : public mjz_str_view {
   mjz_virtual_string_view(mjz_virtual_string_view &&s) =
       default;  // we are string views and not strings
   mjz_virtual_string_view &operator=(mjz_virtual_string_view &&) = default;
-
-  mjz_virtual_string_view &operator=(mjz_Str &&s) {
+  template <typename T>
+  mjz_virtual_string_view &operator=(mjz_str_t<T> &&s) {
     copy(s);
     return *this;
   }
-  mjz_virtual_string_view(mjz_Str &&s) : mjz_str_view(s) {}
+  template <typename T>
+  mjz_virtual_string_view(mjz_str_t<T> &&s) : mjz_str_view(s) {}
   mjz_virtual_string_view(const mjz_virtual_string_view &s)
       : mjz_virtual_string_view(s.c_str(), s.length()) {}
   mjz_virtual_string_view(mjz_virtual_string_view &s)
@@ -4551,32 +4516,267 @@ class mjz_virtual_string_view : public mjz_str_view {
   }
   virtual inline ~mjz_virtual_string_view(){};
 };
-class StringSumHelper : public mjz_Str {
+extern std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr;
+template <typename T>
+class extended_mjz_str_t : public mjz_str_t<T> {
  public:
-  StringSumHelper(const basic_mjz_String &s)
-      : mjz_Str(mjz_Str(s.c_str(), s.length())([](mjz_Str &obj) {
-          std::cout << obj << "\n";
-          obj.reserve(1);
-          return obj;
-        })) {}
-  StringSumHelper(basic_mjz_String &&s) : StringSumHelper(s) {}
-  StringSumHelper(const basic_mjz_Str_view &otr) : mjz_Str(otr) {}
-  StringSumHelper(const mjz_str_view &s) : mjz_Str(s) {}
-  StringSumHelper(mjz_str_view &&s) : StringSumHelper(s) {}
-  StringSumHelper(const mjz_Str &s) : mjz_Str(s) {}
-  StringSumHelper(const char *p) : mjz_Str(p) {}
-  StringSumHelper(char c) : mjz_Str(c) {}
-  StringSumHelper(unsigned char num) : mjz_Str(num) {}
-  StringSumHelper(int num) : mjz_Str(num) {}
-  StringSumHelper(unsigned int num) : mjz_Str(num) {}
-  StringSumHelper(long num) : mjz_Str(num) {}
-  StringSumHelper(unsigned long num) : mjz_Str(num) {}
-  StringSumHelper(long long num) : mjz_Str(num) {}
-  StringSumHelper(unsigned long long num) : mjz_Str(num) {}
-  StringSumHelper(float num) : mjz_Str(num) {}
-  StringSumHelper(double num) : mjz_Str(num) {}
+  extended_mjz_str_t() : mjz_str_t<T>() {}
+  extended_mjz_str_t(const basic_mjz_String &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(basic_mjz_String &&s) : extended_mjz_str_t(s) {}
+  extended_mjz_str_t(const basic_mjz_Str_view &otr) : mjz_str_t<T>(otr) {}
+  extended_mjz_str_t(const mjz_str_view &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(mjz_str_view &&s) : extended_mjz_str_t(s) {}
+  extended_mjz_str_t(const mjz_str_t<T> &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(mjz_str_t<T> &&s) : mjz_str_t<T>(std::move(s)) {}
+  extended_mjz_str_t(const char *p) : mjz_str_t<T>(p) {}
+  extended_mjz_str_t(const char *p, size_t n) : mjz_str_t<T>(p, n) {}
+  extended_mjz_str_t(char c) : mjz_str_t<T>(c) {}
+  extended_mjz_str_t(unsigned char num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(int num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(unsigned int num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(unsigned long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(long long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(unsigned long long num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(float num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(double num) : mjz_str_t<T>(num) {}
+  extended_mjz_str_t(const extended_mjz_str_t &s) : mjz_str_t<T>(s) {}
+  extended_mjz_str_t(extended_mjz_str_t &&s) : mjz_str_t<T>(std::move(s)) {}
+
+  extended_mjz_str_t &operator=(const extended_mjz_str_t &s) {
+    mjz_str_t::operator=(s);
+    return *this;
+  }
+  extended_mjz_str_t &operator=(extended_mjz_str_t &&s) {
+    mjz_str_t::operator=(std::move(s));
+    return *this;
+  }
+  extended_mjz_str_t &operator=(const mjz_str_t<T> &s) {
+    mjz_str_t::operator=(s);
+    return *this;
+  }
+  extended_mjz_str_t &operator=(mjz_str_t<T> &&s) {
+    mjz_str_t::operator=(std::move(s));
+    return *this;
+  }
+  virtual ~extended_mjz_str_t(){};
+
+  friend std::istream &operator<<(extended_mjz_str_t<T> &rhs,
+                                  std::istream &CIN) {
+    return helper__op_shift_input_(rhs, CIN, rhs.get_s_shift_op_l_s());
+  }
+  friend std::istream &operator>>(std::istream &CIN,
+                                  extended_mjz_str_t<T> &rhs) {
+    return helper__op_shift_input_(rhs, CIN, rhs.get_shift_op_r_s());
+  }
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  const extended_mjz_str_t<T> &rhs) {
+    COUT.write(rhs.get_shift_op_l_sc().c_str(),
+               rhs.get_shift_op_l_sc().length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(const extended_mjz_str_t<T> &rhs,
+                                  std::ostream &COUT) {
+    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
+               rhs.get_s_shift_op_r_sc().length());
+    return COUT;
+  }
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  extended_mjz_str_t<T> &rhs) {
+    COUT.write(rhs.get_shift_op_l_s().c_str(), rhs.get_shift_op_l_s().length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(extended_mjz_str_t<T> &rhs,
+                                  std::ostream &COUT) {
+    COUT.write(rhs.get_s_shift_op_r_s().c_str(),
+               rhs.get_s_shift_op_r_s().length());
+    return COUT;
+  }
+  friend std::ostream &operator>>(extended_mjz_str_t<T> &&rhs,
+                                  std::ostream &COUT) {
+    COUT.write(rhs.get_s_shift_op_r_sc().c_str(),
+               rhs.get_s_shift_op_r_sc().length());
+    return COUT;
+  }
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  extended_mjz_str_t<T> &&rhs) {
+    COUT.write(rhs.get_shift_op_l_sc().c_str(),
+               rhs.get_shift_op_l_sc().length());
+    return COUT;
+  }
+  const extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> &typing) const;
+  const extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> *typing) const;
+  extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> &typing);
+  extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> *typing);
+  const extended_mjz_str_t<T> &operator>>=(
+      extended_mjz_str_t<T> &typing) const {
+    (typing)();
+    return operator>>(typing);
+  }
+  const extended_mjz_str_t<T> &operator>>=(
+      extended_mjz_str_t<T> *typing) const {
+    (*typing)();
+    return operator>>(typing);
+  }
+  extended_mjz_str_t<T> &operator>>=(extended_mjz_str_t<T> &typing) {
+    (typing)();
+    return operator>>(typing);
+  }
+  extended_mjz_str_t<T> &operator>>=(extended_mjz_str_t<T> *typing) {
+    (*typing)();
+    return operator>>(typing);
+  }
+  extended_mjz_str_t<T> &operator<<(extended_mjz_str_t<T> &typing);
+  extended_mjz_str_t<T> &operator<<(extended_mjz_str_t<T> *typing);
+  extended_mjz_str_t<T> &operator<<(const extended_mjz_str_t<T> &typing);
+  extended_mjz_str_t<T> &operator<<(extended_mjz_str_t<T> &&typing);
+  extended_mjz_str_t<T> &operator<<=(extended_mjz_str_t<T> &typing) {
+    if (&typing != this) {
+      (*this)();
+      return operator<<(typing);
+    }
+
+    extended_mjz_str_t<T> new_temp = typing;
+    (*this)();
+    return operator<<(new_temp);
+  }
+  extended_mjz_str_t<T> &operator<<=(const extended_mjz_str_t<T> &typing) {
+    if (&typing != this) {
+      (*this)();
+      return operator<<(typing);
+    }
+
+    extended_mjz_str_t<T> new_temp = typing;
+    (*this)();
+    return operator<<(new_temp);
+  }
+  extended_mjz_str_t<T> &operator<<=(extended_mjz_str_t<T> &&typing) {
+    if (&typing != this) {
+      (*this)();
+      return operator<<(typing);
+    }
+
+    extended_mjz_str_t<T> new_temp = typing;
+    (*this)();
+    return operator<<(new_temp);
+  }
+  extended_mjz_str_t<T> &operator>>(char &var) {
+    get_s_shift_op_r().scanf_s("%c", &var, 1);
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> &operator>>(int &var) {
+    get_s_shift_op_r().scanf_s("%d", &var);
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> &operator>>(double &var) {
+    var = (double)(get_s_shift_op_r());
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> &operator>>(float &var) {
+    var = (float)(get_s_shift_op_r());
+    return get_s_shift_op_r();
+  }
+  extended_mjz_str_t<T> string_do_interpret();
+  void string_do_interpret(extended_mjz_str_t<T> &instr);
+
+ public:
+  inline const std::function<char(char)>
+      &get_char_to_char_for_reinterpret_fnc_ptr_function() const {
+    return drived_mjz_Str_DATA_storage_Obj_ptr
+        ->char_to_char_for_reinterpret_fnc_ptr;
+  }
+  inline const std::function<bool(char)> &get_is_forbiden_character_function()
+      const {
+    return drived_mjz_Str_DATA_storage_Obj_ptr->is_forbiden_character;
+  }
+  inline const std::function<bool(char)> &get_is_blank_character_function()
+      const {
+    return drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character;
+  }
+  public:
+  friend bool is_blank_characteres_default(char);
+  friend char char_to_char_for_reinterpret_fnc_ptr_default(char);
+  friend bool is_forbiden_character_default(char);
+  friend class basic_mjz_String;
+  void set_realloc_free_functions(
+      std::function<void(void *)> free_,
+      std::function<void *(void *, size_t)> realloc_) {
+    if (free_ && realloc_) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->realloc_fnctn = realloc_;
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->free_fnctn = free_;
+    }
+  }
+  void change_is_blank_character_function(std::function<bool(char)> fnction) {
+    if (fnction) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_blank_character = fnction;
+    }
+  }
+  void change_char_to_char_for_reinterpret_fnc_ptr_function(
+      std::function<char(char)> fnction) {
+    if (fnction) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()
+          ->char_to_char_for_reinterpret_fnc_ptr = fnction;
+    }
+  }
+  void change_is_forbiden_character_function(
+      std::function<bool(char)> fnction) {
+    if (fnction) {
+      drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_forbiden_character =
+          fnction;
+    }
+  }
+  bool is_blank() const;
+  bool is_forbiden(char) const;
+  bool change_reinterpret_char_char(char);
+  bool char_to_char_for_reinterpret(char &c_char) const;
+  char get_reinterpret_char_char() const;
+ 
+ protected:
+  
+  uint8_t did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
+  std::shared_ptr<mjz_Str_DATA_storage_cls>
+      drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
+  std::shared_ptr<mjz_Str_DATA_storage_cls>
+      &drived_mjz_Str_DATA_storage_Obj_ptr_set();
+  const extended_mjz_str_t<T> &get_shift_op_rc() const;
+  extended_mjz_str_t<T> &get_shift_op_r();
+  const extended_mjz_str_t<T> &get_shift_op_lc() const;
+  extended_mjz_str_t<T> &get_shift_op_l();
+  const extended_mjz_str_t<T> &get_shift_op_r_sc() const;
+  extended_mjz_str_t<T> &get_shift_op_r_s();
+  const extended_mjz_str_t<T> &get_shift_op_l_sc() const;
+  extended_mjz_str_t<T> &get_shift_op_l_s();
+  const extended_mjz_str_t<T> &get_s_shift_op_rc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_r();
+  const extended_mjz_str_t<T> &get_s_shift_op_lc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_l();
+  const extended_mjz_str_t<T> &get_s_shift_op_r_sc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_r_s();
+  const extended_mjz_str_t<T> &get_s_shift_op_l_sc() const;
+  extended_mjz_str_t<T> &get_s_shift_op_l_s();
+};
+template <typename T>
+class StringSumHelper_t : public mjz_str_t<T> {
+ public:
+  StringSumHelper_t(const basic_mjz_String &s) : mjz_str_t<T>(s) {}
+  StringSumHelper_t(basic_mjz_String &&s) : StringSumHelper_t(s) {}
+  StringSumHelper_t(const basic_mjz_Str_view &otr) : mjz_str_t<T>(otr) {}
+  StringSumHelper_t(const mjz_str_view &s) : mjz_str_t<T>(s) {}
+  StringSumHelper_t(mjz_str_view &&s) : StringSumHelper_t(s) {}
+  StringSumHelper_t(const mjz_str_t<T> &s) : mjz_str_t<T>(s) {}
+  StringSumHelper_t(const char *p) : mjz_str_t<T>(p) {}
+  StringSumHelper_t(char c) : mjz_str_t<T>(c) {}
+  StringSumHelper_t(unsigned char num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(int num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(unsigned int num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(long num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(unsigned long num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(long long num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(unsigned long long num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(float num) : mjz_str_t<T>(num) {}
+  StringSumHelper_t(double num) : mjz_str_t<T>(num) {}
   // non virtual
-  ~StringSumHelper(){};
+  ~StringSumHelper_t(){};
 };
 template <typename TYPE_>
 class type_cmp_class {
@@ -4599,26 +4799,28 @@ class type_fn_class {
     return _function(x);
   }
 };
+
 mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
                       bool force_neg = 0);
-
-mjz_Str &getline(mjz_Str &is, mjz_Str &str, char delim);
-mjz_Str &getline(mjz_Str &is, mjz_Str &str);
-template <size_t buffer_len = 2048>
-std::istream &getline(std::istream &is, mjz_Str &str, char delim) {
+template <typename T>
+mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str, char delim);
+template <typename T>
+mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str);
+template <typename T, size_t buffer_len = 2048>
+std::istream &getline(std::istream &is, mjz_str_t<T> &str, char delim) {
   char buffer[buffer_len]{};
   is.getline(buffer, buffer_len, delim);
-  uint32_t available_len = mjz_ard::static_str_algo::strlen(buffer);
+  uint32_t available_len = static_str_algo::strlen(buffer);
   str.append(buffer, available_len);
   return is;
 }
-template <size_t buffer_len = 2048>
-std::istream &getline(std::istream &is, mjz_Str &str) {
+template <typename T, size_t buffer_len = 2048>
+std::istream &getline(std::istream &is, mjz_str_t<T> &str) {
   return getline<buffer_len>(is, str, '\n');
 }
 template <typename Type>
-inline mjz_Str get_bit_representation(const Type &data) {
-  mjz_Str buffer;
+inline mjz_ard::mjz_Str get_bit_representation(const Type &data) {
+  mjz_ard::mjz_Str buffer;
   buffer.addto_length(sizeof(Type) * 8);
   static_str_algo::get_bit_representation(
       buffer.C_str(), buffer.length(), &data, sizeof(Type),
@@ -4626,31 +4828,38 @@ inline mjz_Str get_bit_representation(const Type &data) {
   return buffer;
 }
 
-inline mjz_Str operator"" _m_str(const char *p) { return mjz_Str(p); }
-inline mjz_Str operator"" _m_str(char c) { return mjz_Str(c); }
-inline mjz_Str operator"" _m_str(unsigned long long num) {
-  return mjz_Str(num);
+inline mjz_ard::mjz_Str operator"" _m_str(const char *p) {
+  return mjz_ard::mjz_Str(p);
 }
-inline mjz_Str operator"" _m_str(long double num) {
-  return mjz_Str((double)num);
+
+inline mjz_ard::mjz_Str operator"" _m_str(char c) {
+  return mjz_ard::mjz_Str(c);
 }
-inline mjz_Str operator"" _m_pstr(char c) {
-  return mjz_Str(c).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _m_str(unsigned long long num) {
+  return mjz_ard::mjz_Str(num);
 }
-inline mjz_Str operator"" _m_pstr(unsigned long long num) {
-  return mjz_Str(num).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _m_str(long double num) {
+  return mjz_ard::mjz_Str((double)num);
 }
-inline mjz_Str operator"" _m_pstr(long double num) {
-  return mjz_Str((double)num).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _m_pstr(char c) {
+  return mjz_ard::extended_mjz_Str(c).string_do_interpret();
 }
-inline mjz_Str operator"" _m_pstr(const char *initilizer) {
-  return mjz_Str(initilizer).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _m_pstr(unsigned long long num) {
+  return mjz_ard::mjz_Str(num);
 }
-inline mjz_Str operator""_m_str(const char *initilizer, size_t length_) {
-  return mjz_Str(initilizer, length_);
+inline mjz_ard::mjz_Str operator"" _m_pstr(long double num) {
+  return mjz_ard::mjz_Str((double)num);
 }
-inline mjz_Str operator"" _m_pstr(const char *initilizer, size_t length_) {
-  return mjz_Str(initilizer, length_).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _m_pstr(const char *initilizer) {
+  return mjz_ard::extended_mjz_Str(initilizer).string_do_interpret();
+}
+inline mjz_ard::mjz_Str operator""_m_str(const char *initilizer,
+                                         size_t length_) {
+  return mjz_ard::mjz_Str(initilizer, length_);
+}
+inline mjz_ard::mjz_Str operator"" _m_pstr(const char *initilizer,
+                                           size_t length_) {
+  return mjz_ard::extended_mjz_Str(initilizer, length_).string_do_interpret();
 }
 inline mjz_str_view operator""_m_strv(const char *initilizer, size_t length_) {
   return mjz_str_view(initilizer, length_);
@@ -4670,27 +4879,33 @@ inline mjz_str_view operator""_sv(const char *initilizer, size_t length_) {
   return operator""_m_strv(initilizer, length_);
 }
 inline mjz_str_view operator""_sv(const char *p) { return operator""_msv(p); }
-inline mjz_Str operator"" _s(const char *p) { return mjz_Str(p); }
-inline mjz_Str operator"" _s(char c) { return mjz_Str(c); }
-inline mjz_Str operator"" _s(unsigned long long num) { return mjz_Str(num); }
-inline mjz_Str operator"" _s(long double num) { return mjz_Str((double)num); }
-inline mjz_Str operator"" _ps(char c) {
-  return mjz_Str(c).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _s(const char *p) {
+  return mjz_ard::mjz_Str(p);
 }
-inline mjz_Str operator"" _ps(unsigned long long num) {
-  return mjz_Str(num).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _s(char c) { return mjz_ard::mjz_Str(c); }
+inline mjz_ard::mjz_Str operator"" _s(unsigned long long num) {
+  return mjz_ard::mjz_Str(num);
 }
-inline mjz_Str operator"" _ps(long double num) {
-  return mjz_Str((double)num).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _s(long double num) {
+  return mjz_ard::mjz_Str((double)num);
 }
-inline mjz_Str operator"" _ps(const char *initilizer) {
-  return mjz_Str(initilizer).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _ps(char c) {
+  return mjz_ard::extended_mjz_Str(c).string_do_interpret();
 }
-inline mjz_Str operator""_s(const char *initilizer, size_t length_) {
-  return mjz_Str(initilizer, length_);
+inline mjz_ard::mjz_Str operator"" _ps(unsigned long long num) {
+  return mjz_ard::mjz_Str(num);
 }
-inline mjz_Str operator"" _ps(const char *initilizer, size_t length_) {
-  return mjz_Str(initilizer, length_).string_do_interpret();
+inline mjz_ard::mjz_Str operator"" _ps(long double num) {
+  return mjz_ard::mjz_Str((double)num);
+}
+inline mjz_ard::mjz_Str operator"" _ps(const char *initilizer) {
+  return mjz_ard::mjz_Str(initilizer);
+}
+inline mjz_ard::mjz_Str operator""_s(const char *initilizer, size_t length_) {
+  return mjz_ard::mjz_Str(initilizer, length_);
+}
+inline mjz_ard::mjz_Str operator"" _ps(const char *initilizer, size_t length_) {
+  return mjz_ard::mjz_Str(initilizer, length_);
 }
 inline mjz_str_view operator""_v(const char *initilizer, size_t length_) {
   return mjz_str_view(initilizer, length_);
@@ -4707,12 +4922,12 @@ inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 }  // namespace short_string_convestion_operators
 
 /************************************************************
-    Author: Charlie Murphy
-    Email:  tm507211@ohio.edu
+ Author: Charlie Murphy
+ Email: tm507211@ohio.edu
 
-    Date:   July 20, 2015
+ Date: July 20, 2015
 
-    Description: Implementation of mjz_vector classes
+ Description: Implementation of mjz_vector classes
 ************************************************************/
 
 }  // namespace mjz_ard
@@ -4720,7 +4935,7 @@ inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 namespace mjz_ard {
 
 /***************************************************************************************
-  Vector2  -- 2-D mjz_vector class
+ Vector2 -- 2-D mjz_vector class
 ***************************************************************************************/
 template <class Type>
 class Vector2 {
@@ -4797,13 +5012,13 @@ class Vector2 {
   }
 
   /**********************************************
-    Indexing operator
+  Indexing operator
   **********************************************/
   inline constexpr Type &operator[](int i) { return *(&m_x + i); }
   inline constexpr const Type operator[](int i) const { return *(&m_x + i); }
 
   /*********************************************
-    Non modifying math operators
+  Non modifying math operators
   *********************************************/
   inline constexpr Vector2<Type> operator-() const {
     return Vector2<Type>(-m_x, -m_y);
@@ -4825,7 +5040,7 @@ class Vector2 {
   }
 
   /*******************************************
-    Modifying Math Operators
+  Modifying Math Operators
   *******************************************/
   inline constexpr Vector2<Type> &operator+=(const Vector2<Type> &v) {
     m_x += v.m_x;
@@ -4854,7 +5069,7 @@ class Vector2 {
   }
 
   /*******************************************
-    Cast to Type* (lets you use vec2 as Type array)
+  Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
   inline constexpr operator const Type *() const {
     return static_cast<Type *>(&m_x);
@@ -4862,7 +5077,7 @@ class Vector2 {
   inline constexpr operator Type *() { return static_cast<Type *>(&m_x); }
 
   /********************************************
-    Useful Vector Operations
+  Useful Vector Operations
   ********************************************/
   inline constexpr Type length() const {
     return 1 / static_str_algo::Q_rsqrt_unsafe(m_x * m_x + m_y * m_y);
@@ -4899,7 +5114,7 @@ class Vector2 {
   }
 
   /********************************************************
-   Basic Trig functions of angle between vectors
+  Basic Trig functions of angle between vectors
   ********************************************************/
 
   friend inline constexpr Type cos(const Vector2<Type> &v1,
@@ -5026,13 +5241,13 @@ class Vector3 {
   }
 
   /**********************************************
-    Indexing operator
+  Indexing operator
   **********************************************/
   inline constexpr Type &operator[](int i) { return *(&m_x + i); }
   const Type operator[](int i) const { return *(&m_x + i); }
 
   /*********************************************
-    Non modifying math operators
+  Non modifying math operators
   *********************************************/
   inline constexpr Vector3<Type> operator-() const {
     return Vector3<Type>(-m_x, -m_y, -m_z);
@@ -5057,7 +5272,7 @@ class Vector3 {
   }
 
   /*******************************************
-    Modifying Math Operators
+  Modifying Math Operators
   *******************************************/
   inline constexpr Vector3<Type> &operator+=(const Vector3<Type> &v) {
     m_x += v.m_x;
@@ -5097,7 +5312,7 @@ class Vector3 {
   }
 
   /*******************************************
-    Cast to Type* (lets you use vec2 as Type array)
+  Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
   inline constexpr operator const Type *() const {
     return static_cast<Type *>(&m_x);
@@ -5105,7 +5320,7 @@ class Vector3 {
   inline constexpr operator Type *() { return static_cast<Type *>(&m_x); }
 
   /********************************************
-    Useful Vector Operations
+  Useful Vector Operations
   ********************************************/
   inline constexpr Type length() const {
     return 1 / static_str_algo::Q_rsqrt_unsafe(lengthSq());
@@ -5124,8 +5339,8 @@ class Vector3 {
   }
 
   inline constexpr Vector3<Type> cross_with_this(
-      const Vector3<Type> &v) { /* NOTE this function modifies the mjz_vector
-                                unlike 2D and non-member versions */
+      const Vector3<Type> &v) { /* NOTE this function modifies the
+      mjz_vector unlike 2D and non-member versions */
     Type x_(m_x), y_(m_y), z_(m_z);
     m_x = y_ * v.m_z - z_ * v.m_y;
     m_y = z_ * v.m_x - x_ * v.m_z;
@@ -5146,7 +5361,7 @@ class Vector3 {
   }
 
   /********************************************************
-   Basic Trig functions of angle between vectors
+  Basic Trig functions of angle between vectors
   ********************************************************/
   inline constexpr friend Type cos(const Vector3<Type> &v1,
                                    const Vector3<Type> &v2) {
@@ -5181,12 +5396,12 @@ class Vector3 {
 };
 
 /******************************************************************************************
-    Author: Charlie Murphy
-    Email:  tm507211@ohio.edu
+ Author: Charlie Murphy
+ Email: tm507211@ohio.edu
 
-    Date:   Augost 7, 2015
+ Date: Augost 7, 2015
 
-    Description: Defines point class.
+ Description: Defines point class.
 ******************************************************************************************/
 
 template <class Type>
@@ -5228,46 +5443,52 @@ class Point3D {
 };
 
 //
-//  mjz_vector.h
-//  Vector
+// mjz_vector.h
+// Vector
 //
-//  Created by Emilis Baliukonis on 05/05/2019.
-//  Copyright � 2019 Emilis Baliukonis. All rights reserved.
+// Created by Emilis Baliukonis on 05/05/2019.
+// Copyright � 2019 Emilis Baliukonis. All rights reserved.
 //
 
 namespace short_string_names {
-typedef mjz_ard::mjz_Str Str;
-typedef mjz_ard::mjz_Str str;
-typedef mjz_ard::mjz_Str s;
-typedef mjz_ard::mjz_Str S;
-typedef mjz_ard::StringSumHelper StrSH;
-typedef mjz_ard::mjz_str_view sv;
-typedef mjz_ard::mjz_str_view strv;
-typedef mjz_ard::mjz_str_view mstrview;
-typedef mjz_ard::mjz_str_view mstrv;
-typedef mjz_ard::Vector3<float> mvf3;
-typedef mjz_ard::Vector3<float> Vectorf3;
-
-typedef mjz_ard::Vector2<float> mvf2;
-typedef mjz_ard::Vector2<float> Vectorf2;
+typedef mjz_str_t<reallocator<char>> Str;
+typedef mjz_str_t<reallocator<char>> str;
+typedef mjz_str_t<reallocator<char>> s;
+typedef mjz_str_t<reallocator<char>> S;
+typedef extended_mjz_str_t<reallocator<char>> es;
+typedef extended_mjz_str_t<reallocator<char>> eS;
+typedef extended_mjz_str_t<reallocator<char>> estr;
+typedef extended_mjz_str_t<reallocator<char>> eStr;
+typedef StringSumHelper_t<reallocator<char>> StrSH;
+typedef mjz_str_view sv;
+typedef mjz_str_view strv;
+typedef mjz_str_view mstrview;
+typedef mjz_str_view mstrv;
+typedef Vector3<float> mvf3;
+typedef Vector3<float> Vectorf3;
+typedef Vector2<float> mvf2;
+typedef Vector2<float> Vectorf2;
 
 }  // namespace short_string_names
 
-}  // namespace mjz_ard
 namespace have_mjz_ard_removed {
-typedef mjz_ard::mjz_Str mjz_Str;
-typedef mjz_ard::mjz_Str mjz_str;
-typedef mjz_ard::malloc_wrapper malloc_wrpr;
-typedef mjz_ard::malloc_wrapper mlc_wrp;
+typedef mjz_str_t<reallocator<char>> mjz_Str;
+typedef mjz_str_t<reallocator<char>> mjz_str;
+typedef extended_mjz_str_t<reallocator<char>> mjz_estr;
+typedef extended_mjz_str_t<reallocator<char>> mjz_eStr;
+typedef malloc_wrapper malloc_wrpr;
+typedef malloc_wrapper mlc_wrp;
 typedef std::string string;
-typedef mjz_ard::hash_sha256 hash_sha_512;
-typedef mjz_ard::StringSumHelper mjz_StringSumHelper;
-typedef mjz_ard::mjz_str_view mjz_str_view;
-typedef mjz_ard::mjz_str_view mstrview;
-typedef mjz_ard::mjz_str_view mstrv;
-typedef mjz_ard::Vector3<float> mjz_Vectorf3;
-typedef mjz_ard::Vector2<float> mjz_Vectorf2;
+typedef hash_sha256 hash_sha_512;
+typedef StringSumHelper_t<reallocator<char>> mjz_StringSumHelper;
+typedef StringSumHelper_t<reallocator<char>> StringSumHelper;
+typedef mjz_str_view mjz_str_view;
+typedef mjz_str_view mstrview;
+typedef mjz_str_view mstrv;
+typedef Vector3<float> mjz_Vectorf3;
+typedef Vector2<float> mjz_Vectorf2;
 }  // namespace have_mjz_ard_removed
+}  // namespace mjz_ard
 namespace std {
 template <>
 struct hash<mjz_ard::basic_mjz_Str_view> {
@@ -5276,13 +5497,12 @@ struct hash<mjz_ard::basic_mjz_Str_view> {
   }
 };  // namespace std::hash
 
-template <>
-struct hash<mjz_ard::mjz_Str> {
-  size_t operator()(const mjz_ard::mjz_Str &k) const {
+template <typename T>
+struct hash<mjz_ard::mjz_str_t<T>> {
+  size_t operator()(const mjz_ard::mjz_str_t<T> &k) const {
     return mjz_ard::SHA1_CTX::SHA_1(k.c_str(), k.length()).get_as_64bit_hash();
   }
 };  // namespace std::hash
-
 template <>
 struct hash<mjz_ard::mjz_str_view> {
   size_t operator()(const mjz_ard::mjz_str_view &k) const {
@@ -5301,6 +5521,2519 @@ inline mjz_ard::Vector3<Type> sqrt(mjz_ard::Vector3<Type> v) {
   return mjz_ard::Vector3<Type>(sqrt(v.x()), sqrt(v.y()), sqrt(v.z()));
 }
 }  // namespace std
+
+namespace mjz_ard {
+
+template <typename T>
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new(size_t size_) {
+  void *p = ::operator new(size_);
+  // void * p = malloc(size_); will also work fine
+  return p;
+}
+template <typename T>
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new[](size_t size_) {
+  void *p = ::operator new(size_);
+  // void * p = malloc(size_); will also work fine
+  return p;
+}
+
+template <typename T>
+void mjz_ard::mjz_str_t<T>::operator delete(void *p) {
+  ::free(p);
+}
+
+template <typename T>
+void mjz_ard::mjz_str_t<T>::operator delete[](void *ptr) {
+  ::free(ptr);
+}
+
+template <typename T>
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_new_ns::operator new(
+    size_t size_) {
+  void *p = ::realloc(0, size_);
+  return p;
+}
+
+template <typename T>
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_new_ns::operator new[](
+    size_t size_) {
+  void *p = ::realloc(0, size_);
+  return p;
+}
+
+template <typename T>
+void mjz_ard::mjz_str_t<T>::realloc_new_ns::operator delete(void *p) {
+  ::free(p);
+}
+
+template <typename T>
+void mjz_ard::mjz_str_t<T>::realloc_new_ns::operator delete[](void *ptr) {
+  ::free(ptr);
+}
+template <typename T>
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_new_ns::operator new(
+    size_t size_, void *where) {
+  return ::realloc(where, size_);
+}
+
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
+    std::initializer_list<const char> list) {
+  (*this)();
+  size_t newlen = list.size();
+  addto_length(newlen);
+  char *ptr_{m_buffer};
+  for (const char cr : list) {
+    *ptr_++ = cr;
+  }
+  return *this;
+}
+
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
+    iterator_template<const char> list) {
+  (*this)();
+  size_t newlen = list.size();
+  addto_length(newlen);
+  char *ptr_{m_buffer};
+  for (const char cr : list) {
+    *ptr_++ = cr;
+  }
+  return *this;
+}
+
+template <typename T>
+mjz_ard::mjz_str_t<T>::~mjz_str_t(void) {
+  invalidate(
+      1);  // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling
+           // the 'free' virtual function indirectly in the destructor may lead
+           // to unexpected result at runtime. Check lines: 'mjzString.cpp:462',
+           // 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640',
+           // 'mjzString.hpp:734'.
+}  // i don't need to do this but this is explained in stackoverfllow . the
+// vtable of the derived free override gets destroyed when
+// ~mjz_ard::mjz_str_t<T>() gets called so mjz_ard::mjz_str_t<T>::free should be
+// called and i do it explicitly its not necessary but i do it see
+// https://stackoverflow.com/questions/41732051/when-is-a-vtable-destroy-in-c
+/*
+ Can I call a virtual function in the destructor of a base class?
+ Calling virtual functions from destructors or constructors is a bad practice.
+ See the standard (emphasis mine):
+ 12.7 Construction and destruction
+ ....
+ Member functions, including virtual functions (10.3),
+ can be called during construction or destruction (12.6.2).
+ When a virtual function is called directly or indirectly from a constructor or
+ from a destructor, including during the construction or destruction of the
+ class’s non-static data members, and the object to which the call applies is
+ the object (call it x) under construction or destruction, the function called
+ is the final overrider in the constructor’s or destructor’s class and not
+ one overriding it in a more-derived class. If the virtual function call
+ uses an explicit class member access (5.2.5) and the object expression
+ refers to the complete object of x or one of that object’s base class
+ sub objects but not x or one of its base class sub objects, the behavior
+ is undefined.
+ You can find this recommendation in many sources, including Scott Meyers'
+ Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item 9:
+ Never call virtual functions during construction or destruction.)
+ or Herb Sutter's
+ C++ Coding Standards: 101 Rules, Guidelines, and Best Practices (49. Avoid
+ calling virtual functions in constructors and destructors).
+ Yes, the object will have a pointer to its vtable when you call the
+ destructor. The standard explicitly says it is possible to call virtual
+ functions in the destructor, and says what happens. There is agreement that
+ even though it is allowed it is a bad practice, because it is inherently
+ brittle code that leads to surprises with apparently innocent changes. If you
+ have that DerDer inherits from Der, which inherits from Base, all of them
+ override member function void member(), and you are in the destructor of Der,
+ and call member(), you are calling Der::member(), not DerDer::member(),
+ because the DerDer part of your object is GONE, DESTROYED already. A base
+ class can refer inadvertently to data in a derived class, for example: struct
+ Base { int *ip; Base(int *ip): ip(ip) {} virtual void useInt() { std::cout <<
+ *ip << std::endl; } ~Base() { useInt(); }
+ };
+ struct Der: Base {
+ int theInt;
+ Der(): Base(&theInt) {}
+ void useIntPointer() override { std::cout << theInt << std::endl; }
+ };
+ When an object of type Der gets deleted, there is "undefined behavior": First
+ the implicit destructor of Der is called, then the explicit destructor of
+ Base, Base::~Base. At that point Base::ip is referring to a member of Der that
+ has already been destroyed. Share Edit Follow answered Jan 19, 2017 at 6:48
+ TheCppZoo's user avatar
+ TheCppZoo
+ 1,21977 silver badges1212 bronze badges
+ Your answer could be quite nice if you worked it over a little bit. First, in
+ your text you're referring to stuff which just isn't there in the source code
+ (like void member(), class DerDer, etc.). Second, the thing you point out
+ would be problematic even without useInt() being virtual, but just because
+ you let ip point to a member of Der, i.e. Der::theInt. So, it doesn't
+ illustrate the point. Why don't you just override useInt in Der and access
+ theInt from there, or even better access some heap allocated resource
+ which has already been deleted? I think would be much nicer. – Elmar
+ Zander Apr 5, 2022 at 12:57
+*/
+/*********************************************/
+/* Memory Management */
+/*********************************************/
+template <typename T>
+void mjz_ard::mjz_str_t<T>::init(bool) {
+  m_buffer = NULL;
+  // update_event_F_p = &mjz_ard::mjz_str_t<T>::update_event;//departed
+  ;
+  m_capacity = 0;
+  stack_obj_buf.set(0);
+  m_length = 0;
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::invalidate(bool constructor) {
+  if (!m_buffer) {
+    goto _end__;
+  }
+
+  free_pv(m_buffer, constructor);
+  stack_obj_buf.set(0);
+  m_buffer = NULL;
+_end__:
+  m_capacity = m_length = 0;
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::reserve(size_t size_, bool just_size,
+                                    bool constructor) {
+  int64_t different_of_size_and_cap = (int64_t)size_ - (int64_t)m_capacity;
+
+  if (just_size || different_of_size_and_cap < 0) {
+    goto ignored_stack;
+  }
+
+  if (size_ < stack_buffer_size) {
+    size_ = stack_buffer_size;
+  } else {
+    int64_t minimumcapadd = min_macro_(m_capacity / 5, stack_buffer_size);
+    size_ +=
+        (size_t)(static_cast<int64_t>(5) * (different_of_size_and_cap < 5) +
+                 minimumcapadd * (different_of_size_and_cap < minimumcapadd));
+  }
+
+ignored_stack:
+
+  if (m_buffer && m_capacity >= size_) {
+    return 1;
+  }
+
+  if (changeBuffer(size_, constructor)) {
+    if (m_length == 0) {
+      m_buffer[0] = 0;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::addto_length(size_t addition_tolen,
+                                         bool just_size) {
+  bool ret = 1;
+
+  if ((addition_tolen + m_length) > m_capacity) {
+    ret = reserve(addition_tolen + m_length + 1, just_size);
+  }
+
+  if (ret) {
+    m_length = m_length + addition_tolen;
+  }
+
+  return ret;
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::realloc_helper_is_in_stack(void *ptr) {
+  return (stack_obj_buf.get() || stack_obj_buf.stack_buffer == (char *)ptr);
+}
+template <typename T>
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_pv(void *ptr,
+                                                      size_t new_size,
+                                                      bool constructor) {
+  bool ptr_is_in_stack = realloc_helper_is_in_stack(ptr);
+  bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr));  //(buffer == ptr);
+  bool ptr_Can_set_to_stack = (new_size <= (stack_buffer_size + 1));
+
+  if (ptr_Can_set_to_stack) {
+    if (ptr_is_buffer) {
+      size_t the__length = m_capacity;
+
+      if (the__length)
+        memmove(stack_obj_buf.stack_buffer, ptr,
+                min_macro_(the__length, stack_buffer_size));
+
+      free_pv(ptr,
+              constructor);  // because of my custom free 0 and stack_buffer are
+      // ignored and i reset STR_is_in_stack in next line
+    }
+
+    stack_obj_buf.set(1);
+    return (void *)stack_obj_buf.stack_buffer;
+  }
+
+  if (ptr_is_in_stack) {
+    ptr = (constructor ? mjz_ard::mjz_str_t<T>::realloc(0, new_size)
+                       : this->realloc(0, new_size));
+
+    if (!ptr) {
+      free_pv(stack_obj_buf.stack_buffer, constructor);
+      return 0;
+    }
+
+    size_t the__length = m_capacity;
+
+    if (the__length) {
+      memmove(ptr, stack_obj_buf.stack_buffer,
+              min_macro_(the__length, stack_buffer_size));
+    }
+
+    free_pv(
+        stack_obj_buf.stack_buffer,
+        constructor);  // mjz_ard::mjz_str_t<T>::free should care about ptr val
+    return ptr;
+  }
+
+  return (constructor ? mjz_ard::mjz_str_t<T>::realloc(ptr, new_size)
+                      : this->realloc(ptr, new_size));
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::free_pv(void *&ptr, bool constructor) {
+  if (stack_obj_buf.get() || stack_obj_buf.stack_buffer == ptr) {
+    ptr = 0;
+    stack_obj_buf.set(0);
+    return;
+  }
+
+  if (ptr) {
+    if (constructor) {
+      mjz_ard::mjz_str_t<T>::free(ptr);
+    } else {
+      this->free(ptr);
+    }
+  }
+
+  ptr = 0;
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::free_pv(void *const &ptr,
+                                    bool constructor) {  // TODO: V835
+  // https://pvs-studio.com/en/docs/warnings/V835/
+  // Passing cheap-to-copy argument by reference may lead
+  // to decreased performance. To avoid this, replace the
+  // first argument 'void*const & ptr' with 'void*const
+  // ptr'. //TODO: V659
+  // https://pvs-studio.com/en/docs/warnings/V659/
+  // Declarations of functions with 'mjz_ard::mjz_str_t<T>::free_pv'
+  // name differ in the 'const' keyword only, but the
+  // bodies of these functions have different
+  // composition. This is suspicious and can possibly be
+  // an error. Check lines: 631, 645.
+  void *ptr_ = ptr;
+  free_pv(ptr_, constructor);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::changeBuffer(size_t maxStrLen, bool constructor) {
+  char *newbuffer{};
+  newbuffer = (char *)realloc_pv(m_buffer, maxStrLen + 1, constructor);
+
+  if (newbuffer) {
+    m_buffer = newbuffer;
+    m_capacity = maxStrLen;
+    return true;
+  }
+
+  return false;
+}
+/*********************************************/
+/* Copy and Move */
+/*********************************************/
+
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::copy(const char *cstr,
+                                                   size_t length, bool) {
+  if (reserve(length, 0, 1)) {
+    goto _Success_full_;
+  }
+
+  invalidate();
+  return *this;
+_Success_full_:
+  m_length = length;
+  memmove(m_buffer, cstr, length);
+  m_buffer[m_length] = '\0';
+  return *this;
+}
+#define PGM_P const char *
+
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::copy(
+    const __FlashStringHelper *pstr, size_t length) {
+  if (!reserve(length)) {
+    invalidate();
+    return *this;
+  }
+
+  m_length = length;
+  memmove(m_buffer, (PGM_P)pstr, length);
+  return *this;
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::move(mjz_ard::mjz_str_t<T> &rhs) {
+  if (this != &rhs) {
+    free_pv(m_buffer, 0);
+    stack_obj_buf = rhs.stack_obj_buf;
+    m_buffer =
+        (rhs.stack_obj_buf.get() ? stack_obj_buf.stack_buffer : rhs.m_buffer);
+
+    if (rhs.stack_obj_buf.get()) {
+      rhs.free_pv(rhs.m_buffer, 0);
+    }
+
+    m_length = rhs.m_length;
+    m_capacity = rhs.m_capacity;
+    rhs.stack_obj_buf.set(0);
+    rhs.m_buffer = NULL;
+    rhs.m_length = 0;
+    rhs.m_capacity = 0;
+  }
+}
+
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(
+    const mjz_ard::mjz_str_t<T> &rhs) {
+  if (this == &rhs) {
+    return *this;
+  }
+
+  if (rhs.m_buffer) {
+    copy(rhs.m_buffer, rhs.m_length);
+  } else {
+    invalidate();
+  }
+
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(
+    mjz_ard::mjz_str_t<T> &&rval) noexcept {
+  move(rval);
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(const char *cstr) {
+  operator()(cstr);
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator()(const char *other,
+                                                         size_t size_len) {
+  if (other) {
+    copy(other, size_len);
+  } else {
+    invalidate();
+  }
+
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(
+    const __FlashStringHelper *pstr) {
+  if (pstr) {
+    copy(pstr, (size_t)strlen((PGM_P)pstr));
+  } else {
+    invalidate();
+  }
+
+  return *this;
+}
+/*********************************************/
+/* concat */
+/*********************************************/ template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(const mjz_ard::mjz_str_t<T> &s) {
+  return concat(s.m_buffer, s.m_length);
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::append(
+    const mjz_ard::mjz_str_t<T> &str, size_t subpos, size_t sublen) {
+  concat(str.substr_view_beg_n(subpos, sublen));
+  return *this;
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(const char *cstr, size_t length) {
+  size_t newlen = m_length + length;
+
+  if (!cstr) {
+    return false;
+  }
+
+  if (length == 0) {
+    return true;
+  }
+
+  if (!reserve(newlen)) {
+    return false;
+  }
+
+  memmove(m_buffer + m_length, cstr, length);
+  m_length = newlen;
+  m_buffer[m_length] = '\0';
+  return true;
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(const char *cstr) {
+  if (!cstr) {
+    return false;
+  }
+
+  return concat(cstr, (size_t)strlen(cstr));
+}
+template <typename T>
+inline bool mjz_ard::mjz_str_t<T>::concat(char c) {
+  return concat(&c, 1);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(unsigned char num) {
+  char buf[1 + 3 * sizeof(unsigned char)];
+  itoa(num, buf, 10);
+  return concat(buf);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(int num) {
+  char buf[2 + 3 * sizeof(int)];
+  itoa(num, buf, 10);
+  return concat(buf);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(unsigned int num) {
+  char buf[1 + 3 * sizeof(unsigned int)];
+  utoa(num, buf, 10);
+  return concat(buf);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(long num) {
+  char buf[2 + 3 * sizeof(long)];
+  ltoa(num, buf, 10);
+  return concat(buf);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(unsigned long num) {
+  char buf[1 + 3 * sizeof(unsigned long)];
+  ultoa(num, buf, 10);
+  return concat(buf);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(long long num) {
+  char buf[2 + 3 * sizeof(long long)];
+  lltoa(num, buf, 10);
+  return concat(buf);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(unsigned long long num) {
+  char buf[1 + 3 * sizeof(unsigned long long)];
+  ulltoa(num, buf, 10);
+  return concat(buf);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(float num) {
+  char buf[20];
+  char *string = dtostrf(num, 4, 2, buf);
+  return concat(string);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(double num) {
+  char buf[20];
+  char *string = dtostrf(num, 4, 2, buf);
+  return concat(string);
+}
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::concat(const __FlashStringHelper *str) {
+  if (!str) {
+    return false;
+  }
+
+  size_t length = (size_t)strlen((const char *)str);
+
+  if (length == 0) {
+    return true;
+  }
+
+  size_t newlen = m_length + length;
+
+  if (!reserve(newlen)) {
+    return false;
+  }
+
+  memmove(m_buffer + m_length, (const char *)str, newlen);
+  m_length = newlen;
+  return true;
+}
+/*********************************************/
+/* Concatenate */
+/*********************************************/
+template <typename T>
+
+mjz_ard::mjz_str_t<T> &&operator_plus(mjz_ard::mjz_str_t<T> &&lhs,
+                                      const mjz_ard::basic_mjz_Str_view &rhs) {
+  if (!lhs.concat(rhs.c_str(), rhs.length())) {
+    lhs.invalidate();
+  }
+
+  return std::move(lhs);
+}
+
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(
+    const mjz_ard::basic_mjz_Str_view &rhs,
+    const mjz_ard::basic_mjz_Str_view &lhs) {
+  return operator_plus(mjz_ard::mjz_Str(rhs), lhs);
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(
+    mjz_ard::mjz_str_t<T> &&lhs, const mjz_ard::basic_mjz_Str_view &rhs) {
+  return operator_plus((mjz_ard::mjz_str_t<T>)std::move(lhs),
+                       (const mjz_ard::basic_mjz_Str_view &)rhs);
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        char const *cstr) {
+  return operator_plus((mjz_ard::mjz_str_t<T>)lhs, mjz_ard::mjz_str_view(cstr));
+}
+
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::mjz_str_t<T> lhs,
+                                        const mjz_ard::basic_mjz_String &rhs) {
+  return operator_plus((mjz_ard::mjz_str_t<T>)std::move(lhs),
+                       (const mjz_ard::basic_mjz_String &)rhs);
+}
+
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(const mjz_ard::basic_mjz_String &lhs,
+                                        const mjz_ard::basic_mjz_String &rhs) {
+  return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
+                       (const mjz_ard::basic_mjz_String &)rhs);
+}
+
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(
+    mjz_ard::mjz_str_t<T> lhs, const mjz_ard::StringSumHelper_t<T> &rhs) {
+  return operator_plus((mjz_ard::mjz_str_t<T>)std::move(lhs),
+                       (const mjz_ard::basic_mjz_Str_view &)rhs);
+}
+
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(
+    const mjz_ard::basic_mjz_Str_view &lhs,
+    const mjz_ard::StringSumHelper_t<T> &rhs) {
+  return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
+                       (const mjz_ard::basic_mjz_Str_view &)rhs);
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(
+    mjz_ard::StringSumHelper_t<T> lhs, const mjz_ard::basic_mjz_Str_view &rhs) {
+  return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
+                       (const mjz_ard::basic_mjz_Str_view &)rhs);
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(
+    const mjz_ard::mjz_str_view &lhs, const mjz_ard::basic_mjz_Str_view &rhs) {
+  return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
+                       (const mjz_ard::basic_mjz_Str_view &)rhs);
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(
+    const mjz_ard::mjz_str_view &lhs,
+    const mjz_ard::StringSumHelper_t<T> &rhs) {
+  return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
+                       (const mjz_ard::basic_mjz_Str_view &)rhs);
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        char c) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(c)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        unsigned char num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        int num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        unsigned int num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        long num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        unsigned long num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        long long num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        unsigned long long num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        float num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        double num) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(num)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+template <typename T>
+mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
+                                        const __FlashStringHelper *rhs) {
+  mjz_ard::StringSumHelper_t<T> &a =
+      const_cast<mjz_ard::StringSumHelper_t<T> &>(lhs);
+
+  if (!a.concat(rhs)) {
+    a.invalidate();
+  }
+
+  return a;
+}
+/*********************************************/
+/* Comparison */
+/*********************************************/
+
+/*********************************************/
+/* Character Access */
+/*********************************************/
+
+template <typename T>
+void mjz_ard::mjz_str_t<T>::setCharAt(size_t loc, char c) {
+  if (loc < m_length) {
+    m_buffer[loc] = c;
+  }
+}
+
+template <typename T>
+void mjz_ard::mjz_str_t<T>::setCharAt(int64_t loc, char c) {
+  loc = signed_index_to_unsigned(loc);
+
+  if ((size_t)loc < m_length) {
+    m_buffer[loc] = c;
+  }
+}
+template <typename T>
+char &mjz_ard::mjz_str_t<T>::operator[](size_t index) {
+  static char dummy_writable_char;
+
+  if (index >= m_length || !m_buffer) {
+    dummy_writable_char = 0;
+    return dummy_writable_char;
+  }
+
+  return m_buffer[index];
+}
+template <typename T>
+char &mjz_ard::mjz_str_t<T>::operator[](int64_t index_) {
+  size_t index = signed_index_to_unsigned(index_);
+  static char dummy_writable_char;
+
+  if (index >= m_length || !m_buffer) {
+    dummy_writable_char = 0;
+    return dummy_writable_char;
+  }
+
+  return m_buffer[index];
+}
+
+/*********************************************/
+/* Modification */
+/*********************************************/
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::insert(
+    size_t pos, const mjz_ard::basic_mjz_Str_view &other) {
+  return insert(pos, other, 0, length());
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::insert(
+    size_t pos, const mjz_ard::basic_mjz_Str_view &other, size_t subpos,
+    size_t sublen) {
+  return insert(pos, other.c_str() + subpos, sublen);
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::insert(size_t pos, const char *s,
+                                                     size_t n) {
+  mjz_ard::mjz_str_t<T> buffer_str_ = substring(0, pos);
+  buffer_str_.write(s, n);
+  buffer_str_ += substr_view(pos, length());
+  return (*this = std::move(buffer_str_));
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::insert(size_t pos, size_t n,
+                                                     char c) {
+  mjz_ard::mjz_str_t<T> buffer_str_ = substring(0, pos);
+  buffer_str_.append(n, c);
+  buffer_str_ += substr_view(pos, length());
+  return (*this = std::move(buffer_str_));
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace_ll(
+    int64_t pos, size_t len, const mjz_ard::basic_mjz_Str_view &str) {
+  return replace(signed_index_to_unsigned(pos), len, str);
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
+                                                      const char *s, size_t n) {
+  return replace(pos, len, mjz_ard::mjz_str_view(s, n));
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
+                                                      const char *s) {
+  return replace(pos, len, s, strlen(s));
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
+    size_t pos, size_t len, const mjz_ard::basic_mjz_Str_view &str,
+    size_t subpos, size_t sublen) {
+  return replace(pos, len,
+                 mjz_ard::mjz_str_view(str.c_str(), str.length())
+                     .substr_view_beg_n(subpos, sublen));
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
+                                                      size_t n, char c) {
+  if (length() <= pos) return *this;
+  if (len == n) {
+    memset(m_buffer + pos, c, len);
+    return *this;
+  }
+  if (n < len) {
+    memset(m_buffer + pos, c, n);
+    remove(pos + n, len - n);
+  }
+  if (n > len) {
+    memset(m_buffer + pos, c, len);
+    insert(pos + len, n - len, 0);
+    memset(m_buffer + pos + len, c, n - len);
+  }
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
+    mjz_ard::mjz_str_t<T>::iterator i1, mjz_ard::mjz_str_t<T>::iterator i2,
+    const char *s, size_t n) {
+  return replace(i1, i2, mjz_ard::mjz_str_view(s, n));
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
+    mjz_ard::mjz_str_t<T>::iterator i1, mjz_ard::mjz_str_t<T>::iterator i2,
+    const mjz_ard::basic_mjz_Str_view &str) {
+  if (i1.end() != end() || i2.end() != end()) return *this;
+  return replace(i1.get_pointer() - m_buffer, i2 - i1, str);
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
+    mjz_ard::mjz_str_t<T>::iterator i1, mjz_ard::mjz_str_t<T>::iterator i2,
+    size_t n, char c) {
+  if (i1.end() != end() || i2.end() != end()) return *this;
+  return replace(i1.get_pointer() - m_buffer, i2 - i1, n, c);
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
+    size_t pos, size_t len, const mjz_ard::basic_mjz_Str_view &str) {
+  if (length() <= pos) return *this;
+  if (len == str.length()) {
+    memmove(m_buffer + pos, str.c_str(), len);
+    return *this;
+  }
+  if (str.length() < len) {
+    memmove(m_buffer + pos, str.c_str(), str.length());
+    remove(pos + str.length(), len - str.length());
+  }
+  if (str.length() > len) {
+    memmove(m_buffer + pos, str.c_str(), len);
+    insert(pos + len, str.length() - len, 0);
+    memmove(m_buffer + pos + len, str.c_str() + len, str.length() - len);
+  }
+  return *this;
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::find_and_replace(char find, char replace_) {
+  if (!m_buffer) {
+    return;
+  }
+
+  for (char *p = m_buffer; *p; p++) {
+    if (*p == find) {
+      *p = replace_;
+    }
+  }
+}
+// namespace mjz_ard
+template <typename T>
+void mjz_ard::mjz_str_t<T>::find_and_replace(
+    const mjz_ard::mjz_str_t<T> &find, const mjz_ard::mjz_str_t<T> &replace_) {
+  find_and_replace(find.c_str(), find.length(), replace_.c_str(),
+                   replace_.length());
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::remove(size_t index) {
+  // Pass the biggest integer as the count. The remove method
+  // below will take care of truncating it at the end of the
+  // string.
+  remove(index, (size_t)-1);
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::remove(size_t index, size_t count) {
+  if (index >= m_length) {
+    return;
+  }
+
+  if (count <= 0) {
+    return;
+  }
+
+  if (count > m_length - index) {
+    count = m_length - index;
+  }
+
+  char *writeTo = m_buffer + index;
+  m_length = m_length - count;
+  memmove(writeTo, m_buffer + index + count, m_length - index);
+  m_buffer[m_length] = 0;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::erase(size_t pos_, size_t len_) {
+  if (len_ <= pos_ || length() < (len_ + pos_)) {
+    goto _end__;
+  }
+
+  remove((size_t)pos_, (size_t)min(len_, length() - pos_));
+_end__:
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T>::iterator mjz_ard::mjz_str_t<T>::erase(
+    mjz_ard::mjz_str_t<T>::iterator p) {
+  if (p < begin() || end() < p) {
+    return begin();
+  }
+
+  size_t index_ = p - begin();
+  remove(index_, 1);
+  return p;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T>::iterator mjz_ard::mjz_str_t<T>::erase(
+    mjz_ard::mjz_str_t<T>::iterator first,
+    mjz_ard::mjz_str_t<T>::iterator last) {
+  if ((last <= first) || (end() < last) || (first < begin())) {
+    return begin();
+  }
+
+  size_t index_first = first - begin();
+  size_t index_last = last - begin();
+  remove(index_first, index_last - index_first);
+  return first;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::erase_from_f_to_l(size_t first,
+                                                                size_t last) {
+  first = signed_index_to_unsigned(first);
+  last = signed_index_to_unsigned(last);
+
+  if ((last <= first) || (length() < last)) {
+    return *this;
+  }
+
+  remove(first, last - first);
+  return *this;
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::toLowerCase(void) {
+  if (!m_buffer) {
+    return;
+  }
+
+  for (char *p = m_buffer; *p; p++) {
+    *p = (char)tolower(*p);
+  }
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::toUpperCase(void) {
+  if (!m_buffer) {
+    return;
+  }
+
+  for (char *p = m_buffer; *p; p++) {
+    *p = (char)toupper(*p);
+  }
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::write(char cr) {
+  return concat(cr);
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::trim(void) {
+  if (!m_buffer || m_length == 0) {
+    return;
+  }
+
+  char *begin = m_buffer;
+
+  while (isspace(*begin)) {
+    begin++;
+  }
+
+  char *end = m_buffer + m_length - 1;
+
+  while (isspace(*end) && end >= begin) {
+    end--;
+  }
+
+  m_length = (size_t)(end + 1 -
+                      begin);  // i dont care if you make bad sizing for strings
+
+  if (begin > m_buffer) {
+    memmove(m_buffer, begin, m_length);
+  }
+
+  m_buffer[m_length] = 0;
+}
+//////////////////////////////////////////////////////////////
+template <typename T>
+void *mjz_ard::mjz_str_t<T>::do_this_for_me(function_ptr function_ptr_,
+                                            void *x) {
+  return function_ptr_(*this, x);
+}
+/*********************************************/
+/* Parsing / Conversion */
+/*********************************************/
+
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_rc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r() {
+  return *this;
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_lc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l() {
+  return *this;
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_sc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_s() {
+  return *this;
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_sc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_s() {
+  return *this;
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_rc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r() {
+  return *this;
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_lc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l() {
+  return *this;
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_sc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_s() {
+  return *this;
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_sc() const {
+  //
+  return (const mjz_ard::extended_mjz_str_t<T> &)*this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_s() {
+  return *this;
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator>>(
+    mjz_ard::extended_mjz_str_t<T> &typing) {
+  helper__op_shift_input_(*this, get_s_shift_op_r(), typing.get_shift_op_r());
+  return get_s_shift_op_r();
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator>>(
+    mjz_ard::extended_mjz_str_t<T> *typing) {
+  helper__op_shift_input_(*this, get_s_shift_op_r(), typing->get_shift_op_r());
+  return get_s_shift_op_r();
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::operator>>(
+        mjz_ard::extended_mjz_str_t<T> &typing) const {
+  helper__op_shift_input_(*this, get_s_shift_op_rc(), typing.get_shift_op_r());
+  //
+  return get_s_shift_op_rc();
+}
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T>
+    &mjz_ard::extended_mjz_str_t<T>::operator>>(
+        mjz_ard::extended_mjz_str_t<T> *typing) const {
+  helper__op_shift_input_(*this, get_s_shift_op_rc(), typing->get_shift_op_r());
+  //
+  return get_s_shift_op_rc();
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    mjz_ard::extended_mjz_str_t<T> &typing) {
+  helper__op_shift_input_(*this, typing.get_shift_op_l(), get_s_shift_op_l());
+  return get_s_shift_op_l();
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    mjz_ard::extended_mjz_str_t<T> *typing) {
+  helper__op_shift_input_(*this, typing->get_shift_op_l(), get_s_shift_op_l());
+  return get_s_shift_op_l();
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    const mjz_ard::extended_mjz_str_t<T> &typing) {
+  helper__op_shift_input_(*this, typing.get_shift_op_lc(), get_s_shift_op_l());
+  return get_s_shift_op_l();
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator<<(
+    mjz_ard::extended_mjz_str_t<T> &&typing) {
+  helper__op_shift_input_(*this, typing.get_shift_op_lc(), get_s_shift_op_l());
+  return get_s_shift_op_l();
+}
+
+template <typename T>
+void str_helper__op_shift_input_(mjz_ard::extended_mjz_str_t<T> &rhs,
+                                 mjz_ard::extended_mjz_str_t<T> &CIN) {
+  helper__op_shift_input_(rhs, CIN, rhs);
+}
+template <typename T>
+mjz_ard::extended_mjz_str_t<T>
+mjz_ard::extended_mjz_str_t<T>::string_do_interpret() {
+  mjz_ard::extended_mjz_str_t<T> out_str;
+  str_helper__op_shift_input_(out_str, *this);
+  return out_str;
+}
+template <typename T>
+void mjz_ard::extended_mjz_str_t<T>::string_do_interpret(
+    mjz_ard::extended_mjz_str_t<T> &instr) {
+  str_helper__op_shift_input_(*this, instr);
+}
+
+/**********************************************************************/
+// stream stuff
+template <typename T>
+void mjz_ard::mjz_str_t<T>::adjust_cap() {
+  if (!m_capacity && !m_buffer) {
+    return;
+  }
+
+  if (m_capacity < (m_length + 1)) {
+    reserve(m_capacity + 1, 1);
+  }
+
+  if (m_buffer) {
+    m_buffer[m_length] = '\0';
+  }
+
+  return;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::write(uint8_t c) {
+  mjz_ard::mjz_str_t<T>::operator+=(c);
+  return 1;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::write(const uint8_t *buf, size_t size_) {
+  mjz_ard::mjz_str_t<T>::operator+=(mjz_ard::mjz_str_t<T>(buf, (size_t)size_));
+  return size_;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::write(const char *buf, size_t size_) {
+  mjz_ard::mjz_str_t<T>::operator+=(mjz_ard::mjz_str_t<T>(buf, (size_t)size_));
+  return size_;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::write(const char *buf) {
+  mjz_ard::mjz_str_t<T>::operator+=(buf);
+  return strlen(buf);
+}
+template <typename T>
+int64_t mjz_ard::mjz_str_t<T>::availableLL() {
+  return length();
+}
+template <typename T>
+int mjz_ard::mjz_str_t<T>::read() {
+  if (available()) {
+    char x = charAt(0ULL);
+    remove(0, 1);
+    return x;
+  }
+
+  return -1;
+}
+template <typename T>
+int mjz_ard::mjz_str_t<T>::peek() {
+  int64_t len_ = length();
+
+  if (len_ == 0) {
+    return -1;
+  } else {
+    return operator[](0ULL);
+  }
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::read(uint8_t *buf, size_t size_) {
+  if (!available()) {
+    return (size_t)-1;
+  }
+
+  if (available() < size_) {
+    return (size_t)-1;
+  }
+
+  if (!buf) {
+    return (size_t)-1;
+  }
+
+  memmove(buf, m_buffer, size_);
+  buf[size_] = 0;
+  remove(0, (size_t)size_);
+  return size_;
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::flush() {}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::begin(unsigned long) {}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::begin(unsigned long, uint16_t) {}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::ULL_LL_to_str_add(
+    uint64_t value, int radix, bool is_signed, bool force_neg) {
+  this->operator+=(ULL_LL_to_str(value, radix, is_signed, force_neg));
+  return *this;
+}
+
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::ULL_LL_to_str_rep(
+    uint64_t value, int radix, bool is_signed, bool force_neg) {
+  operator=(empty_STRING_C_STR);
+  reserve(70, 1);
+  char *ptr_ = b_U_lltoa(value, buffer_ref(), radix, is_signed, force_neg);
+
+  if (!ptr_) {
+    return *this;
+  }
+
+  addto_length((size_t)strlen(ptr_), 1);
+  return *this;
+}
+template <typename T>
+bool mjz_ard::extended_mjz_str_t<T>::is_blank() const {
+  for (size_t index_i{}; index_i < mjz_str_t<T>::length(); index_i++) {
+    if (!drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character(
+            mjz_str_t<T>::c_str()[index_i])) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+template <typename T>
+int8_t mjz_ard::mjz_str_t<T>::char_to_int_for_string(char c_char) {
+  if (c_char < '0' || c_char > '9') {
+    return -1;
+  }
+
+  return (int8_t)(c_char - '0');
+}
+template <typename T>
+bool mjz_ard::extended_mjz_str_t<T>::change_reinterpret_char_char(char x) {
+  if (x == 0) {
+    return 0;
+  }
+
+  drived_mjz_Str_DATA_storage_Obj_ptr_set()->reinterpret_char_char = x;
+  return 1;
+}
+template <typename T>
+char mjz_ard::extended_mjz_str_t<T>::get_reinterpret_char_char() const {
+  return drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
+}
+template <typename T>
+bool mjz_ard::extended_mjz_str_t<T>::char_to_char_for_reinterpret(
+    char &c_char) const {
+  if (!drived_mjz_Str_DATA_storage_Obj_ptr) return 1;
+  if (c_char == drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char) {
+    return drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
+  }
+
+  char c_char_reinterpreted =
+      drived_mjz_Str_DATA_storage_Obj_ptr->char_to_char_for_reinterpret_fnc_ptr(
+          c_char);
+
+  if (c_char == c_char_reinterpreted) {
+    return 0;
+  }
+
+  c_char = c_char_reinterpreted;
+  return 1;
+}
+template <typename T>
+bool mjz_ard::extended_mjz_str_t<T>::is_forbiden(char x) const {
+  if (!x) {
+    return 1;
+  }
+
+  return drived_mjz_Str_DATA_storage_Obj_ptr->is_forbiden_character(x);
+}
+
+template <typename T>
+[[nodiscard]] mjz_ard::mjz_str_t<T>
+mjz_ard::mjz_str_t<T>::create_mjz_Str_char_array(size_t size_, char filler,
+                                                 bool do_fill) {
+  mjz_ard::mjz_str_t<T> ret_val;
+  ret_val.addto_length(size_, 1);
+  char *ret_val_bufer = (char *)ret_val;
+
+  if (do_fill)
+    for (size_t i{}; i < size_; i++) {
+      ret_val_bufer[i] = filler;
+    }
+
+  return ret_val;
+}
+template <typename T>
+[[nodiscard]] mjz_ard::mjz_str_t<T>
+mjz_ard::mjz_str_t<T>::create_mjz_Str_2D_char_array(size_t size_col,
+                                                    size_t size_row,
+                                                    char filler, bool do_fill) {
+  size_t size_of_my_ptrs = (size_t)sizeof(void *) * size_col;
+  size_t total_size_ = (size_row + 1) * size_col + size_of_my_ptrs;
+  mjz_ard::mjz_str_t<T> my_buufer_ =
+      create_mjz_Str_char_array(total_size_ + 1, filler, do_fill);
+  char **my_buffer_ptr = (char **)my_buufer_.buffer_ref();
+  char *array_base_ptr = my_buufer_.buffer_ref() + size_of_my_ptrs;
+
+  for (size_t i{}; i < size_col; i++) {
+    *(my_buffer_ptr + i) = array_base_ptr;
+    array_base_ptr += size_row;
+    *array_base_ptr = 0;
+    array_base_ptr++;
+  }
+
+  return my_buufer_;
+}
+template <typename T>
+void mjz_ard::mjz_str_t<T>::find_and_replace(const char *find_cstr,
+                                             size_t find_count,
+                                             const char *replace_cstr,
+                                             size_t replace_count) {
+  if (m_length == 0 || find_count == 0) {
+    return;
+  }
+
+  int64_t diff = replace_count - find_count;
+  char *readFrom = C_str();
+  char *foundAt{};
+
+  if (diff == 0) {
+    while ((foundAt = const_cast<char *>(strstr(
+                readFrom, strlen(readFrom), find_cstr, find_count))) != NULL) {
+      memmove(foundAt, replace_cstr, replace_count);
+      readFrom = foundAt + replace_count;
+    }
+  } else if (diff < 0) {
+    size_t size_ = m_length;  // compute size_ needed for result
+
+    while ((foundAt = const_cast<char *>(strstr(
+                readFrom, strlen(readFrom), find_cstr, find_count))) != NULL) {
+      readFrom = foundAt + find_count;
+      diff = 0 - diff;
+      size_ -= diff;
+    }
+
+    if (size_ == m_length) {
+      return;
+    }
+
+    int64_t index = m_length - 1;
+
+    while (index >= 0 &&
+           (index = lastIndexOf_cstr(find_cstr, find_count, index)) >= 0) {
+      readFrom = m_buffer + index + find_count;
+      memmove(readFrom - diff, readFrom, m_length - (readFrom - m_buffer));
+      m_length -= diff;
+      m_buffer[m_length] = 0;
+      memmove(m_buffer + index, replace_cstr, replace_count);
+      index--;
+    }
+  } else {
+    size_t size_ = m_length;  // compute size_ needed for result
+
+    while ((foundAt = const_cast<char *>(strstr(
+                readFrom, strlen(readFrom), find_cstr, find_count))) != NULL) {
+      readFrom = foundAt + find_count;
+      size_ += diff;
+    }
+
+    if (size_ == m_length) {
+      return;
+    }
+
+    if (size_ > m_capacity && !changeBuffer(size_, 0)) {
+      return;  // XXX: tell user!
+    }
+
+    int64_t index = m_length - 1;
+
+    while (index >= 0 &&
+           (index = lastIndexOf_cstr(find_cstr, find_count, index)) >= 0) {
+      readFrom = m_buffer + index + find_count;
+      memmove(readFrom + diff, readFrom, m_length - (readFrom - m_buffer));
+      m_length += diff;
+      m_buffer[m_length] = 0;
+      memmove(m_buffer + index, replace_cstr, replace_count);
+      index--;
+    }
+  }
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator-=(
+    const mjz_ard::mjz_str_t<T> &othr_) {
+  int64_t index_of_remove = lastIndexOf(othr_);
+
+  if (index_of_remove != -1) {
+    remove(index_of_remove, othr_.length());
+  }
+
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator-=(
+    mjz_ard::mjz_str_t<T> &&othr_) {
+  int64_t index_of_remove = lastIndexOf(othr_);
+
+  if (index_of_remove != -1) {
+    remove(index_of_remove, othr_.length());
+  }
+
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator*=(
+    unsigned int number_of_it) {
+  mjz_ard::mjz_str_t<T> temperory_str;
+
+  for (size_t i{}; i < number_of_it; i++) {
+    temperory_str += *this;
+  }
+
+  *this = std::move(temperory_str);
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::operator*(
+    unsigned int number_of_it) {
+  mjz_ard::mjz_str_t<T> lhs = mjz_ard::mjz_str_t<T>(*this);
+  return lhs.operator*=(number_of_it);
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator/=(
+    const mjz_ard::mjz_str_t<T> &othr_) {
+  find_and_replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator/=(
+    mjz_ard::mjz_str_t<T> &&othr_) {
+  find_and_replace(othr_, othr_.length(), empty_STRING_C_STR, 0);
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator++() {
+  this->println();
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::operator++(int) {
+  mjz_ard::mjz_str_t<T> tmp(*this);
+  ++(*this);
+  return tmp;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator--() {
+  this->read();
+  return *this;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::operator--(int) {
+  mjz_ard::mjz_str_t<T> tmp(*this);
+  --(*this);
+  return tmp;
+}
+template <typename T>
+mjz_ard::hash_sha256 hash_msg_to_sha_512_with_output(
+    const char *dev_passwoed, const size_t dev_passwoedLength,
+    mjz_ard::mjz_str_t<T> &output_name_in_output_out) {
+  hash_sha256 rtrn{};
+  uint8_t(&shaResult)[SHA256_BLOCK_SIZE] = rtrn.hashed_data;
+  rtrn.sha256_the_string(dev_passwoed, dev_passwoedLength);
+
+  if (output_name_in_output_out != "Null") {
+    output_name_in_output_out().print("const char ");
+    output_name_in_output_out.print(output_name_in_output_out);
+    output_name_in_output_out.print(" [] = { ");
+    output_name_in_output_out.print((int)shaResult[0]);
+
+    for (int64_t i = 1; i < sizeof(shaResult); i++) {
+      output_name_in_output_out.print(",");
+      output_name_in_output_out.print((int)shaResult[i]);
+    }
+
+    output_name_in_output_out.println(" };");
+  }
+
+  return rtrn;
+}
+template <typename T>
+mjz_ard::hash_sha256 hash_msg_to_sha_512_n_with_output(
+    const char *dev_passwoed, const size_t dev_passwoedLength, uint8_t n,
+    mjz_ard::mjz_str_t<T> &output_name) {  // intended copy
+  if (n == 0) {
+    return hash_msg_to_sha_512_with_output(dev_passwoed, dev_passwoedLength,
+                                           output_name);
+  }
+
+  static
+
+      hash_sha256 ret =
+          hash_sha256::hash_msg_to_sha_512(dev_passwoed, dev_passwoedLength);
+
+  for (int64_t i{}; i < ((int64_t)n - 1); i++) {
+    ret = hash_sha256::hash_msg_to_sha_512((char *)ret.hashed_data,
+                                           SHA256_BLOCK_SIZE);
+  }
+
+  return hash_msg_to_sha_512_with_output((char *)ret.hashed_data,
+                                         SHA256_BLOCK_SIZE, output_name);
+}
+
+   
+template <typename T>
+std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls>
+    &mjz_ard::extended_mjz_str_t<T>::drived_mjz_Str_DATA_storage_Obj_ptr_set() {
+  if (!did_drived_mjz_Str_DATA_storage_Obj_ptr_set) {
+    drived_mjz_Str_DATA_storage_Obj_ptr = mjz_Str_DATA_storage_cls::create();
+    did_drived_mjz_Str_DATA_storage_Obj_ptr_set = 1;
+  }
+
+  return drived_mjz_Str_DATA_storage_Obj_ptr;
+}
+// stream part
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(const __FlashStringHelper *ifsh) {
+  return print(reinterpret_cast<const char *>(ifsh));
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(const mjz_ard::mjz_str_t<T> &s) {
+  return write(s.c_str(), s.length());
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(const char *str) {
+  return write(str);
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(char c) {
+  return write(c);
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(unsigned char b, int base) {
+  return print((unsigned long)b, base);
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(int n, int base) {
+  return print((long)n, base);
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(unsigned int n, int base) {
+  return print((unsigned long)n, base);
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(long n, int base) {
+  if (base == 0) {
+    return write((uint8_t)n);
+  } else if (base == 10) {
+    if (n < 0) {
+      size_t t = (size_t)print('-');
+      n = -n;
+      return printNumber(n, 10) + t;
+    }
+
+    return printNumber(n, 10);
+  } else {
+    return printNumber(n, static_cast<uint8_t>(base));
+  }
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(unsigned long n, int base) {
+  if (base == 0) {
+    return write((uint8_t)n);
+  } else {
+    return printNumber(n, static_cast<uint8_t>(base));
+  }
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(long long n, int base) {
+  if (base == 0) {
+    return write((uint8_t)n);
+  } else if (base == 10) {
+    if (n < 0) {
+      size_t t = (size_t)print('-');
+      n = -n;
+      return printULLNumber(n, 10) + t;
+    }
+
+    return printULLNumber(n, 10);
+  } else {
+    return printULLNumber(n, static_cast<uint8_t>(base));
+  }
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(unsigned long long n, int base) {
+  if (base == 0) {
+    return write((uint8_t)n);
+  } else {
+    return printULLNumber(n, static_cast<uint8_t>(base));
+  }
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::print(double n, int digits) {
+  return printFloat(n, digits);
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(const __FlashStringHelper *ifsh) {
+  size_t n = print(ifsh);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println() {
+  return write("\r\n");
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(const mjz_ard::mjz_str_t<T> &s) {
+  size_t n = print(s);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(const char *c) {
+  size_t n = print(c);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(char c) {
+  size_t n = print(c);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(unsigned char b, int base) {
+  size_t n = print(b, base);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(int num, int base) {
+  size_t n = print(num, base);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(unsigned int num, int base) {
+  size_t n = print(num, base);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(long num, int base) {
+  size_t n = print(num, base);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(unsigned long num, int base) {
+  size_t n = print(num, base);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(long long num, int base) {
+  size_t n = print(num, base);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(unsigned long long num, int base) {
+  size_t n = print(num, base);
+  n += println();
+  return n;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::println(double num, int digits) {
+  size_t n = print(num, digits);
+  n += println();
+  return n;
+}
+// Private Methods /////////////////////////////////////////////////////////////
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::printNumber(unsigned long n, uint8_t base) {
+  char buf[8 * sizeof(long) + 1]{};  // Assumes 8-bit chars plus zero byte.
+  char *str = &buf[sizeof(buf) - 1];
+  *str = '\0';
+
+  // prevent crash if called with base == 1
+  if (base < 2) {
+    base = 10;
+  }
+
+  do {
+    char c = n % base;
+    n /= base;
+    *--str = c < 10 ? c + '0' : c + 'A' - 10;
+  } while (n);
+
+  return write(str);
+}
+// REFERENCE IMPLEMENTATION FOR ULL
+// size_t mjz_ard::mjz_str_t<T>::printULLNumber(unsigned long long n, uint8_t
+// base)
+// {
+// // if limited to base 10 and 16 the bufsize can be smaller
+// char buf[65];
+// char *str = &buf[64];
+// *str = '\0';
+// // prevent crash if called with base == 1
+// if (base < 2) base = 10;
+// do {
+// unsigned long long t = n / base;
+// char c = n - t * base; // faster than c = n%base;
+// n = t;
+// *--str = c < 10 ? c + '0' : c + 'A' - 10;
+// } while(n);
+// return write(str);
+// }
+// FAST IMPLEMENTATION FOR ULL
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::printULLNumber(unsigned long long n64,
+                                             uint8_t base) {
+  // if limited to base 10 and 16 the bufsize can be 20
+  char buf[64]{};
+  uint8_t i = 0;
+  uint8_t innerLoops = 0;
+
+  // Special case workaround
+  // https://github.com/arduino/ArduinoCore-API/issues/178
+  if (n64 == 0) {
+    write('0');
+    return 1;
+  }
+
+  // prevent crash if called with base == 1
+  if (base < 2) {
+    base = 10;
+  }
+
+  // process chunks that fit in "16 bit math".
+  uint16_t top = 0xFFFF / base;
+  uint16_t th16 = 1;
+
+  while (th16 < top) {
+    th16 *= base;
+    innerLoops++;
+  }
+
+  while (n64 > th16) {
+    // 64 bit math part
+    size_t q = n64 / th16;
+    uint16_t r = (uint16_t)(n64 - q * th16);
+    n64 = q;
+
+    // 16 bit math loop to do remainder. (note buffer is filled reverse)
+    for (uint8_t j = 0; j < innerLoops; j++) {
+      uint16_t qq = r / base;
+      buf[i++] = static_cast<char>(r - qq * base);
+      r = qq;
+    }
+  }
+
+  uint16_t n16 = (uint16_t)n64;
+
+  while (n16 > 0) {
+    uint16_t qq = n16 / base;
+    buf[i++] = static_cast<char>(n16 - qq * base);
+    n16 = qq;
+  }
+
+  size_t bytes = i;
+
+  for (; i > 0; i--) {
+    write((char)(buf[i - 1] < 10 ? '0' + buf[i - 1] : 'A' + buf[i - 1] - 10));
+  }
+
+  return bytes;
+}
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::printFloat(double number, int digits) {
+  if (digits < 0) {
+    digits = 2;
+  }
+
+  size_t n = 0;
+
+  if (isnan(number)) {
+    return print("nan");
+  }
+
+  if (isinf(number)) {
+    return print("inf");
+  }
+
+  if (number > 4294967040.0) {
+    return print("ovf");
+  }  // constant determined empirically
+
+  if (number < -4294967040.0) {
+    return print("ovf");
+  }  // constant determined empirically
+
+  // Handle negative numbers
+  if (number < 0.0) {
+    n += print('-');
+    number = -number;
+  }
+
+  // Round correctly so that print(1.999, 2) prints as "2.00"
+  double rounding = 0.5;
+
+  for (uint8_t i = 0; i < digits; ++i) {
+    rounding /= 10.0;
+  }
+
+  number += rounding;
+  // Extract the integer part of the number and print it
+  unsigned long int_part = (unsigned long)number;
+  double remainder = number - (double)int_part;
+  n += print(int_part);
+
+  // mjz_ard::mjz_str_t<T> the decimal point, but only if there are digits
+  // beyond
+  if (digits > 0) {
+    n += print(".");
+  }
+
+  // Extract digits from the remainder one at a time
+  while (digits-- > 0) {
+    remainder *= 10.0;
+    unsigned int toPrint = (unsigned int)remainder;
+    n += print(toPrint);
+    remainder -= toPrint;
+  }
+
+  return n;
+}
+// private method to read stream with timeout
+template <typename T>
+int mjz_ard::mjz_str_t<T>::timedRead() {
+  // unsigned long _startMillis; // used for timeout measurement
+  int c;
+  // _startMillis = millis();
+
+  // do {
+  c = read();
+
+  if (c >= 0) {
+    return c;
+  }
+  //}
+  // while (
+  // millis() - _startMillis <
+  // drived_mjz_Str_DATA_storage_Obj_ptr->_timeout
+  //);
+
+  return -1;  // -1 indicates timeout
+}
+// private method to peek stream with timeout
+template <typename T>
+int mjz_ard::mjz_str_t<T>::timedPeek() {
+  // unsigned long _startMillis; // used for timeout measurement
+  int c;
+  // _startMillis = millis();
+
+  // do {
+  c = peek();
+
+  if (c >= 0) {
+    return c;
+  }
+  //}
+  // while ( millis() - _startMillis <
+  // drived_mjz_Str_DATA_storage_Obj_ptr->_timeout );
+
+  return -1;  // -1 indicates timeout
+}
+// returns peek of the next digit in the stream or -1 if timeout
+// discards non-numeric characters
+template <typename T>
+int mjz_ard::mjz_str_t<T>::peekNextDigit(LookaheadMode lookahead,
+                                         bool detectDecimal) {
+  int c;
+
+  while (1) {
+    c = timedPeek();
+
+    if (c < 0 || c == '-' || (c >= '0' && c <= '9') ||
+        (detectDecimal && c == '.')) {
+      return c;
+    }
+
+    switch (lookahead) {
+      case SKIP_NONE:
+        return -1;  // Fail code.
+
+      case SKIP_WHITESPACE:
+        switch (c) {
+          case ' ':
+          case '\t':
+          case '\r':
+          case '\n':
+            break;
+
+          default:
+            return -1;  // Fail code.
+        }
+
+      case SKIP_ALL:
+        break;
+    }
+
+    read();  // discard non-numeric
+  }
+}
+// Public Methods
+//////////////////////////////////////////////////////////////
+
+// find returns true if the target string is found
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::find_in_stream(const char *target) {
+  return find_in_stream_Until(target, strlen(target), NULL, 0);
+}
+// reads data from the stream until the target string of given length is found
+// returns true if target string is found, false if timed out
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::find_in_stream(const char *target, size_t length) {
+  return find_in_stream_Until(target, length, NULL, 0);
+}
+// as find but search ends if the terminator string is found
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::find_in_stream_Until(const char *target,
+                                                 const char *terminator) {
+  return find_in_stream_Until(target, strlen(target), terminator,
+                              strlen(terminator));
+}
+// reads data from the stream until the target string of the given length is
+// found search terminated if the terminator string is found returns true if
+// target string is found, false if terminated or timed out
+template <typename T>
+bool mjz_ard::mjz_str_t<T>::find_in_stream_Until(const char *target,
+                                                 size_t targetLen,
+                                                 const char *terminator,
+                                                 size_t termLen) {
+  if (terminator == NULL) {
+    MultiTarget t[1] = {{target, targetLen, 0}};
+    return findMulti(t, 1) == 0;
+  } else {
+    MultiTarget t[2] = {{target, targetLen, 0}, {terminator, termLen, 0}};
+    return findMulti(t, 2) == 0;
+  }
+}
+// returns the first valid (long) integer value from the current position.
+// lookahead determines how parseInt looks ahead in the stream.
+// See LookaheadMode enumeration at the top of the file.
+// Lookahead is terminated by the first character that is not a valid part of an
+// integer. Once parsing commences, 'ignore' will be skipped in the stream.
+template <typename T>
+long mjz_ard::mjz_str_t<T>::parseInt(
+    mjz_ard::mjz_str_t<T>::LookaheadMode lookahead, char ignore) {
+  bool isNegative = false;
+  long value = 0;
+  int c;
+  c = peekNextDigit(lookahead, false);
+
+  // ignore non numeric leading characters
+  if (c < 0) {
+    return 0;
+  }  // zero returned if timeout
+
+  do {
+    if ((char)c == ignore)
+      ;  // ignore this character
+    else if (c == '-') {
+      isNegative = true;
+    } else if (c >= '0' && c <= '9') {  // is c a digit?
+      value = value * 10 + c - '0';
+    }
+
+    read();  // consume the character we got with peek
+    c = timedPeek();
+  } while ((c >= '0' && c <= '9') || (char)c == ignore);
+
+  if (isNegative) {
+    value = -value;
+  }
+
+  return value;
+}
+// as parseInt but returns a floating point value
+template <typename T>
+float mjz_ard::mjz_str_t<T>::parseFloat(LookaheadMode lookahead, char ignore) {
+  bool isNegative = false;
+  bool isFraction = false;
+  double value = 0.0;
+  int c{};
+  double fraction = 1.0;
+  c = peekNextDigit(lookahead, true);
+
+  // ignore non numeric leading characters
+  if (c < 0) {
+    return 0;
+  }  // zero returned if timeout
+
+  do {
+    if ((char)c == ignore)
+      ;  // ignore
+    else if (c == '-') {
+      isNegative = true;
+    } else if (c == '.') {
+      isFraction = true;
+    } else if (c >= '0' && c <= '9') {  // is c a digit?
+      if (isFraction) {
+        fraction *= 0.1;
+        value = value + fraction * ((char)c - '0');
+      } else {
+        value = value * 10 + c - '0';
+      }
+    }
+
+    read();  // consume the character we got with peek
+    c = timedPeek();
+  } while ((c >= '0' && c <= '9') || (c == '.' && !isFraction) ||
+           (char)c == ignore);
+
+  if (isNegative) {
+    value = -value;
+  }
+
+  return (float)value;
+}
+// read characters from stream into buffer
+// terminates if length characters have been read, or timeout (see setTimeout)
+// returns the number of characters placed in the buffer
+// the buffer is NOT null terminated.
+/*
+ size_t mjz_ard::mjz_str_t<T>::readBytes(char *buffer, size_t length)
+ {
+ size_t count = 0;
+ while (count < length) {
+ int c = timedRead();
+ if (c < 0) break;
+ buffer++ = (char)c;
+ count++;
+ }
+ return count;
+ } */
+// as readBytes with terminator character
+// terminates if length characters have been read, timeout, or if the terminator
+// character detected returns the number of characters placed in the buffer (0
+// means no valid data found)
+template <typename T>
+size_t mjz_ard::mjz_str_t<T>::readBytesUntil(char terminator, char *buffer_,
+                                             size_t length) {
+  size_t index = 0;
+
+  while (index < length) {
+    int c = timedRead();
+
+    if (c < 0 || (char)c == terminator) {
+      break;
+    }
+
+    *buffer_++ = (char)c;
+    index++;
+  }
+
+  return index;  // return number of characters, not including null terminator
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str() {
+  /*
+  mjz_ard::mjz_str_t<T> ret;
+  int c = timedRead();
+  while (c >= 0)
+  {
+  ret += (char)c;
+  c = timedRead();
+  }
+  return ret;
+  */
+  mjz_ard::mjz_str_t<T> ret = std::move(*this);  // be careful
+  new (this) mjz_ard::mjz_str_t<T>;              // be careful
+  return ret;
+}
+template <typename T>
+mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str_Until(
+    char terminator) {
+  mjz_ard::mjz_str_t<T> ret;
+  int c = timedRead();
+
+  while (c >= 0 && (char)c != terminator) {
+    ret += (char)c;
+    c = timedRead();
+  }
+
+  return ret;
+}
+template <typename T>
+int mjz_ard::mjz_str_t<T>::findMulti(
+    struct mjz_ard::mjz_str_t<T>::MultiTarget *targets, int tCount) {
+  // any zero length target string automatically matches and would make
+  // a mess of the rest of the algorithm.
+  for (struct MultiTarget *t = targets; t < targets + tCount; ++t) {
+    if (t->len <= 0) {
+      return (int)(t - targets);
+    }
+  }
+
+  while (1) {
+    int c = timedRead();
+
+    if (c < 0) {
+      return -1;
+    }
+
+    for (struct MultiTarget *t = targets; t < targets + tCount; ++t) {
+      // the simple case is if we match, deal with that first.
+      if ((char)c == t->str[t->index]) {
+        if (++t->index == t->len) {
+          return (int)(t - targets);
+        } else {
+          continue;
+        }
+      }
+
+      // if not we need to walk back and see if we could have matched further
+      // down the stream (ie '1112' doesn't match the first position in '11112'
+      // but it will match the second position so we can't just reset the
+      // current index to 0 when we find a mismatch.
+      if (t->index == 0) {
+        continue;
+      }
+
+      int origIndex = (int)(t->index);
+
+      do {
+        --t->index;
+
+        // first check if current char works against the new current index
+        if ((char)c != t->str[t->index]) {
+          continue;
+        }
+
+        // if it's the only char then we're good, nothing more to check
+        if (t->index == 0) {
+          t->index++;
+          break;
+        }
+
+        // otherwise we need to check the rest of the found string
+        int diff = (int)(origIndex - t->index);
+        size_t i;
+
+        for (i = 0; i < t->index; ++i) {
+          if (t->str[i] != t->str[i + diff]) {
+            break;
+          }
+        }
+
+        // if we successfully got through the previous loop then our current
+        // index is good.
+        if (i == t->index) {
+          t->index++;
+          break;
+        }
+
+        // otherwise we just try the next index
+      } while (t->index);
+    }
+  }
+
+  // unreachable
+  return -1;
+}
+
+template <typename T>
+std::istream &helper__op_shift_input_(
+    const mjz_ard::extended_mjz_str_t<T> &rhs, std::istream &CIN,
+    mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
+  char bfr[2050]{};
+  int8_t is_reinterpreted{};
+  constexpr uint8_t is_reinterpreted_and_is_int = 2;
+  int8_t value_reinterpreted_and_is_int{};
+
+  for (uint16_t i{0}; i < 2047; i++) {
+    uint8_t is_reinterpreted_do_not_forbid{};
+
+    if (i == 0) {
+      CIN >> bfr[i];
+    } else {
+      CIN.get(bfr[i]);
+    }
+
+    if (is_reinterpreted == is_reinterpreted_and_is_int) {
+      int8_t vlal_bf = rhs.char_to_int_for_string(bfr[i]);
+
+      if (vlal_bf == -1) {
+        char bfffr = bfr[i];
+        bfr[i] = value_reinterpreted_and_is_int;
+        i++;
+        bfr[i] = bfffr;
+        is_reinterpreted = 0;
+      } else {
+        value_reinterpreted_and_is_int *= 10;
+        value_reinterpreted_and_is_int += vlal_bf;
+        i--;
+        continue;
+      }
+    } else if (is_reinterpreted == 1) {
+      int8_t vlal_bf = rhs.char_to_int_for_string(bfr[i]);
+
+      if (vlal_bf == -1) {
+        is_reinterpreted = 0;
+
+        if (!rhs.char_to_char_for_reinterpret(bfr[i])) {
+          i--;
+          continue;
+        } else {
+          is_reinterpreted_do_not_forbid = 1;
+        }
+      } else {
+        value_reinterpreted_and_is_int = vlal_bf;
+        is_reinterpreted = is_reinterpreted_and_is_int;
+        i--;
+        continue;
+      }
+    } else if (rhs.get_reinterpret_char_char() == bfr[i]) {
+      bfr[i] = '\0';
+      i--;
+      is_reinterpreted = 1;
+      continue;
+    }
+
+    if (!is_reinterpreted_do_not_forbid && rhs.is_forbiden(bfr[i])) {
+      bfr[i] = '\0';
+      break;
+    }
+  }
+
+  bfr[2049] = '\0';
+  bfr[2048] = '\0';
+  bfr[2047] = '\0';
+  get_shift_op_s += (const char *)bfr;
+  return CIN;
+}
+
+template <typename T>
+const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
+    const mjz_ard::extended_mjz_str_t<T> &rhs,
+    const mjz_ard::extended_mjz_str_t<T> &CIN,
+    mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
+  if (CIN.is_blank()) {
+    return CIN;
+  }
+
+  const char *CIN_c_str = CIN.c_str();
+  size_t CURunt_index_{};
+  size_t my_bfr_obj_length = CIN.length() + 4;
+  malloc_wrapper my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
+  char *bfr = (char *)my_bfr_obj_ptr.get_ptr();
+  uint8_t is_reinterpreted{};
+  constexpr uint8_t is_reinterpreted_and_is_int = 2;
+  int8_t value_reinterpreted_and_is_int{};
+
+  char reinterpret_char_char_ref = rhs.get_reinterpret_char_char();
+  auto continue_event_is_reinterpreted_and_is_int = [&](uint16_t &i) -> bool {
+    if (bfr[i] == reinterpret_char_char_ref) {
+      bfr[i] = value_reinterpreted_and_is_int;
+      is_reinterpreted = 0;
+    } else {
+      int8_t value_buffer = rhs.char_to_int_for_string(bfr[i]);
+
+      if (value_buffer == -1) {
+        char bfffr = bfr[i];
+        bfr[i] = value_reinterpreted_and_is_int;
+        i++;
+        bfr[i] = bfffr;
+        is_reinterpreted = 0;
+      } else {
+        value_reinterpreted_and_is_int *= 10;
+        value_reinterpreted_and_is_int += value_buffer;
+        i--;
+        return 1;  // continue;
+      }
+    }
+
+    return 0;
+  };
+  auto continue_event_is_reinterpreted =
+      [&](uint16_t &i, uint8_t &is_reinterpreted_do_not_forbid) -> bool {
+    int8_t value_buffer_ = rhs.char_to_int_for_string(bfr[i]);
+
+    if (value_buffer_ == -1) {
+      is_reinterpreted = 0;
+
+      if (!rhs.char_to_char_for_reinterpret(bfr[i])) {
+        i--;
+        return 1;  // continue;
+      } else {
+        is_reinterpreted_do_not_forbid = 1;
+      }
+    } else {
+      value_reinterpreted_and_is_int = value_buffer_;
+      is_reinterpreted = is_reinterpreted_and_is_int;
+      i--;
+      return 1;  // continue;
+    }
+
+    return 0;
+  };
+
+  for (uint16_t i{0}; i < my_bfr_obj_length - 3; i++) {
+    uint8_t is_reinterpreted_do_not_forbid{};
+    bfr[i] = CIN_c_str[CURunt_index_];
+    CURunt_index_++;
+
+    if (is_reinterpreted == is_reinterpreted_and_is_int) {
+      if (continue_event_is_reinterpreted_and_is_int(i)) {
+        continue;
+      }
+    } else if (is_reinterpreted == 1) {
+      if (continue_event_is_reinterpreted(i, is_reinterpreted_do_not_forbid)) {
+        continue;
+      }
+    } else if (reinterpret_char_char_ref == bfr[i]) {
+      bfr[i] = '\0';
+      i--;
+      is_reinterpreted = 1;
+      continue;
+    }
+
+    if (!is_reinterpreted_do_not_forbid && rhs.is_forbiden(bfr[i])) {
+      bfr[i] = '\0';
+      break;
+    }
+  }
+
+  bfr[my_bfr_obj_length - 1] = '\0';
+  bfr[my_bfr_obj_length - 2] = '\0';
+  bfr[my_bfr_obj_length - 3] = '\0';
+  get_shift_op_s += (const char *)my_bfr_obj_ptr.get_ptr();
+  return CIN;
+}
+
+template <typename T>
+StringSumHelper_t<T> mjz_str_t<T>::operator-() {
+  return *this;
+}
+template <typename T2>
+class mv_to_T2 {
+ public:
+  template <typename T>
+  T2 operator()(T &&obj) {
+    return obj;
+  }
+  template <typename T>
+  T2 operator()(const T &obj) {
+    return T2(obj);
+  }
+};
+template <typename Tc1 = mv_to_T2<mjz_Str>,
+          typename Tc2 = mv_to_T2<mjz_str_view>, typename T1, typename T2>
+inline StringSumHelper operator+(T1 lhs, T2 rhs) {
+  return operator_plus(Tc1()(lhs), Tc2()(rhs));
+}
+template StringSumHelper operator+(const mjz_Str &, const mjz_str_view &);
+template StringSumHelper operator+(const mjz_Str &, const StringSumHelper &);
+template StringSumHelper operator+(const mjz_Str &, const basic_mjz_Str_view &);
+template StringSumHelper operator+(mjz_Str &&, const mjz_str_view &);
+template StringSumHelper operator+(mjz_Str &&, const StringSumHelper &);
+template StringSumHelper operator+(mjz_Str &&, const basic_mjz_Str_view &);
+template StringSumHelper operator+(StringSumHelper &&, const mjz_str_view &);
+template StringSumHelper operator+(StringSumHelper &&, const StringSumHelper &);
+template StringSumHelper operator+(StringSumHelper &&,
+                                   const basic_mjz_Str_view &);
+template StringSumHelper operator+(const StringSumHelper &,
+                                   const mjz_str_view &);
+template StringSumHelper operator+(const StringSumHelper &,
+                                   const StringSumHelper &);
+template StringSumHelper operator+(const StringSumHelper &,
+                                   const basic_mjz_Str_view &);
+
+template <typename T2>
+inline StringSumHelper operator+(StringSumHelper &&lhs, T2 rhs) {
+  return operator_plus(mv_to_T2<mjz_Str>(lhs), mv_to_T2<mjz_Str>(rhs));
+}
+template <typename T2>
+inline StringSumHelper operator+(const StringSumHelper &lhs, T2 rhs) {
+  return operator_plus(mv_to_T2<mjz_Str>(lhs), mv_to_T2<mjz_Str>(rhs));
+}
+
+}  // namespace mjz_ard
+
 #undef NO_IGNORE_CHAR
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus

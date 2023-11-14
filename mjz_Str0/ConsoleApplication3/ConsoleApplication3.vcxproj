@@ -759,7 +759,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="example_that_is_not_used.cpp" />
-    <ClCompile Include="failed.cpp" />
     <ClCompile Include="start.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,8 @@
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program
 // execution begins and ends there.
 //
+#include "pch.h"
+#include "mjzString.hpp"
 #include "start.h"
 /* File Handling with C++ using ifstream & ofstream class object*/
 /* To write the Content in File*/
@@ -36,6 +38,5 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 
 int my_main::main(int argc, const char* const* const argv) {
  using namespace  mjz_ard;
-  ;
- return MJZ_logic_BL_bit_to_64_bits(1);
+ return 0;
 }
