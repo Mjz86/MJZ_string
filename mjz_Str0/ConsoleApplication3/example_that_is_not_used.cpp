@@ -1,6 +1,8 @@
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program
 // execution begins and ends there.
 //
+#include "pch.h"
+#include "mjzString.hpp"
 #include "start.h"
 /* File Handling with C++ using ifstream & ofstream class object*/
 /* To write the Content in File*/
@@ -36,8 +38,12 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 
 int my_main::main(int argc, const char* const* const argv) {
  using namespace  mjz_ard;
-  std::cout << sizeof(mjz_Str) -
-                   static_str_algo::the_reinterpreted_char_cca_size;
- mjz_Str e;
+  for (int i{}; i < 100000; i++) {
+    MJZ_DONT_OPTIMIZE(mjz_Str("abcdefg"));
+      }
+
+   for (int i{}; i < 100000; i++) {
+    MJZ_DONT_OPTIMIZE(mjz_Str("abcdefg"));
+      }
  return 0;
 }

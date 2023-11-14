@@ -274,6 +274,10 @@ typedef extended_mjz_str_t<reallocator<char>> extended_mjz_Str;
 
 class static_str_algo {
  public:
+  static constexpr int64_t expected_mjz_str_size = 64;// set the wanted size in range of [(expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size),+inf] 
+  static constexpr int64_t expected_basic_mjz_str_size =(sizeof(size_t) * 2 + sizeof(void *));
+  static constexpr int64_t expected_min_stack_obj_buffer_size = sizeof(uint8_t)+sizeof(char);
+  static constexpr int64_t stack_buffer_size =expected_mjz_str_size -(expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size);
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
   static constexpr int64_t forbiden_chars_cnt_size = 3;
   static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
@@ -586,10 +590,8 @@ class static_str_algo {
   }
 
  public:
-  static constexpr int64_t stack_buffer_size = sizeof(std::string);
   class stack_str_buf {
-    mutable bool STR_is_in_stack{};
-
+    mutable uint8_t STR_is_in_stack{};
    public:
     char stack_buffer[stack_buffer_size + 1]{};  // string you're searching for
     stack_str_buf() : STR_is_in_stack(0) {
@@ -3117,6 +3119,7 @@ class mjz_Str : public basic_mjz_String,
   // void (mjz_Str<T>::*update_event_F_p)( void); //departed
   // (object_ptr->*pointer_name)(arguments)//like (this->*update_event_F_p)();
 
+  stack_str_buf stack_obj_buf;
   friend class StringSumHelper_t<T>;
   // use a function pointer to allow for "if (s)" without the
   // complications of an operator bool(). for more information,see:
@@ -3143,7 +3146,6 @@ class mjz_Str : public basic_mjz_String,
   }
   void free(void *ptr) { return T().deallocate((char*)ptr,m_capacity+1); }
 
-  stack_str_buf stack_obj_buf;
 
  public:
   static int8_t char_to_int_for_string(char c_char);
@@ -4731,7 +4733,7 @@ class extended_mjz_str_t : public mjz_str_t<T> {
  
  protected:
   
-  bool did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
+  uint8_t did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
   std::shared_ptr<mjz_Str_DATA_storage_cls>
       drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
   std::shared_ptr<mjz_Str_DATA_storage_cls>
