@@ -1563,181 +1563,216 @@ template <class T>
 inline constexpr const T *end(iterator_template<T> it) noexcept {
   return it.end();
 }
+
 template <typename Type>
+class mjz_ptr_alloc_warpper : public reallocator<Type> {
+ public:
+  template <typename... args_t>
+  inline Type *obj_placement_new(Type *dest, args_t &&...args) {
+    return (new (dest) Type(std::move(args)...));
+  }
+  template <typename... args_t>
+  inline Type obj_constructor(args_t &&...args) {
+    return Type(std::move(args)...);
+  }
+  template <typename... args_t>
+  inline Type allocate_obj(args_t &&...args) {
+    return new Type(std::move(args)...);
+  }
+  template <typename... args_t>
+  inline Type allocate_obj_array(size_t len, args_t &&...args) {
+    return new Type(std::move(args)...)[len];
+  }
+
+ public:
+  inline void obj_destructor(Type *dest) { dest->~Type(); }
+  inline void deallocate_obj(Type *dest) { delete dest; }
+  inline void deallocate_obj_array(Type *dest) { delete[] dest; }
+};
+
+template <typename Type, bool construct_obj_on_constructor = true,
+          class ptr_alloc_warpper = mjz_ptr_alloc_warpper<Type>>
 class heap_obj_warper {
  public:
-  // note this static is NOT THE SAME for int , bool ,... becuse this is a
-  // template
   static constexpr size_t size = sizeof(Type);
 
  protected:
   uint8_t m_data[size]{};
   bool m_Has_data{};
+
+ private:
+  template <typename... args_t>
+  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+                                         args_t &&...args) {
+    if (plc_has_obj) destroy_at_place(place);
+    return ptr_alloc_warpper().obj_placement_new(place, std::move(args)...);
+  }
+  static inline void destroy_at_place(Type *place) {
+    ptr_alloc_warpper().obj_destructor(place);
+  }
+
+  template <typename... args_t>
+  inline void construct(args_t &&...args) {
+    if (pointer_to_unsafe_data() == construct_in_place(pointer_to_unsafe_data(),
+                                                       m_Has_data,
+                                                       std::move(args)...)) {
+      m_Has_data = 1;
+    } else {
+      m_Has_data = 0;
+    }
+  }
+  inline void destroy() {
+    if (m_Has_data) destroy_at_place(pointer_to_unsafe_data());
+    m_Has_data = 0;
+  }
   constexpr inline Type *init_with_unsafe_data(bool initialized) {
     m_Has_data = initialized;
     return (Type *)(m_data);
   }
+  inline Type *move_to_place(Type *dest, bool dest_has_obj) {
+    if (has_data())
+      return construct_in_place(dest, dest_has_obj,
+                                std::move(*pointer_to_unsafe_data()));
+    m_Has_data = 0;
+    return 0;
+  }
+  inline Type *copy_to_place(Type *dest, bool dest_has_obj) {
+    if (has_data())
+      return construct_in_place(dest, dest_has_obj, *pointer_to_unsafe_data());
+    return 0;
+  }
 
  public:
-  using T = Type;
-  using type = Type;
-  constexpr inline heap_obj_warper() = default;
-  inline ~heap_obj_warper() { data_de_init(); }
-  inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
-    if (!!h_obj_w) operator*() = std::move(h_obj_w.operator*());
-    return *this;
-  }
-  inline heap_obj_warper &operator=(const heap_obj_warper &h_obj_w) {
-    if (!!h_obj_w) operator*() = h_obj_w.operator*();
-    return *this;
-  }
-  inline heap_obj_warper &operator=(heap_obj_warper &h_obj_w) {
-    if (!!h_obj_w) operator*() = h_obj_w.operator*();
-    return *this;
-  }
+  constexpr inline heap_obj_warper() {
+    if constexpr (construct_obj_on_constructor) {
+      construct();
+    }
+  };
+  inline ~heap_obj_warper() { de_init(); }
   inline heap_obj_warper(heap_obj_warper &&h_obj_w) {
-    if (new (pointer_to_unsafe_data()) Type(std::move(h_obj_w.operator*())))
-      m_Has_data = 1;
+    if (h_obj_w.has_data()) construct(std::move(h_obj_w.operator*()));
   }
   inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
-    if (!!h_obj_w)
-      if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
-        m_Has_data = 1;
+    if (h_obj_w.has_data()) construct(h_obj_w.operator*());
   }
   inline heap_obj_warper(heap_obj_warper &h_obj_w) {
-    if (!!h_obj_w)
-      if (new (pointer_to_unsafe_data()) Type(h_obj_w.operator*()))
-        m_Has_data = 1;
+    if (h_obj_w.has_data()) construct(h_obj_w.operator*());
   }
-  inline heap_obj_warper(const Type &obj) {
-    if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
-  }
-  inline heap_obj_warper(Type &obj) {
-    if (new (pointer_to_unsafe_data()) Type(obj)) m_Has_data = 1;
-  }
-  inline heap_obj_warper(Type &&obj) {
-    if (new (pointer_to_unsafe_data()) Type(std::move(obj))) m_Has_data = 1;
-  }
+  inline heap_obj_warper(const Type &obj) { construct(obj); }
+  inline heap_obj_warper(Type &obj) { construct(obj); }
+  inline heap_obj_warper(Type &&obj) { construct(std::move(obj)); }
+
+ public:
   inline heap_obj_warper &operator=(Type &&obj) {
-    operator*() = std::move(obj);
+    construct(std::move(obj));
     return *this;
   }
   inline heap_obj_warper &operator=(Type &obj) {
-    operator*() = obj;
+    construct(obj);
     return *this;
   }
   inline heap_obj_warper &operator=(const Type &obj) {
-    operator*() = obj;
+    construct(obj);
+    return *this;
+  }
+  inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
+    if (!!h_obj_w) operator=(std::move(h_obj_w.operator*()));
+    return *this;
+  }
+  inline heap_obj_warper &operator=(const heap_obj_warper &h_obj_w) {
+    if (!!h_obj_w) operator=(h_obj_w.operator*());
+    return *this;
+  }
+  inline heap_obj_warper &operator=(heap_obj_warper &h_obj_w) {
+    if (!!h_obj_w) operator=(h_obj_w.operator*());
     return *this;
   }
 
+ public:
+  inline void init(const heap_obj_warper &obj) { operator=(obj); }
+  inline void init(heap_obj_warper &obj) { operator=(obj); }
+  inline void init(heap_obj_warper &&obj) { operator=(std::move(obj)); }
   template <typename arg_T, typename Type>
-  inline void data_init(std::initializer_list<arg_T> list) {
-    data_de_init();
-    if (new (m_data) Type(list)) m_Has_data = 1;
+  inline void init(std::initializer_list<arg_T> list) {
+    construct(list);
   }
   template <typename arg_T>
-  inline void data_init(iterator_template<arg_T> list) {
-    data_de_init();
-    if (new (m_data) Type(list)) m_Has_data = 1;
+  inline void init(iterator_template<arg_T> list) {
+    construct(list);
   }
 
   template <typename... arguments_types>
-  inline void data_init(arguments_types... args) {
-    data_de_init();
-    if (new (m_data) Type(args...)) m_Has_data = 1;
-  }
-  template <typename... arguments_types>
-  inline void data_init_mv(arguments_types &&...args) {
-    data_de_init();
-    if (new (m_data) Type(std::move(args)...)) m_Has_data = 1;
-  }
-  template <typename... arguments_types>
-  inline void data_init_r(const arguments_types &...args) {
-    data_de_init();
-    if (new (m_data) Type(args...)) m_Has_data = 1;
-  }
-  template <typename... arguments_types>
-  inline void data_init_ct(const arguments_types &...args) {
-    data_de_init();
-    if (new (m_data) Type(args...)) m_Has_data = 1;
+  inline void init(arguments_types &&...args) {
+    construct(std::move(args)...);
   }
 
-  inline void data_de_init() {
-    if (m_Has_data) pointer_to_data()->~Type();
-    m_Has_data = 0;
-  }
+ public:
+  inline void de_init() { destroy(); }
 
-  inline void data_de_init(int fill_VAL) {
-    if (m_Has_data) pointer_to_data()->~Type();
-    m_Has_data = 0;
+  inline void de_init(int fill_VAL) {
+    destroy();
     static_str_algo::memset(m_data, fill_VAL, size);
   }
 
-  constexpr inline bool has_data() { return m_Has_data; }
-
-  // this may be uninitialized initialized...
-  constexpr inline uint8_t *pointer_to_unsafe_data_buffer() {
-    return (uint8_t *)(m_data);
-  }
-
-  // a small inline pointer_to_unsafe_data_buffer
-  constexpr inline uint8_t *PTUDB() { return pointer_to_unsafe_data_buffer(); }
-
-  // this may be uninitialized initialized...
-  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const {
-    return (uint8_t *)(m_data);
-  }
-
-  // a small inline pointer_to_unsafe_data_buffer
-  constexpr inline const uint8_t *PTUDB() const {
-    return pointer_to_unsafe_data_buffer();
-  }
-
-  // this may be uninitialized initialized...
-  constexpr inline Type *pointer_to_unsafe_data() { return (Type *)(m_data); }
-
-  // a small inline pointer_to_unsafe_data
-  constexpr inline Type *PTUD() { return pointer_to_unsafe_data(); }
-  // this may be uninitialized initialized...
-  constexpr inline const Type *pointer_to_unsafe_data() const {
-    return (const Type *const)(m_data);
-  }
-
-  // a small inline pointer_to_unsafe_data
-  constexpr inline const Type *PTUD() const { return pointer_to_unsafe_data(); }
-
+ public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
-  // use like init_with_unsafe_new(new (init_with_unsafe_data()) Type());
+  using T = Type;
+  using type = Type;
 
-  constexpr inline Type *init_with_unsafe_new(
+ public:
+  inline Type *pointer_to_unsafe_data_for_unsafe_placement_new(Type *ptr) {
+    destroy();
+    return pointer_to_unsafe_data();
+  }
+  constexpr inline Type *init_with_unsafe_placement_new(
       Type *ptr) {  // placement new "new (ptr) Type();"
     return init_with_unsafe_data(ptr == pointer_to_unsafe_data());
   }
 
-  // a small inline init_with_unsafe_new
-  constexpr inline Type *IWUN(Type *ptr) { return init_with_unsafe_new(ptr); }
+ public:
+  inline Type &if_no_obj_then_create() {
+    if (!m_Has_data) construct();
+    return *pointer_to_unsafe_data();
+  }
+
+ public:
+  constexpr inline uint8_t *pointer_to_unsafe_data_buffer() {
+    return (uint8_t *)(m_data);
+  }
+  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const {
+    return (uint8_t *)(m_data);
+  }
+  constexpr inline Type *pointer_to_unsafe_data() { return (Type *)(m_data); }
+  constexpr inline const Type *pointer_to_unsafe_data() const {
+    return (const Type *const)(m_data);
+  }
+
+ public:
   constexpr inline const Type *pointer_to_data() const {
-    if (!m_Has_data) throw std::exception(" bad access");
+    if (!m_Has_data)
+      throw std::exception(
+          "mjz_ard::heap_obj_warper::pointer_to_data bad access");
     return pointer_to_unsafe_data();
   }
   constexpr inline Type *pointer_to_data() {
-    if (!m_Has_data) throw std::exception(" bad access");
+    if (!m_Has_data)
+      throw std::exception(
+          "mjz_ard::heap_obj_warper::pointer_to_data bad access");
     return pointer_to_unsafe_data();
   }
 
+ public:
   constexpr inline Type *operator->() { return pointer_to_data(); }
   template <typename my_type>
   inline auto operator->*(my_type my_var) {
     return pointer_to_data()->*my_var;
   }
-
   constexpr inline Type &operator*() { return *operator->(); }
-
+  inline Type *operator&() { return pointer_to_data(); }
   constexpr inline const Type *operator->() const { return pointer_to_data(); }
   template <typename my_type>
   inline auto operator->*(my_type my_var) const {
@@ -1745,6 +1780,7 @@ class heap_obj_warper {
   }
   constexpr inline const Type &operator*() const { return *operator->(); }
 
+ public:
   inline bool operator==(const heap_obj_warper &other) const {
     return operator() == other.operator();
   }
@@ -1775,11 +1811,41 @@ class heap_obj_warper {
     return operator() <=> other.operator();
   }
 #endif  // ! Arduino
-
+  constexpr inline bool has_data() { return m_Has_data; }
   bool operator!() const { return !m_Has_data; }
   explicit operator bool() const { return m_Has_data; }
   inline operator Type &() { return *pointer_to_data(); }
   inline operator const Type &() const { return *pointer_to_data(); }
+
+ public:
+  inline Type *copy_to(Type *dest, bool dest_has_obj) {
+    return copy_to_place(dest, dest_has_obj);
+  }
+  inline Type *move_to(Type *dest, bool dest_has_obj) {
+    return move_to_place(dest, dest_has_obj);
+  }
+  inline Type &copy_to(Type &dest, bool dest_has_obj) {
+    return *copy_to(&dest, dest_has_obj);
+  }
+  inline Type &move_to(Type &dest, bool dest_has_obj) {
+    return *move_to(&dest, dest_has_obj);
+  }
+  inline heap_obj_warper &copy_to(heap_obj_warper &dest) {
+    dest.init_with_unsafe_placement_new(
+        copy_to(dest.pointer_to_unsafe_data(), dest.has_data()));
+    return dest;
+  }
+  inline heap_obj_warper &move_to(heap_obj_warper &dest) {
+    dest.init_with_unsafe_placement_new(
+        move_to(dest.pointer_to_unsafe_data(), dest.has_data()));
+    return dest;
+  }
+  inline heap_obj_warper *copy_to(heap_obj_warper *dest) {
+    return &copy_to(*dest);
+  }
+  inline heap_obj_warper *move_to(heap_obj_warper *dest) {
+    return &move_to(*dest);
+  }
 };
 
 class malloc_wrapper {
@@ -4821,7 +4887,7 @@ std::istream &getline(std::istream &is, mjz_str_t<T> &str, char delim) {
 }
 template <typename T, size_t buffer_len = 2048>
 std::istream &getline(std::istream &is, mjz_str_t<T> &str) {
-  return getline<buffer_len>(is, str, '\n');
+  return getline<T, buffer_len>(is, str, '\n');
 }
 template <typename Type>
 inline mjz_ard::mjz_Str get_bit_representation(const Type &data) {
@@ -7990,6 +8056,18 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
 }
 
 template <typename T>
+mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str, char delim) {
+  size_t index_of_delim = is.find_first_of(delim);
+  str = is.substr_view(0ULL, index_of_delim);
+  is.erase_from_f_to_l(0, index_of_delim);
+  return is;
+}
+template <typename T>
+mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str) {
+  return getline(is, str, '\n');
+}
+
+template <typename T>
 StringSumHelper_t<T> mjz_str_t<T>::operator-() {
   return *this;
 }
@@ -8034,6 +8112,66 @@ inline StringSumHelper operator+(StringSumHelper &&lhs, T2 rhs) {
 template <typename T2>
 inline StringSumHelper operator+(const StringSumHelper &lhs, T2 rhs) {
   return operator_plus(mv_to_T2<mjz_Str>(lhs), mv_to_T2<mjz_Str>(rhs));
+}
+
+typedef mjz_RingBufferN<SERIAL_BUFFER_SIZE> RingBuffer;
+template <int N>
+mjz_RingBufferN<N>::mjz_RingBufferN(void) {
+  static_str_algo::memset(_aucBuffer, 0, N);
+  clear();
+}
+template <int N>
+void mjz_RingBufferN<N>::store_char(uint8_t c) {
+  // if we should be storing the received character into the location
+  // just before the tail (meaning that the head would advance to the
+  // current location of the tail), we're about to overflow the buffer
+  // and so we don't write the character or advance the head.
+  if (!isFull()) {
+    _aucBuffer[_iHead] = c;
+    _iHead = nextIndex(_iHead);
+    _numElems = _numElems + 1;
+  }
+}
+template <int N>
+void mjz_RingBufferN<N>::clear() {
+  _iHead = 0;
+  _iTail = 0;
+  _numElems = 0;
+}
+template <int N>
+int mjz_RingBufferN<N>::read_char() {
+  if (isEmpty()) {
+    return -1;
+  }
+
+  uint8_t value = _aucBuffer[_iTail];
+  _iTail = nextIndex(_iTail);
+  _numElems = _numElems - 1;
+  return value;
+}
+template <int N>
+int mjz_RingBufferN<N>::available() {
+  return _numElems;
+}
+template <int N>
+int mjz_RingBufferN<N>::availableForStore() {
+  return (N - _numElems);
+}
+template <int N>
+int mjz_RingBufferN<N>::peek() {
+  if (isEmpty()) {
+    return -1;
+  }
+
+  return _aucBuffer[_iTail];
+}
+template <int N>
+int mjz_RingBufferN<N>::nextIndex(int index) {
+  return (uint32_t)(index + 1) % N;
+}
+template <int N>
+bool mjz_RingBufferN<N>::isFull() {
+  return (_numElems == N);
 }
 
 }  // namespace mjz_ard
