@@ -1855,7 +1855,10 @@ class heap_obj_warper {
     return pointer_to_data()->*my_var;
   }
   constexpr inline Type &operator*() { return *operator->(); }
-  inline Type *operator&() { return pointer_to_data(); }
+  inline heap_obj_warper*operator&() { return this;}// &obj
+  inline Type *operator&(int) { return pointer_to_data(); }// obj&
+  inline  const heap_obj_warper*operator&() const { return this;}// &obj
+  inline  const Type *operator&(int)  const { return pointer_to_data(); }// obj&
   constexpr inline const Type *operator->() const { return pointer_to_data(); }
   template <typename my_type>
   inline auto operator->*(my_type my_var) const {
