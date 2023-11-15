@@ -1683,7 +1683,7 @@ class mjz_ptr_alloc_warpper : public my_destructor,
 };
 
 template <class Type>
-using mjz_ptr_alloc_warpper_Type = typename Type::value_type;
+using mjz_get_value_Type = typename Type::value_type;
 
 template <typename Type, bool construct_obj_on_constructor = true,
           class ptr_alloc_warpper = mjz_ptr_alloc_warpper<Type>>
@@ -5665,22 +5665,22 @@ template <typename T>
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete(void *p) {
-  T().deallocate((mjz_ptr_alloc_warpper_Type<T> *)p);
+  T().deallocate((mjz_get_value_Type<T> *)p);
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete[](void *p) {
-  T().deallocate((mjz_ptr_alloc_warpper_Type<T> *)p);
+  T().deallocate((mjz_get_value_Type<T> *)p);
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete(void *p, size_t l) {
-  T().deallocate_n((mjz_ptr_alloc_warpper_Type<T> *)p, l);
+  T().deallocate_n((mjz_get_value_Type<T> *)p, l);
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete[](void *p, size_t l) {
-  T().deallocate_n((mjz_ptr_alloc_warpper_Type<T> *)p, l);
+  T().deallocate_n((mjz_get_value_Type<T> *)p, l);
 }
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
