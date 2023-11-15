@@ -277,7 +277,7 @@ class static_str_algo {
  public:
   static constexpr int64_t expected_mjz_str_size =
       64;  // set the wanted size in range of [(expected_basic_mjz_str_size +
-           // expected_min_stack_obj_buffer_size),+inf]
+  // expected_min_stack_obj_buffer_size),+inf]
   static constexpr int64_t expected_basic_mjz_str_size =
       (sizeof(size_t) * 2 + sizeof(void *));
   static constexpr int64_t expected_min_stack_obj_buffer_size =
@@ -415,14 +415,10 @@ class static_str_algo {
     if (!(str && *str)) {
       return 0;
     }
-
     const char *str_i = str;
-
-    while (1) {
-      if (!*++str_i) {
-        return str_i - str;
-      }
-    }
+    while (*str_i++)
+      ;
+    return str_i - str;
   }
   constexpr static void *strncpy(void *dest, const char *src, size_t len) {
     return memcpy(dest, src, min(strlen(src) + 1, len));
@@ -432,77 +428,43 @@ class static_str_algo {
   }
   constexpr static inline const char *strchr(const char *str, size_t len_,
                                              char ch) {
-    const char *haystack_end = str + len_;
-
-    for (const char *i{str}; i < haystack_end; ++i) {
-      if (*(i) == ch) {
-        return i;
-      }
-    }
-
+    const char *str_end = str + len_;
+    const char *ptr{str};
+    while (ptr < str_end && (*ptr != ch)) ++ptr;
+    if (ptr != str) return ptr;
     return NULL;
   }
   constexpr static inline const char *strrchr(const char *str, size_t len_,
                                               char ch) {
-    const char *haystack_end = str + len_;
-    const char *i{haystack_end - 1};
-
-    for (;;) {
-      if (*(i) == ch) {
-        return i;
-      }
-
-      if (i <= str) {
-        break;
-      }
-
-      --i;
-    }
-
+    const char *str_end{str - 1};
+    const char *ptr = str + len_ - 1;
+    while (ptr < str_end && (*ptr != ch)) --ptr;
+    if (ptr != str) return ptr;
     return NULL;
   }
   constexpr static inline const char *strstr(const char *const haystack_,
                                              const size_t haystack_len,
                                              const char *const needle_,
                                              const size_t needle_len) {
-    const char *haystack = haystack_;
-    const char *needle = needle_;
-
-    /* Length of NEEDLE. */
-    /* Known minimum length of HAYSTACK. */
-    /* Handle empty NEEDLE special case. */
-    if (needle[0] == '\0') {
-      return (char *)haystack;
+    const char *a{haystack_}, *b{needle_}, *ptr = haystack_;
+    if (*b == 0) {
+      return ptr;
     }
-
-    if (haystack_len < needle_len) {
-      return NULL;
+    for (; *ptr != 0; ptr += 1) {
+      if (*ptr != *b) {
+        continue;
+      }
+      a = ptr;
+      while (1) {
+        if (*b == 0) {
+          return ptr;
+        }
+        if (*a++ != *b++) {
+          break;
+        }
+      }
+      b = needle_;
     }
-
-    if (haystack_len == 0) {
-      return NULL;
-    }
-
-    /* Skip until we find the first matching char from NEEDLE. */
-    const char *haystack_end = haystack + haystack_len;
-    haystack = strchr(haystack, haystack_len, needle[0]);
-
-    if (haystack_end == haystack || needle[1] == '\0' || !haystack) {
-      return (char *)haystack;
-    }
-
-    /* Ensure HAYSTACK length is at least as long as NEEDLE length.
-    Since a match may occur early on in a huge HAYSTACK, use strnlen
-    and read ahead a few cachelines for improved performance. */
-    /* Check whether we have a match. This improves performance since we avoid
-    the initialization overhead of the two-way algorithm. */
-    if (static_str_algo::memcmp(haystack, needle, needle_len) == 0) {
-      return (char *)haystack;
-    }
-
-    /* Perform the search. Abstract memory is considered to be an array
-    of 'unsigned char' values, not an array of 'char' values. See
-    ISO C 99 section 6.2.6.1. */
     return NULL;
   }
   template <class Type>
@@ -518,7 +480,28 @@ class static_str_algo {
     using type = Type;
   };
   template <class Type>
+  struct add_reference {
+    using type = Type &;
+  };
+  template <class Type>
+  struct add_const {
+    using type = const Type;
+  };
+  template <class Type>
+  struct add_temp {
+    using type = Type &&;
+  };
+  template <class Type>
   using remove_reference_t = typename remove_reference<Type>::type;
+
+  template <class Type>
+  using to_reference_t = typename add_reference<remove_reference_t<Type>>::type;
+  template <class Type>
+  using to_const_t = typename add_const<remove_reference_t<Type>>::type;
+  template <class Type>
+  using to_temperory_t = typename add_temp<remove_reference_t<Type>>::type;
+  template <class Type>
+  using to_const_reference_t = typename add_const<to_reference_t<Type>>::type;
 
   template <class Type>
   [[nodiscard]] constexpr remove_reference_t<Type> &&move(
@@ -636,7 +619,7 @@ class static_str_algo {
     mutable uint8_t STR_is_in_stack{};
 
    public:
-    char stack_buffer[stack_buffer_size + 1]{};  // string you're searching for
+    char stack_buffer[stack_buffer_size + 1]{};  // ptr you're searching for
     stack_str_buf() : STR_is_in_stack(0) {
       stack_buffer[stack_buffer_size] = 0;
     }
@@ -1310,7 +1293,7 @@ class mjz_RingBufferN {
   int nextIndex(int index);
   inline bool isEmpty() const { return (_numElems == 0); }
 };
-// The string class
+// The ptr class
 bool is_blank_characteres_default(char);
 char char_to_char_for_reinterpret_fnc_ptr_default(char);
 bool is_forbiden_character_default(char);
@@ -1604,89 +1587,163 @@ template <typename Type>
 class mjz_placement_new {
  public:
   template <typename... args_t>
-  inline Type *obj_placement_new(Type *dest, args_t &&...args) {
-    return (new (dest) Type(std::move(args)...));
+  inline Type *obj_placement_new(Type *dest, args_t &&...args) noexcept {
+    Type *ptr{};
+    try {
+      ptr = (new (dest) Type(std::move(args)...));
+    } catch (...) {
+    }
+    return ptr;
+  }
+};
+template <typename Type>
+class mjz_obj_constructor {};
+template <typename Type>
+class mjz_obj_destructor {
+ public:
+  inline bool obj_destructor(Type *ptr) noexcept {
+    try {
+      ptr->~Type();
+    } catch (...) {
+      return false;
+    }
+    return true;
+  }
+  inline bool obj_destructor(Type &ptr) noexcept {
+    try {
+      ptr.~Type();
+    } catch (...) {
+      return false;
+    }
+    return true;
   }
 };
 
-template <typename Type>
-class mjz_destructor {
- public:
-  inline void obj_destructor(Type *ptr) { ptr->~Type(); }
-  inline void obj_destructor(Type &ptr) { ptr.~Type(); }
-};
-
-template <typename Type, class my_destructor = mjz_destructor<Type>,
+template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
           class my_placement_new = mjz_placement_new<Type>,
+          class my_constructor = mjz_obj_constructor<Type>,
           class my_reallocator = reallocator<Type>>
 
-class mjz_ptr_alloc_warpper : public my_destructor,
-                              public my_placement_new,
-                              public my_reallocator {
+class mjz_temp_type_allocator_warpper_t : public my_destructor,
+                                          public my_placement_new,
+                                          public my_constructor,
+                                          public my_reallocator {
  public:
+  inline mjz_temp_type_allocator_warpper_t() = default;
+  inline ~mjz_temp_type_allocator_warpper_t() = default;
   template <typename... args_t>
-  inline Type *obj_placement_new_arr(Type *dest, size_t n, args_t &&...args) {
-    Type *ptr = dest - 1;
-    Type *ptr_end = dest + n;
-    while ((++ptr) < ptr_end) {
-      this->obj_placement_new(ptr, std::move(args)...);
-    }
-    return dest;
-  }
-  inline Type *obj_placement_new_arr(Type *dest, size_t n) {
-    Type *ptr = dest - 1;
-    Type *ptr_end = dest + n;
+  inline Type *obj_placement_new_arr(Type *dest, size_t n, bool in_reveres,
+                                     args_t... args) {
+    if (in_reveres) {
+      Type *ptr_end = dest - 1;
+      Type *ptr = dest + n;
+      while ((--ptr) > ptr_end) {
+        this->obj_placement_new(ptr, args...);
+      }
+      return dest;
+    } else {
+      Type *ptr = dest - 1;
+      Type *ptr_end = dest + n;
 
-    while ((++ptr) < ptr_end) {
-      this->obj_placement_new(ptr);
+      while ((++ptr) < ptr_end) {
+        this->obj_placement_new(ptr, args...);
+      }
+      return dest;
     }
-    return dest;
+  }
+  inline Type *obj_placement_new_arr(Type *dest, size_t n,
+                                     bool in_reveres = 0) {
+    if (in_reveres) {
+      Type *ptr_end = dest - 1;
+      Type *ptr = dest + n;
+      while ((--ptr) > ptr_end) {
+        this->obj_placement_new(ptr);
+      }
+      return dest;
+    } else {
+      Type *ptr = dest - 1;
+      Type *ptr_end = dest + n;
+
+      while ((++ptr) < ptr_end) {
+        this->obj_placement_new(ptr);
+      }
+      return dest;
+    }
   }
   template <typename... args_t>
-  inline Type&& obj_constructor(args_t &&...args) {
+  inline [[nodiscard]] Type &&obj_constructor(args_t &&...args) {
     uint8_t data_buffer[sizeof(Type)]{};
-    return std::move(*this->obj_placement_new((Type *)this->allocate(sizeof(Type)), std::move(args)...));
+    return std::move(*this->obj_placement_new(
+        (Type *)this->allocate(sizeof(Type)), std::move(args)...));
   }
   template <typename... args_t>
-  inline Type allocate_obj(args_t &&...args) {
+  inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
     return this->obj_placement_new((Type *)this->allocate(sizeof(Type)),
-                             std::move(args)...);
+                                   std::move(args)...);
   }
   template <typename... args_t>
-  inline Type allocate_obj_array(size_t len, args_t &&...args) {
+  inline [[nodiscard]] Type *allocate_obj_array(size_t len, bool in_reveres,
+                                                args_t &&...args) {
     // new Type(std::move(args)...)[len];
     Type *ptr = (Type *)(((size_t *)this->allocate(sizeof(size_t) +
                                                    (len * sizeof(Type)))) +
-                 1);
-    ((size_t)ptr)[-1] = len;
-    return obj_placement_new_arr(ptr, len, std::move(args)...);
+                         1);
+    ((size_t *)ptr)[-1] = len;
+    return obj_placement_new_arr(ptr, len, in_reveres, std::move(args)...);
+  }
+  template <typename... args_t>
+  inline [[nodiscard]] Type *allocate_obj_array(size_t len,
+                                                bool in_reveres = 0) {
+    // new Type(std::move(args)...)[len];
+    Type *ptr = (Type *)(((size_t *)this->allocate(sizeof(size_t) +
+                                                   (len * sizeof(Type)))) +
+                         1);
+    ((size_t *)ptr)[-1] = len;
+    return obj_placement_new_arr(ptr, len, in_reveres);
   }
 
  public:
-  inline void obj_destructor_arr(Type *arr, size_t n) {
-    Type *ptr = arr - 1;
-    Type *ptr_end = arr + n;
-    while ((++arr) < ptr_end) {
-      this->obj_destructor(arr);
+  inline bool obj_destructor_arr(Type *arr, size_t n, bool in_reveres = 1) {
+    bool was_successful{1};
+    if (in_reveres) {
+      Type *ptr = arr + n;
+      Type *ptr_end = arr - 1;
+      while ((--ptr) > ptr_end) {
+        was_successful &= this->obj_destructor(ptr);
+      }
+    } else {
+      Type *ptr = arr - 1;
+      Type *ptr_end = arr + n;
+      while ((++ptr) < ptr_end) {
+        was_successful &= this->obj_destructor(ptr);
+      }
     }
-    return arr;
+    return was_successful;
   }
-  inline void deallocate_obj(Type *ptr) {
-    this->obj_destructor(ptr);
+  inline bool deallocate_obj(Type *ptr) {
+    bool was_successful = this->obj_destructor(ptr);
     this->deallocate(ptr);
+    return was_successful;
   }
-  inline void deallocate_obj_array(Type *ptr) {
+  inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
     // delete[] dest;
-    obj_destructor_arr(ptr, ((size_t)ptr)[-1]);
+    bool was_successful =
+        obj_destructor_arr(ptr, ((size_t *)ptr)[-1], in_reveres);
     this->deallocate((Type *)(((size_t *)ptr) - 1));
+    return was_successful;
   }
 };
 
 template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
 
+template <typename Type, class my_reallocator = reallocator<Type>>
+using mjz_allocator_warpper = mjz_temp_type_allocator_warpper_t<
+    Type, mjz_obj_destructor<Type>, mjz_placement_new<Type>,
+    mjz_obj_constructor<Type>, my_reallocator>;
+
 template <typename Type, bool construct_obj_on_constructor = true,
-          class ptr_alloc_warpper = mjz_ptr_alloc_warpper<Type>>
+          class ptr_alloc_warpper = mjz_temp_type_allocator_warpper_t<Type>>
 class heap_obj_warper {
  public:
   static constexpr size_t size = sizeof(Type);
@@ -1867,10 +1924,12 @@ class heap_obj_warper {
     return pointer_to_data()->*my_var;
   }
   constexpr inline Type &operator*() { return *operator->(); }
-  inline heap_obj_warper *operator&() { return this; }                   // &obj
-  inline Type *operator&(int) { return pointer_to_data(); }              // obj&0
-  inline const heap_obj_warper *operator&() const { return this; }       // &obj
-  inline const Type *operator&(int) const { return pointer_to_data(); }  // obj&0
+  inline heap_obj_warper *operator&() { return this; }              // &obj
+  inline Type *operator&(int) { return pointer_to_data(); }         // obj&0
+  inline const heap_obj_warper *operator&() const { return this; }  // &obj
+  inline const Type *operator&(int) const {
+    return pointer_to_data();
+  }  // obj&0
   constexpr inline const Type *operator->() const { return pointer_to_data(); }
   template <typename my_type>
   inline auto operator->*(my_type my_var) const {
@@ -1904,9 +1963,9 @@ class heap_obj_warper {
   }
 
 #if 0
-  inline bool operator<=>(const heap_obj_warper &other) const {
-    return operator() <=> other.operator();
-  }
+ inline bool operator<=>(const heap_obj_warper &other) const {
+ return operator() <=> other.operator();
+ }
 #endif  // ! Arduino
   constexpr inline bool has_data() { return m_Has_data; }
   bool operator!() const { return !m_Has_data; }
@@ -2109,7 +2168,8 @@ struct SHA256_CTX {
   WORD datalen{};
   unsigned long long bitlen{};
   WORD state[8]{};
-  mjz_Str to_string() const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> to_string() const;
   friend std::ostream &operator<<(std::ostream &CIN, const SHA256_CTX &obj);
   static inline int compare_hash(const void *rhs, const SHA256_CTX &lhs) {
     return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
@@ -2502,7 +2562,7 @@ class basic_mjz_Str_view : protected static_str_algo {
 
  protected:  // the actual char array
   char *m_buffer;
-  // the string length (not counting the '\0')
+  // the ptr length (not counting the '\0')
   size_t m_length;
 
  public:
@@ -3171,24 +3231,38 @@ class basic_mjz_Str_view : protected static_str_algo {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(beginIndex) + number);
   }
+  constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
 
  public:
-  std::pair<hash_sha256, mjz_Str> hash_with_output(uint8_t n = 0) const;
-  mjz_Str substring(size_t beginIndex);
-  mjz_Str substring(size_t beginIndex, size_t endIndex) const;
-  mjz_Str substring_beg_n(size_t beginIndex, size_t number) const;
-  mjz_Str substr(size_t pos = 0, size_t len = npos) const;
-  mjz_Str substring(int64_t beginIndex, int64_t endIndex) const;
-  mjz_Str substring(int64_t beginIndex) const;
-  mjz_Str substring_beg_n(int64_t beginIndex, size_t number);
-  mjz_Str substring_beg_n(unsigned int beginIndex, unsigned int number) const;
-  mjz_Str substring(int beginIndex) const;
-  mjz_Str substring(int beginIndex, int endIndex) const;
-  mjz_Str substring_beg_n(int beginIndex, int number) const;
-  mjz_Str substring(size_t beginIndex) const;
-  mjz_Str substring_beg_n(int64_t beginIndex, size_t number) const;
-
-  constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
+  template <typename T = reallocator<char>>
+  std::pair<hash_sha256, mjz_str_t<T>> hash_with_output(uint8_t n = 0) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring(size_t beginIndex);
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring(size_t beginIndex, size_t endIndex) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring_beg_n(size_t beginIndex, size_t number) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substr(size_t pos = 0, size_t len = npos) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring(int64_t beginIndex, int64_t endIndex) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring(int64_t beginIndex) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number);
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring_beg_n(unsigned int beginIndex,
+                               unsigned int number) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring(int beginIndex) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring(int beginIndex, int endIndex) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring_beg_n(int beginIndex, int number) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring(size_t beginIndex) const;
+  template <typename T = reallocator<char>>
+  mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number) const;
 };
 
 class mjz_str_view;
@@ -3336,8 +3410,8 @@ class mjz_Str : public basic_mjz_String,
   // mjz_Str<T> and used parseFloat/Int with a custom ignore character. To keep
   // the public API simple, these overload remains protected.
   struct MultiTarget {
-    const char *str;  // string you're searching for
-    size_t len;       // length of string you're searching for
+    const char *str;  // ptr you're searching for
+    size_t len;       // length of ptr you're searching for
     size_t index;     // index used by the search routine.
   };
   // This allows you to search for an arbitrary number of strings.
@@ -3391,32 +3465,32 @@ class mjz_Str : public basic_mjz_String,
 
   bool find_in_stream(
       const char *target);  // reads data from the stream until the target
-  // string is found
+  // ptr is found
   bool find_in_stream(const uint8_t *target) {
     return find_in_stream((const char *)target);
   }
-  // returns true if target string is found, false if timed out (see setTimeout)
+  // returns true if target ptr is found, false if timed out (see setTimeout)
   bool find_in_stream(
       const char *target,
       size_t length);  // reads data from the stream until the target
-  // string of given length is found
+  // ptr of given length is found
   bool find_in_stream(const uint8_t *target, size_t length) {
     return find_in_stream((const char *)target, length);
   }
-  // returns true if target string is found, false if timed out
+  // returns true if target ptr is found, false if timed out
   bool find_in_stream(char target) { return find_in_stream(&target, 1); }
 
   bool find_in_stream_Until(
       const char *target,
       const char *terminator);  // as find but search ends if the
-  // terminator string is found
+  // terminator ptr is found
   bool find_in_stream_Until(const uint8_t *target, const char *terminator) {
     return find_in_stream_Until((const char *)target, terminator);
   }
   bool find_in_stream_Until(
       const char *target, size_t targetLen, const char *terminate,
       size_t termLen);  // as above but search ends if the terminate
-  // string is found
+  // ptr is found
   bool find_in_stream_Until(const uint8_t *target, size_t targetLen,
                             const char *terminate, size_t termLen) {
     return find_in_stream_Until((const char *)target, targetLen, terminate,
@@ -3504,18 +3578,18 @@ class mjz_Str : public basic_mjz_String,
 
 #ifndef Arduino
   mjz_str_t<T> &operator=(std::string_view &x) {
-    return operator=(std::string(x).c_str());
+    return operator=(std::ptr(x).c_str());
   }
   mjz_str_t<T> &operator=(std::string_view &&x) {
-    return operator=(std::string(x).c_str());
+    return operator=(std::ptr(x).c_str());
   }
   mjz_str_t<T> &assign_range(std::initializer_list<const char> list);
   mjz_str_t<T> &assign_range(iterator_template<const char> list);
   mjz_str_t<T> &operator+=(std::string_view &x) {
-    return operator+=(std::string(x).c_str());
+    return operator+=(std::ptr(x).c_str());
   }
   mjz_str_t<T> &operator+=(std::string_view &&x) {
-    return operator+=(std::string(x).c_str());
+    return operator+=(std::ptr(x).c_str());
   }
 #else
   mjz_Str<T>(String &x)
@@ -3548,9 +3622,9 @@ class mjz_Str : public basic_mjz_String,
     concat(x.c_str(), x.length());
     return *this;
   }
-  mjz_str_t(std::string &x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t(std::string &&x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t(const std::string &x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(std::ptr &x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(std::ptr &&x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(const std::ptr &x) : mjz_str_t<T>(x.c_str()) {}
   ~mjz_str_t(void);  // make all drived destructors called
   void adjust_cap();
   mjz_str_t<T> &operator-=(const mjz_str_t<T> &othr_);
@@ -3585,9 +3659,9 @@ class mjz_Str : public basic_mjz_String,
     return *this;
   };
   // memory management
-  // return true on success,false on failure (in which case,the string
+  // return true on success,false on failure (in which case,the ptr
   // is left unchanged). reserve(0),if successful,will validate an
-  // invalid string (i.e.,"if (s)" will be true afterwards)
+  // invalid ptr (i.e.,"if (s)" will be true afterwards)
   explicit operator char *() { return buffer_ref(); }
   explicit operator const uint8_t *() const {
     return (const uint8_t *)buffer_ref();
@@ -3620,11 +3694,11 @@ class mjz_Str : public basic_mjz_String,
   explicit operator const std__string_view_if_is() const {
     return std__string_view_if_is((const char *)buffer_ref());
   }
-  [[nodiscard]] explicit operator std::string() const {
-    return std::string((const char *)buffer_ref(), length());
+  [[nodiscard]] explicit operator std::ptr() const {
+    return std::ptr((const char *)buffer_ref(), length());
   }
-  [[nodiscard]] explicit operator const std::string() const {
-    return std::string((const char *)buffer_ref(), length());
+  [[nodiscard]] explicit operator const std::ptr() const {
+    return std::ptr((const char *)buffer_ref(), length());
   }
   operator const char *() const { return buffer_ref(); }
   char &operator[](size_t index);
@@ -3636,19 +3710,19 @@ class mjz_Str : public basic_mjz_String,
   std__string_view_if_is &&std_sv_temp() const {
     return std::move(std__string_view_if_is((const char *)buffer_ref()));
   }
-  [[nodiscard]] const std::string std_s() const {
-    return std::string((const char *)buffer_ref());
+  [[nodiscard]] const std::ptr std_s() const {
+    return std::ptr((const char *)buffer_ref());
   }
-  [[nodiscard]] const std::string &&std_st() const {
-    return std::move(std::string((const char *)buffer_ref()));
+  [[nodiscard]] const std::ptr &&std_st() const {
+    return std::move(std::ptr((const char *)buffer_ref()));
   }
   // creates a copy of the assigned value. if the value is null or
-  // invalid,or if the memory allocation fails,the string will be
+  // invalid,or if the memory allocation fails,the ptr will be
   // marked as invalid ("if (s)" will be false).
   mjz_str_t<T> &operator=(const mjz_str_t<T> &rhs);
-  mjz_str_t<T> &operator=(std::string &x) { return operator=(x.c_str()); }
-  mjz_str_t<T> &operator=(std::string &&x) { return operator=(x.c_str()); }
-  mjz_str_t<T> &operator=(const std::string &x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(std::ptr &x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(std::ptr &&x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(const std::ptr &x) { return operator=(x.c_str()); }
   mjz_str_t<T> &operator=(const char *cstr);
   mjz_str_t<T> &operator=(const __FlashStringHelper *str);
   mjz_str_t<T> &operator=(mjz_str_t<T> &&rval) noexcept;
@@ -3657,7 +3731,7 @@ class mjz_Str : public basic_mjz_String,
   // return operator=(std::move(*rval));
   // }// this will give me headaches in the long run so i dont move it
   // concatenate (works w/ built-in types)
-  // returns true on success,false on failure (in which case,the string
+  // returns true on success,false on failure (in which case,the ptr
   // is left unchanged). if the argument is null or invalid,the
   // concatenation is considered unsuccessful.
   bool concat(const mjz_str_t<T> &str);
@@ -3716,7 +3790,7 @@ class mjz_Str : public basic_mjz_String,
     return *this;
   }
 
-  // if there's not enough memory for the concatenated value,the string
+  // if there's not enough memory for the concatenated value,the ptr
   // will be left unchanged (but this isn't signalled in any way)
   mjz_str_t<T> &operator+=(const mjz_str_t<T> &rhs) {
     concat(rhs);
@@ -4346,7 +4420,7 @@ class mjz_Str : public basic_mjz_String,
   // constructors
   // creates a copy of the initial value.
   // if the initial value is null or invalid,or if memory allocation
-  // fails,the string will be marked as invalid (i.e. "if (s)" will
+  // fails,the ptr will be marked as invalid (i.e. "if (s)" will
   // be false).
   mjz_str_t(const char *cstr, size_t len_) {
     init();
@@ -4505,9 +4579,9 @@ class mjz_Str : public basic_mjz_String,
 };
 /*
  please dont use mjz_str_view with temporary strings
- if the string that it references goes out of scope (delete , ~obj , },free
+ if the ptr that it references goes out of scope (delete , ~obj , },free
  ,...)the string_view will have undefined behavior use this obj like a
- std::string_view not like std::string
+ std::string_view not like std::ptr
 */
 class mjz_str_view : public basic_mjz_Str_view {
  protected:
@@ -4539,7 +4613,7 @@ class mjz_str_view : public basic_mjz_Str_view {
       : mjz_str_view(cstr_, strlen(cstr_)) {}
   constexpr mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
   mjz_str_view(mjz_str_view &&s) =
-      default;  // we are string views and not strings
+      default;  // we are ptr views and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
   template <typename T>
   constexpr mjz_str_view &operator=(mjz_str_t<T> &&s) {
@@ -4637,7 +4711,7 @@ class mjz_virtual_string_view : public mjz_str_view {
       : mjz_virtual_string_view(cstr_, strlen(cstr_)) {}
   mjz_virtual_string_view() : mjz_virtual_string_view(empty_STRING_C_STR, 0) {}
   mjz_virtual_string_view(mjz_virtual_string_view &&s) =
-      default;  // we are string views and not strings
+      default;  // we are ptr views and not strings
   mjz_virtual_string_view &operator=(mjz_virtual_string_view &&) = default;
   template <typename T>
   mjz_virtual_string_view &operator=(mjz_str_t<T> &&s) {
@@ -4943,9 +5017,9 @@ class type_fn_class {
     return _function(x);
   }
 };
-
-mjz_Str ULL_LL_to_str(size_t value, int radix, bool is_signed,
-                      bool force_neg = 0);
+template <typename T = reallocator<char>>
+mjz_ard::mjz_str_t<T> ULL_LL_to_str(size_t value, int radix, bool is_signed,
+                                    bool force_neg = 0);
 template <typename T>
 mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str, char delim);
 template <typename T>
@@ -5604,7 +5678,7 @@ typedef extended_mjz_str_t<reallocator<char>> mjz_estr;
 typedef extended_mjz_str_t<reallocator<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
 typedef malloc_wrapper mlc_wrp;
-typedef std::string string;
+typedef std::ptr ptr;
 typedef hash_sha256 hash_sha_512;
 typedef StringSumHelper_t<reallocator<char>> mjz_StringSumHelper;
 typedef StringSumHelper_t<reallocator<char>> StringSumHelper;
@@ -6147,14 +6221,14 @@ bool mjz_ard::mjz_str_t<T>::concat(unsigned long long num) {
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(float num) {
   char buf[20];
-  char *string = dtostrf(num, 4, 2, buf);
-  return concat(string);
+  char *ptr = dtostrf(num, 4, 2, buf);
+  return concat(ptr);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(double num) {
   char buf[20];
-  char *string = dtostrf(num, 4, 2, buf);
-  return concat(string);
+  char *ptr = dtostrf(num, 4, 2, buf);
+  return concat(ptr);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(const __FlashStringHelper *str) {
@@ -6570,7 +6644,7 @@ template <typename T>
 void mjz_ard::mjz_str_t<T>::remove(size_t index) {
   // Pass the biggest integer as the count. The remove method
   // below will take care of truncating it at the end of the
-  // string.
+  // ptr.
   remove(index, (size_t)-1);
 }
 template <typename T>
@@ -6945,6 +7019,20 @@ template <typename T>
 void mjz_ard::mjz_str_t<T>::begin(unsigned long) {}
 template <typename T>
 void mjz_ard::mjz_str_t<T>::begin(unsigned long, uint16_t) {}
+template <typename T>
+mjz_ard::mjz_str_t<T> ULL_LL_to_str(uint64_t value, int radix, bool is_signed,
+                                    bool force_neg) {
+  mjz_str_t<T> ret_var;
+  ret_var.reserve(70, 1);
+  char *ptr_ = b_U_lltoa(value, (char *)ret_var, radix, is_signed, force_neg);
+
+  if (!ptr_) {
+    return ret_var;
+  }
+
+  ret_var.addto_length((uint64_t)strlen(ptr_), 1);
+  return ret_var;
+}
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::ULL_LL_to_str_add(
     uint64_t value, int radix, bool is_signed, bool force_neg) {
@@ -7663,27 +7751,27 @@ int mjz_ard::mjz_str_t<T>::peekNextDigit(LookaheadMode lookahead,
 // Public Methods
 //////////////////////////////////////////////////////////////
 
-// find returns true if the target string is found
+// find returns true if the target ptr is found
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream(const char *target) {
   return find_in_stream_Until(target, strlen(target), NULL, 0);
 }
-// reads data from the stream until the target string of given length is found
-// returns true if target string is found, false if timed out
+// reads data from the stream until the target ptr of given length is found
+// returns true if target ptr is found, false if timed out
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream(const char *target, size_t length) {
   return find_in_stream_Until(target, length, NULL, 0);
 }
-// as find but search ends if the terminator string is found
+// as find but search ends if the terminator ptr is found
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream_Until(const char *target,
                                                  const char *terminator) {
   return find_in_stream_Until(target, strlen(target), terminator,
                               strlen(terminator));
 }
-// reads data from the stream until the target string of the given length is
-// found search terminated if the terminator string is found returns true if
-// target string is found, false if terminated or timed out
+// reads data from the stream until the target ptr of the given length is
+// found search terminated if the terminator ptr is found returns true if
+// target ptr is found, false if terminated or timed out
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream_Until(const char *target,
                                                  size_t targetLen,
@@ -7846,7 +7934,7 @@ mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str_Until(
 template <typename T>
 int mjz_ard::mjz_str_t<T>::findMulti(
     struct mjz_ard::mjz_str_t<T>::MultiTarget *targets, int tCount) {
-  // any zero length target string automatically matches and would make
+  // any zero length target ptr automatically matches and would make
   // a mess of the rest of the algorithm.
   for (struct MultiTarget *t = targets; t < targets + tCount; ++t) {
     if (t->len <= 0) {
@@ -7895,7 +7983,7 @@ int mjz_ard::mjz_str_t<T>::findMulti(
           break;
         }
 
-        // otherwise we need to check the rest of the found string
+        // otherwise we need to check the rest of the found ptr
         int diff = (int)(origIndex - t->index);
         size_t i;
 
@@ -8100,6 +8188,107 @@ mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str, char delim) {
 template <typename T>
 mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str) {
   return getline(is, str, '\n');
+}
+
+template <typename T>
+std::pair<mjz_ard::hash_sha256, mjz_str_t<T>>
+mjz_ard::basic_mjz_Str_view::hash_with_output(uint8_t n) const {
+  mjz_ard::hash_sha256 hash_;
+  mjz_str_t<T> output(*this);
+  hash_ = hash_msg_to_sha_512_n_with_output(c_str(), length(), n, output);
+  return {hash_, output};
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(size_t beginIndex,
+                                                          size_t number) const {
+  size_t endIndex = beginIndex + number;
+
+  if (!number || length() < endIndex) {
+    return mjz_str_t<T>();
+  }
+
+  return substring(beginIndex, beginIndex + number);
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(size_t beginIndex) const {
+  return substring(beginIndex, m_length);
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(int beginIndex,
+                                                          int number) const {
+  return substring_beg_n((int64_t)beginIndex, (int64_t)number);
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int beginIndex,
+                                                    int endIndex) const {
+  return substring((int64_t)beginIndex, (int64_t)endIndex);
+};
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int beginIndex) const {
+  return substring((int64_t)beginIndex);
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(
+    unsigned int beginIndex, unsigned int number) const {
+  return substring_beg_n((size_t)beginIndex, (size_t)number);
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(int64_t beginIndex,
+                                                          size_t number) const {
+  return substring_beg_n(signed_index_to_unsigned(beginIndex), number);
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int64_t beginIndex,
+                                                    int64_t endIndex) const {
+  return substring(signed_index_to_unsigned(beginIndex),
+                   signed_index_to_unsigned(endIndex));
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int64_t beginIndex) const {
+  beginIndex = signed_index_to_unsigned(beginIndex);
+  return substring((size_t)beginIndex, length());
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(size_t left,
+                                                    size_t right) const {
+  const char *c_str_out{};
+  size_t len_out{};
+
+  if (!substring_give_ptr(left, right, c_str_out, len_out)) {
+    return mjz_str_t<T>();
+  }
+
+  mjz_str_t<T> out;
+  out.copy(c_str_out, len_out);
+  //
+  return out;
+}
+template <typename T>
+mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substr(size_t pos, size_t len) const {
+  if (len == npos) {
+    len = length();
+  }
+
+  return substring_beg_n(pos, len);
+}
+template <typename T>
+mjz_str_t<T> SHA256_CTX::to_string() const {
+  char buffer[1024]{};
+  return mjz_str_t<T>(SHA256_CTX::to_c_string(buffer));
+}
+
+template <typename T = reallocator<char>>
+mjz_str_t<T> float_get_bits_interpretation(float x) {
+  auto bits = mjz_ard::get_bit_representation<float>(x);
+  mjz_str_t<T> str(" ");
+  for (auto cr : bits) {
+    str.print((char)cr);
+    str.write(' ');
+  }
+  str.print(
+      "\n |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|\n "
+      "|s| exp | mantissa |\n\n");
+  return str;
 }
 
 template <typename T>

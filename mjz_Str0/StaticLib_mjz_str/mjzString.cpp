@@ -100,12 +100,16 @@ long random(long howsmall, long howbig) {
 char* dtostrf(double __val, signed char __width, unsigned char __prec,
               char* __s) {
   char buffer_for_not_overflowing[65]{};
-  mjz_Str frmt("%");  // be carefull not recursively ... yourself
-  frmt += __width;
-  frmt += '.';
-  frmt += __prec;
-  frmt += "lf";
-  sprintf_alt_(buffer_for_not_overflowing, 64, frmt.c_str(), __val);
+  char string_format[227]{};
+  char* ptr{string_format};
+  //b_U_lltoa(value, (char*)ret_var, radix, is_signed, force_neg);
+  *ptr++ = '%';  
+  ptr +=static_str_algo::strlen(b_U_lltoa(__width, ptr, 10, 0, 0));
+  *ptr++ = '.';
+  ptr += static_str_algo::strlen(b_U_lltoa(__prec, ptr, 10, 0, 0));
+  *ptr++ = 'l';
+  *ptr++ = 'f';
+  sprintf_alt_(buffer_for_not_overflowing, 64, string_format, __val);
   memmove(__s, buffer_for_not_overflowing, __width);
   return __s;
 }
@@ -188,19 +192,7 @@ char* b_U_lltoa(uint64_t value, char* BFR_buffer, int radix, bool is_signed,
 
   return BFR_buffer;
 }
-mjz_Str ULL_LL_to_str(uint64_t value, int radix, bool is_signed,
-                      bool force_neg) {
-  mjz_Str ret_var;
-  ret_var.reserve(70, 1);
-  char* ptr_ = b_U_lltoa(value, (char*)ret_var, radix, is_signed, force_neg);
 
-  if (!ptr_) {
-    return ret_var;
-  }
-
-  ret_var.addto_length((uint64_t)strlen(ptr_), 1);
-  return ret_var;
-}
 
 uint8_t get_num_from_char(uint8_t in_CHAR_, bool* to_neg) {
   if (in_CHAR_ >= '0' && in_CHAR_ <= '9') {
@@ -411,14 +403,9 @@ bool is_forbiden_character_default(char x_char_) {
 std::shared_ptr<mjz_Str_DATA_storage_cls> main_mjz_Str_DATA_storage_Obj_ptr =
     mjz_Str_DATA_storage_cls::create();
 ;
+ 
 
-std::pair<mjz_ard::hash_sha256, mjz_ard::mjz_Str>
-mjz_ard::basic_mjz_Str_view::hash_with_output(uint8_t n) const {
-  mjz_ard::hash_sha256 hash_;
-  mjz_ard::mjz_Str output(*this);
-  hash_ = hash_msg_to_sha_512_n_with_output(c_str(), length(), n, output);
-  return {hash_, output};
-}
+
 long long unsigned int mjz_millis() {
   static uint64_t my_time[2] = {0, 0};
   uint64_t ARD_millis_vr = mjz_ard::ARD_millis();
@@ -488,86 +475,11 @@ bool Get_nth_bit_andret8(const void* data,
 /* Search */
 /*********************************************/
 
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring_beg_n(
-    size_t beginIndex, size_t number) const {
-  size_t endIndex = beginIndex + number;
 
-  if (!number || length() < endIndex) {
-    return mjz_ard::mjz_Str();
-  }
 
-  return substring(beginIndex, beginIndex + number);
-}
 
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring(
-    size_t beginIndex) const {
-  return substring(beginIndex, m_length);
-}
 
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring_beg_n(
-    int beginIndex, int number) const {
-  return substring_beg_n((int64_t)beginIndex, (int64_t)number);
-}
 
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring(int beginIndex,
-                                                        int endIndex) const {
-  return substring((int64_t)beginIndex, (int64_t)endIndex);
-};
-
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring(int beginIndex) const {
-  return substring((int64_t)beginIndex);
-}
-
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring_beg_n(
-    unsigned int beginIndex, unsigned int number) const {
-  return substring_beg_n((size_t)beginIndex, (size_t)number);
-}
-
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring_beg_n(
-    int64_t beginIndex, size_t number) const {
-  return substring_beg_n(signed_index_to_unsigned(beginIndex), number);
-}
-
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring(
-    int64_t beginIndex, int64_t endIndex) const {
-  return substring(signed_index_to_unsigned(beginIndex),
-                   signed_index_to_unsigned(endIndex));
-}
-
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring(
-    int64_t beginIndex) const {
-  beginIndex = signed_index_to_unsigned(beginIndex);
-  return substring((size_t)beginIndex, length());
-}
-
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substring(size_t left,
-                                                        size_t right) const {
-  const char* c_str_out{};
-  size_t len_out{};
-
-  if (!substring_give_ptr(left, right, c_str_out, len_out)) {
-    return mjz_ard::mjz_Str();
-  }
-
-  mjz_ard::mjz_Str out;
-  out.copy(c_str_out, len_out);
-  //
-  return out;
-}
-
-mjz_ard::mjz_Str mjz_ard::basic_mjz_Str_view::substr(size_t pos,
-                                                     size_t len) const {
-  if (len == npos) {
-    len = length();
-  }
-
-  return substring_beg_n(pos, len);
-}
-
-mjz_Str SHA256_CTX::to_string() const {
-  char buffer[1024]{};
-  return mjz_ard::mjz_Str(SHA256_CTX::to_c_string(buffer));
-}
 
 std::ostream& operator<<(std::ostream& CIN, const mjz_ard::SHA256_CTX& obj) {
   char buffer[1024]{};
