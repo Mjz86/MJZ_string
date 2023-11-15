@@ -2003,9 +2003,9 @@ class heap_obj_warper {
     return &move_to(*dest);
   }
 };
-
-class malloc_wrapper {
-  malloc_wrapper &move(malloc_wrapper &otr) {
+template<class my_reallocator>
+class mjz_temp_malloc_wrapper_t {
+  mjz_temp_malloc_wrapper_t &move(mjz_temp_malloc_wrapper_t &otr) {
     if (otr.is_moved_state()) {
       if (otr.m_data_ptr && otr.m_cap_size) {
         m_data_ptr = malloc(otr.m_cap_size);
@@ -2017,7 +2017,7 @@ class malloc_wrapper {
     otr.obj_is_moved();
     return move(otr.m_data_ptr, otr.m_cap_size);
   };
-  malloc_wrapper &move(void *data_ptr, size_t size_of_ptr) {
+  mjz_temp_malloc_wrapper_t &move(void *data_ptr, size_t size_of_ptr) {
     free();
 
     if (size_of_ptr) {
@@ -2054,34 +2054,34 @@ class malloc_wrapper {
              ? ~Dealocation_state::dont_deallocate_on_free
              : Dealocation_state::dont_deallocate_on_free);
   }
-  inline malloc_wrapper(size_t size_of_ptr = 0) {
+  inline mjz_temp_malloc_wrapper_t(size_t size_of_ptr = 0) {
     m_data_ptr = malloc(size_of_ptr);
   };
-  inline malloc_wrapper(size_t size_of_ptr, int VAl_) {
+  inline mjz_temp_malloc_wrapper_t(size_t size_of_ptr, int VAl_) {
     m_data_ptr = malloc(size_of_ptr);
     memset(VAl_);
   };
-  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr) {
+  inline mjz_temp_malloc_wrapper_t(void *data_ptr, size_t size_of_ptr) {
     move(data_ptr, size_of_ptr);
   }
-  inline malloc_wrapper(void *data_ptr, size_t size_of_ptr, int VAl_) {
+  inline mjz_temp_malloc_wrapper_t(void *data_ptr, size_t size_of_ptr, int VAl_) {
     move(data_ptr, size_of_ptr).memset(VAl_);
   }
-  inline malloc_wrapper &change_data_ptr(void *data_ptr, size_t size_of_ptr) {
+  inline mjz_temp_malloc_wrapper_t &change_data_ptr(void *data_ptr, size_t size_of_ptr) {
     return move(data_ptr, size_of_ptr);
   }
-  inline malloc_wrapper &change_data_ptr(malloc_wrapper &&otr) {
+  inline mjz_temp_malloc_wrapper_t &change_data_ptr(mjz_temp_malloc_wrapper_t &&otr) {
     return move(otr);
   }
-  inline ~malloc_wrapper() { free(); }
-  malloc_wrapper(malloc_wrapper &) = delete;
-  inline malloc_wrapper(malloc_wrapper &&otr) noexcept { move(otr); }
-  malloc_wrapper(const malloc_wrapper &) = delete;
-  malloc_wrapper &operator=(malloc_wrapper &) = delete;
-  inline malloc_wrapper &operator=(malloc_wrapper &&otr) noexcept {
+  inline ~mjz_temp_malloc_wrapper_t() { free(); }
+  mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &) = delete;
+  inline mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &&otr) noexcept { move(otr); }
+  mjz_temp_malloc_wrapper_t(const mjz_temp_malloc_wrapper_t &) = delete;
+  mjz_temp_malloc_wrapper_t &operator=(mjz_temp_malloc_wrapper_t &) = delete;
+  inline mjz_temp_malloc_wrapper_t &operator=(mjz_temp_malloc_wrapper_t &&otr) noexcept {
     return move(otr);
   };
-  malloc_wrapper &operator=(const malloc_wrapper &) = delete;
+  mjz_temp_malloc_wrapper_t &operator=(const mjz_temp_malloc_wrapper_t &) = delete;
   template <typename Type>
   constexpr inline Type *get_ptr_as() {
     return (Type *)m_data_ptr;
@@ -2099,7 +2099,7 @@ class malloc_wrapper {
     free();
 
     if (size_of_ptr) {
-      m_data_ptr = ::malloc(size_of_ptr);
+      m_data_ptr = my_reallocator().allocate(size_of_ptr);
 
       if (m_data_ptr) {
         m_cap_size = size_of_ptr;
@@ -2111,7 +2111,8 @@ class malloc_wrapper {
   void *realloc(size_t size_of_ptr) {
     // free();
     if (size_of_ptr) {
-      m_data_ptr = ::realloc(do_deallocation_on_free_state() ? m_data_ptr : 0,
+      m_data_ptr = my_reallocator().reallocate(
+          do_deallocation_on_free_state() ? m_data_ptr : 0,
                              size_of_ptr);
 
       if (m_data_ptr) {
@@ -2129,11 +2130,12 @@ class malloc_wrapper {
     }
   }
 
-  malloc_wrapper(void *data_ptr, size_t cap_size, uint8_t DO_deallocate)
+  mjz_temp_malloc_wrapper_t(void *data_ptr, size_t cap_size, uint8_t DO_deallocate)
       : m_data_ptr(data_ptr),
         m_cap_size(cap_size),
         m_Deallocation_state(DO_deallocate) {}
 };
+using malloc_wrapper=mjz_temp_malloc_wrapper_t<reallocator<char>>;
 
 /*********************************************************************
  Filename: sha256.h
@@ -3410,8 +3412,8 @@ class mjz_Str : public basic_mjz_String,
   // mjz_Str<T> and used parseFloat/Int with a custom ignore character. To keep
   // the public API simple, these overload remains protected.
   struct MultiTarget {
-    const char *str;  // ptr you're searching for
-    size_t len;       // length of ptr you're searching for
+    const char *str;  // string you're searching for
+    size_t len;       // length of string you're searching for
     size_t index;     // index used by the search routine.
   };
   // This allows you to search for an arbitrary number of strings.
@@ -3465,32 +3467,32 @@ class mjz_Str : public basic_mjz_String,
 
   bool find_in_stream(
       const char *target);  // reads data from the stream until the target
-  // ptr is found
+  // string is found
   bool find_in_stream(const uint8_t *target) {
     return find_in_stream((const char *)target);
   }
-  // returns true if target ptr is found, false if timed out (see setTimeout)
+  // returns true if target string is found, false if timed out (see setTimeout)
   bool find_in_stream(
       const char *target,
       size_t length);  // reads data from the stream until the target
-  // ptr of given length is found
+  // string of given length is found
   bool find_in_stream(const uint8_t *target, size_t length) {
     return find_in_stream((const char *)target, length);
   }
-  // returns true if target ptr is found, false if timed out
+  // returns true if target string is found, false if timed out
   bool find_in_stream(char target) { return find_in_stream(&target, 1); }
 
   bool find_in_stream_Until(
       const char *target,
       const char *terminator);  // as find but search ends if the
-  // terminator ptr is found
+  // terminator string is found
   bool find_in_stream_Until(const uint8_t *target, const char *terminator) {
     return find_in_stream_Until((const char *)target, terminator);
   }
   bool find_in_stream_Until(
       const char *target, size_t targetLen, const char *terminate,
       size_t termLen);  // as above but search ends if the terminate
-  // ptr is found
+  // string is found
   bool find_in_stream_Until(const uint8_t *target, size_t targetLen,
                             const char *terminate, size_t termLen) {
     return find_in_stream_Until((const char *)target, targetLen, terminate,
@@ -3578,18 +3580,18 @@ class mjz_Str : public basic_mjz_String,
 
 #ifndef Arduino
   mjz_str_t<T> &operator=(std::string_view &x) {
-    return operator=(std::ptr(x).c_str());
+    return operator=(std::string(x).c_str());
   }
   mjz_str_t<T> &operator=(std::string_view &&x) {
-    return operator=(std::ptr(x).c_str());
+    return operator=(std::string(x).c_str());
   }
   mjz_str_t<T> &assign_range(std::initializer_list<const char> list);
   mjz_str_t<T> &assign_range(iterator_template<const char> list);
   mjz_str_t<T> &operator+=(std::string_view &x) {
-    return operator+=(std::ptr(x).c_str());
+    return operator+=(std::string(x).c_str());
   }
   mjz_str_t<T> &operator+=(std::string_view &&x) {
-    return operator+=(std::ptr(x).c_str());
+    return operator+=(std::string(x).c_str());
   }
 #else
   mjz_Str<T>(String &x)
@@ -3622,9 +3624,9 @@ class mjz_Str : public basic_mjz_String,
     concat(x.c_str(), x.length());
     return *this;
   }
-  mjz_str_t(std::ptr &x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t(std::ptr &&x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t(const std::ptr &x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(std::string &x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(std::string &&x) : mjz_str_t<T>(x.c_str()) {}
+  mjz_str_t(const std::string &x) : mjz_str_t<T>(x.c_str()) {}
   ~mjz_str_t(void);  // make all drived destructors called
   void adjust_cap();
   mjz_str_t<T> &operator-=(const mjz_str_t<T> &othr_);
@@ -3659,9 +3661,9 @@ class mjz_Str : public basic_mjz_String,
     return *this;
   };
   // memory management
-  // return true on success,false on failure (in which case,the ptr
+  // return true on success,false on failure (in which case,the string
   // is left unchanged). reserve(0),if successful,will validate an
-  // invalid ptr (i.e.,"if (s)" will be true afterwards)
+  // invalid string (i.e.,"if (s)" will be true afterwards)
   explicit operator char *() { return buffer_ref(); }
   explicit operator const uint8_t *() const {
     return (const uint8_t *)buffer_ref();
@@ -3694,11 +3696,11 @@ class mjz_Str : public basic_mjz_String,
   explicit operator const std__string_view_if_is() const {
     return std__string_view_if_is((const char *)buffer_ref());
   }
-  [[nodiscard]] explicit operator std::ptr() const {
-    return std::ptr((const char *)buffer_ref(), length());
+  [[nodiscard]] explicit operator std::string() const {
+    return std::string((const char *)buffer_ref(), length());
   }
-  [[nodiscard]] explicit operator const std::ptr() const {
-    return std::ptr((const char *)buffer_ref(), length());
+  [[nodiscard]] explicit operator const std::string() const {
+    return std::string((const char *)buffer_ref(), length());
   }
   operator const char *() const { return buffer_ref(); }
   char &operator[](size_t index);
@@ -3710,19 +3712,19 @@ class mjz_Str : public basic_mjz_String,
   std__string_view_if_is &&std_sv_temp() const {
     return std::move(std__string_view_if_is((const char *)buffer_ref()));
   }
-  [[nodiscard]] const std::ptr std_s() const {
-    return std::ptr((const char *)buffer_ref());
+  [[nodiscard]] const std::string std_s() const {
+    return std::string((const char *)buffer_ref());
   }
-  [[nodiscard]] const std::ptr &&std_st() const {
-    return std::move(std::ptr((const char *)buffer_ref()));
+  [[nodiscard]] const std::string &&std_st() const {
+    return std::move(std::string((const char *)buffer_ref()));
   }
   // creates a copy of the assigned value. if the value is null or
-  // invalid,or if the memory allocation fails,the ptr will be
+  // invalid,or if the memory allocation fails,the string will be
   // marked as invalid ("if (s)" will be false).
   mjz_str_t<T> &operator=(const mjz_str_t<T> &rhs);
-  mjz_str_t<T> &operator=(std::ptr &x) { return operator=(x.c_str()); }
-  mjz_str_t<T> &operator=(std::ptr &&x) { return operator=(x.c_str()); }
-  mjz_str_t<T> &operator=(const std::ptr &x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(std::string &x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(std::string &&x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(const std::string &x) { return operator=(x.c_str()); }
   mjz_str_t<T> &operator=(const char *cstr);
   mjz_str_t<T> &operator=(const __FlashStringHelper *str);
   mjz_str_t<T> &operator=(mjz_str_t<T> &&rval) noexcept;
@@ -3731,7 +3733,7 @@ class mjz_Str : public basic_mjz_String,
   // return operator=(std::move(*rval));
   // }// this will give me headaches in the long run so i dont move it
   // concatenate (works w/ built-in types)
-  // returns true on success,false on failure (in which case,the ptr
+  // returns true on success,false on failure (in which case,the string
   // is left unchanged). if the argument is null or invalid,the
   // concatenation is considered unsuccessful.
   bool concat(const mjz_str_t<T> &str);
@@ -3790,7 +3792,7 @@ class mjz_Str : public basic_mjz_String,
     return *this;
   }
 
-  // if there's not enough memory for the concatenated value,the ptr
+  // if there's not enough memory for the concatenated value,the string
   // will be left unchanged (but this isn't signalled in any way)
   mjz_str_t<T> &operator+=(const mjz_str_t<T> &rhs) {
     concat(rhs);
@@ -4420,7 +4422,7 @@ class mjz_Str : public basic_mjz_String,
   // constructors
   // creates a copy of the initial value.
   // if the initial value is null or invalid,or if memory allocation
-  // fails,the ptr will be marked as invalid (i.e. "if (s)" will
+  // fails,the string will be marked as invalid (i.e. "if (s)" will
   // be false).
   mjz_str_t(const char *cstr, size_t len_) {
     init();
@@ -4579,9 +4581,9 @@ class mjz_Str : public basic_mjz_String,
 };
 /*
  please dont use mjz_str_view with temporary strings
- if the ptr that it references goes out of scope (delete , ~obj , },free
+ if the string that it references goes out of scope (delete , ~obj , },free
  ,...)the string_view will have undefined behavior use this obj like a
- std::string_view not like std::ptr
+ std::string_view not like std::string
 */
 class mjz_str_view : public basic_mjz_Str_view {
  protected:
@@ -4613,7 +4615,7 @@ class mjz_str_view : public basic_mjz_Str_view {
       : mjz_str_view(cstr_, strlen(cstr_)) {}
   constexpr mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
   mjz_str_view(mjz_str_view &&s) =
-      default;  // we are ptr views and not strings
+      default;  // we are string views and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
   template <typename T>
   constexpr mjz_str_view &operator=(mjz_str_t<T> &&s) {
@@ -5678,7 +5680,7 @@ typedef extended_mjz_str_t<reallocator<char>> mjz_estr;
 typedef extended_mjz_str_t<reallocator<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
 typedef malloc_wrapper mlc_wrp;
-typedef std::ptr ptr;
+typedef std::string string;
 typedef hash_sha256 hash_sha_512;
 typedef StringSumHelper_t<reallocator<char>> mjz_StringSumHelper;
 typedef StringSumHelper_t<reallocator<char>> StringSumHelper;
@@ -6221,14 +6223,14 @@ bool mjz_ard::mjz_str_t<T>::concat(unsigned long long num) {
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(float num) {
   char buf[20];
-  char *ptr = dtostrf(num, 4, 2, buf);
-  return concat(ptr);
+  char *string = dtostrf(num, 4, 2, buf);
+  return concat(string);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(double num) {
   char buf[20];
-  char *ptr = dtostrf(num, 4, 2, buf);
-  return concat(ptr);
+  char *string = dtostrf(num, 4, 2, buf);
+  return concat(string);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(const __FlashStringHelper *str) {
@@ -6644,7 +6646,7 @@ template <typename T>
 void mjz_ard::mjz_str_t<T>::remove(size_t index) {
   // Pass the biggest integer as the count. The remove method
   // below will take care of truncating it at the end of the
-  // ptr.
+  // string.
   remove(index, (size_t)-1);
 }
 template <typename T>
@@ -7751,27 +7753,27 @@ int mjz_ard::mjz_str_t<T>::peekNextDigit(LookaheadMode lookahead,
 // Public Methods
 //////////////////////////////////////////////////////////////
 
-// find returns true if the target ptr is found
+// find returns true if the target string is found
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream(const char *target) {
   return find_in_stream_Until(target, strlen(target), NULL, 0);
 }
-// reads data from the stream until the target ptr of given length is found
-// returns true if target ptr is found, false if timed out
+// reads data from the stream until the target string of given length is found
+// returns true if target string is found, false if timed out
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream(const char *target, size_t length) {
   return find_in_stream_Until(target, length, NULL, 0);
 }
-// as find but search ends if the terminator ptr is found
+// as find but search ends if the terminator string is found
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream_Until(const char *target,
                                                  const char *terminator) {
   return find_in_stream_Until(target, strlen(target), terminator,
                               strlen(terminator));
 }
-// reads data from the stream until the target ptr of the given length is
-// found search terminated if the terminator ptr is found returns true if
-// target ptr is found, false if terminated or timed out
+// reads data from the stream until the target string of the given length is
+// found search terminated if the terminator string is found returns true if
+// target string is found, false if terminated or timed out
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::find_in_stream_Until(const char *target,
                                                  size_t targetLen,
@@ -7934,7 +7936,7 @@ mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str_Until(
 template <typename T>
 int mjz_ard::mjz_str_t<T>::findMulti(
     struct mjz_ard::mjz_str_t<T>::MultiTarget *targets, int tCount) {
-  // any zero length target ptr automatically matches and would make
+  // any zero length target string automatically matches and would make
   // a mess of the rest of the algorithm.
   for (struct MultiTarget *t = targets; t < targets + tCount; ++t) {
     if (t->len <= 0) {
@@ -7983,7 +7985,7 @@ int mjz_ard::mjz_str_t<T>::findMulti(
           break;
         }
 
-        // otherwise we need to check the rest of the found ptr
+        // otherwise we need to check the rest of the found string
         int diff = (int)(origIndex - t->index);
         size_t i;
 
@@ -8092,7 +8094,7 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
   const char *CIN_c_str = CIN.c_str();
   size_t CURunt_index_{};
   size_t my_bfr_obj_length = CIN.length() + 4;
-  malloc_wrapper my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
+  mjz_temp_malloc_wrapper_t my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
   char *bfr = (char *)my_bfr_obj_ptr.get_ptr();
   uint8_t is_reinterpreted{};
   constexpr uint8_t is_reinterpreted_and_is_int = 2;
