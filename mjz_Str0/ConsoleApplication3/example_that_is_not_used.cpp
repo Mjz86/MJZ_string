@@ -38,7 +38,11 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 
 int my_main::main(int argc, const char* const* const argv) {
   using namespace mjz_ard;
-  
+  auto&& a = mjz_ptr_alloc_warpper<
+                 mjz_Str, mjz_ard:: normal_mjz_destructor<mjz_Str>,
+                            mjz_ard::constructor_mjz_placement_new<mjz_Str>,
+                            mjz_ard::reallocator<mjz_Str>>()
+                 .obj_constructor(9);  //.obj_constructor("abcdefg");
   ///////////////////////////////////////////////////////////////////////////////////////
   ////////////////////// create a array data structure //////////////////////////////////
   return 0;//////////////////////////////////////////////////////////////////////////
