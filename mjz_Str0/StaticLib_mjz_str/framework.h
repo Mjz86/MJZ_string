@@ -268,5 +268,6 @@ class mjz_class_operation_reporter {
 };
 template <class counter_class>
 counter_class mjz_class_operation_reporter<counter_class>::index{};
+using operation_reporter=mjz_class_operation_reporter<uint32_t>;
 }  // namespace mjz_ard
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers

@@ -1638,7 +1638,7 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
       Type *ptr_end = dest - 1;
       Type *ptr = dest + n;
       while ((--ptr) > ptr_end) {
-        this->obj_placement_new(ptr, args...);
+        obj_placement_new(ptr, args...);
       }
       return dest;
     } else {
@@ -1646,7 +1646,7 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
       Type *ptr_end = dest + n;
 
       while ((++ptr) < ptr_end) {
-        this->obj_placement_new(ptr, args...);
+        obj_placement_new(ptr, args...);
       }
       return dest;
     }
@@ -1657,7 +1657,7 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
       Type *ptr_end = dest - 1;
       Type *ptr = dest + n;
       while ((--ptr) > ptr_end) {
-        this->obj_placement_new(ptr);
+        obj_placement_new(ptr);
       }
       return dest;
     } else {
@@ -1665,41 +1665,57 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
       Type *ptr_end = dest + n;
 
       while ((++ptr) < ptr_end) {
-        this->obj_placement_new(ptr);
+        obj_placement_new(ptr);
       }
       return dest;
     }
   }
   template <typename... args_t>
   inline [[nodiscard]] Type &&obj_constructor(args_t &&...args) {
-    uint8_t data_buffer[sizeof(Type)]{};
-    return std::move(*this->obj_placement_new(
-        (Type *)this->allocate(sizeof(Type)), std::move(args)...));
+    uint8_t data_buffer[size_of_type()]{};
+    return std::move(*obj_placement_new(
+        (Type *)allocate(size_of_type()), std::move(args)...));
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
-    return this->obj_placement_new((Type *)this->allocate(sizeof(Type)),
+    return obj_placement_new((Type *)allocate(size_of_type()),
                                    std::move(args)...);
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj_array(size_t len, bool in_reveres,
                                                 args_t &&...args) {
     // new Type(std::move(args)...)[len];
-    Type *ptr = (Type *)(((size_t *)this->allocate(sizeof(size_t) +
-                                                   (len * sizeof(Type)))) +
-                         1);
-    ((size_t *)ptr)[-1] = len;
+    Type *ptr =
+        get_fake_array_ptr<Type>(allocate(size_of_array_with(len)));
+    *get_real_array_ptr<size_t>(ptr) = len;
     return obj_placement_new_arr(ptr, len, in_reveres, std::move(args)...);
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj_array(size_t len,
                                                 bool in_reveres = 0) {
-    // new Type(std::move(args)...)[len];
-    Type *ptr = (Type *)(((size_t *)this->allocate(sizeof(size_t) +
-                                                   (len * sizeof(Type)))) +
-                         1);
-    ((size_t *)ptr)[-1] = len;
+    Type *ptr =
+        get_fake_array_ptr<Type>(allocate(size_of_array_with(len)));
+    *get_real_array_ptr<size_t>(ptr) = len;
     return obj_placement_new_arr(ptr, len, in_reveres);
+  }
+
+ public:
+  constexpr inline size_t get_number_of_obj_in_array(Type *ptr) {
+    return *get_real_array_ptr<size_t>(ptr);
+  }
+
+ private:
+  constexpr inline size_t size_of_array_with(size_t len) {
+    return sizeof(size_t) + (len * sizeof(Type));
+  }
+  constexpr inline size_t size_of_type() { return sizeof(Type); }
+  template <typename T_as, typename T_from>
+  constexpr inline T_as *get_real_array_ptr(T_from *fake) {
+    return (T_as *)(((size_t *)ptr) - 1);
+  }
+  template <typename T_as, typename T_from>
+  constexpr inline T_as *get_fake_array_ptr(T_from *real) {
+    return (T_as *)(((size_t *)ptr) + 1);
   }
 
  public:
@@ -1709,27 +1725,27 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
       Type *ptr = arr + n;
       Type *ptr_end = arr - 1;
       while ((--ptr) > ptr_end) {
-        was_successful &= this->obj_destructor(ptr);
+        was_successful &= obj_destructor(ptr);
       }
     } else {
       Type *ptr = arr - 1;
       Type *ptr_end = arr + n;
       while ((++ptr) < ptr_end) {
-        was_successful &= this->obj_destructor(ptr);
+        was_successful &= obj_destructor(ptr);
       }
     }
     return was_successful;
   }
   inline bool deallocate_obj(Type *ptr) {
-    bool was_successful = this->obj_destructor(ptr);
-    this->deallocate(ptr);
+    bool was_successful = obj_destructor(ptr);
+    deallocate(ptr);
     return was_successful;
   }
   inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
     // delete[] dest;
     bool was_successful =
-        obj_destructor_arr(ptr, ((size_t *)ptr)[-1], in_reveres);
-    this->deallocate((Type *)(((size_t *)ptr) - 1));
+        obj_destructor_arr(ptr, get_number_of_obj_in_array(ptr), in_reveres);
+    deallocate(get_real_array_ptr<Type>(ptr));
     return was_successful;
   }
 };
@@ -2003,7 +2019,7 @@ class heap_obj_warper {
     return &move_to(*dest);
   }
 };
-template<class my_reallocator>
+template <class my_reallocator>
 class mjz_temp_malloc_wrapper_t {
   mjz_temp_malloc_wrapper_t &move(mjz_temp_malloc_wrapper_t &otr) {
     if (otr.is_moved_state()) {
@@ -2064,24 +2080,31 @@ class mjz_temp_malloc_wrapper_t {
   inline mjz_temp_malloc_wrapper_t(void *data_ptr, size_t size_of_ptr) {
     move(data_ptr, size_of_ptr);
   }
-  inline mjz_temp_malloc_wrapper_t(void *data_ptr, size_t size_of_ptr, int VAl_) {
+  inline mjz_temp_malloc_wrapper_t(void *data_ptr, size_t size_of_ptr,
+                                   int VAl_) {
     move(data_ptr, size_of_ptr).memset(VAl_);
   }
-  inline mjz_temp_malloc_wrapper_t &change_data_ptr(void *data_ptr, size_t size_of_ptr) {
+  inline mjz_temp_malloc_wrapper_t &change_data_ptr(void *data_ptr,
+                                                    size_t size_of_ptr) {
     return move(data_ptr, size_of_ptr);
   }
-  inline mjz_temp_malloc_wrapper_t &change_data_ptr(mjz_temp_malloc_wrapper_t &&otr) {
+  inline mjz_temp_malloc_wrapper_t &change_data_ptr(
+      mjz_temp_malloc_wrapper_t &&otr) {
     return move(otr);
   }
   inline ~mjz_temp_malloc_wrapper_t() { free(); }
   mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &) = delete;
-  inline mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &&otr) noexcept { move(otr); }
+  inline mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &&otr) noexcept {
+    move(otr);
+  }
   mjz_temp_malloc_wrapper_t(const mjz_temp_malloc_wrapper_t &) = delete;
   mjz_temp_malloc_wrapper_t &operator=(mjz_temp_malloc_wrapper_t &) = delete;
-  inline mjz_temp_malloc_wrapper_t &operator=(mjz_temp_malloc_wrapper_t &&otr) noexcept {
+  inline mjz_temp_malloc_wrapper_t &operator=(
+      mjz_temp_malloc_wrapper_t &&otr) noexcept {
     return move(otr);
   };
-  mjz_temp_malloc_wrapper_t &operator=(const mjz_temp_malloc_wrapper_t &) = delete;
+  mjz_temp_malloc_wrapper_t &operator=(const mjz_temp_malloc_wrapper_t &) =
+      delete;
   template <typename Type>
   constexpr inline Type *get_ptr_as() {
     return (Type *)m_data_ptr;
@@ -2112,8 +2135,7 @@ class mjz_temp_malloc_wrapper_t {
     // free();
     if (size_of_ptr) {
       m_data_ptr = my_reallocator().reallocate(
-          do_deallocation_on_free_state() ? m_data_ptr : 0,
-                             size_of_ptr);
+          do_deallocation_on_free_state() ? m_data_ptr : 0, size_of_ptr);
 
       if (m_data_ptr) {
         m_cap_size = size_of_ptr;
@@ -2130,12 +2152,13 @@ class mjz_temp_malloc_wrapper_t {
     }
   }
 
-  mjz_temp_malloc_wrapper_t(void *data_ptr, size_t cap_size, uint8_t DO_deallocate)
+  mjz_temp_malloc_wrapper_t(void *data_ptr, size_t cap_size,
+                            uint8_t DO_deallocate)
       : m_data_ptr(data_ptr),
         m_cap_size(cap_size),
         m_Deallocation_state(DO_deallocate) {}
 };
-using malloc_wrapper=mjz_temp_malloc_wrapper_t<reallocator<char>>;
+using malloc_wrapper = mjz_temp_malloc_wrapper_t<reallocator<char>>;
 
 /*********************************************************************
  Filename: sha256.h
@@ -8094,7 +8117,7 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
   const char *CIN_c_str = CIN.c_str();
   size_t CURunt_index_{};
   size_t my_bfr_obj_length = CIN.length() + 4;
-  mjz_temp_malloc_wrapper_t my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
+  mjz_temp_malloc_wrapper_t<T> my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
   char *bfr = (char *)my_bfr_obj_ptr.get_ptr();
   uint8_t is_reinterpreted{};
   constexpr uint8_t is_reinterpreted_and_is_int = 2;
