@@ -1599,19 +1599,9 @@ template <class T>
 inline constexpr const T *end(iterator_template<T> it) noexcept {
   return it.end();
 }
-template <typename Type>
-class constructor_mjz_placement_new {
- public:
-  template <typename... args_t>
-  inline Type *obj_placement_new(Type *dest, args_t &&...args) {
-    void (Type::*constructor_fn)(args_t...) = &Type::<Type>;
-    dest->*constructor_fn(std::move(args)...);
-    return dest;
-  }
-};
 
 template <typename Type>
-class normal_mjz_placement_new {
+class mjz_placement_new {
  public:
   template <typename... args_t>
   inline Type *obj_placement_new(Type *dest, args_t &&...args) {
@@ -1620,14 +1610,14 @@ class normal_mjz_placement_new {
 };
 
 template <typename Type>
-class normal_mjz_destructor {
+class mjz_destructor {
  public:
   inline void obj_destructor(Type *ptr) { ptr->~Type(); }
   inline void obj_destructor(Type &ptr) { ptr.~Type(); }
 };
 
-template <typename Type, class my_destructor = normal_mjz_destructor<Type>,
-          class my_placement_new = normal_mjz_placement_new<Type>,
+template <typename Type, class my_destructor = mjz_destructor<Type>,
+          class my_placement_new = mjz_placement_new<Type>,
           class my_reallocator = reallocator<Type>>
 
 class mjz_ptr_alloc_warpper : public my_destructor,
@@ -1878,9 +1868,9 @@ class heap_obj_warper {
   }
   constexpr inline Type &operator*() { return *operator->(); }
   inline heap_obj_warper *operator&() { return this; }                   // &obj
-  inline Type *operator&(int) { return pointer_to_data(); }              // obj&
+  inline Type *operator&(int) { return pointer_to_data(); }              // obj&0
   inline const heap_obj_warper *operator&() const { return this; }       // &obj
-  inline const Type *operator&(int) const { return pointer_to_data(); }  // obj&
+  inline const Type *operator&(int) const { return pointer_to_data(); }  // obj&0
   constexpr inline const Type *operator->() const { return pointer_to_data(); }
   template <typename my_type>
   inline auto operator->*(my_type my_var) const {
