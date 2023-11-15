@@ -1640,6 +1640,7 @@ class mjz_ptr_alloc_warpper : public reallocator<Type> {
 
  public:
   inline void obj_destructor(Type *dest) { dest->~Type(); }
+  inline void obj_destructor(Type &dest) { dest.~Type(); }
   inline void obj_destructor_arr(Type *dest, size_t n) {
     Type *ptr = dest - 1;
     Type *ptr_end = dest + n;
