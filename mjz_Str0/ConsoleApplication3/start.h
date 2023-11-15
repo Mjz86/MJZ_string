@@ -6,10 +6,29 @@ class main_class {
 
  protected:
   inline virtual int main(int argc, const char* const* const argv) { return 0; }
+  inline virtual bool catch_exceptions() { return false; }
 
  public:
   inline int setup(int argc, const char* const* const argv) {
-    int return_val = run(argc, argv)->main(argc, argv);
+    int return_val{-1};
+    std::unique_ptr<main_class> ptr = run(argc, argv);
+    if (ptr->catch_exceptions()) {
+      try {
+        try {
+          return_val = ptr->main(argc, argv);
+        } catch (std::exception ex) {
+          std::cout << "\n\n\n EXEPTION : " << ex.what();
+        } catch (mjz_ard::StringSumHelper ex) {
+          std::cout << "\n\n\n EXEPTION : " << ex;
+        } catch (mjz_ard::basic_mjz_Str_view ex) {
+          std::cout << "\n\n\n EXEPTION : " << ex;
+        }
+      } catch (...) {
+        std::cout << "\n\n\n EXEPTION happened  :(  ";
+      }
+    } else {
+      return_val = ptr->main(argc, argv);
+    }
     std::cout << std::endl << std::endl;
     return return_val;
   }

@@ -82,7 +82,8 @@ struct reallocator {
     throw std::bad_alloc();
   }
 
-  void deallocate(Type *p, std::size_t n) noexcept { std::free(p); }
+  void deallocate_n(Type *p, std::size_t n) noexcept { std::free(p); }
+  void deallocate(Type *p) noexcept { std::free(p); }
 };
 
 struct UINT64_X2_32_t {
@@ -517,19 +518,19 @@ class static_str_algo {
     using type = Type;
   };
   template <class Type>
-using remove_reference_t = typename remove_reference<Type>::type;
+  using remove_reference_t = typename remove_reference<Type>::type;
 
   template <class Type>
-  [[nodiscard]]  constexpr remove_reference_t<Type> &&move(
+  [[nodiscard]] constexpr remove_reference_t<Type> &&move(
       Type &&_Arg) noexcept {
     return static_cast<remove_reference_t<Type> &&>(_Arg);
   }
 
-  template<typename Type>
-  constexpr void swap(Type &Left, Type &Right){
+  template <typename Type>
+  constexpr void swap(Type &Left, Type &Right) {
     Type _Tmp = move(Left);
-    Left =  move(Right);
-    Right =  move(_Tmp);
+    Left = move(Right);
+    Right = move(_Tmp);
   }
 
   constexpr static int64_t compare_two_str(const char *rhs, size_t rhs_l,
@@ -599,7 +600,7 @@ using remove_reference_t = typename remove_reference<Type>::type;
     };
     return a[0] ? cpu_endian::little : cpu_endian::big;
   }
- static cpu_endian my_endian;
+  static cpu_endian my_endian;
   inline constexpr static char *get_bit_representation(
       char *buffer, size_t buffer_len, const void *data_ptr, size_t len,
       bool in_reverse = (my_endian == cpu_endian::little)) {
@@ -626,7 +627,8 @@ using remove_reference_t = typename remove_reference<Type>::type;
   template <typename Type>
   inline constexpr static char *get_bit_representation(char *buffer,
                                                        const Type &data) {
-    return get_bit_representation(buffer, sizeof(Type) * 8, &data, sizeof(Type));
+    return get_bit_representation(buffer, sizeof(Type) * 8, &data,
+                                  sizeof(Type));
   }
 
  public:
@@ -1606,6 +1608,24 @@ class mjz_ptr_alloc_warpper : public reallocator<Type> {
     return (new (dest) Type(std::move(args)...));
   }
   template <typename... args_t>
+  inline Type *obj_placement_new_arr(Type *dest, size_t n, args_t &&...args) {
+    Type *ptr = dest - 1;
+    Type *ptr_end = dest + n;
+    while ((++ptr) < ptr_end) {
+      new (ptr) Type(args...);
+    }
+    return dest;
+  }
+  inline Type *obj_placement_new_arr(Type *dest, size_t n) {
+    Type *ptr = dest - 1;
+    Type *ptr_end = dest + n;
+
+    while ((++ptr) < ptr_end) {
+      new (ptr) Type();
+    }
+    return dest;
+  }
+  template <typename... args_t>
   inline Type obj_constructor(args_t &&...args) {
     return Type(std::move(args)...);
   }
@@ -1620,16 +1640,25 @@ class mjz_ptr_alloc_warpper : public reallocator<Type> {
 
  public:
   inline void obj_destructor(Type *dest) { dest->~Type(); }
+  inline void obj_destructor_arr(Type *dest, size_t n) {
+    Type *ptr = dest - 1;
+    Type *ptr_end = dest + n;
+    while ((++ptr) < ptr_end) {
+      (ptr)->~Type();
+    }
+    return dest;
+  }
   inline void deallocate_obj(Type *dest) { delete dest; }
   inline void deallocate_obj_array(Type *dest) { delete[] dest; }
 };
+ template <class Type>
+  using mjz_ptr_alloc_warpper_Type = typename Type::value_type;
 
 template <typename Type, bool construct_obj_on_constructor = true,
           class ptr_alloc_warpper = mjz_ptr_alloc_warpper<Type>>
 class heap_obj_warper {
  public:
   static constexpr size_t size = sizeof(Type);
-
  protected:
   uint8_t m_data[size]{};
   bool m_Has_data{};
@@ -3250,7 +3279,7 @@ class mjz_Str : public basic_mjz_String,
   [[nodiscard]] void *realloc(void *ptr, size_t new_size) {
     return T().reallocate(ptr, new_size);
   }
-  void free(void *ptr) { return T().deallocate((char *)ptr, m_capacity + 1); }
+  void free(void *ptr) { return T().deallocate_n((char *)ptr, m_capacity + 1); }
 
  public:
   static int8_t char_to_int_for_string(char c_char);
@@ -3412,13 +3441,11 @@ class mjz_Str : public basic_mjz_String,
   [[nodiscard]] static void *operator new[](size_t size_);
   static void operator delete(void *p);
   static void operator delete[](void *ptr);
+  static void operator delete(void *p, size_t);
+  static void operator delete[](void *ptr, size_t);
   inline static void *operator new(size_t, void *where) { return where; }
-  inline static void operator delete(void *ret_piont, void *) {
-    delete (mjz_str_t<T> *)ret_piont;
-  }
-  inline static void operator delete(void *ret_piont, size_t, void *) {
-    delete (mjz_str_t<T> *)ret_piont;
-  }
+  inline static void operator delete(void *, void *) {}
+  inline static void operator delete(void *, size_t, void *) {}
   inline static mjz_str_t<T> &replace_with_new_str(mjz_str_t<T> &where) {
     // obj.mjz_Str<T>::~mjz_Str<T>();//bad not calling virtually
     // obj->~mjz_Str<T>(); // good calls the most derived constructor
@@ -3431,27 +3458,6 @@ class mjz_Str : public basic_mjz_String,
     new (where) mjz_str_t<T>;
     return where;
   }
-  // this class is a namespace in this part
-  class realloc_new_ns {
-   public:
-    [[nodiscard]] static void *operator new(size_t size_);
-    [[nodiscard]] static void *operator new[](size_t size_);
-    static void operator delete(void *p);
-    static void operator delete[](void *ptr);
-    static void *operator new(size_t, void *where);
-    inline static mjz_str_t<T> &replace_heap_str_with_new_str(
-        mjz_str_t<T> &where) {
-      where.~mjz_str_t<T>();  // end lifetime
-      new (&where) mjz_str_t<T>;
-      return where;
-    }
-    inline static mjz_str_t<T> *replace_heap_str_with_new_str(
-        mjz_str_t<T> *where) {
-      where->~mjz_str_t<T>();  // end lifetime
-      new (where) mjz_str_t<T>;
-      return where;
-    }
-  };
   template <typename my_type>
   inline auto operator->*(my_type my_var) {
     return this->*my_var;
@@ -3611,7 +3617,7 @@ class mjz_Str : public basic_mjz_String,
   mjz_str_t<T> &operator=(const char *cstr);
   mjz_str_t<T> &operator=(const __FlashStringHelper *str);
   mjz_str_t<T> &operator=(mjz_str_t<T> &&rval) noexcept;
-  mjz_str_t<T> &operator=(const mjz_str_t<T> *rval) { return operator=(*rval); }
+ // mjz_str_t<T> &operator=(const mjz_str_t<T> *rval) { return operator=(*rval); }
   // mjz_Str<T> &operator=( const mjz_Str<T> *&&rval){
   // return operator=(std::move(*rval));
   // }// this will give me headaches in the long run so i dont move it
@@ -4455,7 +4461,7 @@ class mjz_Str : public basic_mjz_String,
   // explicit mjz_Str<T>(const mjz_Str<T> *&&rval) :
   // mjz_Str<T>(std::move(*rval)) {
   // }// this will give me headaches in the long run so i dont move it
-  inline explicit mjz_str_t(const mjz_str_t<T> *rval) : mjz_str_t(*rval) {}
+ // inline explicit mjz_str_t(const mjz_str_t<T> *rval) : mjz_str_t(*rval) {}
   inline mjz_str_t() : mjz_str_t((const char *)empty_STRING_C_STR, 0) {}
   explicit inline mjz_str_t(const basic_mjz_String &otr)
       : mjz_str_t(otr.c_str(), otr.length()) {}
@@ -4925,8 +4931,8 @@ template <typename Type>
 inline mjz_ard::mjz_Str get_bit_representation(const Type &data) {
   mjz_ard::mjz_Str buffer;
   buffer.addto_length(sizeof(Type) * 8);
-  static_str_algo::get_bit_representation(
-      buffer.C_str(), buffer.length(), &data, sizeof(Type));
+  static_str_algo::get_bit_representation(buffer.C_str(), buffer.length(),
+                                          &data, sizeof(Type));
   return buffer;
 }
 
@@ -5611,56 +5617,36 @@ namespace mjz_ard {
 
 template <typename T>
 [[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new(size_t size_) {
-  void *p = ::operator new(size_);
+  void *p = T().allocate(size_);
   // void * p = malloc(size_); will also work fine
   return p;
 }
 template <typename T>
 [[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new[](size_t size_) {
-  void *p = ::operator new(size_);
+  void *p = T().allocate(size_);
   // void * p = malloc(size_); will also work fine
   return p;
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete(void *p) {
-  ::free(p);
+  T().deallocate((mjz_ptr_alloc_warpper_Type<T> *)p);
 }
 
 template <typename T>
-void mjz_ard::mjz_str_t<T>::operator delete[](void *ptr) {
-  ::free(ptr);
+void mjz_ard::mjz_str_t<T>::operator delete[](void *p) {
+  T().deallocate((mjz_ptr_alloc_warpper_Type<T> *)p);
 }
 
 template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_new_ns::operator new(
-    size_t size_) {
-  void *p = ::realloc(0, size_);
-  return p;
+void mjz_ard::mjz_str_t<T>::operator delete(void *p,size_t l) {
+  T().deallocate((mjz_ptr_alloc_warpper_Type<T> *)p, l);
 }
 
 template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_new_ns::operator new[](
-    size_t size_) {
-  void *p = ::realloc(0, size_);
-  return p;
+void mjz_ard::mjz_str_t<T>::operator delete[](void *p, size_t l) {
+  T().deallocate((mjz_ptr_alloc_warpper_Type<T> *)p, l);
 }
-
-template <typename T>
-void mjz_ard::mjz_str_t<T>::realloc_new_ns::operator delete(void *p) {
-  ::free(p);
-}
-
-template <typename T>
-void mjz_ard::mjz_str_t<T>::realloc_new_ns::operator delete[](void *ptr) {
-  ::free(ptr);
-}
-template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_new_ns::operator new(
-    size_t size_, void *where) {
-  return ::realloc(where, size_);
-}
-
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
     std::initializer_list<const char> list) {
