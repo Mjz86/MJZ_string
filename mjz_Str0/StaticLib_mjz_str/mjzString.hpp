@@ -1605,6 +1605,10 @@ class mjz_ptr_alloc_warpper : public reallocator<Type> {
  public:
   template <typename... args_t>
   inline Type *obj_placement_new(Type *dest, args_t &&...args) {
+void(Type::* constructor_fn)(arg_t...) =&Type::Type;
+ptr->*constructor_fn(std::move(args)...);
+   return ptr;
+  }inline Type *mjz_obj_placement_new(Type *dest, args_t &&...args) {
     return (new (dest) Type(std::move(args)...));
   }
   template <typename... args_t>
@@ -1625,6 +1629,21 @@ class mjz_ptr_alloc_warpper : public reallocator<Type> {
     }
     return dest;
   }
+{
+
+
+ 
+// new array[]
+ptr=((size_t*)allocate (sizeof(size_t)+l))+1;
+((size_t)ptr)[-1]=n;
+obj_placement_new_arr(ptr,n);
+
+
+// delete array[]
+obj_destructor_arr(ptr,((size_t)ptr)[-1]);
+deallocate(((size_t*)ptr)-1);
+
+}
   template <typename... args_t>
   inline Type obj_constructor(args_t &&...args) {
     return Type(std::move(args)...);
