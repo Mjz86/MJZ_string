@@ -15,19 +15,18 @@
 
 class my_main : public main_class {
  public:
-  int main(int argc, const char* const* const argv) override;
+ int main(int argc, const char* const* const argv) override;
 };
 
 std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
-  return std::make_unique<my_main>();
+ return std::make_unique<my_main>();
 }
 
 #include "fstream"
 int my_main::main(int argc, const char* const* const argv) {
-  using namespace mjz_ard;
-  std::vector<operation_reporter, reallocator<operation_reporter>> v;
-  v.reserve(10);
-  ///////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////// create a array data structure/////////////////////////////////////
-  return 0;  //////////////////////////////////////////////////////////////////////////
+ using namespace mjz_ard::have_mjz_ard_removed;
+
+ ///////////////////////////////////////////////////////////////////////////////////////
+ ////////////////////// create a array data structure/////////////////////////////////////
+ return 0; //////////////////////////////////////////////////////////////////////////
 }
