@@ -76,6 +76,8 @@ struct reallocator {
     }
    // throw std::bad_alloc();
     return 0;
+  }void deallocate(Type *p,size_t n) noexcept { 
+      std::free(p); 
   }[[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
     //if (n > std::numeric_limits<size_t>::max() / sizeof(Type))throw std::bad_array_new_length();
     if (auto p = static_cast<void *>(std::malloc(number_of_bytes))) {
@@ -94,9 +96,7 @@ struct reallocator {
   }void deallocate_raw(void *p,size_t number_of_bytes) noexcept { 
       std::free(p); 
   }
-  void deallocate(Type *p,size_t n) noexcept { 
-      std::free(p); 
-  }
+  
 };
 
 struct UINT64_X2_32_t {
