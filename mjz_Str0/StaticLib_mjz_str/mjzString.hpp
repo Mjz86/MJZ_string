@@ -78,7 +78,11 @@ struct reallocator {
     return 0;
   }void deallocate(Type *p,size_t n) noexcept { 
       std::free(p); 
-  }[[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
+  }
+protected:
+
+
+[[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
     //if (n > std::numeric_limits<size_t>::max() / sizeof(Type))throw std::bad_array_new_length();
     if (auto p = static_cast<void *>(std::malloc(number_of_bytes))) {
       return p;
@@ -93,10 +97,10 @@ struct reallocator {
     }
    // throw std::bad_alloc();
     return 0;
-  }void deallocate_raw(void *p,size_t number_of_bytes) noexcept { 
+  }
+void deallocate_raw(void *p,size_t number_of_bytes) noexcept { 
       std::free(p); 
   }
-  
 };
 
 struct UINT64_X2_32_t {
@@ -1640,7 +1644,7 @@ template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
 class mjz_temp_type_allocator_warpper_t : public my_destructor,
                                           public my_placement_new,
                                           public my_constructor,
-                                          public my_reallocator {
+                                          protected my_reallocator {
  public:
   inline mjz_temp_type_allocator_warpper_t() = default;
   inline ~mjz_temp_type_allocator_warpper_t() = default;
@@ -1685,12 +1689,12 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
   inline [[nodiscard]] Type &&obj_constructor(args_t &&...args) {
     uint8_t data_buffer[size_of_type()]{};
     return std::move(*obj_placement_new(
-        (Type *)allocate(1), std::move(args)...));
+        (Type *) data_buffer, std::move(args)...));
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
     // new Type(std::move(args)...);
-    Type *ptr = get_fake_array_ptr<Type>(allocate(1));
+    Type *ptr = get_fake_array_ptr<Type>(allocate_raw(size_of_array_with(1)));
     *get_real_array_ptr<size_t>(ptr) = 1;
     return obj_placement_new(ptr,std::move(args)...);
   }
@@ -1699,24 +1703,25 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
                                                 args_t &&...args) {
     // new Type(std::move(args)...)[len];
     Type *ptr =
-        get_fake_array_ptr<Type>(allocate(size_of_array_with(len)));
+        get_fake_array_ptr<Type>(allocate_raw(size_of_array_with(len)));
     *get_real_array_ptr<size_t>(ptr) = len;
     return obj_placement_new_arr(ptr, len, in_reveres, std::move(args)...);
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj_array(size_t len,bool in_reveres = 0) {
     Type *ptr =
-        get_fake_array_ptr<Type>(allocate(size_of_array_with(len)));
+        get_fake_array_ptr<Type>(allocate_raw(size_of_array_with(len)));
     *get_real_array_ptr<size_t>(ptr) = len;
     return obj_placement_new_arr(ptr, len, in_reveres);
   }
-
  public:
   constexpr inline size_t get_number_of_obj_in_array(Type *ptr) {
     return *get_real_array_ptr<size_t>(ptr);
   }
   constexpr inline size_t size_of_array_with(size_t len) {
-    return min(sizeof(size_t) / len, 1) + len;
+    return sizeof(size_t) + size_of_type()*len;
+  } constexpr inline size_t size_of_array_with(Type *ptr) {
+    return sizeof(size_t) + size_of_type()*get_number_of_obj_in_array(ptr);
   }
   constexpr inline size_t size_of_type() { return sizeof(Type); }
  private:
@@ -1747,14 +1752,13 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
     return was_successful;
   }
   inline bool deallocate_obj(Type *ptr) {
-
     return deallocate_obj_array( ptr);
   }
   inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
     // delete[] dest;
     bool was_successful =
         obj_destructor_arr(ptr, get_number_of_obj_in_array(ptr), in_reveres);
-    deallocate(get_real_array_ptr<Type>(ptr));
+    deallocate_raw(get_real_array_ptr<Type>(ptr),size_of_array_with(ptr));
     return was_successful;
   }
 };
