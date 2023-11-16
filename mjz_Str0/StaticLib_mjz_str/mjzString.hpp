@@ -62,28 +62,24 @@ struct reallocator {
   constexpr reallocator(const reallocator<U> &) noexcept {}
 
   [[nodiscard]] Type *allocate(size_t n) {
-    if (n > std::numeric_limits<size_t>::max() / sizeof(Type))
-      throw std::bad_array_new_length();
-
+    //if (n > std::numeric_limits<size_t>::max() / sizeof(Type))throw std::bad_array_new_length();
     if (auto p = static_cast<Type *>(std::malloc(n * sizeof(Type)))) {
       return p;
     }
-
-    throw std::bad_alloc();
+//    throw std::bad_alloc();
+    return 0;
   }
   [[nodiscard]] Type *reallocate(void *ptr, size_t n) {
-    if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type))
-      throw std::bad_array_new_length();
-
+   // if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type)) throw std::bad_array_new_length();
     if (auto p = static_cast<Type *>(std::realloc(ptr, n * sizeof(Type)))) {
       return p;
     }
-
-    throw std::bad_alloc();
+   // throw std::bad_alloc();
+    return 0;
   }
-
-  void deallocate_n(Type *p, std::size_t n) noexcept { std::free(p); }
-  void deallocate(Type *p) noexcept { std::free(p); }
+  void deallocate(Type *p,size_t n) noexcept { 
+      std::free(p); 
+  }
 };
 
 struct UINT64_X2_32_t {
@@ -1632,8 +1628,7 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
   inline mjz_temp_type_allocator_warpper_t() = default;
   inline ~mjz_temp_type_allocator_warpper_t() = default;
   template <typename... args_t>
-  inline Type *obj_placement_new_arr(Type *dest, size_t n, bool in_reveres,
-                                     args_t... args) {
+  inline Type *obj_placement_new_arr(Type *dest, size_t n, bool in_reveres, args_t... args) {
     if (in_reveres) {
       Type *ptr_end = dest - 1;
       Type *ptr = dest + n;
@@ -1651,8 +1646,7 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
       return dest;
     }
   }
-  inline Type *obj_placement_new_arr(Type *dest, size_t n,
-                                     bool in_reveres = 0) {
+  inline Type *obj_placement_new_arr(Type *dest, size_t n, bool in_reveres = 0) {
     if (in_reveres) {
       Type *ptr_end = dest - 1;
       Type *ptr = dest + n;
@@ -1674,12 +1668,14 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
   inline [[nodiscard]] Type &&obj_constructor(args_t &&...args) {
     uint8_t data_buffer[size_of_type()]{};
     return std::move(*obj_placement_new(
-        (Type *)allocate(size_of_type()), std::move(args)...));
+        (Type *)allocate(1), std::move(args)...));
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
-    return obj_placement_new((Type *)allocate(size_of_type()),
-                                   std::move(args)...);
+    // new Type(std::move(args)...);
+    Type *ptr = get_fake_array_ptr<Type>(allocate(1));
+    *get_real_array_ptr<size_t>(ptr) = 1;
+    return obj_placement_new(ptr,std::move(args)...);
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj_array(size_t len, bool in_reveres,
@@ -1691,8 +1687,7 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
     return obj_placement_new_arr(ptr, len, in_reveres, std::move(args)...);
   }
   template <typename... args_t>
-  inline [[nodiscard]] Type *allocate_obj_array(size_t len,
-                                                bool in_reveres = 0) {
+  inline [[nodiscard]] Type *allocate_obj_array(size_t len,bool in_reveres = 0) {
     Type *ptr =
         get_fake_array_ptr<Type>(allocate(size_of_array_with(len)));
     *get_real_array_ptr<size_t>(ptr) = len;
@@ -1703,12 +1698,11 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
   constexpr inline size_t get_number_of_obj_in_array(Type *ptr) {
     return *get_real_array_ptr<size_t>(ptr);
   }
-
- private:
   constexpr inline size_t size_of_array_with(size_t len) {
-    return sizeof(size_t) + (len * sizeof(Type));
+    return min(sizeof(size_t) / len, 1) + len;
   }
   constexpr inline size_t size_of_type() { return sizeof(Type); }
+ private:
   template <typename T_as, typename T_from>
   constexpr inline T_as *get_real_array_ptr(T_from *fake) {
     return (T_as *)(((size_t *)ptr) - 1);
@@ -1717,7 +1711,6 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
   constexpr inline T_as *get_fake_array_ptr(T_from *real) {
     return (T_as *)(((size_t *)ptr) + 1);
   }
-
  public:
   inline bool obj_destructor_arr(Type *arr, size_t n, bool in_reveres = 1) {
     bool was_successful{1};
@@ -1737,9 +1730,8 @@ class mjz_temp_type_allocator_warpper_t : public my_destructor,
     return was_successful;
   }
   inline bool deallocate_obj(Type *ptr) {
-    bool was_successful = obj_destructor(ptr);
-    deallocate(ptr);
-    return was_successful;
+
+    return deallocate_obj_array( ptr);
   }
   inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
     // delete[] dest;
@@ -3413,7 +3405,7 @@ class mjz_Str : public basic_mjz_String,
   [[nodiscard]] void *realloc(void *ptr, size_t new_size) {
     return T().reallocate(ptr, new_size);
   }
-  void free(void *ptr) { return T().deallocate_n((char *)ptr, m_capacity + 1); }
+  void free(void *ptr) { return T().deallocate((char *)ptr); }
 
  public:
   static int8_t char_to_int_for_string(char c_char);
@@ -5774,12 +5766,12 @@ void mjz_ard::mjz_str_t<T>::operator delete[](void *p) {
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete(void *p, size_t l) {
-  T().deallocate_n((mjz_get_value_Type<T> *)p, l);
+  T().deallocate((mjz_get_value_Type<T> *)p);
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete[](void *p, size_t l) {
-  T().deallocate_n((mjz_get_value_Type<T> *)p, l);
+  T().deallocate((mjz_get_value_Type<T> *)p);
 }
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
