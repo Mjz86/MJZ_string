@@ -231,7 +231,7 @@ class vr_Scoped_speed_Timer : public Scoped_speed_Timer {
   virtual ~vr_Scoped_speed_Timer() = default;
 };
 template <class counter_class>
-class mjz_class_operation_reporter {
+class mjz_class_operation_reporter_t {
   static counter_class index;
   union {
     size_t UUID;
@@ -239,35 +239,35 @@ class mjz_class_operation_reporter {
   };
 
  public:
-  mjz_class_operation_reporter() {
+  mjz_class_operation_reporter_t() {
     std::cout << " created : " << index++ << " with ID: " << UUID << " \n";
   }
-  mjz_class_operation_reporter(int) {
+  mjz_class_operation_reporter_t(int) {
     std::cout << " created with int : " << index++ << " with ID: " << UUID
               << " \n";
   }
-  ~mjz_class_operation_reporter() {
+  ~mjz_class_operation_reporter_t() {
     std::cout << " destroyed : " << --index << " with ID: " << UUID << " \n";
   }
-  mjz_class_operation_reporter(mjz_class_operation_reporter&&) {
+  mjz_class_operation_reporter_t(mjz_class_operation_reporter_t&&) {
     std::cout << " moved "
               << " with ID: " << UUID << " \n";
   }
-  mjz_class_operation_reporter& operator=(mjz_class_operation_reporter&&) {
+  mjz_class_operation_reporter_t& operator=(mjz_class_operation_reporter_t&&) {
     std::cout << " moved "
               << " with ID: " << UUID << " \n";
   }
-  mjz_class_operation_reporter(const mjz_class_operation_reporter&) {
+  mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t&) {
     std::cout << " copied "
               << " with ID: " << UUID << " \n";
   }
-  mjz_class_operation_reporter& operator=(const mjz_class_operation_reporter&) {
+  mjz_class_operation_reporter_t& operator=(const mjz_class_operation_reporter_t&) {
     std::cout << " copied "
               << " with ID: " << UUID << " \n";
   }
 };
 template <class counter_class>
-counter_class mjz_class_operation_reporter<counter_class>::index{};
-using operation_reporter=mjz_class_operation_reporter<uint32_t>;
+counter_class mjz_class_operation_reporter_t<counter_class>::index{};
+using operation_reporter=mjz_class_operation_reporter_t<uint32_t>;
 }  // namespace mjz_ard
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers

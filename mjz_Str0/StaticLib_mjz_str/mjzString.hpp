@@ -56,31 +56,33 @@ extern uint32_t num_allocations;
 template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
 
-template <class std_allocator>
+template <class std_allocator,typename Type>
 struct std_reallocator_warper {
-  using Type = mjz_get_value_Type<std_allocator>;
-  using value_type = Type;
+  using my_value_Type_t = Type;
+  using value_type = my_value_Type_t;
   using reference = value_type &;
   using pointer = value_type *;
   using iterator_category = std::random_access_iterator_tag;
   using difference_type = std::ptrdiff_t;
-  using value_type = Type;
-  using const_reference = const Type &;
+  using value_type = my_value_Type_t;
+  using const_reference = const my_value_Type_t &;
   using size_type = size_t;
   using propagate_on_container_move_assignment = std::true_type;
   std_reallocator_warper() = default;
   ~std_reallocator_warper() = default;
 
-  template <class U>
-  constexpr std_reallocator_warper(const std_reallocator_warper<U> &) noexcept {
+  template <class T>
+  constexpr std_reallocator_warper(const std_reallocator_warper<std_allocator,T> &) noexcept {
   }
 
-  [[nodiscard]] Type *allocate(size_t n) { return reallocate((Type *)0, n); }
-  [[nodiscard]] Type *allocate(size_t n, const void *hint) {
-    return reallocate((Type *)hint, n);
+  [[nodiscard]] my_value_Type_t *allocate(size_t n) {
+    return reallocate((my_value_Type_t *)0, n);
+  }
+  [[nodiscard]] my_value_Type_t *allocate(size_t n, const void *hint) {
+    return reallocate((my_value_Type_t *)hint, n);
   }
 
-  void deallocate(Type *p, size_t n) noexcept { free(p); }
+  void deallocate(my_value_Type_t *p, size_t n) noexcept { free(p); }
 
  protected:
   [[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
@@ -92,19 +94,20 @@ struct std_reallocator_warper {
   void deallocate_raw(void *p, size_t number_of_bytes) noexcept { free(p); }
 
  private:
-  [[nodiscard]] Type *reallocate(Type *ptr, size_t n) {
-    // if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type)) throw
-    // std::bad_array_new_length();
+  [[nodiscard]] my_value_Type_t *reallocate(my_value_Type_t *ptr, size_t n) {
+    // if (n > std::numeric_limits<std::size_t>::max() /
+    // sizeof(my_value_Type_t)) throw std::bad_array_new_length();
 
-    if (auto p = static_cast<Type *>(realloc(ptr, n * sizeof(Type)))) {
+    if (auto p = static_cast<my_value_Type_t *>(
+            realloc(ptr, n * sizeof(my_value_Type_t)))) {
       return p;
     }
     // throw std::bad_alloc();
     return 0;
   }
   [[nodiscard]] void *reallocate_raw(void *ptr, size_t number_of_bytes) {
-    // if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type)) throw
-    // std::bad_array_new_length();
+    // if (n > std::numeric_limits<std::size_t>::max() /
+    // sizeof(my_value_Type_t)) throw std::bad_array_new_length();
     if (auto p = static_cast<void *>(realloc(ptr, number_of_bytes))) {
       return p;
     }
@@ -157,36 +160,42 @@ struct std_reallocator_warper {
     std_allocator all;
     free_log(get_real_mem(ptr), get_size_of_mem(ptr));
     // num_allocations--;
-    al.deallocate(all, (char *)get_real_mem(ptr), get_size_of_mem(ptr));
+    al.deallocate(all, (my_value_Type_t *)get_real_mem(ptr),
+                  get_size_of_mem(ptr));
   }
 };
-template <class T>
-inline constexpr bool operator==(const std_reallocator_warper<T> &,
-                                 const std_reallocator_warper<T> &) {
+template <class T1, class T2, class U>
+inline constexpr bool operator==(const std_reallocator_warper<U,T1> &,
+                                 const std_reallocator_warper<U, T2> &) {
   return true;
 }
 
-template <class T>
-inline constexpr bool operator!=(const std_reallocator_warper<T> &,
-                                 const std_reallocator_warper<T> &) {
+template <class T1, class T2, class U>
+inline constexpr bool operator!=(const std_reallocator_warper<U, T1> &,
+                                 const std_reallocator_warper<U, T2> &) {
   return false;
 }
-template <class T, class U>
-inline constexpr bool operator==(const std_reallocator_warper<T> &,
-                                 const std_reallocator_warper<U> &) {
-  return T() == U();
+template <class T1, class T2, class U1, class U2>
+inline constexpr bool operator==(const std_reallocator_warper<U1,T1> &,
+                                 const std_reallocator_warper<U2,T2> &) {
+  return U1() == U2();
 }
 
-template <class T, class U>
-inline constexpr bool operator!=(const std_reallocator_warper<T> &,
-                                 const std_reallocator_warper<U> &) {
-  return T() != U();
+template <class T1, class T2, class U1, class U2>
+inline constexpr bool operator!=(const std_reallocator_warper<U1, T1> &,
+                                 const std_reallocator_warper<U2, T2> &) {
+  return U1() != U2();
 }
 
 
 
 template <class Type>
-using reallocator =std_reallocator_warper<std::allocator<Type>>;
+struct reallocator : std_reallocator_warper<std::allocator<Type>, Type> {
+  reallocator() = default;
+  ~reallocator() = default;
+  template <class T>
+  constexpr reallocator(const reallocator<T> &) noexcept {}
+};
 
 template <class Type, class U>
 inline constexpr bool operator==(const reallocator<Type> &,
@@ -1943,8 +1952,15 @@ struct mjz_temp_type_allocator_warpper_t : protected my_destructor,
 
 
 template <typename Type, class my_reallocator = reallocator<Type>>
-using mjz_allocator_warpper = mjz_temp_type_allocator_warpper_t<
+using mjz_allocator_warpper_r_t = mjz_temp_type_allocator_warpper_t<
     Type, mjz_obj_destructor<Type>, mjz_obj_constructor<Type>, my_reallocator>;
+template <class Type>
+struct mjz_allocator_warpper: mjz_allocator_warpper_r_t< Type> {
+  mjz_allocator_warpper() = default;
+  ~mjz_allocator_warpper() = default;
+  template <class T>
+  constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
+};
 
 template <typename Type, bool construct_obj_on_constructor = true,
           class ptr_alloc_warpper = mjz_temp_type_allocator_warpper_t<Type>>
