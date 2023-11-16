@@ -69,13 +69,30 @@ struct reallocator {
 //    throw std::bad_alloc();
     return 0;
   }
-  [[nodiscard]] Type *reallocate(void *ptr, size_t n) {
+  [[nodiscard]] Type *reallocate(Type*ptr, size_t n) {
    // if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type)) throw std::bad_array_new_length();
     if (auto p = static_cast<Type *>(std::realloc(ptr, n * sizeof(Type)))) {
       return p;
     }
    // throw std::bad_alloc();
     return 0;
+  }[[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
+    //if (n > std::numeric_limits<size_t>::max() / sizeof(Type))throw std::bad_array_new_length();
+    if (auto p = static_cast<void *>(std::malloc(number_of_bytes))) {
+      return p;
+    }
+//    throw std::bad_alloc();
+    return 0;
+  }
+[[nodiscard]] void*reallocate_raw(void *ptr, size_t number_of_bytes) {
+   // if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type)) throw std::bad_array_new_length();
+    if (auto p = static_cast<void*>(std::realloc(ptr, number_of_bytes))) {
+      return p;
+    }
+   // throw std::bad_alloc();
+    return 0;
+  }void deallocate_raw(void *p,size_t number_of_bytes) noexcept { 
+      std::free(p); 
   }
   void deallocate(Type *p,size_t n) noexcept { 
       std::free(p); 
