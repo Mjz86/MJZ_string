@@ -27,7 +27,7 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 
 int my_main::main(int argc, const char* const* const argv) {
  using namespace mjz_ard;
- 
+ malloc_wrapper(20);
  ///////////////////////////////////////////////////////////////////////////////////////
  ////////////////////// create a array data structure //////////////////////////////////
  // constexpr void deallocate( T* p, std::size_t n );// Use num
