@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 // #define Arduino
 
 // #define Arduino 1
@@ -49,12 +47,13 @@ constexpr inline int sprintf_alt_(char* const buffer_for_print,
 #define MJZ_logic_BITMASK_CHECK_ALL(x, mask) (!(~(x) & (mask)))
 #define MJZ_logic_BITMASK_CHECK_ANY(x, mask) ((x) & (mask))
 #define min_macro_(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
-#define MJZ_logic_BL_bit_to_64_bits(B) ((((uint64_t)!(B)) + (uint64_t)(-1)))
+#define MJZ_logic_BL_bit_to_64_bits(B) ((((uint64_t) !(B)) + (uint64_t)(-1)))
 #define MJZ_logic_bit_to_64_bits(B) ((B) ? (uint64_t)(-1) : 0ULL)
 
-#define MJZ_DONT_OPTIMIZE(x)   do {auto volatile dont_optimize_me = (x);} while (0)
-
-
+#define MJZ_DONT_OPTIMIZE(x)              \
+  do {                                    \
+    auto volatile dont_optimize_me = (x); \
+  } while (0)
 
 #ifdef Arduino
 #include <sys/time.h>
