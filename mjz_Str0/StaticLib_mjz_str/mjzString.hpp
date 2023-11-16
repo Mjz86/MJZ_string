@@ -101,6 +101,17 @@ protected:
 void deallocate_raw(void *p,size_t number_of_bytes) noexcept { 
       std::free(p); 
   }
+/*
+https://en.cppreference.com/w/cpp/memory/allocator/address
+https://en.cppreference.com/w/cpp/memory/allocator_traits/deallocate
+https://en.cppreference.com/w/cpp/memory/allocator_traits/allocate
+https://en.cppreference.com/w/cpp/memory/allocator_traits/destroy
+https://en.cppreference.com/w/cpp/memory/destroy_at
+https://en.cppreference.com/w/cpp/memory/construct_at
+https://en.cppreference.com/w/cpp/memory/allocator_traits/construct
+
+
+*/
 };
 
 struct UINT64_X2_32_t {
