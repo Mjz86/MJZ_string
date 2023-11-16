@@ -52,121 +52,6 @@ class __FlashStringHelper;
 
 namespace mjz_ard {
 extern uint32_t num_allocations;
-template <class Type>
-struct reallocator {
-  using value_type = Type;
-  using reference = value_type &;
-  using pointer = value_type *;
-  using iterator_category = std::random_access_iterator_tag;
-  using difference_type = std::ptrdiff_t;
-  using value_type = Type;
-  using const_reference = const Type &;
-  using size_type = size_t;
-  using propagate_on_container_move_assignment = std::true_type;
-  reallocator() = default;
-  ~reallocator() = default;
-
-  template <class U>
-  constexpr reallocator(const reallocator<U> &) noexcept {}
-
-  [[nodiscard]] Type *allocate(size_t n) { return reallocate((Type *)0, n); }
-  [[nodiscard]] Type *allocate(size_t n, const void *hint) {
-    return reallocate((Type *)hint, n);
-  }
-
-  void deallocate(Type *p, size_t n) noexcept { free(p); }
-
- protected:
-  [[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
-    return reallocate_raw((void *)0, number_of_bytes);
-  }
-  [[nodiscard]] void *allocate_raw(size_t n, const void *hint) {
-    return reallocate_raw((void *)hint, n);
-  }
-  void deallocate_raw(void *p, size_t number_of_bytes) noexcept { free(p); }
-
- private:
-  [[nodiscard]] Type *reallocate(Type *ptr, size_t n) {
-    // if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type)) throw
-    // std::bad_array_new_length();
-
-    if (auto p = static_cast<Type *>(realloc(ptr, n * sizeof(Type)))) {
-      return p;
-    }
-    // throw std::bad_alloc();
-    return 0;
-  }
-  [[nodiscard]] void *reallocate_raw(void *ptr, size_t number_of_bytes) {
-    // if (n > std::numeric_limits<std::size_t>::max() / sizeof(Type)) throw
-    // std::bad_array_new_length();
-    if (auto p = static_cast<void *>(realloc(ptr, number_of_bytes))) {
-      return p;
-    }
-    // throw std::bad_alloc();
-    return 0;
-  }
-  size_t &get_size_of_mem(void *ptr) {
-    static size_t dummy{};
-    if (ptr == 0) {
-      dummy = 0;
-      return dummy;
-    }
-    return *(size_t *)get_real_mem(ptr);
-  }
-  void *get_fake_mem(void *ptr) {
-    if (ptr == 0) return ptr;
-    return (void *)((size_t *)ptr + 1);
-  }
-  void *get_real_mem(void *ptr) {
-    if (ptr == 0) return ptr;
-    return (void *)((size_t *)ptr - 1);
-  }
-  void free_log(void *p, size_t n) {
-   // std::cout << "\nnum_allocations: " << num_allocations << " freed :" << p << " with len :" << n << '\n';
-  }
-  void *alloc_log(void *p, size_t n) {
-    //  std::cout << "\nnum_allocations: " << num_allocations << " allocated :" << p << " with len :" << n << '\n';
-    return p;
-  }
-  void *realloc_log(void *p, size_t n) {
-   // std::cout << "\nnum_allocations: " << num_allocations<< " reallocated :" << p << " with len :" << n << '\n';
-    return p;
-  }
-  void *realloc(void *ptr, size_t size) {
-    std::allocator_traits<std::allocator<char>> al;
-    std::allocator<char> all;
-   // num_allocations++;
-    realloc_log(get_real_mem(ptr), get_size_of_mem(ptr));
-    //  void *ptr2 =get_fake_mem(::realloc(get_real_mem(ptr), sizeof(size_t) +
-    //  size));
-    void *ptr2 = get_fake_mem(
-        al.allocate(all, sizeof(size_t) + size, get_real_mem(ptr)));
-    get_size_of_mem(ptr2) = size + sizeof(size_t);
-    alloc_log(get_real_mem(ptr2), get_size_of_mem(ptr2));
-    return ptr2;
-  }
-  void free(void *ptr) {
-    std::allocator_traits<std::allocator<char>> al;
-    std::allocator<char> all;
-    free_log(get_real_mem(ptr), get_size_of_mem(ptr));
-    //num_allocations--;
-    // ::free(get_real_mem(ptr));
-    al.deallocate(all, (char *)get_real_mem(ptr), get_size_of_mem(ptr));
-  }
-};
-
-template <class Type, class U>
-inline constexpr bool operator==(const reallocator<Type> &,
-                                 const reallocator<U> &) {
-  return true;
-}
-
-template <class Type, class U>
-inline constexpr bool operator!=(const reallocator<Type> &,
-                                 const reallocator<U> &) {
-  return false;
-}
-
 
 template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
@@ -261,8 +146,6 @@ struct std_reallocator_warper {
     std_allocator all;
     // num_allocations++;
     realloc_log(get_real_mem(ptr), get_size_of_mem(ptr));
-    //  void *ptr2 =get_fake_mem(::realloc(get_real_mem(ptr), sizeof(size_t) +
-    //  size));
     void *ptr2 = get_fake_mem(
         al.allocate(all, sizeof(size_t) + size, get_real_mem(ptr)));
     get_size_of_mem(ptr2) = size + sizeof(size_t);
@@ -274,7 +157,6 @@ struct std_reallocator_warper {
     std_allocator all;
     free_log(get_real_mem(ptr), get_size_of_mem(ptr));
     // num_allocations--;
-    //  ::free(get_real_mem(ptr));
     al.deallocate(all, (char *)get_real_mem(ptr), get_size_of_mem(ptr));
   }
 };
@@ -303,10 +185,20 @@ inline constexpr bool operator!=(const std_reallocator_warper<T> &,
 
 
 
+template <class Type>
+using reallocator =std_reallocator_warper<std::allocator<Type>>;
 
+template <class Type, class U>
+inline constexpr bool operator==(const reallocator<Type> &,
+                                 const reallocator<U> &) {
+  return true;
+}
 
-
-
+template <class Type, class U>
+inline constexpr bool operator!=(const reallocator<Type> &,
+                                 const reallocator<U> &) {
+  return false;
+}
 
 
 
@@ -467,14 +359,14 @@ class StringSumHelper_t;
 
 template <typename T>
 class mjz_str_t;
-typedef mjz_str_t<std_reallocator_warper<std::allocator<char>>> mjz_Str;
+typedef mjz_str_t<reallocator<char>> mjz_Str;
 
-typedef StringSumHelper_t<std_reallocator_warper<std::allocator<char>>> StringSumHelper;
+typedef StringSumHelper_t<reallocator<char>> StringSumHelper;
 
-template <typename T = std_reallocator_warper<std::allocator<char>>>
+template <typename T = reallocator<char>>
 class extended_mjz_str_t;
 
-typedef extended_mjz_str_t<std_reallocator_warper<std::allocator<char>>> extended_mjz_Str;
+typedef extended_mjz_str_t<reallocator<char>> extended_mjz_Str;
 
 // Define constants and variables for buffering incoming serial data. We're
 // using a ring buffer (I think), in which head is the index of the location
@@ -2454,7 +2346,7 @@ class mjz_temp_malloc_wrapper_t {
         m_cap_size(cap_size),
         m_Deallocation_state(DO_deallocate) {}
 };
-using malloc_wrapper = mjz_temp_malloc_wrapper_t<std_reallocator_warper<std::allocator<char>>>;
+using malloc_wrapper = mjz_temp_malloc_wrapper_t<reallocator<char>>;
 
 /*********************************************************************
  Filename: sha256.h
@@ -2489,7 +2381,7 @@ struct SHA256_CTX {
   WORD datalen{};
   unsigned long long bitlen{};
   WORD state[8]{};
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> to_string() const;
   friend std::ostream &operator<<(std::ostream &CIN, const SHA256_CTX &obj);
   static inline int compare_hash(const void *rhs, const SHA256_CTX &lhs) {
@@ -3555,34 +3447,34 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
 
  public:
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   std::pair<hash_sha256, mjz_str_t<T>> hash_with_output(uint8_t n = 0) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring(size_t beginIndex);
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring(size_t beginIndex, size_t endIndex) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring_beg_n(size_t beginIndex, size_t number) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substr(size_t pos = 0, size_t len = npos) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring(int64_t beginIndex, int64_t endIndex) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring(int64_t beginIndex) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number);
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring_beg_n(unsigned int beginIndex,
                                unsigned int number) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring(int beginIndex) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring(int beginIndex, int endIndex) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring_beg_n(int beginIndex, int number) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring(size_t beginIndex) const;
-  template <typename T = std_reallocator_warper<std::allocator<char>>>
+  template <typename T = reallocator<char>>
   mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number) const;
 };
 
@@ -5338,7 +5230,7 @@ class type_fn_class {
     return _function(x);
   }
 };
-template <typename T = std_reallocator_warper<std::allocator<char>>>
+template <typename T = reallocator<char>>
 mjz_ard::mjz_str_t<T> ULL_LL_to_str(size_t value, int radix, bool is_signed,
                                     bool force_neg = 0);
 template <typename T>
@@ -5972,15 +5864,15 @@ class Point3D {
 //
 
 namespace short_string_names {
-typedef mjz_str_t<std_reallocator_warper<std::allocator<char>>> Str;
-typedef mjz_str_t<std_reallocator_warper<std::allocator<char>>> str;
-typedef mjz_str_t<std_reallocator_warper<std::allocator<char>>> s;
-typedef mjz_str_t<std_reallocator_warper<std::allocator<char>>> S;
-typedef extended_mjz_str_t<std_reallocator_warper<std::allocator<char>>> es;
-typedef extended_mjz_str_t<std_reallocator_warper<std::allocator<char>>> eS;
-typedef extended_mjz_str_t<std_reallocator_warper<std::allocator<char>>> estr;
-typedef extended_mjz_str_t<std_reallocator_warper<std::allocator<char>>> eStr;
-typedef StringSumHelper_t<std_reallocator_warper<std::allocator<char>>> StrSH;
+typedef mjz_str_t<reallocator<char>> Str;
+typedef mjz_str_t<reallocator<char>> str;
+typedef mjz_str_t<reallocator<char>> s;
+typedef mjz_str_t<reallocator<char>> S;
+typedef extended_mjz_str_t<reallocator<char>> es;
+typedef extended_mjz_str_t<reallocator<char>> eS;
+typedef extended_mjz_str_t<reallocator<char>> estr;
+typedef extended_mjz_str_t<reallocator<char>> eStr;
+typedef StringSumHelper_t<reallocator<char>> StrSH;
 typedef mjz_str_view sv;
 typedef mjz_str_view strv;
 typedef mjz_str_view mstrview;
@@ -5993,16 +5885,16 @@ typedef Vector2<float> Vectorf2;
 }  // namespace short_string_names
 
 namespace have_mjz_ard_removed {
-typedef mjz_str_t<std_reallocator_warper<std::allocator<char>>> mjz_Str;
-typedef mjz_str_t<std_reallocator_warper<std::allocator<char>>> mjz_str;
-typedef extended_mjz_str_t<std_reallocator_warper<std::allocator<char>>> mjz_estr;
-typedef extended_mjz_str_t<std_reallocator_warper<std::allocator<char>>> mjz_eStr;
+typedef mjz_str_t<reallocator<char>> mjz_Str;
+typedef mjz_str_t<reallocator<char>> mjz_str;
+typedef extended_mjz_str_t<reallocator<char>> mjz_estr;
+typedef extended_mjz_str_t<reallocator<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
 typedef malloc_wrapper mlc_wrp;
 typedef std::string string;
 typedef hash_sha256 hash_sha_512;
-typedef StringSumHelper_t<std_reallocator_warper<std::allocator<char>>> mjz_StringSumHelper;
-typedef StringSumHelper_t<std_reallocator_warper<std::allocator<char>>> StringSumHelper;
+typedef StringSumHelper_t<reallocator<char>> mjz_StringSumHelper;
+typedef StringSumHelper_t<reallocator<char>> StringSumHelper;
 typedef mjz_str_view mjz_str_view;
 typedef mjz_str_view mstrview;
 typedef mjz_str_view mstrv;
@@ -8606,7 +8498,7 @@ mjz_str_t<T> SHA256_CTX::to_string() const {
   return mjz_str_t<T>(SHA256_CTX::to_c_string(buffer));
 }
 
-template <typename T = std_reallocator_warper<std::allocator<char>>>
+template <typename T = reallocator<char>>
 mjz_str_t<T> float_get_bits_interpretation(float x) {
   auto bits = mjz_ard::get_bit_representation<float>(x);
   mjz_str_t<T> str(" ");
