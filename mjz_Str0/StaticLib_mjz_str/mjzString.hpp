@@ -47,9 +47,19 @@
 unsigned long millis();
 #endif  // Arduino
 #define log_mjz_str(Function, ...) (Function((const char *)__VA_ARGS__))
-
-
+#ifndef log_all_allocations_globaly
+// true
+// false
 #define log_all_allocations_globaly false
+#endif  // !log_all_allocations_globaly
+
+
+namespace mjz_ard {
+
+void *realloc(void *, size_t);
+
+void free(void *);
+}  // namespace mjz_ard
 inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
 
@@ -119,7 +129,7 @@ struct std_reallocator_warper {
     // throw std::bad_alloc();
     return 0;
   }
-  size_t &get_size_of_mem(void *ptr) {
+inline constexpr  size_t &get_size_of_mem(void *ptr) {
     static size_t dummy{};
     if (ptr == 0) {
       dummy = 0;
@@ -127,11 +137,14 @@ struct std_reallocator_warper {
     }
     return *(size_t *)get_real_mem(ptr);
   }
-  void *get_fake_mem(void *ptr) {
+inline constexpr size_t get_needed_size_of_mem(size_t size) {
+    return sizeof(size_t) + size;
+  }
+inline constexpr void *get_fake_mem(void *ptr) {
     if (ptr == 0) return ptr;
     return (void *)((size_t *)ptr + 1);
   }
-  void *get_real_mem(void *ptr) {
+inline constexpr void *get_real_mem(void *ptr) {
     if (ptr == 0) return ptr;
     return (void *)((size_t *)ptr - 1);
   }
@@ -158,16 +171,23 @@ struct std_reallocator_warper {
   std::allocator_traits<std_allocator> my_allocator_traits;
   std_allocator my_allocator;
   void *realloc(void *ptr, size_t size) {
-    if constexpr (DO_std_reallocator_warper_LOG) num_allocations++;
+    if constexpr (DO_std_reallocator_warper_LOG)
+      if (!get_size_of_mem(ptr)) num_allocations++;
     realloc_log(get_real_mem(ptr), get_size_of_mem(ptr));
     void *ptr2{};
     if constexpr (use_free_and_realloc) {
-      ptr2 = get_fake_mem(::realloc(get_real_mem(ptr), sizeof(size_t) + size));
+      void *real_ptr = get_real_mem(ptr);
+      void *real_reallocated_ptr =
+          mjz_ard::realloc(real_ptr, get_needed_size_of_mem(size));
+      ptr2 = get_fake_mem(real_reallocated_ptr);
     } else {
-      ptr2 = get_fake_mem(my_allocator_traits.allocate(
-          my_allocator, sizeof(size_t) + size, get_real_mem(ptr)));
+      ptr2 = get_fake_mem(my_allocator_traits.allocate(my_allocator, get_needed_size_of_mem(size)));
+      if(ptr2&&ptr) {
+        memmove(ptr2, ptr, min(get_needed_size_of_mem(size), get_size_of_mem(ptr)));
+     }
+      this->free(ptr);
     }
-    get_size_of_mem(ptr2) = size + sizeof(size_t);
+    get_size_of_mem(ptr2) = get_needed_size_of_mem(size);
     alloc_log(get_real_mem(ptr2), get_size_of_mem(ptr2));
     return ptr2;
   }
@@ -175,7 +195,7 @@ struct std_reallocator_warper {
     free_log(get_real_mem(ptr), get_size_of_mem(ptr));
     if constexpr (DO_std_reallocator_warper_LOG) num_allocations--;
     if constexpr (use_free_and_realloc) {
-      ::free(get_real_mem(ptr));
+      mjz_ard::free(get_real_mem(ptr));
     } else {
       my_allocator_traits.deallocate(my_allocator, (uint8_t *)get_real_mem(ptr),
                                      get_size_of_mem(ptr));
@@ -593,17 +613,19 @@ struct mjz_temp_type_allocator_warpper_t : public my_destructor,
  private:
   template <typename T_as, typename T_from>
   constexpr inline T_as *get_real_array_ptr(T_from *fake) {
+    if (fake == 0) return 0;
     return (T_as *)(((size_t *)fake) - 1);
   }
   template <typename T_as, typename T_from>
   constexpr inline T_as *get_fake_array_ptr(T_from *real) {
+    if (real == 0 || (void *)real == (void *)sizeof(size_t)) return 0;
     return (T_as *)(((size_t *)real) + 1);
   }
 
   inline [[nodiscard]] Type *allocate_pv(size_t n, const void *hint,
                                          bool raw = 0) {
-    return get_fake_array_ptr<Type>(
-        my_reallocator::allocate_raw(raw ? n : size_of_array_with(n)));
+    return get_fake_array_ptr<Type>(my_reallocator::allocate_raw(
+        raw ? n : size_of_array_with(n), get_real_array_ptr<Type>(hint)));
   }
   void deallocate_pv(Type *p, size_t n, bool raw = 0) noexcept {
     my_reallocator::deallocate_raw(get_real_array_ptr<Type>(p),
@@ -655,14 +677,12 @@ struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
   ~mjz_allocator_warpper() = default;
   template <class T>
   constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
-
-  
-
 };
 
 #if log_all_allocations_globaly
 }
-inline mjz_ard::mjz_allocator_warpper<uint8_t>&get_CPP_local_global_allocator() {
+inline mjz_ard::mjz_allocator_warpper<uint8_t>
+    &get_CPP_local_global_allocator() {
   static mjz_ard::mjz_allocator_warpper<uint8_t> CPP_local_global_allocator_;
   return CPP_local_global_allocator_;
 }
@@ -697,15 +717,13 @@ inline void operator delete[](void *p, size_t) {
   size_t m_size = *real;
   get_CPP_local_global_allocator().deallocate((uint8_t *)real, m_size);
 }
-namespace mjz_ard{
+namespace mjz_ard {
 #endif  //  log_all_allocations_globaly
-
-
-
-
-
-
-
+inline void *realloc(void *p, size_t s) {
+  void *p2 = ::realloc(p, s); 
+  return p2;
+}
+inline void free(void *p) { return ::free(p); }
 template <typename T, size_t Size>
 class mjz_Array {
  public:
@@ -958,7 +976,8 @@ class mjz_Vector {
     auto offset = pos - cbegin();
     reallocate(m_size + 1);
     m_allocator.move_backward(begin() + offset, end() - 1, end());
-    m_allocator.construct(m_allocator, m_data + offset,std::forward<Args>(args)...);
+    m_allocator.construct(m_allocator, m_data + offset,
+                          std::forward<Args>(args)...);
     ++m_size;
     return begin() + offset;
   }
@@ -1463,7 +1482,7 @@ class static_str_algo {
     Right = std::move(_Tmp);
   }
   template <class T, class U = T>
-      T  exchange(T &obj, U &&new_value)  {
+  T exchange(T &obj, U &&new_value) {
     T old_value = std::move(obj);
     obj = std::forward<U>(new_value);
     return old_value;
@@ -2535,6 +2554,7 @@ struct heap_obj_warper {
   uint8_t m_data[size]{};
   bool m_Has_data{};
   static ptr_alloc_warpper my_alloc_warpper;
+
  private:
   template <typename... args_t>
   static inline Type *construct_in_place(Type *place, bool plc_has_obj,
@@ -2548,9 +2568,9 @@ struct heap_obj_warper {
 
   template <typename... args_t>
   inline void construct(args_t &&...args) {
-    if (pointer_to_unsafe_data() == construct_in_place(pointer_to_unsafe_data(),
-                                                       m_Has_data,
-                                                       std::forward<args_t>(args)...)) {
+    if (pointer_to_unsafe_data() ==
+        construct_in_place(pointer_to_unsafe_data(), m_Has_data,
+                           std::forward<args_t>(args)...)) {
       m_Has_data = 1;
     } else {
       m_Has_data = 0;
@@ -2786,8 +2806,8 @@ struct heap_obj_warper {
     return &move_to(*dest);
   }
 };
-template <typename Type, bool construct_obj_on_constructor ,
-          class ptr_alloc_warpper >
+template <typename Type, bool construct_obj_on_constructor,
+          class ptr_alloc_warpper>
 ptr_alloc_warpper heap_obj_warper<Type, construct_obj_on_constructor,
                                   ptr_alloc_warpper>::my_alloc_warpper{};
 template <class my_reallocator>
@@ -2885,8 +2905,8 @@ class mjz_temp_malloc_wrapper_t {
   constexpr inline size_t get_size() { return m_cap_size; }
   void free() {
     if (do_deallocation_on_free_state() && m_cap_size) {
-      my_allocator.deallocate(
-          (mjz_get_value_Type<my_reallocator> *)m_data_ptr, m_cap_size);
+      my_allocator.deallocate((mjz_get_value_Type<my_reallocator> *)m_data_ptr,
+                              m_cap_size);
     }
     m_data_ptr = 0;
     m_cap_size = 0;
@@ -4464,7 +4484,7 @@ class mjz_Str : public basic_mjz_String,
   // return true on success,false on failure (in which case,the string
   // is left unchanged). reserve(0),if successful,will validate an
   // invalid string (i.e.,"if (s)" will be true afterwards)
- inline constexpr const char *c_str() const { return m_buffer; }
+  inline constexpr const char *c_str() const { return m_buffer; }
   inline constexpr char *C_str() { return m_buffer; }
   explicit operator char *() { return buffer_ref(); }
   explicit operator const uint8_t *() const {
