@@ -233,6 +233,20 @@ class mjz_obj_constructor {
   static inline void construct(mjz_obj_constructor &a, T *p, Args &&...args) {
     a.construct_at(p, std::forward(args)...);
   }
+  friend constexpr Type *addressof(Type &obj) { return &obj;
+ }
+  friend constexpr const Type *addressof(const Type &obj) { return &obj;
+  }
+friend constexpr Type *to_address(Type *p) noexcept {
+    return p;
+  }
+  friend constexpr const Type *to_address(const Type &obj) noexcept {
+    return &obj;
+  }
+  friend constexpr const Type *to_address(const Type *p) noexcept { return p; }
+  friend constexpr Type *to_address( Type &obj) noexcept { return &obj; }
+
+  friend Type* pointer_to(Type& r) noexcept { return &r; }
 };
 template <typename Type>
 class mjz_obj_destructor {
@@ -259,8 +273,15 @@ class mjz_obj_destructor {
   inline void destroy(Type *p) { destroy_at(p); }
   template <class ForwardIt, class Size>
   ForwardIt destroy_n(ForwardIt first, Size n) {
-    for (; n > 0; (void)++first, --n) destroy_at(std::addressof(*first));
+    for (; n > 0; (void)++first, --n) destroy_at(addressof(*first));
     return first;
+  }
+
+  template <class ForwardIt>
+  constexpr  // since C++20
+      void
+      destroy(ForwardIt first, ForwardIt last) {
+    for (; first != last; ++first) destroy_at(addressof(*first));
   }
 };
 
@@ -271,8 +292,18 @@ template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
 struct mjz_temp_type_allocator_warpper_t : public my_destructor,
                                            public my_constructor,
                                            protected my_reallocator {
- public:
-  using value_type = Type;
+ public: 
+ using my_value_Type_t = Type;
+  using value_type = my_value_Type_t;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using value_type = my_value_Type_t;
+  using const_reference = const my_value_Type_t &;
+  using size_type = size_t;
+  using propagate_on_container_move_assignment = std::true_type;
+
   constexpr mjz_temp_type_allocator_warpper_t(){};
   constexpr ~mjz_temp_type_allocator_warpper_t(){};
 
@@ -337,6 +368,129 @@ struct mjz_temp_type_allocator_warpper_t : public my_destructor,
     }
   }
 
+
+  template <class InputIt, class Size, class NoThrowForwardIt>
+  NoThrowForwardIt uninitialized_copy_n(InputIt first, Size count,
+                                        NoThrowForwardIt d_first) {
+    using T = typename std::iterator_traits<NoThrowForwardIt>::value_type;
+    NoThrowForwardIt current = d_first;
+    try {
+      for (; count > 0; ++first, (void)++current, --count)
+        construct_at(addressof(*current), *first);
+    } catch (...) {
+      for (; d_first != current; ++d_first) d_first->~T();
+      throw;
+    }
+    return current;
+  }
+  template <class ForwardIt, class T>
+  void uninitialized_fill(ForwardIt first, ForwardIt last, const T &value) {
+    using V = typename std::iterator_traits<ForwardIt>::value_type;
+    ForwardIt current = first;
+    try {
+      for (; current != last; ++current)
+        construct_at(addressof(*current), value);
+    } catch (...) {
+      for (; first != current; ++first) first->~V();
+      throw;
+    }
+  }
+  template <class ForwardIt, class Size, class T>
+  ForwardIt uninitialized_fill_n(ForwardIt first, Size count, const T &value) {
+    ForwardIt current = first;
+    try {
+      for (; count > 0; ++current, (void)--count)
+        construct_at(addressof(*current), value);
+      return current;
+    } catch (...) {
+      for (; first != current; ++first) first->~V();
+      throw;
+    }
+  }
+  template <class InputIt, class NoThrowForwardIt>
+  NoThrowForwardIt uninitialized_move(InputIt first, InputIt last,
+                                      NoThrowForwardIt d_first) {
+    NoThrowForwardIt current = d_first;
+    try {
+      for (; first != last; ++first, (void)++current)
+        construct_at(addressof(*current), std::move(*first));
+      return current;
+    } catch (...) {
+      std::destroy(d_first, current);
+      throw;
+    }
+  }
+  template <class InputIt, class Size, class NoThrowForwardIt>
+  std::pair<InputIt, NoThrowForwardIt> uninitialized_move_n(
+      InputIt first, Size count, NoThrowForwardIt d_first) {
+    NoThrowForwardIt current = d_first;
+    try {
+      for (; count > 0; ++first, (void)++current, --count)
+        construct_at(addressof(*current), std::move(*first));
+    } catch (...) {
+      std::destroy(d_first, current);
+      throw;
+    }
+    return {first, current};
+  }
+  template <class InputIt, class NoThrowForwardIt>
+  NoThrowForwardIt uninitialized_copy(InputIt first, InputIt last,
+                                      NoThrowForwardIt d_first) {
+    NoThrowForwardIt current = d_first;
+    try {
+      for (; first != last; ++first, (void)++current)
+        construct_at(addressof(*current),*first);
+      return current;
+    } catch (...) {
+      for (; d_first != current; ++d_first) d_first->~T();
+      throw;
+    }
+  }
+  template <class ForwardIt>
+  void uninitialized_default_construct(ForwardIt first, ForwardIt last) {
+    ForwardIt current = first;
+    try {
+      for (; current != last; ++current) {
+        construct_at(addressof(*current));
+      }
+    } catch (...) {
+      std::destroy(first, current);
+      throw;
+    }
+  }
+  template <class ForwardIt>
+  void uninitialized_value_construct(ForwardIt first, ForwardIt last) {
+    ForwardIt current = first;
+    try {
+      for (; current != last; ++current) construct_at(addressof(*current));
+    } catch (...) {
+      std::destroy(first, current);
+      throw;
+    }
+  }
+  template <class ForwardIt, class Size>
+  ForwardIt uninitialized_default_construct_n(ForwardIt first, Size n) {
+    ForwardIt current = first;
+
+    try {
+      for (; n > 0; (void)++current, --n) construct_at(addressof(*current));
+      return current;
+    } catch (...) {
+      std::destroy(first, current);
+      throw;
+    }
+  }
+  template <class ForwardIt, class Size>
+  ForwardIt uninitialized_value_construct_n(ForwardIt first, Size n) {
+    ForwardIt current = first;
+    try {
+      for (; n > 0; (void)++current, --n) construct_at(addressof(*current));
+      return current;
+    } catch (...) {
+      std::destroy(first, current);
+      throw;
+    }
+  }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
     // new Type(std::forward(args)...);
@@ -466,10 +620,10 @@ struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
 };
 
 template <typename T, size_t Size>
-class std_Array {
+class mjz_Array {
  public:
   // Default constructor
-  std_Array() : elements{} {}
+  mjz_Array() : elements{} {}
 
   // Element access
   T &operator[](size_t index) {
@@ -526,7 +680,7 @@ class std_Array {
     }
   }
 
-  void swap(std_Array &other) noexcept(std::is_nothrow_swappable_v<T>) {
+  void swap(mjz_Array &other) noexcept(std::is_nothrow_swappable_v<T>) {
     for (size_t i = 0; i < Size; ++i) {
       std::swap(elements[i], other.elements[i]);
     }
@@ -542,8 +696,8 @@ T exchange(T &obj, U &&new_value) {
   obj = std::forward<U>(new_value);
   return old_value;
 }
-template <typename T, typename Allocator = mjz_ard::mjz_allocator_warpper<T>>
-class std_Vector {
+template <typename T, typename Allocator = mjz_allocator_warpper<T>>
+class mjz_Vector {
  public:
   using value_type = T;
   using allocator_type = Allocator;
@@ -551,7 +705,7 @@ class std_Vector {
   using difference_type = ptrdiff_t;
   using reference = value_type &;
   using const_reference = const value_type &;
-  using pointer = typename std::allocator_traits<Allocator>::pointer;
+  using pointer = typename Allocator::pointer;
   using const_pointer =
       typename std::allocator_traits<Allocator>::const_pointer;
   using iterator = T *;
@@ -559,53 +713,54 @@ class std_Vector {
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  std_Vector() : std_Vector(Allocator{}) {}
-  explicit std_Vector(const Allocator &a)
+  mjz_Vector() : mjz_Vector(Allocator{}) {}
+  explicit mjz_Vector(const Allocator &a)
       : m_allocator{a}, m_size{0}, m_capacity{0}, m_data{nullptr} {}
-  explicit std_Vector(size_type n, const T &val,
+  explicit mjz_Vector(size_type n, const T &val,
                       const Allocator &a = Allocator{})
       : m_allocator{a},
         m_size{n},
         m_capacity{n},
         m_data{m_allocator.allocate(n)} {
-    std::uninitialized_fill_n(m_data, n, val);
+    m_allocator.construct_arr_at(m_data, n);
+   // std::uninitialized_fill_n(m_data, n, val);
   }
-  explicit std_Vector(size_type n, const Allocator &a = Allocator{})
-      : std_Vector(n, T{}, a) {}
+  explicit mjz_Vector(size_type n, const Allocator &a = Allocator{})
+      : mjz_Vector(n, T{}, a) {}
   template <typename InputIt>
-  std_Vector(InputIt first, InputIt last, const Allocator &a = Allocator{})
-      : std_Vector(std::distance(first, last), a) {
+  mjz_Vector(InputIt first, InputIt last, const Allocator &a = Allocator{})
+      : mjz_Vector(std::distance(first, last), a) {
     std::copy(first, last, begin());
   }
-  std_Vector(const std_Vector &other)
+  mjz_Vector(const mjz_Vector &other)
       : m_allocator{other.m_allocator},
         m_size{other.m_size},
         m_capacity{other.m_capacity} {
     m_data = m_allocator.allocate(m_capacity);
     std::uninitialized_copy(other.begin(), other.end(), begin());
   }
-  std_Vector(const std_Vector &other, const Allocator &a)
+  mjz_Vector(const mjz_Vector &other, const Allocator &a)
       : m_allocator{a}, m_size{other.m_size}, m_capacity{other.m_capacity} {
     m_data = m_allocator.allocate(m_capacity);
     std::uninitialized_copy(other.begin(), other.end(), begin());
   }
-  std_Vector(std_Vector &&other) noexcept
+  mjz_Vector(mjz_Vector &&other) noexcept
       : m_allocator{std::move(other.m_allocator)},
         m_size{std::exchange(other.m_size, 0)},
         m_capacity{std::exchange(other.m_capacity, 0)},
         m_data{std::exchange(other.m_data, nullptr)} {}
-  std_Vector(std_Vector &&other, const Allocator &a)
+  mjz_Vector(mjz_Vector &&other, const Allocator &a)
       : m_allocator{a},
         m_size{std::exchange(other.m_size, 0)},
         m_capacity{std::exchange(other.m_capacity, 0)},
         m_data{std::exchange(other.m_data, nullptr)} {}
-  std_Vector(std::initializer_list<T> il, const Allocator &a = Allocator{})
-      : std_Vector(il.begin(), il.end(), a) {}
-  ~std_Vector() {
+  mjz_Vector(std::initializer_list<T> il, const Allocator &a = Allocator{})
+      : mjz_Vector(il.begin(), il.end(), a) {}
+  ~mjz_Vector() {
     clear();
     deallocate();
   }
-  std_Vector &operator=(const std_Vector &other) {
+  mjz_Vector &operator=(const mjz_Vector &other) {
     if (this != &other) {
       clear();
       deallocate();
@@ -617,7 +772,7 @@ class std_Vector {
     }
     return *this;
   }
-  std_Vector &operator=(std_Vector &&other) noexcept {
+  mjz_Vector &operator=(mjz_Vector &&other) noexcept {
     if (this != &other) {
       clear();
       deallocate();
@@ -628,8 +783,8 @@ class std_Vector {
     }
     return *this;
   }
-  std_Vector &operator=(std::initializer_list<T> il) {
-    *this = std_Vector(il);
+  mjz_Vector &operator=(std::initializer_list<T> il) {
+    *this = mjz_Vector(il);
     return *this;
   }
   reference operator[](size_type pos) { return m_data[pos]; }
@@ -6207,9 +6362,9 @@ typedef Vector2<float> mvf2;
 typedef Vector2<float> Vectorf2;
 
 template <typename T, size_t size>
-using arr = std_Array<T, size>;
+using arr = mjz_Array<T, size>;
 template <typename T>
-using vect = std_Vector<T>;
+using vect = mjz_Vector<T>;
 template <typename T>
 using obj_wr = heap_obj_warper<T>;
 template <typename T>
@@ -6232,13 +6387,13 @@ typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_estr;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
 template <typename T, size_t size>
-using s_array = std_Array<T, size>;
+using s_array = mjz_Array<T, size>;
 template <typename T>
-using s_vector = std_Vector<T>;
+using s_vector = mjz_Vector<T>;
 template <typename T, size_t size>
-using array = std_Array<T, size>;
+using array = mjz_Array<T, size>;
 template <typename T>
-using vector = std_Vector<T>;
+using vector = mjz_Vector<T>;
 template <typename T>
 using obj_warper = heap_obj_warper<T>;
 template <typename T>
