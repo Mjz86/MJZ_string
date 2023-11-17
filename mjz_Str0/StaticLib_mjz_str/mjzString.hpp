@@ -151,23 +151,23 @@ struct std_reallocator_warper {
     }
     return p;
   }
+  std::allocator_traits<std_allocator> my_allocator_traits;
+  std_allocator my_allocator;
   void *realloc(void *ptr, size_t size) {
-    std::allocator_traits<std_allocator> al;
-    std_allocator all;
-    // num_allocations++;
+    if constexpr (DO_std_reallocator_warper_LOG)
+    num_allocations++;
     realloc_log(get_real_mem(ptr), get_size_of_mem(ptr));
-    void *ptr2 = get_fake_mem(
-        al.allocate(all, sizeof(size_t) + size, get_real_mem(ptr)));
+    void *ptr2 = get_fake_mem(my_allocator_traits.allocate(
+        my_allocator, sizeof(size_t) + size, get_real_mem(ptr)));
     get_size_of_mem(ptr2) = size + sizeof(size_t);
     alloc_log(get_real_mem(ptr2), get_size_of_mem(ptr2));
     return ptr2;
   }
   void free(void *ptr) {
-    std::allocator_traits<std_allocator> al;
-    std_allocator all;
     free_log(get_real_mem(ptr), get_size_of_mem(ptr));
-    // num_allocations--;
-    al.deallocate(all, (uint8_t *)get_real_mem(ptr), get_size_of_mem(ptr));
+    if constexpr (DO_std_reallocator_warper_LOG) num_allocations--;
+    my_allocator_traits.deallocate(my_allocator, (uint8_t *)get_real_mem(ptr),
+                  get_size_of_mem(ptr));
   }
 };
 template <class T1, class T2, class U>
@@ -464,6 +464,317 @@ struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
   template <class T>
   constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
 };
+
+template <typename T, size_t Size>
+class std_Array {
+ public:
+  // Default constructor
+  std_Array() : elements{} {}
+
+  // Element access
+  T &operator[](size_t index) {
+    if (index >= Size) {
+      throw std::out_of_range("Index out of range");
+    }
+    return elements[index];
+  }
+
+  const T &operator[](size_t index) const {
+    if (index >= Size) {
+      throw std::out_of_range("Index out of range");
+    }
+    return elements[index];
+  }
+
+  T &at(size_t index) {
+    if (index >= Size) {
+      throw std::out_of_range("Index out of range");
+    }
+    return elements[index];
+  }
+
+  const T &at(size_t index) const {
+    if (index >= Size) {
+      throw std::out_of_range("Index out of range");
+    }
+    return elements[index];
+  }
+
+  T &front() { return elements[0]; }
+
+  const T &front() const { return elements[0]; }
+
+  T &back() { return elements[Size - 1]; }
+
+  const T &back() const { return elements[Size - 1]; }
+
+  T *data() noexcept { return elements; }
+
+  const T *data() const noexcept { return elements; }
+
+  // Capacity
+  bool empty() const noexcept { return Size == 0; }
+
+  size_t size() const noexcept { return Size; }
+
+  size_t max_size() const noexcept { return Size; }
+
+  // Modifiers
+  void fill(const T &value) {
+    for (size_t i = 0; i < Size; ++i) {
+      elements[i] = value;
+    }
+  }
+
+  void swap(std_Array &other) noexcept(std::is_nothrow_swappable_v<T>) {
+    for (size_t i = 0; i < Size; ++i) {
+      std::swap(elements[i], other.elements[i]);
+    }
+  }
+
+ private:
+  T elements[Size];
+};
+
+template <typename T, typename U = T>
+T exchange(T &obj, U &&new_value) {
+  T old_value = std::move(obj);
+  obj = std::forward<U>(new_value);
+  return old_value;
+}
+template <typename T, typename Allocator = mjz_ard::mjz_allocator_warpper<T>>
+class std_Vector {
+ public:
+  using value_type = T;
+  using allocator_type = Allocator;
+  using size_type = size_t;
+  using difference_type = ptrdiff_t;
+  using reference = value_type &;
+  using const_reference = const value_type &;
+  using pointer = typename std::allocator_traits<Allocator>::pointer;
+  using const_pointer =
+      typename std::allocator_traits<Allocator>::const_pointer;
+  using iterator = T *;
+  using const_iterator = const T *;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  std_Vector() : std_Vector(Allocator{}) {}
+  explicit std_Vector(const Allocator &a)
+      : m_allocator{a}, m_size{0}, m_capacity{0}, m_data{nullptr} {}
+  explicit std_Vector(size_type n, const T &val,
+                      const Allocator &a = Allocator{})
+      : m_allocator{a},
+        m_size{n},
+        m_capacity{n},
+        m_data{m_allocator.allocate(n)} {
+    std::uninitialized_fill_n(m_data, n, val);
+  }
+  explicit std_Vector(size_type n, const Allocator &a = Allocator{})
+      : std_Vector(n, T{}, a) {}
+  template <typename InputIt>
+  std_Vector(InputIt first, InputIt last, const Allocator &a = Allocator{})
+      : std_Vector(std::distance(first, last), a) {
+    std::copy(first, last, begin());
+  }
+  std_Vector(const std_Vector &other)
+      : m_allocator{other.m_allocator},
+        m_size{other.m_size},
+        m_capacity{other.m_capacity} {
+    m_data = m_allocator.allocate(m_capacity);
+    std::uninitialized_copy(other.begin(), other.end(), begin());
+  }
+  std_Vector(const std_Vector &other, const Allocator &a)
+      : m_allocator{a}, m_size{other.m_size}, m_capacity{other.m_capacity} {
+    m_data = m_allocator.allocate(m_capacity);
+    std::uninitialized_copy(other.begin(), other.end(), begin());
+  }
+  std_Vector(std_Vector &&other) noexcept
+      : m_allocator{std::move(other.m_allocator)},
+        m_size{std::exchange(other.m_size, 0)},
+        m_capacity{std::exchange(other.m_capacity, 0)},
+        m_data{std::exchange(other.m_data, nullptr)} {}
+  std_Vector(std_Vector &&other, const Allocator &a)
+      : m_allocator{a},
+        m_size{std::exchange(other.m_size, 0)},
+        m_capacity{std::exchange(other.m_capacity, 0)},
+        m_data{std::exchange(other.m_data, nullptr)} {}
+  std_Vector(std::initializer_list<T> il, const Allocator &a = Allocator{})
+      : std_Vector(il.begin(), il.end(), a) {}
+  ~std_Vector() {
+    clear();
+    deallocate();
+  }
+  std_Vector &operator=(const std_Vector &other) {
+    if (this != &other) {
+      clear();
+      deallocate();
+      m_allocator = other.m_allocator;
+      m_size = other.m_size;
+      m_capacity = other.m_capacity;
+      m_data = m_allocator.allocate(m_capacity);
+      std::uninitialized_copy(other.begin(), other.end(), begin());
+    }
+    return *this;
+  }
+  std_Vector &operator=(std_Vector &&other) noexcept {
+    if (this != &other) {
+      clear();
+      deallocate();
+      m_allocator = std::move(other.m_allocator);
+      m_size = std::exchange(other.m_size, 0);
+      m_capacity = std::exchange(other.m_capacity, 0);
+      m_data = std::exchange(other.m_data, nullptr);
+    }
+    return *this;
+  }
+  std_Vector &operator=(std::initializer_list<T> il) {
+    *this = std_Vector(il);
+    return *this;
+  }
+  reference operator[](size_type pos) { return m_data[pos]; }
+  const_reference operator[](size_type pos) const { return m_data[pos]; }
+  reference at(size_type pos) {
+    check_range(pos);
+    return m_data[pos];
+  }
+  const_reference at(size_type pos) const {
+    check_range(pos);
+    return m_data[pos];
+  }
+  reference front() { return *begin(); }
+  const_reference front() const { return *begin(); }
+  reference back() { return *(end() - 1); }
+  const_reference back() const { return *(end() - 1); }
+  T *data() noexcept { return m_data; }
+  const T *data() const noexcept { return m_data; }
+  iterator begin() noexcept { return m_data; }
+  const_iterator begin() const noexcept { return m_data; }
+  iterator end() noexcept { return m_data + m_size; }
+  const_iterator end() const noexcept { return m_data + m_size; }
+  reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+  const_reverse_iterator rbegin() const noexcept {
+    return const_reverse_iterator(end());
+  }
+  reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+  const_reverse_iterator rend() const noexcept {
+    return const_reverse_iterator(begin());
+  }
+  const_iterator cbegin() const noexcept { return begin(); }
+  const_iterator cend() const noexcept { return end(); }
+  const_reverse_iterator crbegin() const noexcept { return rbegin(); }
+  const_reverse_iterator crend() const noexcept { return rend(); }
+  bool empty() const noexcept { return m_size == 0; }
+  size_type size() const noexcept { return m_size; }
+  size_type max_size() const noexcept {
+    return std::allocator_traits<Allocator>::max_size(m_allocator);
+  }
+  void reserve(size_type n) {
+    if (n > m_capacity) reallocate(n);
+  }
+  size_type capacity() const noexcept { return m_capacity; }
+  void shrink_to_fit() {
+    if (m_size < m_capacity) reallocate(m_size);
+  }
+  void clear() noexcept {
+    destroy(begin(), end());
+    m_size = 0;
+  }
+  iterator insert(const_iterator pos, const T &val) {
+    return insert(pos, 1, val);
+  }
+  iterator insert(const_iterator pos, T &&val) {
+    emplace(pos, std::move(val));
+    return pos;
+  }
+  iterator insert(const_iterator pos, size_type count, const T &val) {
+    auto offset = pos - cbegin();
+    reallocate(m_size + count);
+    std::move_backward(begin() + offset, end() - count, end());
+    std::uninitialized_fill_n(begin() + offset, count, val);
+    m_size += count;
+    return begin() + offset;
+  }
+  template <typename InputIt>
+  iterator insert(const_iterator pos, InputIt first, InputIt last) {
+    auto offset = pos - cbegin();
+    auto count = std::distance(first, last);
+    reallocate(m_size + count);
+    std::move_backward(begin() + offset, end() - count, end());
+    std::uninitialized_copy(first, last, begin() + offset);
+    m_size += count;
+    return begin() + offset;
+  }
+  iterator insert(const_iterator pos, std::initializer_list<T> ilist) {
+    return insert(pos, ilist.begin(), ilist.end());
+  }
+  template <typename... Args>
+  iterator emplace(const_iterator pos, Args &&...args) {
+    auto offset = pos - cbegin();
+    reallocate(m_size + 1);
+    std::move_backward(begin() + offset, end() - 1, end());
+    std::allocator_traits<Allocator>::construct(m_allocator, m_data + offset,
+                                                std::forward<Args>(args)...);
+    ++m_size;
+    return begin() + offset;
+  }
+  iterator erase(const_iterator pos) { return erase(pos, pos + 1); }
+  iterator erase(const_iterator first, const_iterator last) {
+    auto offset = first - cbegin();
+    auto count = last - first;
+    destroy(begin() + offset, end());
+    std::move(begin() + offset + count, end(), begin() + offset);
+    m_size -= count;
+    return begin() + offset;
+  }
+  template <typename... Args>
+  reference emplace_back(Args &&...args) {
+    if (m_size == m_capacity) {
+      reserve(m_capacity == 0 ? 1 : m_capacity * 2);
+    }
+    m_allocator.construct(m_data + m_size, std::forward<Args>(args)...);
+    ++m_size;
+    return back();
+  }
+
+  void pop_back() {
+    if (m_size > 0) {
+      --m_size;
+      m_allocator.destroy(m_data + m_size);
+    }
+  }
+
+ private:
+  allocator_type m_allocator;
+  size_type m_size;
+  size_type m_capacity;
+  pointer m_data;
+
+  // Helper functions
+  void deallocate() {
+    if (m_data) {
+      for (size_type i = 0; i < m_size; ++i) {
+        m_allocator.destroy(m_data + i);
+      }
+      m_allocator.deallocate(m_data, m_capacity);
+      m_data = nullptr;
+      m_size = 0;
+      m_capacity = 0;
+    }
+  }
+
+  void reallocate(size_type newCapacity) {
+    pointer newData = m_allocator.allocate(newCapacity);
+    std::uninitialized_move_n(m_data, m_size, newData);
+    deallocate();
+    m_data = newData;
+    m_capacity = newCapacity;
+  }
+  void check_range(size_type size) {
+    if (m_size < size) throw std::exception(" bad accesses");
+  }
+};
+
 struct UINT64_X2_32_t {
   union {
     int64_t data64;
@@ -3748,19 +4059,19 @@ class mjz_Str : public basic_mjz_String,
   // Arduino mjz_Str<T> functions to be added here
   mjz_str_t<T> read_mjz_Str();
   mjz_str_t<T> read_mjz_Str_Until(char terminator);
-  size_t write(const char *buf, size_t size_);
+  size_t write(const char *buf, size_t m_size);
   size_t write(const char *buf);
   size_t write(uint8_t) if_ard_then_override;
   size_t write(char cr);
-  bool reserve(size_t size_, bool just_size = 0, bool constructor = 0);
+  bool reserve(size_t m_size, bool just_size = 0, bool constructor = 0);
   bool addto_length(size_t addition_tolen, bool just_size = 0);
-  size_t write(const uint8_t *buf, size_t size_) if_ard_then_override;
+  size_t write(const uint8_t *buf, size_t m_size) if_ard_then_override;
   int64_t availableLL() if_ard_then_override;
   int available() if_ard_then_override { return (int)availableLL(); }
   int read() if_ard_then_override;
   int peek() if_ard_then_override;
   void flush() if_ard_then_override;
-  size_t read(uint8_t *buf, size_t size_);
+  size_t read(uint8_t *buf, size_t m_size);
   size_t readBytes(char *buffer_, size_t length) {
     return read((uint8_t *)buffer_, length);
   }
@@ -3773,8 +4084,8 @@ class mjz_Str : public basic_mjz_String,
   // stream
 
   // new and delete
-  [[nodiscard]] static void *operator new(size_t size_);
-  [[nodiscard]] static void *operator new[](size_t size_);
+  [[nodiscard]] static void *operator new(size_t m_size);
+  [[nodiscard]] static void *operator new[](size_t m_size);
   static void operator delete(void *p);
   static void operator delete[](void *ptr);
   static void operator delete(void *p, size_t);
@@ -4132,7 +4443,7 @@ class mjz_Str : public basic_mjz_String,
   void *do_this_for_me(function_ptr, void *x = 0);
   // comparison (only works w/ Strings and "strings")
 
-  [[nodiscard]] static mjz_str_t<T> create_mjz_Str_char_array(size_t size_,
+  [[nodiscard]] static mjz_str_t<T> create_mjz_Str_char_array(size_t m_size,
                                                               char filler = 0,
                                                               bool do_fill = 1);
   [[nodiscard]] static mjz_str_t<T> create_mjz_Str_2D_char_array(
@@ -5887,6 +6198,11 @@ typedef Vector3<float> mvf3;
 typedef Vector3<float> Vectorf3;
 typedef Vector2<float> mvf2;
 typedef Vector2<float> Vectorf2;
+
+template <typename T, size_t size>
+using arr = std_Array<T,size>;
+template <typename T>
+using vect = std_Vector<T>;
 template <typename T>
 using obj_wr = heap_obj_warper<T>;
 template <typename T>
@@ -5908,6 +6224,14 @@ typedef mjz_str_t<mjz_allocator_warpper<char>> mjz_str;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_estr;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
+template <typename T,size_t size>
+using s_array = std_Array<T,size>;
+template <typename T>
+using s_vector = std_Vector<T>;
+template <typename T, size_t size>
+using array = std_Array<T,size>;
+template <typename T>
+using vector = std_Vector<T>;
 template <typename T>
 using obj_warper = heap_obj_warper<T>;
 template <typename T>
@@ -5968,44 +6292,44 @@ inline mjz_ard::Vector3<Type> sqrt(mjz_ard::Vector3<Type> v) {
 namespace mjz_ard {
 
 template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new(size_t size_) {
-  void *p = T().allocate(sizeof(size_t) + size_);
-  *((size_t *)p) = sizeof(size_t) + size_;
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new(size_t m_size) {
+  void *p = T().allocate(sizeof(size_t) + m_size);
+  *((size_t *)p) = sizeof(size_t) + m_size;
   return ((size_t *)p) + 1;
 }
 template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new[](size_t size_) {
-  void *p = T().allocate(sizeof(size_t) + size_);
-  *((size_t *)p) = sizeof(size_t) + size_;
+[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new[](size_t m_size) {
+  void *p = T().allocate(sizeof(size_t) + m_size);
+  *((size_t *)p) = sizeof(size_t) + m_size;
   return ((size_t *)p) + 1;
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete(void *p) {
   size_t *real = (((size_t *)p) - 1);
-  size_t size_ = *real;
-  T().deallocate((mjz_get_value_Type<T> *)real, size_);
+  size_t m_size = *real;
+  T().deallocate((mjz_get_value_Type<T> *)real, m_size);
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete[](void *p) {
   size_t *real = (((size_t *)p) - 1);
-  size_t size_ = *real;
-  T().deallocate((mjz_get_value_Type<T> *)real, size_);
+  size_t m_size = *real;
+  T().deallocate((mjz_get_value_Type<T> *)real, m_size);
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete(void *p, size_t) {
   size_t *real = (((size_t *)p) - 1);
-  size_t size_ = *real;
-  T().deallocate((mjz_get_value_Type<T> *)real, size_);
+  size_t m_size = *real;
+  T().deallocate((mjz_get_value_Type<T> *)real, m_size);
 }
 
 template <typename T>
 void mjz_ard::mjz_str_t<T>::operator delete[](void *p, size_t) {
   size_t *real = (((size_t *)p) - 1);
-  size_t size_ = *real;
-  T().deallocate((mjz_get_value_Type<T> *)real, size_);
+  size_t m_size = *real;
+  T().deallocate((mjz_get_value_Type<T> *)real, m_size);
 }
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
@@ -6130,30 +6454,30 @@ _end__:
   m_capacity = m_length = 0;
 }
 template <typename T>
-bool mjz_ard::mjz_str_t<T>::reserve(size_t size_, bool just_size,
+bool mjz_ard::mjz_str_t<T>::reserve(size_t m_size, bool just_size,
                                     bool constructor) {
-  int64_t different_of_size_and_cap = (int64_t)size_ - (int64_t)m_capacity;
+  int64_t different_of_size_and_cap = (int64_t)m_size - (int64_t)m_capacity;
 
   if (just_size || different_of_size_and_cap < 0) {
     goto ignored_stack;
   }
 
-  if (size_ < stack_buffer_size) {
-    size_ = stack_buffer_size;
+  if (m_size < stack_buffer_size) {
+    m_size = stack_buffer_size;
   } else {
     int64_t minimumcapadd = min_macro_(m_capacity / 5, stack_buffer_size);
-    size_ +=
+    m_size +=
         (size_t)(static_cast<int64_t>(5) * (different_of_size_and_cap < 5) +
                  minimumcapadd * (different_of_size_and_cap < minimumcapadd));
   }
 
 ignored_stack:
 
-  if (m_buffer && m_capacity >= size_) {
+  if (m_buffer && m_capacity >= m_size) {
     return 1;
   }
 
-  if (changeBuffer(size_, constructor)) {
+  if (changeBuffer(m_size, constructor)) {
     if (m_length == 0) {
       m_buffer[0] = 0;
     }
@@ -7207,14 +7531,14 @@ size_t mjz_ard::mjz_str_t<T>::write(uint8_t c) {
   return 1;
 }
 template <typename T>
-size_t mjz_ard::mjz_str_t<T>::write(const uint8_t *buf, size_t size_) {
-  mjz_ard::mjz_str_t<T>::operator+=(mjz_ard::mjz_str_t<T>(buf, (size_t)size_));
-  return size_;
+size_t mjz_ard::mjz_str_t<T>::write(const uint8_t *buf, size_t m_size) {
+  mjz_ard::mjz_str_t<T>::operator+=(mjz_ard::mjz_str_t<T>(buf, (size_t)m_size));
+  return m_size;
 }
 template <typename T>
-size_t mjz_ard::mjz_str_t<T>::write(const char *buf, size_t size_) {
-  mjz_ard::mjz_str_t<T>::operator+=(mjz_ard::mjz_str_t<T>(buf, (size_t)size_));
-  return size_;
+size_t mjz_ard::mjz_str_t<T>::write(const char *buf, size_t m_size) {
+  mjz_ard::mjz_str_t<T>::operator+=(mjz_ard::mjz_str_t<T>(buf, (size_t)m_size));
+  return m_size;
 }
 template <typename T>
 size_t mjz_ard::mjz_str_t<T>::write(const char *buf) {
@@ -7246,12 +7570,12 @@ int mjz_ard::mjz_str_t<T>::peek() {
   }
 }
 template <typename T>
-size_t mjz_ard::mjz_str_t<T>::read(uint8_t *buf, size_t size_) {
+size_t mjz_ard::mjz_str_t<T>::read(uint8_t *buf, size_t m_size) {
   if (!available()) {
     return (size_t)-1;
   }
 
-  if (available() < size_) {
+  if (available() < m_size) {
     return (size_t)-1;
   }
 
@@ -7259,10 +7583,10 @@ size_t mjz_ard::mjz_str_t<T>::read(uint8_t *buf, size_t size_) {
     return (size_t)-1;
   }
 
-  memmove(buf, m_buffer, size_);
-  buf[size_] = 0;
-  remove(0, (size_t)size_);
-  return size_;
+  memmove(buf, m_buffer, m_size);
+  buf[m_size] = 0;
+  remove(0, (size_t)m_size);
+  return m_size;
 }
 template <typename T>
 void mjz_ard::mjz_str_t<T>::flush() {}
@@ -7367,14 +7691,14 @@ bool mjz_ard::extended_mjz_str_t<T>::is_forbiden(char x) const {
 
 template <typename T>
 [[nodiscard]] mjz_ard::mjz_str_t<T>
-mjz_ard::mjz_str_t<T>::create_mjz_Str_char_array(size_t size_, char filler,
+mjz_ard::mjz_str_t<T>::create_mjz_Str_char_array(size_t m_size, char filler,
                                                  bool do_fill) {
   mjz_ard::mjz_str_t<T> ret_val;
-  ret_val.addto_length(size_, 1);
+  ret_val.addto_length(m_size, 1);
   char *ret_val_bufer = (char *)ret_val;
 
   if (do_fill)
-    for (size_t i{}; i < size_; i++) {
+    for (size_t i{}; i < m_size; i++) {
       ret_val_bufer[i] = filler;
     }
 
@@ -7421,16 +7745,16 @@ void mjz_ard::mjz_str_t<T>::find_and_replace(const char *find_cstr,
       readFrom = foundAt + replace_count;
     }
   } else if (diff < 0) {
-    size_t size_ = m_length;  // compute size_ needed for result
+    size_t m_size = m_length;  // compute size_ needed for result
 
     while ((foundAt = const_cast<char *>(strstr(
                 readFrom, strlen(readFrom), find_cstr, find_count))) != NULL) {
       readFrom = foundAt + find_count;
       diff = 0 - diff;
-      size_ -= diff;
+      m_size -= diff;
     }
 
-    if (size_ == m_length) {
+    if (m_size == m_length) {
       return;
     }
 
@@ -7446,19 +7770,19 @@ void mjz_ard::mjz_str_t<T>::find_and_replace(const char *find_cstr,
       index--;
     }
   } else {
-    size_t size_ = m_length;  // compute size_ needed for result
+    size_t m_size = m_length;  // compute size_ needed for result
 
     while ((foundAt = const_cast<char *>(strstr(
                 readFrom, strlen(readFrom), find_cstr, find_count))) != NULL) {
       readFrom = foundAt + find_count;
-      size_ += diff;
+      m_size += diff;
     }
 
-    if (size_ == m_length) {
+    if (m_size == m_length) {
       return;
     }
 
-    if (size_ > m_capacity && !changeBuffer(size_, 0)) {
+    if (m_size > m_capacity && !changeBuffer(m_size, 0)) {
       return;  // XXX: tell user!
     }
 
