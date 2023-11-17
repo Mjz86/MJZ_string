@@ -154,8 +154,7 @@ struct std_reallocator_warper {
   std::allocator_traits<std_allocator> my_allocator_traits;
   std_allocator my_allocator;
   void *realloc(void *ptr, size_t size) {
-    if constexpr (DO_std_reallocator_warper_LOG)
-    num_allocations++;
+    if constexpr (DO_std_reallocator_warper_LOG) num_allocations++;
     realloc_log(get_real_mem(ptr), get_size_of_mem(ptr));
     void *ptr2 = get_fake_mem(my_allocator_traits.allocate(
         my_allocator, sizeof(size_t) + size, get_real_mem(ptr)));
@@ -167,7 +166,7 @@ struct std_reallocator_warper {
     free_log(get_real_mem(ptr), get_size_of_mem(ptr));
     if constexpr (DO_std_reallocator_warper_LOG) num_allocations--;
     my_allocator_traits.deallocate(my_allocator, (uint8_t *)get_real_mem(ptr),
-                  get_size_of_mem(ptr));
+                                   get_size_of_mem(ptr));
   }
 };
 template <class T1, class T2, class U>
@@ -257,6 +256,7 @@ class mjz_obj_destructor {
   static inline void destroy(mjz_obj_destructor &a, Type *p) {
     a.destroy_at(p);
   }
+  inline void destroy(Type *p) { destroy_at(p); }
   template <class ForwardIt, class Size>
   ForwardIt destroy_n(ForwardIt first, Size n) {
     for (; n > 0; (void)++first, --n) destroy_at(std::addressof(*first));
@@ -268,8 +268,8 @@ template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
           class my_constructor = mjz_obj_constructor<Type>,
           class my_reallocator = basic_mjz_allocator<Type>>
 
-struct mjz_temp_type_allocator_warpper_t : protected my_destructor,
-                                           protected my_constructor,
+struct mjz_temp_type_allocator_warpper_t : public my_destructor,
+                                           public my_constructor,
                                            protected my_reallocator {
  public:
   using value_type = Type;
@@ -763,6 +763,11 @@ class std_Vector {
     }
   }
 
+  void destroy(iterator first, iterator last) {
+    while (first < last) {
+      m_allocator.destroy(first++);
+    }
+  }
   void reallocate(size_type newCapacity) {
     pointer newData = m_allocator.allocate(newCapacity);
     std::uninitialized_move_n(m_data, m_size, newData);
@@ -4244,7 +4249,7 @@ class mjz_Str : public basic_mjz_String,
   std__string_view_if_is std_sv() const {
     return std__string_view_if_is((const char *)buffer_ref(), length());
   }
-  
+
   [[nodiscard]] const std::string std_s() const {
     return std::string((const char *)buffer_ref());
   }
@@ -4252,7 +4257,9 @@ class mjz_Str : public basic_mjz_String,
   // invalid,or if the memory allocation fails,the string will be
   // marked as invalid ("if (s)" will be false).
   mjz_str_t<T> &operator=(const mjz_str_t<T> &rhs);
-  mjz_str_t<T> &operator=(const std::string &x) { return (*this)(x.c_str(),x.length()); }
+  mjz_str_t<T> &operator=(const std::string &x) {
+    return (*this)(x.c_str(), x.length());
+  }
   mjz_str_t<T> &operator=(const char *cstr);
   mjz_str_t<T> &operator=(const __FlashStringHelper *str);
   mjz_str_t<T> &operator=(mjz_str_t<T> &&rval) noexcept;
@@ -6200,7 +6207,7 @@ typedef Vector2<float> mvf2;
 typedef Vector2<float> Vectorf2;
 
 template <typename T, size_t size>
-using arr = std_Array<T,size>;
+using arr = std_Array<T, size>;
 template <typename T>
 using vect = std_Vector<T>;
 template <typename T>
@@ -6224,12 +6231,12 @@ typedef mjz_str_t<mjz_allocator_warpper<char>> mjz_str;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_estr;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
-template <typename T,size_t size>
-using s_array = std_Array<T,size>;
+template <typename T, size_t size>
+using s_array = std_Array<T, size>;
 template <typename T>
 using s_vector = std_Vector<T>;
 template <typename T, size_t size>
-using array = std_Array<T,size>;
+using array = std_Array<T, size>;
 template <typename T>
 using vector = std_Vector<T>;
 template <typename T>

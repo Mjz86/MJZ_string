@@ -25,10 +25,10 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 #include "fstream"
 int my_main::main(int argc, const char* const* const argv) {
   using namespace mjz_ard::have_mjz_ard_removed;
-  vector<mjz_ard::operation_reporter> v;
-  v.reserve(10);
-  ///////////////////////////////////////////////////////////////////////////////////////
-  ////////////////////// create a array data
-  ///structure/////////////////////////////////////
-  return 0;  //////////////////////////////////////////////////////////////////////////
+ // vector<mjz_ard::operation_reporter> v(100);
+
+  std::vector < mjz_ard::operation_reporter,
+      mjz_ard::mjz_allocator_warpper<mjz_ard::operation_reporter>> v2(100);
+
+  return 0; 
 }
