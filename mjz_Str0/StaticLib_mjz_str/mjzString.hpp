@@ -220,33 +220,29 @@ class mjz_obj_constructor {
   inline Type *construct_at(Type *dest, args_t &&...args) noexcept {
     Type *ptr{};
     try {
-      ptr = (new (dest) Type(std::forward(args)...));
+      ptr = (new (dest) Type(std::forward<args_t>(args)...));
     } catch (...) {
     }
     return ptr;
   }
   template <typename... args_t>
   inline [[nodiscard]] Type obj_constructor(args_t &&...args) {
-    return Type(std::forward(args)...);
+    return Type(std::forward<args_t>(args)...);
   }
   template <class T, class... Args>
   static inline void construct(mjz_obj_constructor &a, T *p, Args &&...args) {
-    a.construct_at(p, std::forward(args)...);
+    a.construct_at(p, std::forward<Args>(args)...);
   }
-  friend constexpr Type *addressof(Type &obj) { return &obj;
- }
-  friend constexpr const Type *addressof(const Type &obj) { return &obj;
-  }
-friend constexpr Type *to_address(Type *p) noexcept {
-    return p;
-  }
+  friend constexpr Type *addressof(Type &obj) { return &obj; }
+  friend constexpr const Type *addressof(const Type &obj) { return &obj; }
+  friend constexpr Type *to_address(Type *p) noexcept { return p; }
   friend constexpr const Type *to_address(const Type &obj) noexcept {
     return &obj;
   }
   friend constexpr const Type *to_address(const Type *p) noexcept { return p; }
-  friend constexpr Type *to_address( Type &obj) noexcept { return &obj; }
+  friend constexpr Type *to_address(Type &obj) noexcept { return &obj; }
 
-  friend Type* pointer_to(Type& r) noexcept { return &r; }
+  friend Type *pointer_to(Type &r) noexcept { return &r; }
 };
 template <typename Type>
 class mjz_obj_destructor {
@@ -292,8 +288,8 @@ template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
 struct mjz_temp_type_allocator_warpper_t : public my_destructor,
                                            public my_constructor,
                                            protected my_reallocator {
- public: 
- using my_value_Type_t = Type;
+ public:
+  using my_value_Type_t = Type;
   using value_type = my_value_Type_t;
   using reference = value_type &;
   using pointer = value_type *;
@@ -368,7 +364,6 @@ struct mjz_temp_type_allocator_warpper_t : public my_destructor,
     }
   }
 
-
   template <class InputIt, class Size, class NoThrowForwardIt>
   NoThrowForwardIt uninitialized_copy_n(InputIt first, Size count,
                                         NoThrowForwardIt d_first) {
@@ -439,7 +434,7 @@ struct mjz_temp_type_allocator_warpper_t : public my_destructor,
     NoThrowForwardIt current = d_first;
     try {
       for (; first != last; ++first, (void)++current)
-        construct_at(addressof(*current),*first);
+        construct_at(addressof(*current), *first);
       return current;
     } catch (...) {
       for (; d_first != current; ++d_first) d_first->~T();
@@ -491,21 +486,50 @@ struct mjz_temp_type_allocator_warpper_t : public my_destructor,
       throw;
     }
   }
+  template <class BidirIt1, class BidirIt2>
+  BidirIt2 move_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last) {
+    while (first != last) *(--d_last) = std::move(*(--last));
+
+    return d_last;
+  }
+  template <class BidirIt1, class BidirIt2>
+  BidirIt2 copy_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last) {
+    while (first != last) *(--d_last) = std::forward(*(--last));
+
+    return d_last;
+  }
+  template <class InputIt, class OutputIt>
+  OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
+    for (; first != last; (void)++first, (void)++d_first) *d_first = *first;
+
+    return d_first;
+  } 
+  template <class InputIt, class OutputIt, class UnaryPredicate>
+  OutputIt copy_if(InputIt first, InputIt last, OutputIt d_first,
+                   UnaryPredicate pred) {
+    for (; first != last; ++first)
+      if (pred(*first)) {
+        *d_first = *first;
+        ++d_first;
+      }
+
+    return d_first;
+  }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
-    // new Type(std::forward(args)...);
+    // new Type(std::forward<args_t>(args)...);
     Type *ptr = allocate_pv(1, 0);
 
     *get_real_array_ptr<size_t>(ptr) = 1;
-    return my_constructor::construct_at(ptr, std::forward(args)...);
+    return my_constructor::construct_at(ptr, std::forward<args_t>(args)...);
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj_array(size_t len, bool in_reveres,
                                                 args_t &&...args) {
-    // new Type(std::forward(args)...)[len];
+    // new Type(std::forward<args_t>(args)...)[len];
     Type *ptr = allocate_pv(len, 0);
     *get_real_array_ptr<size_t>(ptr) = len;
-    return construct_arr_at(ptr, len, in_reveres, std::forward(args)...);
+    return construct_arr_at(ptr, len, in_reveres, std::forward<args_t>(args)...);
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj_array(size_t len,
@@ -722,27 +746,29 @@ class mjz_Vector {
         m_size{n},
         m_capacity{n},
         m_data{m_allocator.allocate(n)} {
-    m_allocator.construct_arr_at(m_data, n);
-   // std::uninitialized_fill_n(m_data, n, val);
+    m_allocator.uninitialized_fill_n(m_data, n, val);
   }
   explicit mjz_Vector(size_type n, const Allocator &a = Allocator{})
-      : mjz_Vector(n, T{}, a) {}
+      : m_allocator{a},
+        m_size{n},
+        m_capacity{n},
+        m_data{m_allocator.allocate_obj_array(n)} {}
   template <typename InputIt>
   mjz_Vector(InputIt first, InputIt last, const Allocator &a = Allocator{})
       : mjz_Vector(std::distance(first, last), a) {
-    std::copy(first, last, begin());
+    m_allocator.copy(first, last, begin());
   }
   mjz_Vector(const mjz_Vector &other)
       : m_allocator{other.m_allocator},
         m_size{other.m_size},
         m_capacity{other.m_capacity} {
     m_data = m_allocator.allocate(m_capacity);
-    std::uninitialized_copy(other.begin(), other.end(), begin());
+    m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
   }
   mjz_Vector(const mjz_Vector &other, const Allocator &a)
       : m_allocator{a}, m_size{other.m_size}, m_capacity{other.m_capacity} {
     m_data = m_allocator.allocate(m_capacity);
-    std::uninitialized_copy(other.begin(), other.end(), begin());
+    m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
   }
   mjz_Vector(mjz_Vector &&other) noexcept
       : m_allocator{std::move(other.m_allocator)},
@@ -768,7 +794,7 @@ class mjz_Vector {
       m_size = other.m_size;
       m_capacity = other.m_capacity;
       m_data = m_allocator.allocate(m_capacity);
-      std::uninitialized_copy(other.begin(), other.end(), begin());
+      m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
     }
     return *this;
   }
@@ -822,7 +848,8 @@ class mjz_Vector {
   bool empty() const noexcept { return m_size == 0; }
   size_type size() const noexcept { return m_size; }
   size_type max_size() const noexcept {
-    return std::allocator_traits<Allocator>::max_size(m_allocator);
+    return ((((size_type)-1) >> 1) -
+            1);  // std::allocator_traits<Allocator>::max_size(m_allocator);
   }
   void reserve(size_type n) {
     if (n > m_capacity) reallocate(n);
@@ -845,8 +872,8 @@ class mjz_Vector {
   iterator insert(const_iterator pos, size_type count, const T &val) {
     auto offset = pos - cbegin();
     reallocate(m_size + count);
-    std::move_backward(begin() + offset, end() - count, end());
-    std::uninitialized_fill_n(begin() + offset, count, val);
+    m_allocator.move_backward(begin() + offset, end() - count, end());
+    m_allocator.uninitialized_fill_n(begin() + offset, count, val);
     m_size += count;
     return begin() + offset;
   }
@@ -855,8 +882,8 @@ class mjz_Vector {
     auto offset = pos - cbegin();
     auto count = std::distance(first, last);
     reallocate(m_size + count);
-    std::move_backward(begin() + offset, end() - count, end());
-    std::uninitialized_copy(first, last, begin() + offset);
+    m_allocator.move_backward(begin() + offset, end() - count, end());
+    m_allocator.uninitialized_copy(first, last, begin() + offset);
     m_size += count;
     return begin() + offset;
   }
@@ -867,9 +894,8 @@ class mjz_Vector {
   iterator emplace(const_iterator pos, Args &&...args) {
     auto offset = pos - cbegin();
     reallocate(m_size + 1);
-    std::move_backward(begin() + offset, end() - 1, end());
-    std::allocator_traits<Allocator>::construct(m_allocator, m_data + offset,
-                                                std::forward<Args>(args)...);
+    m_allocator.move_backward(begin() + offset, end() - 1, end());
+    m_allocator.construct(m_allocator, m_data + offset,std::forward<Args>(args)...);
     ++m_size;
     return begin() + offset;
   }
@@ -925,7 +951,7 @@ class mjz_Vector {
   }
   void reallocate(size_type newCapacity) {
     pointer newData = m_allocator.allocate(newCapacity);
-    std::uninitialized_move_n(m_data, m_size, newData);
+    m_allocator.uninitialized_move_n(m_data, m_size, newData);
     deallocate();
     m_data = newData;
     m_capacity = newCapacity;
@@ -1372,6 +1398,12 @@ class static_str_algo {
     Type _Tmp = std::move(Left);
     Left = std::move(Right);
     Right = std::move(_Tmp);
+  }
+  template <class T, class U = T>
+      T  exchange(T &obj, U &&new_value)  {
+    T old_value = std::move(obj);
+    obj = std::forward<U>(new_value);
+    return old_value;
   }
 
   constexpr static int64_t compare_two_str(const char *rhs, size_t rhs_l,
@@ -2445,7 +2477,8 @@ struct heap_obj_warper {
   static inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          args_t &&...args) {
     if (plc_has_obj) destroy_at_place(place);
-    return ptr_alloc_warpper().construct_at(place, std::forward(args)...);
+    return ptr_alloc_warpper().construct_at(place,
+                                            std::forward<args_t>(args)...);
   }
   static inline void destroy_at_place(Type *place) {
     ptr_alloc_warpper().destroy_at(place);
@@ -2455,7 +2488,7 @@ struct heap_obj_warper {
   inline void construct(args_t &&...args) {
     if (pointer_to_unsafe_data() == construct_in_place(pointer_to_unsafe_data(),
                                                        m_Has_data,
-                                                       std::forward(args)...)) {
+                                                       std::forward<args_t>(args)...)) {
       m_Has_data = 1;
     } else {
       m_Has_data = 0;
@@ -2543,7 +2576,7 @@ struct heap_obj_warper {
 
   template <typename... arguments_types>
   inline void init(arguments_types &&...args) {
-    construct(std::forward(args)...);
+    construct(std::forward<arguments_types>(args)...);
   }
 
  public:
@@ -3296,12 +3329,14 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr bool empty() const {
     return (!m_length || m_buffer == empty_STRING_C_STR || m_buffer == nullptr);
   }
-  constexpr inline const char *c_str() const { return buffer_ref(); }
-  constexpr inline const char *c_str() { return buffer_ref(); }
-  constexpr inline char *C_str() { return m_buffer; }
   constexpr inline size_t length(void) const { return m_length; }
   constexpr inline char *data() { return m_buffer; }
   constexpr inline const char *data() const { return m_buffer; }
+
+ protected:
+  constexpr inline const char *c_str() const { return buffer_ref(); }
+  constexpr inline const char *c_str() { return buffer_ref(); }
+  constexpr inline char *C_str() { return m_buffer; }
 
  public:
   constexpr explicit operator const bool() const { return !is_blank(); }
@@ -4360,6 +4395,8 @@ class mjz_Str : public basic_mjz_String,
   // return true on success,false on failure (in which case,the string
   // is left unchanged). reserve(0),if successful,will validate an
   // invalid string (i.e.,"if (s)" will be true afterwards)
+ inline constexpr const char *c_str() const { return m_buffer; }
+  inline constexpr char *C_str() { return m_buffer; }
   explicit operator char *() { return buffer_ref(); }
   explicit operator const uint8_t *() const {
     return (const uint8_t *)buffer_ref();
@@ -6422,7 +6459,7 @@ namespace std {
 template <>
 struct hash<mjz_ard::basic_mjz_Str_view> {
   size_t operator()(const mjz_ard::basic_mjz_Str_view &k) const {
-    return mjz_ard::SHA1_CTX::SHA_1(k.c_str(), k.length()).get_as_64bit_hash();
+    return mjz_ard::SHA1_CTX::SHA_1(k.data(), k.length()).get_as_64bit_hash();
   }
 };  // namespace std::hash
 
@@ -6996,7 +7033,7 @@ template <typename T>
 
 mjz_ard::mjz_str_t<T> &&operator_plus(mjz_ard::mjz_str_t<T> &&lhs,
                                       const mjz_ard::basic_mjz_Str_view &rhs) {
-  if (!lhs.concat(rhs.c_str(), rhs.length())) {
+  if (!lhs.concat(rhs.data(), rhs.length())) {
     lhs.invalidate();
   }
 
@@ -8826,7 +8863,7 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
     return CIN;
   }
 
-  const char *CIN_c_str = CIN.c_str();
+  const char *CIN_c_str = CIN.data();
   size_t CURunt_index_{};
   size_t my_bfr_obj_length = CIN.length() + 4;
   mjz_temp_malloc_wrapper_t<T> my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);

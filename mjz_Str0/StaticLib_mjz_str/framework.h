@@ -268,5 +268,14 @@ class mjz_class_operation_reporter_t {
 template <class counter_class>
 counter_class mjz_class_operation_reporter_t<counter_class>::index{};
 using operation_reporter = mjz_class_operation_reporter_t<uint32_t>;
+
+namespace
+have_mjz_ard_removed {
+
+using operation_reporter = mjz_class_operation_reporter_t<uint32_t>;
+typedef vr_Scoped_speed_Timer  vr_Scoped_speed_Timer;
+typedef speed_Timer speed_Timer;
+typedef Scoped_speed_Timer Scoped_speed_Timer;
+}
 }  // namespace mjz_ard
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers
