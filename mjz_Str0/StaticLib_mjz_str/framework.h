@@ -233,49 +233,53 @@ class vr_Scoped_speed_Timer : public Scoped_speed_Timer {
 template <class counter_class>
 class mjz_class_operation_reporter_t {
   static counter_class index;
-
-  inline void* UUID() { return this; };
-
  public:
+  char filler = '|';
+  inline const void* UUID() const { return this; };
+
   mjz_class_operation_reporter_t() {
     std::cout << " created : " << index++ << " with ID: " << UUID() << " \n";
   }
-  mjz_class_operation_reporter_t(int) {
+  mjz_class_operation_reporter_t(int i): filler(i) {
     std::cout << " created with int : " << index++ << " with ID: " << UUID()
               << " \n";
   }
   ~mjz_class_operation_reporter_t() {
     std::cout << " destroyed : " << --index << " with ID: " << UUID() << " \n";
   }
-  mjz_class_operation_reporter_t(mjz_class_operation_reporter_t&&) {
-    std::cout << " moved "
-              << " with ID: " << UUID() << " \n";
-  }
-  mjz_class_operation_reporter_t& operator=(mjz_class_operation_reporter_t&&) {
-    std::cout << " moved "
-              << " with ID: " << UUID() << " \n";
-  }
-  mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t&) {
-    std::cout << " copied "
-              << " with ID: " << UUID() << " \n";
+  mjz_class_operation_reporter_t(mjz_class_operation_reporter_t&& obj) {
+    index++;
+    std::cout << " move constructed "
+              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
   }
   mjz_class_operation_reporter_t& operator=(
-      const mjz_class_operation_reporter_t&) {
-    std::cout << " copied "
-              << " with ID: " << UUID() << " \n";
+      mjz_class_operation_reporter_t&& obj) {
+    std::cout << " moved to me  "
+              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
+    return *this;
+  }
+  mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t& obj) {
+    index++;
+    std::cout << " copy constructed "
+              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
+  }
+  mjz_class_operation_reporter_t& operator=(
+      const mjz_class_operation_reporter_t& obj) {
+    std::cout << " copied to me   "
+              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
+    return *this;
   }
 };
 template <class counter_class>
 counter_class mjz_class_operation_reporter_t<counter_class>::index{};
 using operation_reporter = mjz_class_operation_reporter_t<uint32_t>;
 
-namespace
-have_mjz_ard_removed {
+namespace have_mjz_ard_removed {
 
 using operation_reporter = mjz_class_operation_reporter_t<uint32_t>;
-typedef vr_Scoped_speed_Timer  vr_Scoped_speed_Timer;
+typedef vr_Scoped_speed_Timer vr_Scoped_speed_Timer;
 typedef speed_Timer speed_Timer;
 typedef Scoped_speed_Timer Scoped_speed_Timer;
-}
+}  // namespace have_mjz_ard_removed
 }  // namespace mjz_ard
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers

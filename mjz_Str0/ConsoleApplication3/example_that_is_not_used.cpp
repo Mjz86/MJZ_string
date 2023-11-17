@@ -25,8 +25,13 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 #include "fstream"
 int my_main::main(int argc, const char* const* const argv) {
 	using namespace mjz_ard::have_mjz_ard_removed;
-  array<int, 1000> a;
-        std::array<int, 1000> a2;
+  array<operation_reporter, 1000> a[2];
+        a[0].swap(a[2]);
+  a[0].fill({1});
+
+  mjz_str_view s((const char*)a[0][0].UUID(), sizeof(a));
+
+        std::cout << s;
 
 
   return 0; 

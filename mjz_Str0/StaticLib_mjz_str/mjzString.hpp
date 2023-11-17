@@ -53,7 +53,6 @@ unsigned long millis();
 #define log_all_allocations_globaly false
 #endif  // !log_all_allocations_globaly
 
-
 namespace mjz_ard {
 
 void *realloc(void *, size_t);
@@ -65,6 +64,238 @@ class __FlashStringHelper;
 
 namespace mjz_ard {
 extern uint32_t num_allocations;
+
+// iterator_template Class
+template <typename Type,bool error_check=1>
+class iterator_template {
+ protected:
+  Type *m_iterator;
+  Type *m_iterator_begin_ptr;
+  Type *m_iterator_end_ptr;
+
+ public:
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using value_type = Type;
+  using const_reference = const Type &;
+  using size_type = size_t;
+
+  // using iterator_concept = std::contiguous_iterator_tag;
+  inline constexpr iterator_template() noexcept
+      : iterator_template(nullptr, nullptr, (Type *)-1) {}
+  // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
+
+  inline constexpr iterator_template(Type *iter, Type *min_end,
+                                     Type *max_end) noexcept
+      : m_iterator{iter},
+        m_iterator_begin_ptr{min_end},
+        m_iterator_end_ptr{max_end} {}
+
+  inline constexpr iterator_template(Type *arr, size_t len) noexcept
+      : m_iterator(arr),
+        m_iterator_begin_ptr(arr),
+        m_iterator_end_ptr(arr + len) {}
+
+  inline constexpr iterator_template(const Type *First_arg,
+                                     const Type *Last_arg) noexcept
+      : iterator_template(First_arg, First_arg, Last_arg) {}
+
+  // inline constexpr iterator_template(std::initializer_list<Type>list)
+  // noexcept
+  // : iterator_template((Type *)(list.begin()), (size_t)list.size()) {}
+  // this is bad for class types becuse ~list => ~Type => } code... => use
+  // after free
+
+inline  constexpr void throw_if_bad(Type *_iterator) const {
+    if constexpr (error_check){
+      if (_iterator == (Type *)-1) {
+        _iterator = m_iterator;
+      }
+
+      if ((m_iterator_begin_ptr <= _iterator) &&
+          (_iterator <= m_iterator_end_ptr)) {
+        return;
+      }
+
+      throw std::exception("bad ptr access : iterator_template::throw_if_bad ");
+    }
+  }
+  constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
+
+  constexpr iterator_template(const iterator_template &p) noexcept
+      : m_iterator(p.m_iterator),
+        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
+  constexpr iterator_template(iterator_template &&p) noexcept
+      : m_iterator(p.m_iterator),
+        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
+  constexpr iterator_template &operator=(Type *iter) {
+    m_iterator = iter;
+    throw_if_bad();
+    return *this;
+  }
+  constexpr iterator_template &operator=(const iterator_template &p) {
+    m_iterator = (p.m_iterator);
+    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
+    m_iterator_end_ptr = p.m_iterator_end_ptr;
+    throw_if_bad();
+    return *this;
+  }
+  constexpr iterator_template &operator=(iterator_template &&p) noexcept {
+    m_iterator = (p.m_iterator);
+    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
+    m_iterator_end_ptr = p.m_iterator_end_ptr;
+    return *this;
+  }
+  inline ~iterator_template() { m_iterator = 0; }
+  constexpr bool operator==(const iterator_template &other) const noexcept {
+    return m_iterator == other.m_iterator;
+  }
+  constexpr bool operator!=(const iterator_template &other) const noexcept {
+    return m_iterator != other.m_iterator;
+  }
+  constexpr reference operator*() const {
+    throw_if_bad();
+    return *m_iterator;
+  }
+  constexpr pointer operator->() const {
+    throw_if_bad();
+    return m_iterator;
+  }
+  template <typename my_type, typename Type = value_type>
+  inline auto operator->*(my_type my_var) {
+    return operator->()->*my_var;
+  }
+  inline constexpr const Type *begin() const { return m_iterator_begin_ptr; }
+  inline constexpr const Type *end() const { return m_iterator_end_ptr; }
+  inline constexpr Type *begin() { return m_iterator_begin_ptr; }
+  inline constexpr Type *end() { return m_iterator_end_ptr; }
+  inline constexpr iterator_template base() {
+    return iterator_template(m_iterator_begin_ptr, m_iterator_begin_ptr,
+                             m_iterator_end_ptr);
+  }
+
+  constexpr size_t size() const noexcept {
+    return static_cast<size_t>(m_iterator_end_ptr - m_iterator_begin_ptr);
+  }
+  constexpr iterator_template &operator++() noexcept {
+    ++m_iterator;
+    return *this;
+  }
+  constexpr iterator_template operator++(int) noexcept {
+    iterator_template tmp(*this);
+    ++(*this);
+    return tmp;
+  }
+  constexpr iterator_template &operator--() noexcept {
+    --m_iterator;
+    return *this;
+  }
+  constexpr iterator_template operator--(int) noexcept {
+    iterator_template tmp(*this);
+    --(*this);
+    return tmp;
+  }
+  constexpr iterator_template &operator+=(
+      const difference_type other) noexcept {
+    m_iterator += other;
+    return *this;
+  }
+  constexpr iterator_template &operator-=(
+      const difference_type other) noexcept {
+    m_iterator -= other;
+    return *this;
+  }
+  constexpr iterator_template &operator+=(
+      const iterator_template &other) noexcept {
+    m_iterator += other.m_iterator;
+    return *this;
+  }
+  constexpr iterator_template &operator-=(
+      const iterator_template &other) noexcept {
+    m_iterator -= other.m_iterator;
+    return *this;
+  }
+  constexpr reference operator[](std::size_t index) const {
+    throw_if_bad(m_iterator + index);
+    return m_iterator[index];
+  }
+  constexpr bool operator<(const iterator_template &other) const noexcept {
+    return m_iterator < other.m_iterator;
+  }
+  constexpr bool operator>(const iterator_template &other) const noexcept {
+    return m_iterator > other.m_iterator;
+  }
+  constexpr bool operator<=(const iterator_template &other) const noexcept {
+    return m_iterator <= other.m_iterator;
+  }
+  constexpr bool operator>=(const iterator_template &other) const noexcept {
+    return m_iterator >= other.m_iterator;
+  }
+  constexpr operator pointer() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr explicit operator pointer &() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr pointer get_pointer() const {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr pointer &get_pointer() {
+    throw_if_bad();
+    return m_iterator;
+  }
+  constexpr friend iterator_template operator+(
+      const iterator_template &me, const difference_type other) noexcept {
+    return iterator_template(me.m_iterator + other, me.m_iterator_begin_ptr,
+                             me.m_iterator_end_ptr);
+  }
+  constexpr friend iterator_template operator-(
+      const iterator_template &me, const difference_type other) noexcept {
+    return iterator_template(me.m_iterator - other, me.m_iterator_begin_ptr,
+                             me.m_iterator_end_ptr);
+  }
+  constexpr friend iterator_template operator+(
+      const difference_type other, const iterator_template &me) noexcept {
+    return iterator_template(
+        other + me.m_iterator,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  // friend iterator_template operator-(const difference_type other, const
+  // iterator_template& me) noexcept { // bad function dont use
+  // return iterator_template(me.m_iterator - (pointer)other);
+  // }
+  constexpr friend iterator_template operator+(
+      const iterator_template &other, const iterator_template &me) noexcept {
+    return iterator_template(
+        other.m_iterator + me,
+        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
+        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
+  }
+  constexpr friend difference_type operator-(
+      const iterator_template &other, const iterator_template &me) noexcept {
+    return std::distance(other.m_iterator, me.m_iterator);
+  }
+  constexpr friend void swap(iterator_template &lhs,
+                             iterator_template &rhs) noexcept {
+    iterator_template lhsm_iterator = lhs;
+    lhs = rhs;
+    rhs = lhsm_iterator;
+  }
+  constexpr friend void swap(reference lhs, reference rhs) noexcept {
+    value_type lhsm_ = lhs;
+    lhs = rhs;
+    rhs = lhsm_;
+  }
+};
 
 template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
@@ -129,7 +360,7 @@ struct std_reallocator_warper {
     // throw std::bad_alloc();
     return 0;
   }
-inline constexpr  size_t &get_size_of_mem(void *ptr) {
+  inline constexpr size_t &get_size_of_mem(void *ptr) {
     static size_t dummy{};
     if (ptr == 0) {
       dummy = 0;
@@ -137,14 +368,14 @@ inline constexpr  size_t &get_size_of_mem(void *ptr) {
     }
     return *(size_t *)get_real_mem(ptr);
   }
-inline constexpr size_t get_needed_size_of_mem(size_t size) {
+  inline constexpr size_t get_needed_size_of_mem(size_t size) {
     return sizeof(size_t) + size;
   }
-inline constexpr void *get_fake_mem(void *ptr) {
+  inline constexpr void *get_fake_mem(void *ptr) {
     if (ptr == 0) return ptr;
     return (void *)((size_t *)ptr + 1);
   }
-inline constexpr void *get_real_mem(void *ptr) {
+  inline constexpr void *get_real_mem(void *ptr) {
     if (ptr == 0) return ptr;
     return (void *)((size_t *)ptr - 1);
   }
@@ -181,10 +412,12 @@ inline constexpr void *get_real_mem(void *ptr) {
           mjz_ard::realloc(real_ptr, get_needed_size_of_mem(size));
       ptr2 = get_fake_mem(real_reallocated_ptr);
     } else {
-      ptr2 = get_fake_mem(my_allocator_traits.allocate(my_allocator, get_needed_size_of_mem(size)));
-      if(ptr2&&ptr) {
-        memmove(ptr2, ptr, min(get_needed_size_of_mem(size), get_size_of_mem(ptr)));
-     }
+      ptr2 = get_fake_mem(my_allocator_traits.allocate(
+          my_allocator, get_needed_size_of_mem(size)));
+      if (ptr2 && ptr) {
+        memmove(ptr2, ptr,
+                min(get_needed_size_of_mem(size), get_size_of_mem(ptr)));
+      }
       this->free(ptr);
     }
     get_size_of_mem(ptr2) = get_needed_size_of_mem(size);
@@ -720,79 +953,162 @@ inline void operator delete[](void *p, size_t) {
 namespace mjz_ard {
 #endif  //  log_all_allocations_globaly
 inline void *realloc(void *p, size_t s) {
-  void *p2 = ::realloc(p, s); 
+  void *p2 = ::realloc(p, s);
   return p2;
 }
 inline void free(void *p) { return ::free(p); }
-template <typename T, size_t Size>
-class mjz_Array {
+template <class Type, size_t m_Size, bool error_check = 1>
+class mjz_Array {  // fixed size mjz_Array of values
  public:
-  // Default constructor
-  mjz_Array() : elements{} {}
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using difference_type = std::ptrdiff_t;
+  using value_type = Type;
+  using const_reference = const Type &;
+  using size_type = size_t;
 
-  // Element access
-  T &operator[](size_t index) {
-    if (index >= Size) {
-      throw std::out_of_range("Index out of range");
-    }
-    return elements[index];
+  using iterator = iterator_template<Type,error_check>;
+  using const_iterator = iterator_template<const Type,error_check>;
+
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  void assign(const Type &_Value) { fill(_Value); }
+
+  void fill(const Type &value) {
+    iterator fst = begin();
+    iterator lst = end();
+    while (fst < lst) *fst++ = value;
+  }
+  void swap(mjz_Array &other) noexcept(std::is_nothrow_swappable_v<Type>) {
+    iterator fst[2] = {begin(), other.begin()};
+    iterator lst[2] = {end(), other.end()};
+    while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
+      std::swap(*fst[0]++, *fst[1]++);
   }
 
-  const T &operator[](size_t index) const {
-    if (index >= Size) {
-      throw std::out_of_range("Index out of range");
-    }
-    return elements[index];
+  [[nodiscard]] iterator begin() noexcept { 
+      return iterator(m_elements, m_elements, m_elements + m_Size); 
   }
 
-  T &at(size_t index) {
-    if (index >= Size) {
-      throw std::out_of_range("Index out of range");
-    }
-    return elements[index];
+  [[nodiscard]] const_iterator begin() const noexcept {
+      return const_iterator(m_elements, m_elements, m_elements + m_Size); 
   }
 
-  const T &at(size_t index) const {
-    if (index >= Size) {
-      throw std::out_of_range("Index out of range");
-    }
-    return elements[index];
+  [[nodiscard]] iterator end() noexcept {
+      return iterator(m_elements + m_Size, m_elements, m_elements + m_Size);
   }
 
-  T &front() { return elements[0]; }
-
-  const T &front() const { return elements[0]; }
-
-  T &back() { return elements[Size - 1]; }
-
-  const T &back() const { return elements[Size - 1]; }
-
-  T *data() noexcept { return elements; }
-
-  const T *data() const noexcept { return elements; }
-
-  // Capacity
-  bool empty() const noexcept { return Size == 0; }
-
-  size_t size() const noexcept { return Size; }
-
-  size_t max_size() const noexcept { return Size; }
-
-  // Modifiers
-  void fill(const T &value) {
-    for (size_t i = 0; i < Size; ++i) {
-      elements[i] = value;
-    }
+  [[nodiscard]] const_iterator end() const noexcept {
+      return const_iterator(m_elements + m_Size, m_elements,
+                            m_elements + m_Size);
   }
 
-  void swap(mjz_Array &other) noexcept(std::is_nothrow_swappable_v<T>) {
-    for (size_t i = 0; i < Size; ++i) {
-      std::swap(elements[i], other.elements[i]);
-    }
+  [[nodiscard]] reverse_iterator rbegin() noexcept {
+    return reverse_iterator(end());
   }
 
- private:
-  T elements[Size];
+  [[nodiscard]] const_reverse_iterator rbegin() const noexcept {
+    return const_reverse_iterator(end());
+  }
+
+  [[nodiscard]] reverse_iterator rend() noexcept {
+    return reverse_iterator(begin());
+  }
+
+  [[nodiscard]] const_reverse_iterator rend() const noexcept {
+    return const_reverse_iterator(begin());
+  }
+
+  [[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
+
+  [[nodiscard]] const_iterator cend() const noexcept { return end(); }
+
+  [[nodiscard]] const_reverse_iterator crbegin() const noexcept {
+    return rbegin();
+  }
+
+  [[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
+
+  [[nodiscard]] constexpr size_type size() const noexcept { return m_Size; }
+
+  [[nodiscard]] constexpr size_type max_size() const noexcept { return m_Size; }
+
+  constexpr bool empty() const noexcept { return !!m_Size; }
+
+  [[nodiscard]] reference at(size_type _Pos) {
+    if constexpr (error_check) {
+      if (m_Size <= _Pos) {
+        invld_throw();
+      }
+    }
+
+    return m_elements[_Pos];
+  }
+
+  [[nodiscard]] constexpr const_reference at(size_type _Pos) const {
+    if constexpr (error_check) {
+      if (m_Size <= _Pos) {
+        invld_throw();
+      }
+    }
+
+    return m_elements[_Pos];
+  }
+
+  [[nodiscard]] reference operator[](_In_range_(0, m_Size - 1)
+                                         size_type _Pos) noexcept
+  /* strengthened */ {
+    if constexpr (error_check) {
+      if (_Pos >= m_Size) {
+        throw std::exception{"mjz_Array subscript out of range"};
+      }
+    }
+
+    return m_elements[_Pos];
+  }
+
+  [[nodiscard]] constexpr const_reference operator[](
+      _In_range_(0, m_Size - 1) size_type _Pos) const noexcept
+  /* strengthened */ {
+    if constexpr (error_check) {
+      {
+        if (_Pos >= m_Size)
+          throw std::exception{"mjz_Array subscript out of range"};
+      }
+    }
+
+    return m_elements[_Pos];
+  }
+
+  [[nodiscard]] reference front() noexcept /* strengthened */ {
+    return m_elements[0];
+  }
+
+  [[nodiscard]] constexpr const_reference front() const noexcept
+  /* strengthened */ {
+    return m_elements[0];
+  }
+
+  [[nodiscard]] reference back() noexcept /* strengthened */ {
+    return m_elements[m_Size - 1];
+  }
+
+  [[nodiscard]] constexpr const_reference back() const noexcept
+  /* strengthened */ {
+    return m_elements[m_Size - 1];
+  }
+
+  [[nodiscard]] Type *data() noexcept { return m_elements; }
+
+  [[nodiscard]] const Type *data() const noexcept { return m_elements; }
+
+  [[noreturn]] void invld_throw() const {
+    throw std::exception("invalid mjz_Array<T, N> subscript");
+  }
+
+  Type m_elements[m_Size];
 };
 
 template <typename T, typename U = T>
@@ -2302,236 +2618,6 @@ class mjz_Str_DATA_storage_cls
 enum Dealocation_state : uint8_t {
   dont_deallocate_on_free = MJZ_logic_BIT(0),
   is_moved = MJZ_logic_BIT(1)
-};
-
-// iterator_template Class
-template <typename Type>
-class iterator_template {
- protected:
-  Type *m_iterator;
-  Type *m_iterator_begin_ptr;
-  Type *m_iterator_end_ptr;
-
- public:
-  using value_type = Type;
-  using reference = value_type &;
-  using pointer = value_type *;
-  using iterator_category = std::random_access_iterator_tag;
-  using difference_type = std::ptrdiff_t;
-  using value_type = Type;
-  using const_reference = const Type &;
-  using size_type = size_t;
-
-  // using iterator_concept = std::contiguous_iterator_tag;
-  inline constexpr iterator_template() noexcept
-      : iterator_template(nullptr, nullptr, (Type *)-1) {}
-  // iterator_template(Type *iter ) noexcept: m_iterator{iter} {}
-
-  inline constexpr iterator_template(Type *iter, Type *min_end,
-                                     Type *max_end) noexcept
-      : m_iterator{iter},
-        m_iterator_begin_ptr{min_end},
-        m_iterator_end_ptr{max_end} {}
-
-  inline constexpr iterator_template(Type *arr, size_t len) noexcept
-      : m_iterator(arr),
-        m_iterator_begin_ptr(arr),
-        m_iterator_end_ptr(arr + len) {}
-
-  inline constexpr iterator_template(const Type *First_arg,
-                                     const Type *Last_arg) noexcept
-      : iterator_template(First_arg, First_arg, Last_arg) {}
-
-  // inline constexpr iterator_template(std::initializer_list<Type>list)
-  // noexcept
-  // : iterator_template((Type *)(list.begin()), (size_t)list.size()) {}
-  // this is bad for class types becuse ~list => ~Type => } code... => use
-  // after free
-
-  constexpr void throw_if_bad(Type *_iterator) const {
-    if (_iterator == (Type *)-1) {
-      _iterator = m_iterator;
-    }
-
-    if ((m_iterator_begin_ptr <= _iterator) &&
-        (_iterator <= m_iterator_end_ptr)) {
-      return;
-    }
-
-    throw std::exception("bad ptr access : iterator_template::throw_if_bad ");
-  }
-  constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
-
-  constexpr iterator_template(const iterator_template &p) noexcept
-      : m_iterator(p.m_iterator),
-        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
-        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template(iterator_template &&p) noexcept
-      : m_iterator(p.m_iterator),
-        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
-        m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template &operator=(Type *iter) {
-    m_iterator = iter;
-    throw_if_bad();
-    return *this;
-  }
-  constexpr iterator_template &operator=(const iterator_template &p) {
-    m_iterator = (p.m_iterator);
-    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
-    m_iterator_end_ptr = p.m_iterator_end_ptr;
-    throw_if_bad();
-    return *this;
-  }
-  constexpr iterator_template &operator=(iterator_template &&p) noexcept {
-    m_iterator = (p.m_iterator);
-    m_iterator_begin_ptr = p.m_iterator_begin_ptr;
-    m_iterator_end_ptr = p.m_iterator_end_ptr;
-    return *this;
-  }
-  inline ~iterator_template() { m_iterator = 0; }
-  constexpr bool operator==(const iterator_template &other) const noexcept {
-    return m_iterator == other.m_iterator;
-  }
-  constexpr bool operator!=(const iterator_template &other) const noexcept {
-    return m_iterator != other.m_iterator;
-  }
-  constexpr reference operator*() const {
-    throw_if_bad();
-    return *m_iterator;
-  }
-  constexpr pointer operator->() const {
-    throw_if_bad();
-    return m_iterator;
-  }
-  template <typename my_type, typename Type = value_type>
-  inline auto operator->*(my_type my_var) {
-    return operator->()->*my_var;
-  }
-  inline constexpr const Type *begin() const { return m_iterator_begin_ptr; }
-  inline constexpr const Type *end() const { return m_iterator_end_ptr; }
-  inline constexpr Type *begin() { return m_iterator_begin_ptr; }
-  inline constexpr Type *end() { return m_iterator_end_ptr; }
-  inline constexpr iterator_template base() {
-    return iterator_template(m_iterator_begin_ptr, m_iterator_begin_ptr,
-                             m_iterator_end_ptr);
-  }
-
-  constexpr size_t size() const noexcept {
-    return static_cast<size_t>(m_iterator_end_ptr - m_iterator_begin_ptr);
-  }
-  constexpr iterator_template &operator++() noexcept {
-    ++m_iterator;
-    return *this;
-  }
-  constexpr iterator_template operator++(int) noexcept {
-    iterator_template tmp(*this);
-    ++(*this);
-    return tmp;
-  }
-  constexpr iterator_template &operator--() noexcept {
-    --m_iterator;
-    return *this;
-  }
-  constexpr iterator_template operator--(int) noexcept {
-    iterator_template tmp(*this);
-    --(*this);
-    return tmp;
-  }
-  constexpr iterator_template &operator+=(
-      const difference_type other) noexcept {
-    m_iterator += other;
-    return *this;
-  }
-  constexpr iterator_template &operator-=(
-      const difference_type other) noexcept {
-    m_iterator -= other;
-    return *this;
-  }
-  constexpr iterator_template &operator+=(
-      const iterator_template &other) noexcept {
-    m_iterator += other.m_iterator;
-    return *this;
-  }
-  constexpr iterator_template &operator-=(
-      const iterator_template &other) noexcept {
-    m_iterator -= other.m_iterator;
-    return *this;
-  }
-  constexpr reference operator[](std::size_t index) const {
-    throw_if_bad(m_iterator + index);
-    return m_iterator[index];
-  }
-  constexpr bool operator<(const iterator_template &other) const noexcept {
-    return m_iterator < other.m_iterator;
-  }
-  constexpr bool operator>(const iterator_template &other) const noexcept {
-    return m_iterator > other.m_iterator;
-  }
-  constexpr bool operator<=(const iterator_template &other) const noexcept {
-    return m_iterator <= other.m_iterator;
-  }
-  constexpr bool operator>=(const iterator_template &other) const noexcept {
-    return m_iterator >= other.m_iterator;
-  }
-  constexpr operator pointer() {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr explicit operator pointer &() {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr pointer get_pointer() const {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr pointer &get_pointer() {
-    throw_if_bad();
-    return m_iterator;
-  }
-  constexpr friend iterator_template operator+(
-      const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(me.m_iterator + other, me.m_iterator_begin_ptr,
-                             me.m_iterator_end_ptr);
-  }
-  constexpr friend iterator_template operator-(
-      const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(me.m_iterator - other, me.m_iterator_begin_ptr,
-                             me.m_iterator_end_ptr);
-  }
-  constexpr friend iterator_template operator+(
-      const difference_type other, const iterator_template &me) noexcept {
-    return iterator_template(
-        other + me.m_iterator,
-        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
-        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
-  }
-  // friend iterator_template operator-(const difference_type other, const
-  // iterator_template& me) noexcept { // bad function dont use
-  // return iterator_template(me.m_iterator - (pointer)other);
-  // }
-  constexpr friend iterator_template operator+(
-      const iterator_template &other, const iterator_template &me) noexcept {
-    return iterator_template(
-        other.m_iterator + me,
-        min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
-        max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
-  }
-  constexpr friend difference_type operator-(
-      const iterator_template &other, const iterator_template &me) noexcept {
-    return std::distance(other.m_iterator, me.m_iterator);
-  }
-  constexpr friend void swap(iterator_template &lhs,
-                             iterator_template &rhs) noexcept {
-    iterator_template lhsm_iterator = lhs;
-    lhs = rhs;
-    rhs = lhsm_iterator;
-  }
-  constexpr friend void swap(reference lhs, reference rhs) noexcept {
-    value_type lhsm_ = lhs;
-    lhs = rhs;
-    rhs = lhsm_;
-  }
 };
 
 template <class T>
@@ -6513,9 +6599,9 @@ typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_estr;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
 template <typename T, size_t size>
-using s_array = mjz_Array<T, size>;
+using Array = mjz_Array<T, size>;
 template <typename T>
-using s_vector = mjz_Vector<T>;
+using Vector = mjz_Vector<T>;
 template <typename T, size_t size>
 using array = mjz_Array<T, size>;
 template <typename T>
