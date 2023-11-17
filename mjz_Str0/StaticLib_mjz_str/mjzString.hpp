@@ -3916,10 +3916,10 @@ class mjz_Str : public basic_mjz_String,
   explicit operator const float() const { return toFloat(); }
   explicit operator const double() const { return toDouble(); }
   explicit operator std__string_view_if_is() const {
-    return std__string_view_if_is((const char *)buffer_ref());
+    return std__string_view_if_is((const char *)buffer_ref(), length());
   }
   explicit operator const std__string_view_if_is() const {
-    return std__string_view_if_is((const char *)buffer_ref());
+    return std__string_view_if_is((const char *)buffer_ref(), length());
   }
   [[nodiscard]] explicit operator std::string() const {
     return std::string((const char *)buffer_ref(), length());
@@ -3930,26 +3930,18 @@ class mjz_Str : public basic_mjz_String,
   operator const char *() const { return buffer_ref(); }
   char &operator[](size_t index);
   char &operator[](int64_t index);
-  std__string_view_if_is std_new_sv() = delete;
   std__string_view_if_is std_sv() const {
-    return std__string_view_if_is((const char *)buffer_ref());
+    return std__string_view_if_is((const char *)buffer_ref(), length());
   }
-  std__string_view_if_is &&std_sv_temp() const {
-    return std::move(std__string_view_if_is((const char *)buffer_ref()));
-  }
+  
   [[nodiscard]] const std::string std_s() const {
     return std::string((const char *)buffer_ref());
-  }
-  [[nodiscard]] const std::string &&std_st() const {
-    return std::move(std::string((const char *)buffer_ref()));
   }
   // creates a copy of the assigned value. if the value is null or
   // invalid,or if the memory allocation fails,the string will be
   // marked as invalid ("if (s)" will be false).
   mjz_str_t<T> &operator=(const mjz_str_t<T> &rhs);
-  mjz_str_t<T> &operator=(std::string &x) { return operator=(x.c_str()); }
-  mjz_str_t<T> &operator=(std::string &&x) { return operator=(x.c_str()); }
-  mjz_str_t<T> &operator=(const std::string &x) { return operator=(x.c_str()); }
+  mjz_str_t<T> &operator=(const std::string &x) { return (*this)(x.c_str(),x.length()); }
   mjz_str_t<T> &operator=(const char *cstr);
   mjz_str_t<T> &operator=(const __FlashStringHelper *str);
   mjz_str_t<T> &operator=(mjz_str_t<T> &&rval) noexcept;
