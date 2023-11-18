@@ -1,6 +1,6 @@
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program
 // execution begins and ends there.
-// 
+//
 #include "mjzString.hpp"
 #include "pch.h"
 #include "start.h"
@@ -22,8 +22,11 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
   return std::make_unique<my_main>();
 }
 
+
+
 #include "fstream"
 int my_main::main(int argc, const char* const* const argv) {
-	using namespace mjz_ard::have_mjz_ard_removed;
-  return 0; 
+  using namespace mjz_ard::have_mjz_ard_removed;
+
+ return 0;
 }

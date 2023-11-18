@@ -53,6 +53,14 @@ unsigned long millis();
 #define log_all_allocations_globaly false
 #endif  // !log_all_allocations_globaly
 
+#ifndef global_mjz_areana_allocator_on 
+constexpr size_t number_of_global_mjz_areana_allocator_blocks = 1024 * 64;
+constexpr size_t size_of_global_mjz_areana_allocator_blocks = 1024 ;
+// true
+// false
+#define global_mjz_areana_allocator_on false
+#endif  // !log_all_allocations_globaly
+
 namespace mjz_ard  { 
 
 void *realloc(void *, size_t);
@@ -478,14 +486,175 @@ inline  constexpr void throw_if_bad(Type *_iterator) const  {
     rhs = lhsm_;
    }
  };
+ template <size_t number_of_blocks = 1024, size_t block_length = 1024>
+ class mjz_arena_allocator_t {
+   template <typename T, size_t m_size>
+   struct data_buffer {
+    T m_data[m_size];
+    inline constexpr size_t size() { return m_size; }
+    inline constexpr T *begin() { return data(); }
+    inline constexpr T *end() { return data() + m_size; }
+    inline constexpr T *data() { return m_data; }
+    inline constexpr const T &operator[](int64_t i) const { return m_data[i]; }
+    inline constexpr T &operator[](int64_t i) { return m_data[i]; }
+   };
 
-template <class Type>
+  public:
+   constexpr static size_t not_valid = (((size_t)-1 >> 1) - 1);
+   struct block_data {
+    size_t index_of_begin = not_valid;
+    size_t index_of_end = not_valid;
+   };
+
+  protected:
+   data_buffer<data_buffer<uint8_t, block_length>, number_of_blocks> m_blocks;
+   data_buffer<block_data, number_of_blocks> m_block_data;
+
+   size_t get_index_of_pointer(void *ptr) {
+    if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return not_valid;
+    size_t ptr_diff = (size_t)((size_t)ptr - (size_t)m_blocks.begin());
+    if ((ptr_diff % block_length) && ptr_diff) return not_valid;
+    return (ptr_diff / block_length);
+   }
+   size_t get_index_of_pointer_that_is_not_allocated(
+       size_t number_of_blocks_in_a_row = 1, size_t begin_search_at_index = 0) {
+    block_data *begin_it = m_block_data.begin() + begin_search_at_index;
+    block_data *end_it = m_block_data.end();
+    while (1) {
+      while ((begin_it < end_it) && (begin_it->index_of_begin != not_valid))
+        begin_it++;
+      auto end_of_row_it = begin_it + number_of_blocks_in_a_row;
+      if (end_it < end_of_row_it) return not_valid;
+      auto begin_it_buf = begin_it;
+      while ((begin_it < end_of_row_it) &&
+             (begin_it->index_of_begin == not_valid))
+        begin_it++;
+      if (end_of_row_it == begin_it)
+        return (size_t)(begin_it_buf - m_block_data.begin());
+    }
+   }
+
+   size_t allocate_block(size_t size, size_t realloc_index = not_valid) {
+    bool reallocatating = (realloc_index != not_valid);
+    size_t index = get_index_of_pointer_that_is_not_allocated(
+        reallocatating ? (size - get_size_in_blocks(realloc_index)) : size,
+        reallocatating ? m_block_data[realloc_index].index_of_end : 0);
+    if (reallocatating) {
+      if (index == m_block_data[realloc_index].index_of_end) {
+        index = realloc_index;
+      } else {
+        index = get_index_of_pointer_that_is_not_allocated(size, 0);
+      }
+    }
+
+    if (index == not_valid) return not_valid;
+    set_range_to(index, {index + size});
+    return index;
+   }
+   void set_range_to(size_t ren_beg, size_t ren_end, size_t beg, size_t end) {
+    auto the_begin_data_ptr = m_block_data.begin();
+    auto index_beg_it = the_begin_data_ptr + beg;
+    auto index_end_it = the_begin_data_ptr + end;
+    while (index_beg_it < index_end_it) {
+      (*index_beg_it).index_of_begin = beg;
+      (*index_beg_it++).index_of_end = end;
+    }
+   }
+   void set_range_to(size_t ren_beg, size_t ren_end) {
+    set_range_to(ren_beg, ren_end, ren_beg, ren_end);
+   }
+   void deallocate_rage(size_t index_begin, size_t index_end) {
+    auto the_begin_data_ptr = m_block_data.begin();
+    auto index_beg_it = the_begin_data_ptr + index_begin;
+    auto index_end_it = the_begin_data_ptr + index_end;
+    while (index_beg_it < index_end_it) {
+      (*index_beg_it).index_of_begin = not_valid;
+      (*index_beg_it++).index_of_end = not_valid;
+    }
+   }
+
+   void deallocate_block(size_t index) {
+    if (index == not_valid || m_block_data[index].index_of_begin != index)
+      return;
+    deallocate_rage(index, m_block_data[index].index_of_end);
+   }
+
+   void *get_ptr(size_t index) {
+    if (index == not_valid || m_block_data[index].index_of_begin != index)
+      return 0;
+    return (m_blocks[index]).data();
+   }
+   size_t get_size_in_blocks(size_t index) {
+    if (index == not_valid || m_block_data[index].index_of_begin != index)
+      return 0;
+    return (m_block_data[index].index_of_end - index);
+   }
+   size_t get_real_size(size_t index) {
+    return get_size_in_blocks(index) * block_length;
+   }
+
+   size_t size_to_number_of_blocks(size_t size) {
+    return (size % block_length) ? ((size / block_length) + 1)
+                                 : (size / block_length);
+   }
+
+  public:
+   void *malloc(size_t size) {
+    size = size_to_number_of_blocks(size);
+    return get_ptr(allocate_block(size));
+   }
+   void *realloc(void *ptr, size_t size) {
+    size_t index_of_ptr = get_index_of_pointer(ptr);
+    if (index_of_ptr == not_valid) return malloc(size);
+    size = size_to_number_of_blocks(size);
+    size_t size_of_current_ptr = get_size_in_blocks(index_of_ptr);
+    if (size < size_of_current_ptr) {
+      deallocate_rage(index_of_ptr + size, index_of_ptr + size_of_current_ptr);
+      set_range_to(index_of_ptr, index_of_ptr + size);
+      return ptr;
+    }
+    if (size == size_of_current_ptr) {
+      return ptr;
+    }
+    if (!size) {
+      free(ptr);
+      return 0;
+    }
+    size_t index = allocate_block(size, index_of_ptr);
+    if (index == not_valid) {
+      free(ptr);
+      return 0;
+    } else if (index == index_of_ptr) {
+      return get_ptr(index_of_ptr);
+    }
+
+    if (index != not_valid)
+      std::memmove(get_ptr(index), ptr,
+                               get_real_size(index_of_ptr));
+    deallocate_block(index_of_ptr);
+    if (index != not_valid) return get_ptr(index);
+    return 0;
+   }
+   void free(void *ptr) { deallocate_block(get_index_of_pointer(ptr)); }
+   size_t get_size(void *ptr) {
+    return get_real_size(get_index_of_pointer(ptr));
+   }
+   mjz_arena_allocator_t() {}
+   ~mjz_arena_allocator_t() {}
+
+   mjz_arena_allocator_t(mjz_arena_allocator_t &&) = delete;
+   mjz_arena_allocator_t(const mjz_arena_allocator_t &) = delete;
+   mjz_arena_allocator_t &operator=(mjz_arena_allocator_t &&) = delete;
+   mjz_arena_allocator_t &operator=(const mjz_arena_allocator_t &) = delete;
+ };
+ struct arena_allocator : public mjz_arena_allocator_t<1024, 1024> {};
+ template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
 
 template <class std_allocator, typename Type,
           bool DO_std_reallocator_warper_LOG = log_all_allocations_globaly,
-          bool use_free_and_realloc = DO_std_reallocator_warper_LOG>
-struct std_reallocator_warper  { 
+           bool use_free_and_realloc = DO_std_reallocator_warper_LOG>
+ struct std_reallocator_warper  { 
   using my_value_Type_t = Type;
   using value_type = my_value_Type_t;
   using reference = value_type &;
@@ -1096,9 +1265,9 @@ struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type>  {
 
 #if log_all_allocations_globaly
  } 
-inline mjz_ard::mjz_allocator_warpper<uint8_t>
+inline mjz_ard::basic_mjz_allocator<uint8_t>
     &get_CPP_local_global_allocator()  { 
-  static mjz_ard::mjz_allocator_warpper<uint8_t> CPP_local_global_allocator_;
+  static mjz_ard::basic_mjz_allocator<uint8_t> CPP_local_global_allocator_;
   return CPP_local_global_allocator_;
  } 
 
@@ -1134,11 +1303,45 @@ inline void operator delete[](void *p, size_t)  {
  } 
 namespace mjz_ard  { 
 #endif  //  log_all_allocations_globaly
+inline mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
+                             number_of_global_mjz_areana_allocator_blocks>
+    &my_global_allocator(bool delete_it = 0) {\
+  static mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
+                               number_of_global_mjz_areana_allocator_blocks>
+      *my_ptr{};
+  if (delete_it) {
+    if (!my_ptr) throw std::exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+    my_ptr-> ~mjz_arena_allocator_t();
+    free(my_ptr);
+    throw std::exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+  }
+  if (!my_ptr) {
+    my_ptr =
+        (mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
+                               number_of_global_mjz_areana_allocator_blocks>
+             *)::malloc(sizeof(mjz_arena_allocator_t<
+                          size_of_global_mjz_areana_allocator_blocks,
+                          number_of_global_mjz_areana_allocator_blocks>));
+    if (!my_ptr) throw std::exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+    new (my_ptr)
+        mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
+                              number_of_global_mjz_areana_allocator_blocks>();
+  }
+  return *my_ptr;
+}
+#if global_mjz_areana_allocator_on
+inline void *realloc(void *p, size_t s) {
+  void *p2 = my_global_allocator().realloc(p, s);
+  return p2;
+}
+inline void free(void *p) { return my_global_allocator().free(p); }
+#else
 inline void *realloc(void *p, size_t s)  { 
   void *p2 = ::realloc(p, s);
   return p2;
  } 
 inline void free(void *p)  {  return ::free(p);  } 
+#endif
 template <class Type, size_t m_Size, bool error_check = 1>
 class mjz_Array  {   // fixed size mjz_Array of values
  public:
@@ -6948,6 +7151,7 @@ template <typename T>
 using m_alctr = mjz_allocator_warpper<T>;
 template <typename T>
 using m_alctr_wr = mjz_allocator_warpper<T>;
+using arn_altr = arena_allocator;
 
  }   // namespace short_string_names
 
@@ -6968,6 +7172,7 @@ template <typename T>
 using Vector = mjz_Vector<T>;
 template <typename T, size_t size>
 using array = mjz_Array<T, size>;
+using arena_allocator = arena_allocator;
 template <typename T>
 using vector = mjz_Vector<T>;
 template <typename T>
