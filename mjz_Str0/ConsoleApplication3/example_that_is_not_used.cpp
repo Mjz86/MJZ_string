@@ -27,6 +27,20 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 #include "fstream"
 int my_main::main(int argc, const char* const* const argv) {
   using namespace mjz_ard::have_mjz_ard_removed;
+  ;
+  heap_obj_warper<mjz_Str> str = mjz_Str(" hi mom i am a string ")(
+      [](mjz_Str& obj,
+         heap_obj_warper<mjz_Str>&&  val) -> heap_obj_warper<mjz_Str> {
+        val.init(std::move(obj));
+	return val; 
+      }, heap_obj_warper<mjz_Str>());
+  std::cout << str <<'\n';
+  mjz_ard::iterator_template<char> it((char*)str.pointer_to_unsafe_data_buffer(),
+                                      str.size);
+  for (auto c: it) {
+  std::cout << c;
+  }
+  std::cout << '\n';
 
   return 0;
 }

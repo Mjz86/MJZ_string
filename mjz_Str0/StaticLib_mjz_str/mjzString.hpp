@@ -2362,7 +2362,7 @@ class static_str_algo {
       return STR_is_in_stack;
     }
     bool get() { return STR_is_in_stack; }
-    // virtual //i dont need it
+    // virtual //i don't need it
     ~stack_str_buf() { STR_is_in_stack = 0; }
   };
   template <typename T2, typename T1>
@@ -5607,310 +5607,228 @@ class mjz_Str : public basic_mjz_String,
                                              (int64_t)number);
   }
   /* template <typename... arguments_types>
-  size_t write(arguments_types &...arguments_arr)  {
-  mjz_Str<T> return_val = std::move(mjz_Str<T>(arguments_arr...));
+  size_t write(arguments_types &...  arguments_arr)  {
+  mjz_Str<T> return_val = std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...));
   return write((const uint8_t *)return_val.c_str(),
   (size_t)return_val.length());
    }
   template <typename... arguments_types>
-  size_t write(const arguments_types &...arguments_arr)
-   {  mjz_Str<T> return_val = std::move(mjz_Str<T>(arguments_arr...)); return
+  size_t write(const arguments_types &...  arguments_arr)
+   {  mjz_Str<T> return_val = std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)); return
   write((const uint8_t *)return_val.c_str(), (size_t)return_val.length());
    }
   template <typename... arguments_types>
-  size_t write(arguments_types &&...arguments_arr)  {
-  mjz_Str<T> return_val = std::move(mjz_Str<T>(arguments_arr...));
+  size_t write(arguments_types &&...  arguments_arr)  {
+  mjz_Str<T> return_val = std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...));
   return write((const uint8_t *)return_val.c_str(),
   (size_t)return_val.length());
    }
   */
 
   template <typename... arguments_types>
-  int scanf(const char *format, arguments_types &...arguments_arr) {
-    int ret = sscanf((char *)buffer_ref(), format, arguments_arr...);
+  int scanf(const char *format, arguments_types &...  arguments_arr) {
+    int ret = sscanf((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
-  int scanf(const mjz_str_t<T> &format, arguments_types &...arguments_arr) {
+  int scanf(const mjz_str_t<T> &format, arguments_types &...  arguments_arr) {
     int ret =
-        sscanf((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
+        sscanf((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
-  int scanf(const char *format, const arguments_types &...arguments_arr) {
-    int ret = sscanf((char *)buffer_ref(), format, arguments_arr...);
+  int scanf(const char *format, const arguments_types &...  arguments_arr) {
+    int ret = sscanf((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
   int scanf(const mjz_str_t<T> &format,
-            const arguments_types &...arguments_arr) {
+            const arguments_types &...  arguments_arr) {
     int ret =
-        sscanf((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
+        sscanf((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
-  int scanf_s(const char *format, arguments_types &...arguments_arr) {
-    int ret = sscanf_s((char *)buffer_ref(), format, arguments_arr...);
+  int scanf_s(const char *format, arguments_types &...  arguments_arr) {
+    int ret = sscanf_s((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
-  int scanf_s(const mjz_str_t<T> &format, arguments_types &...arguments_arr) {
+  int scanf_s(const mjz_str_t<T> &format, arguments_types &...  arguments_arr) {
     int ret =
-        sscanf_s((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
+        sscanf_s((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
-  int scanf_s(const char *format, const arguments_types &...arguments_arr) {
-    int ret = sscanf_s((char *)buffer_ref(), format, arguments_arr...);
+  int scanf_s(const char *format, const arguments_types &...  arguments_arr) {
+    int ret = sscanf_s((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
   int scanf_s(const mjz_str_t<T> &format,
-              const arguments_types &...arguments_arr) {
+              const arguments_types &...  arguments_arr) {
     int ret =
-        sscanf_s((char *)buffer_ref(), format.buffer_ref(), arguments_arr...);
+        sscanf_s((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
 
   /*
   template <typename... arguments_types>
   mjz_Str<T> &operator-=(
-  arguments_types &...arguments_arr)  {
-  return operator-=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &...  arguments_arr)  {
+  return operator-=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
-  mjz_Str<T> operator-(arguments_types &...arguments_arr)  {
+  mjz_Str<T> operator-(arguments_types &...  arguments_arr)  {
   mjz_Str<T> lhs = mjz_Str<T>(*this);
-  return lhs.operator-=(arguments_arr...);
+  return lhs.operator-=( std::forward<arguments_types>(arguments_arr)...);
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator/=(
-  arguments_types &...arguments_arr)  {
-  return operator/=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &...  arguments_arr)  {
+  return operator/=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
-  mjz_Str<T> operator/(arguments_types &...arguments_arr)  {
+  mjz_Str<T> operator/(arguments_types &...  arguments_arr)  {
   mjz_Str<T> lhs = mjz_Str<T>(*this);
-  return lhs.operator/=(arguments_arr...);
+  return lhs.operator/=( std::forward<arguments_types>(arguments_arr)...);
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator-=(
-  const arguments_types &...arguments_arr)  {
-  return operator-=(std::move(mjz_Str<T>(arguments_arr...)));
+  const arguments_types &...  arguments_arr)  {
+  return operator-=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T>
-  operator-(const arguments_types &...arguments_arr)  {
+  operator-(const arguments_types &...  arguments_arr)  {
   mjz_Str<T> lhs = mjz_Str<T>(*this);
-  return lhs.operator-=(arguments_arr...);
+  return lhs.operator-=( std::forward<arguments_types>(arguments_arr)...);
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator/=(
-  const arguments_types &...arguments_arr)  {
-  return operator/=(std::move(mjz_Str<T>(arguments_arr...)));
+  const arguments_types &...  arguments_arr)  {
+  return operator/=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T>
-  operator/(const arguments_types &...arguments_arr)  {
+  operator/(const arguments_types &...  arguments_arr)  {
   mjz_Str<T> lhs = mjz_Str<T>(*this);
-  return lhs.operator/=(arguments_arr...);
+  return lhs.operator/=( std::forward<arguments_types>(arguments_arr)...);
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator-=(
-  arguments_types &&...arguments_arr)  {
-  return operator-=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &&...  arguments_arr)  {
+  return operator-=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T>
-  operator-(arguments_types &&...arguments_arr)  {
+  operator-(arguments_types &&...  arguments_arr)  {
   mjz_Str<T> lhs = mjz_Str<T>(*this);
-  return lhs.operator-=(arguments_arr...);
+  return lhs.operator-=( std::forward<arguments_types>(arguments_arr)...);
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator/=(
-  arguments_types &&...arguments_arr)  {
-  return operator/=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &&...  arguments_arr)  {
+  return operator/=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T>
-  operator/(arguments_types &&...arguments_arr)  {
+  operator/(arguments_types &&...  arguments_arr)  {
   mjz_Str<T> lhs = mjz_Str<T>(*this);
-  return lhs.operator/=(arguments_arr...);
+  return lhs.operator/=( std::forward<arguments_types>(arguments_arr)...);
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator<<(
-  arguments_types &...arguments_arr)  {
-  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &...  arguments_arr)  {
+  return operator<<(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator<<=(
-  arguments_types &...arguments_arr)  {
+  arguments_types &...  arguments_arr)  {
   this->operator=(empty_STRING_C_STR);
-  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
+  return operator<<(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator=(
-  arguments_types &...arguments_arr)  {
-  return operator=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &...  arguments_arr)  {
+  return operator=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator+=(
-  arguments_types &...arguments_arr)  {
-  return operator+=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &...  arguments_arr)  {
+  return operator+=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   */
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
-                         arguments_types &...arguments_arr) {
-    your__function_(*this, arguments_arr...);
-    return *this;
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  const mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
-                               arguments_types &...arguments_arr) const {
-    your__function_(*this, arguments_arr...);
-    return *this;
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto run_code_and_return(your_FUNCTION_Type your__function_,
-                           arguments_types &...arguments_arr) {
-    return your__function_(*this, arguments_arr...);
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto run_code_and_return(your_FUNCTION_Type your__function_,
-                           arguments_types &...arguments_arr) const {
-    return your__function_(*this, arguments_arr...);
-  }
-  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str<T>
-  // * , ... something)),...something)
-  template <typename your_FUNCTION_Type>
-  auto operator()(your_FUNCTION_Type your__function_) {
-    return your__function_(*this);
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto operator()(your_FUNCTION_Type your__function_,
-                  arguments_types &...arguments_arr) {
-    return your__function_(*this, arguments_arr...);
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto operator()(your_FUNCTION_Type your__function_,
-                  arguments_types &...arguments_arr) const {
-    return your__function_(*this, arguments_arr...);
-  }
   /*
   template <typename... arguments_types>
   mjz_Str<T> &operator<<(
-  const arguments_types &...arguments_arr)  {
-  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
+  const arguments_types &...  arguments_arr)  {
+  return operator<<(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator<<=(
-  const arguments_types &...arguments_arr)  {
+  const arguments_types &...  arguments_arr)  {
   this->operator=(empty_STRING_C_STR);
-  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
+  return operator<<(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   */
-  template <typename... arguments_types>
-  inline mjz_str_t<T> &operator=(const arguments_types &...arguments_arr) {
-    operator()();
-    concat(arguments_arr...);
-    return *this;
-  }
 
-  template <typename... arguments_types>
-  mjz_str_t<T> &operator+=(const arguments_types &...arguments_arr) {
-    concat(arguments_arr...);
-    return *this;
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
-                         const arguments_types &...arguments_arr) {
-    your__function_(*this, arguments_arr...);
-    return *this;
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  const mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
-                               const arguments_types &...arguments_arr) const {
-    your__function_(*this, arguments_arr...);
-    return *this;
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto run_code_and_return(your_FUNCTION_Type your__function_,
-                           const arguments_types &...arguments_arr) {
-    return your__function_(*this, arguments_arr...);
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto run_code_and_return(your_FUNCTION_Type your__function_,
-                           const arguments_types &...arguments_arr) const {
-    return your__function_(*this, arguments_arr...);
-  }
-  // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str<T>
-  // * , ... something)),...something)
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto operator()(your_FUNCTION_Type your__function_,
-                  const arguments_types &...arguments_arr) {
-    return your__function_(*this, arguments_arr...);
-  }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto operator()(your_FUNCTION_Type your__function_,
-                  const arguments_types &...arguments_arr) const {
-    return your__function_(*this, arguments_arr...);
-  }
   /*
   template <typename... arguments_types>
   mjz_Str<T> &operator<<(
-  arguments_types &&...arguments_arr)  {
-  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &&...  arguments_arr)  {
+  return operator<<(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator<<=(
-  arguments_types &&...arguments_arr)  {
+  arguments_types &&...  arguments_arr)  {
   this->operator=(empty_STRING_C_STR);
-  return operator<<(std::move(mjz_Str<T>(arguments_arr...)));
+  return operator<<(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator=(
-  arguments_types &&...arguments_arr)  {
-  return operator=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &&...  arguments_arr)  {
+  return operator=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    }
   template <typename... arguments_types>
   mjz_Str<T> &operator+=(
-  arguments_types &&...arguments_arr)  {
-  return operator+=(std::move(mjz_Str<T>(arguments_arr...)));
+  arguments_types &&...  arguments_arr)  {
+  return operator+=(std::move(mjz_Str<T>( std::forward<arguments_types>(arguments_arr)...)));
    } */
   template <typename your_FUNCTION_Type, typename... arguments_types>
   mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
-                         arguments_types &&...arguments_arr) {
-    your__function_(*this, arguments_arr...);
+                         arguments_types &&...  arguments_arr) {
+    your__function_(*this,  std::forward<arguments_types>(arguments_arr)...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   const mjz_str_t<T> &run_code(your_FUNCTION_Type your__function_,
-                               arguments_types &&...arguments_arr) const {
-    your__function_(*this, arguments_arr...);
+                               arguments_types &&...  arguments_arr) const {
+    your__function_(*this,  std::forward<arguments_types>(arguments_arr)...);
     return *this;
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   auto run_code_and_return(your_FUNCTION_Type your__function_,
-                           arguments_types &&...arguments_arr) {
-    return your__function_(*this, arguments_arr...);
+                           arguments_types &&...  arguments_arr) {
+    return your__function_(*this,  std::forward<arguments_types>(arguments_arr)...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   auto run_code_and_return(your_FUNCTION_Type your__function_,
-                           arguments_types &&...arguments_arr) const {
-    return your__function_(*this, arguments_arr...);
+                           arguments_types &&...  arguments_arr) const {
+    return your__function_(*this,  std::forward<arguments_types>(arguments_arr)...);
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str<T>
   // * , ... something)),...something)
   template <typename your_FUNCTION_Type, typename... arguments_types>
   auto operator()(your_FUNCTION_Type your__function_,
-                  arguments_types &&...arguments_arr) {
-    return your__function_(*this, arguments_arr...);
+                  arguments_types &&...  arguments_arr) {
+    return your__function_(*this,
+                           std::forward<arguments_types>(arguments_arr)...);
   }
   template <typename your_FUNCTION_Type, typename... arguments_types>
   auto operator()(your_FUNCTION_Type your__function_,
-                  arguments_types &&...arguments_arr) const {
-    return your__function_(*this, arguments_arr...);
+                  arguments_types &&...  arguments_arr) const {
+    return your__function_(*this,  std::forward<arguments_types>(arguments_arr)...);
   }
 
  public:
@@ -7194,7 +7112,7 @@ typedef mjz_str_t<mjz_allocator_warpper<char>> mjz_str;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_estr;
 typedef extended_mjz_str_t<mjz_allocator_warpper<char>> mjz_eStr;
 typedef malloc_wrapper malloc_wrpr;
-
+using algorithm=static_str_algo;
 template <typename T, size_t size>
 using ex_Array = extended_mjz_Array<T, size>;
 template <typename T, size_t size>
