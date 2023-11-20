@@ -38,9 +38,12 @@ int my_main::main(int argc, const char* const* const argv) {
   mjz_ard::iterator_template<char> it((char*)str.pointer_to_unsafe_data_buffer(),
                                       str.size);
   for (auto c: it) {
-  std::cout << c;
+    bool c_is_null = (c == 0);
+    std::cout << (char)((c & MJZ_logic_BL_bit_to_64_bits(!c_is_null)) |
+                  ('?'& MJZ_logic_BL_bit_to_64_bits(c_is_null)));
   }
   std::cout << '\n';
+  
 
   return 0;
 }
