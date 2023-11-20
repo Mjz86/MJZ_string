@@ -28,5 +28,5 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
 int my_main::main(int argc, const char* const* const argv) {
   using namespace mjz_ard::have_mjz_ard_removed;
 
- return 0;
+  return 0;
 }
