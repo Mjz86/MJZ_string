@@ -1,8 +1,6 @@
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program
 // execution begins and ends there.
 //
-#include "mjzString.hpp"
-#include "pch.h"
 #include "start.h"
 /* File Handling with C++ using ifstream & ofstream class object*/
 /* To write the Content in File*/
@@ -21,7 +19,6 @@ class my_main : public main_class {
 std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
   return std::make_unique<my_main>();
 }
-
 
 
 #include "fstream"

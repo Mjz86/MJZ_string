@@ -314,7 +314,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -331,7 +331,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
@@ -357,7 +357,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -384,7 +384,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -404,7 +404,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -421,7 +421,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
@@ -440,7 +440,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -457,7 +457,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
@@ -476,7 +476,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -493,7 +493,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
@@ -512,7 +512,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -529,7 +529,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
@@ -555,7 +555,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -582,7 +582,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -609,7 +609,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -636,7 +636,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -663,7 +663,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -690,7 +690,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -717,7 +717,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -744,7 +744,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_wr;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
     </ClCompile>
     <Link>
@@ -762,12 +762,12 @@
     <ClCompile Include="start.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\StaticLib_mjz_str\StaticLib2.vcxproj">
-      <Project>{8d621148-ac0b-42ed-9756-9ef74150432d}</Project>
-    </ProjectReference>
+    <ClInclude Include="start.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="start.h" />
+    <ProjectReference Include="..\StaticLib_wr\StaticLib_wr.vcxproj">
+      <Project>{9651d019-67e9-4553-b66b-417ccf7fcdd8}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

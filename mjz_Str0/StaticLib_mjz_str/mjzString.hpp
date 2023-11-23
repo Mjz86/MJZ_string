@@ -661,8 +661,8 @@ struct std_reallocator_warper {
   using const_reference = const my_value_Type_t &;
   using size_type = size_t;
   using propagate_on_container_move_assignment = std::true_type;
-  std_reallocator_warper() = default;
-  ~std_reallocator_warper() = default;
+  constexpr std_reallocator_warper(){};
+   ~std_reallocator_warper(){};
 
   template <class T>
   constexpr std_reallocator_warper(
@@ -746,8 +746,8 @@ struct std_reallocator_warper {
     }
     return p;
   }
-  std::allocator_traits<std_allocator> my_allocator_traits;
-  std_allocator my_allocator;
+ static std::allocator_traits<std_allocator> my_allocator_traits;
+  static std_allocator my_allocator;
   void *realloc(void *ptr, size_t size) {
     if constexpr (DO_std_reallocator_warper_LOG)
       if (!get_size_of_mem(ptr)) num_allocations++;
@@ -782,6 +782,17 @@ struct std_reallocator_warper {
     }
   }
 };
+template <class std_allocator, typename Type,
+          bool DO_std_reallocator_warper_LOG  ,
+          bool use_free_and_realloc >
+std::allocator_traits<std_allocator> std_reallocator_warper<
+     std_allocator,  Type,  DO_std_reallocator_warper_LOG, use_free_and_realloc>::my_allocator_traits;
+template <class std_allocator, typename Type,
+          bool DO_std_reallocator_warper_LOG, bool use_free_and_realloc>
+std_allocator
+    std_reallocator_warper<std_allocator, Type, DO_std_reallocator_warper_LOG,
+                           use_free_and_realloc>::my_allocator;
+
 template <class T1, class T2, class U>
 inline constexpr bool operator==(const std_reallocator_warper<U, T1> &,
                                  const std_reallocator_warper<U, T2> &) {
@@ -808,8 +819,8 @@ inline constexpr bool operator!=(const std_reallocator_warper<U1, T1> &,
 template <class Type>
 struct basic_mjz_allocator
     : std_reallocator_warper<std::allocator<uint8_t>, Type> {
-  basic_mjz_allocator() = default;
-  ~basic_mjz_allocator() = default;
+  constexpr basic_mjz_allocator(){};
+   ~basic_mjz_allocator(){};
   template <class T>
   constexpr basic_mjz_allocator(const basic_mjz_allocator<T> &) noexcept {}
 };
@@ -1012,7 +1023,7 @@ struct  mjz_temp_type_obj_algorithims_warpper_t
         construct_at(addressof(*current), std::move(*first));
       return current;
     } catch (...) {
-      std::destroy(d_first, current);
+      destroy(d_first, current);
       throw;
     }
   }
@@ -1024,7 +1035,7 @@ struct  mjz_temp_type_obj_algorithims_warpper_t
       for (; count > 0; ++first, (void)++current, --count)
         construct_at(addressof(*current), std::move(*first));
     } catch (...) {
-      std::destroy(d_first, current);
+      destroy(d_first, current);
       throw;
     }
     return {first, current};
@@ -1050,7 +1061,7 @@ struct  mjz_temp_type_obj_algorithims_warpper_t
         construct_at(addressof(*current));
       }
     } catch (...) {
-      std::destroy(first, current);
+      destroy(first, current);
       throw;
     }
   }
@@ -1060,7 +1071,7 @@ struct  mjz_temp_type_obj_algorithims_warpper_t
     try {
       for (; current != last; ++current) construct_at(addressof(*current));
     } catch (...) {
-      std::destroy(first, current);
+      destroy(first, current);
       throw;
     }
   }
@@ -1072,7 +1083,7 @@ struct  mjz_temp_type_obj_algorithims_warpper_t
       for (; n > 0; (void)++current, --n) construct_at(addressof(*current));
       return current;
     } catch (...) {
-      std::destroy(first, current);
+      destroy(first, current);
       throw;
     }
   }
@@ -1083,7 +1094,7 @@ struct  mjz_temp_type_obj_algorithims_warpper_t
       for (; n > 0; (void)++current, --n) construct_at(addressof(*current));
       return current;
     } catch (...) {
-      std::destroy(first, current);
+      destroy(first, current);
       throw;
     }
   }
@@ -1142,7 +1153,7 @@ struct mjz_temp_type_allocator_warpper_t
   using propagate_on_container_move_assignment = std::true_type;
 
   constexpr mjz_temp_type_allocator_warpper_t(){};
-  constexpr ~mjz_temp_type_allocator_warpper_t(){};
+   ~mjz_temp_type_allocator_warpper_t(){};
 
   template <class U>
   constexpr mjz_temp_type_allocator_warpper_t(
@@ -1273,8 +1284,8 @@ using mjz_allocator_warpper_r_t = mjz_temp_type_allocator_warpper_t<
     Type, mjz_obj_destructor<Type>, mjz_obj_constructor<Type>, my_reallocator>;
 template <class Type>
 struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
-  mjz_allocator_warpper() = default;
-  ~mjz_allocator_warpper() = default;
+  constexpr mjz_allocator_warpper() = default;
+   ~mjz_allocator_warpper() = default;
   template <class T>
   constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
 };
@@ -1382,7 +1393,7 @@ class mjz_Array {  // fixed size mjz_Array of values
     iterator lst = end();
     while (fst < lst) *fst++ = value;
   }
-  void swap(mjz_Array &other) noexcept(std::is_nothrow_swappable_v<Type>) {
+  void swap(mjz_Array &other)   {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
     while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
@@ -3386,8 +3397,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     iterator lst = end();
     while (fst < lst) *fst++ = value;
   }
-  void swap(extended_mjz_Array &other) noexcept(
-      std::is_nothrow_swappable_v<Type>) {
+  void swap(extended_mjz_Array &other) {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
     while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
@@ -5099,22 +5109,10 @@ class mjz_Str : public basic_mjz_String,
     return this->*my_var;
   }
 
-#ifndef Arduino
-  mjz_str_t<T> &operator=(std::string_view &x) {
-    return operator=(std::string(x).c_str());
-  }
-  mjz_str_t<T> &operator=(std::string_view &&x) {
-    return operator=(std::string(x).c_str());
-  }
   mjz_str_t<T> &assign_range(std::initializer_list<const char> list);
   mjz_str_t<T> &assign_range(iterator_template<const char> list);
-  mjz_str_t<T> &operator+=(std::string_view &x) {
-    return operator+=(std::string(x).c_str());
-  }
-  mjz_str_t<T> &operator+=(std::string_view &&x) {
-    return operator+=(std::string(x).c_str());
-  }
-#else
+
+#ifdef Arduino
   mjz_Str<T>(String &x)
       : mjz_Str<T>(((x.c_str() != 0) ? (x.c_str())
                                      : ((const char *)empty_STRING_C_STR))) {}
@@ -5145,9 +5143,6 @@ class mjz_Str : public basic_mjz_String,
     concat(x.c_str(), x.length());
     return *this;
   }
-  mjz_str_t(std::string &x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t(std::string &&x) : mjz_str_t<T>(x.c_str()) {}
-  mjz_str_t(const std::string &x) : mjz_str_t<T>(x.c_str()) {}
   ~mjz_str_t(void);  // make all drived destructors called
   void adjust_cap();
   mjz_str_t<T> &operator-=(const mjz_str_t<T> &othr_);
@@ -5213,35 +5208,16 @@ class mjz_Str : public basic_mjz_String,
   explicit operator const long long() const { return toLL(); }
   explicit operator const float() const { return toFloat(); }
   explicit operator const double() const { return toDouble(); }
-  explicit operator std__string_view_if_is() const {
-    return std__string_view_if_is((const char *)buffer_ref(), length());
-  }
-  explicit operator const std__string_view_if_is() const {
-    return std__string_view_if_is((const char *)buffer_ref(), length());
-  }
-  [[nodiscard]] explicit operator std::string() const {
-    return std::string((const char *)buffer_ref(), length());
-  }
-  [[nodiscard]] explicit operator const std::string() const {
-    return std::string((const char *)buffer_ref(), length());
-  }
   operator const char *() const { return buffer_ref(); }
   char &operator[](size_t index);
   char &operator[](int64_t index);
-  std__string_view_if_is std_sv() const {
-    return std__string_view_if_is((const char *)buffer_ref(), length());
-  }
+ 
 
-  [[nodiscard]] const std::string std_s() const {
-    return std::string((const char *)buffer_ref());
-  }
+ 
   // creates a copy of the assigned value. if the value is null or
   // invalid,or if the memory allocation fails,the string will be
   // marked as invalid ("if (s)" will be false).
   mjz_str_t<T> &operator=(const mjz_str_t<T> &rhs);
-  mjz_str_t<T> &operator=(const std::string &x) {
-    return (*this)(x.c_str(), x.length());
-  }
   mjz_str_t<T> &operator=(const char *cstr);
   mjz_str_t<T> &operator=(const __FlashStringHelper *str);
   mjz_str_t<T> &operator=(mjz_str_t<T> &&rval) noexcept;
@@ -7161,7 +7137,6 @@ using mjz_allocator = mjz_allocator_warpper<T>;
 template <typename T>
 using mjz_allocator_warpper = mjz_allocator_warpper<T>;
 typedef malloc_wrapper mlc_wrp;
-typedef std::string string;
 typedef hash_sha256 hash_sha_512;
 typedef StringSumHelper_t<mjz_allocator_warpper<char>> mjz_StringSumHelper;
 typedef StringSumHelper_t<mjz_allocator_warpper<char>> StringSumHelper;

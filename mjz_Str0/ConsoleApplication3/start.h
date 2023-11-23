@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mjzString.hpp"
+#include "compiher_wr.h"
 class main_class {
   std::unique_ptr<main_class> run(int argc, const char* const* const argv);
 
