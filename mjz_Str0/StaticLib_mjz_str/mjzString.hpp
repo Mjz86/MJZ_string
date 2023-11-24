@@ -1982,6 +1982,14 @@ class static_str_algo {
   static size_t constexpr DBL_MAX_DECIMAL_PLACES = FLT_MAX_DECIMAL_PLACES;
   static constexpr const char *empty_STRING_C_STR = "";
 
+  public:
+
+  
+  // this will crash the program 
+ [[noreturn]]static inline void trap_crash(void) {
+  *(volatile char *)0 = (volatile char)0;// address 0 is invalid
+  // this will crash the program 
+  }
  public:
   template <class Type>
   static inline constexpr Type BL_min(Type a, Type b) {
