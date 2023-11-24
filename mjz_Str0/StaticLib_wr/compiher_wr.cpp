@@ -38,7 +38,7 @@ int run_code(mjz_str_view code, size_t stack_size) {
 
   int err = wr_compile(code.data(), code.length() - 1, &outBytes,
                        &outLen);  // compile it
-  heap_obj_warper<mjz_Str,0> retval;
+  mjz_stack_obj_warper<mjz_Str,0> retval;
   if (err == 0) {
     retval.init((const char*)outBytes, outLen);
     delete[] outBytes;            // clean up

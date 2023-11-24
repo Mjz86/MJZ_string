@@ -917,7 +917,7 @@ template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
 
 struct mjz_temp_type_obj_creator_warpper_t : public my_destructor,
                                              public my_constructor {
- constexpr inline size_t size_of_type() { return sizeof(Type); }
+ constexpr static inline size_t size_of_type() { return sizeof(Type); }
 
   inline bool obj_destructor_arr(Type *arr, size_t n, bool in_reveres = 1) {
     bool was_successful{1};
@@ -1222,7 +1222,8 @@ struct mjz_temp_type_allocator_warpper_t
   inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
     // delete[] dest;
     bool was_successful =
-        obj_destructor_arr(ptr, get_number_of_obj_in_array(ptr), in_reveres);
+        this->obj_destructor_arr(
+            ptr, get_number_of_obj_in_array(ptr), in_reveres);
     deallocate_pv(ptr, size_of_array_with(ptr), 1);
     return was_successful;
   }
@@ -1529,7 +1530,184 @@ class mjz_Array {  // fixed size mjz_Array of values
   Type m_elements[m_Size];
 };
 
-template <typename T, typename U = T>
+template <class Type, size_t m_Size,
+          class my_obj_constructor = mjz_temp_type_obj_creator_warpper_t<Type>,
+          bool error_check = 1>
+class mjz_obj_Array {  // fixed size mjz_obj_Array of values
+  static my_obj_constructor my_obj_cntr;
+
+ public:
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using difference_type = std::ptrdiff_t;
+  using value_type = Type;
+  using const_reference = const Type &;
+  using size_type = size_t;
+
+  using iterator = iterator_template<Type, error_check>;
+  using const_iterator = iterator_template<const Type, error_check>;
+
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  void assign(const Type &_Value) { fill(_Value); }
+
+  void fill(const Type &value) {
+    iterator fst = begin();
+    iterator lst = end();
+    while (fst < lst) *fst++ = value;
+  }
+  void swap(mjz_obj_Array &other) {
+    iterator fst[2] = {begin(), other.begin()};
+    iterator lst[2] = {end(), other.end()};
+    while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
+      std::swap(*fst[0]++, *fst[1]++);
+  }
+
+  [[nodiscard]] iterator begin() noexcept {
+    return iterator(m_elements(), m_elements(), m_elements() + m_Size);
+  }
+
+  [[nodiscard]] const_iterator begin() const noexcept {
+    return const_iterator(m_elements(), m_elements(), m_elements() + m_Size);
+  }
+
+  [[nodiscard]] iterator end() noexcept {
+    return iterator(m_elements() + m_Size, m_elements(), m_elements() + m_Size);
+  }
+
+  [[nodiscard]] const_iterator end() const noexcept {
+    return const_iterator(m_elements() + m_Size, m_elements(),
+                          m_elements() + m_Size);
+  }
+
+  [[nodiscard]] reverse_iterator rbegin() noexcept {
+    return reverse_iterator(end());
+  }
+
+  [[nodiscard]] const_reverse_iterator rbegin() const noexcept {
+    return const_reverse_iterator(end());
+  }
+
+  [[nodiscard]] reverse_iterator rend() noexcept {
+    return reverse_iterator(begin());
+  }
+
+  [[nodiscard]] const_reverse_iterator rend() const noexcept {
+    return const_reverse_iterator(begin());
+  }
+
+  [[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
+
+  [[nodiscard]] const_iterator cend() const noexcept { return end(); }
+
+  [[nodiscard]] const_reverse_iterator crbegin() const noexcept {
+    return rbegin();
+  }
+
+  [[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
+
+  [[nodiscard]] constexpr size_type size() const noexcept { return m_Size; }
+
+  [[nodiscard]] constexpr size_type max_size() const noexcept { return m_Size; }
+
+  constexpr bool empty() const noexcept { return !!m_Size; }
+
+  [[nodiscard]] reference at(size_type _Pos) {
+    if constexpr (error_check) {
+      if (m_Size <= _Pos) {
+        invld_throw();
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] constexpr const_reference at(size_type _Pos) const {
+    if constexpr (error_check) {
+      if (m_Size <= _Pos) {
+        invld_throw();
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] reference operator[](_In_range_(0, m_Size - 1)
+                                         size_type _Pos) noexcept
+  /* strengthened */ {
+    if constexpr (error_check) {
+      if (_Pos >= m_Size) {
+        throw std::exception{"mjz_obj_Array subscript out of range"};
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] constexpr const_reference operator[](
+      _In_range_(0, m_Size - 1) size_type _Pos) const noexcept
+  /* strengthened */ {
+    if constexpr (error_check) {
+      {
+        if (_Pos >= m_Size)
+          throw std::exception{"mjz_obj_Array subscript out of range"};
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] reference front() noexcept /* strengthened */ {
+    return m_elements()[0];
+  }
+
+  [[nodiscard]] constexpr const_reference front() const noexcept
+  /* strengthened */ {
+    return m_elements()[0];
+  }
+
+  [[nodiscard]] reference back() noexcept /* strengthened */ {
+    return m_elements()[m_Size - 1];
+  }
+
+  [[nodiscard]] constexpr const_reference back() const noexcept
+  /* strengthened */ {
+    return m_elements()[m_Size - 1];
+  }
+
+  [[nodiscard]] Type *data() noexcept { return m_elements(); }
+
+  [[nodiscard]] const Type *data() const noexcept { return m_elements(); }
+
+  [[noreturn]] void invld_throw() const {
+    throw std::exception("invalid mjz_obj_Array<T, N> subscript");
+  }
+  inline mjz_obj_Array() { init_data(); }
+  inline mjz_obj_Array(mjz_obj_Array &&) = default;
+  inline mjz_obj_Array(const mjz_obj_Array &) = default;
+  inline mjz_obj_Array &operator=(mjz_obj_Array &&) = default;
+  inline mjz_obj_Array &operator=(const mjz_obj_Array &) = default;
+  inline ~mjz_obj_Array() { deinit_data(); }
+
+ protected:
+  inline void init_data() {
+    my_obj_cntr.construct_arr_at(m_elements(), m_Size);
+  }
+  inline void deinit_data() {
+    my_obj_cntr.obj_destructor_arr(m_elements(), m_Size);
+  }
+  inline Type *m_elements() { return (Type *)m_elements_data; }
+  uint8_t m_elements_data[my_obj_constructor::size_of_type() * m_Size];
+};
+template <class Type, size_t m_Size,
+          class my_obj_constructor ,
+          bool error_check>
+my_obj_constructor
+    mjz_obj_Array< Type,  m_Size,  my_obj_constructor,
+                   error_check>::my_obj_cntr;
+  template <typename T, typename U = T>
 T exchange(T &obj, U &&new_value) {
   T old_value = std::move(obj);
   obj = std::forward<U>(new_value);
@@ -3112,7 +3290,7 @@ inline constexpr const T *end(iterator_template<T> it) noexcept {
 
 template <typename Type, bool construct_obj_on_constructor = true,
           class my_obj_creator_t = mjz_temp_type_obj_creator_warpper_t<Type>>
-struct heap_obj_warper {
+struct mjz_stack_obj_warper {
  public:
   static constexpr size_t size = sizeof(Type);
 
@@ -3164,55 +3342,55 @@ struct heap_obj_warper {
   }
 
  public:
-  constexpr inline heap_obj_warper() {
+  constexpr inline mjz_stack_obj_warper() {
     if constexpr (construct_obj_on_constructor) {
       construct();
     }
   };
-  inline ~heap_obj_warper() { de_init(); }
-  inline heap_obj_warper(heap_obj_warper &&h_obj_w) {
-    if (h_obj_w.has_data()) construct(std::move(h_obj_w.operator*()));
+  inline ~mjz_stack_obj_warper() { de_init(); }
+  inline mjz_stack_obj_warper(mjz_stack_obj_warper &&s_obj_w) {
+    if (s_obj_w.has_data()) construct(std::move(s_obj_w.operator*()));
   }
-  inline heap_obj_warper(const heap_obj_warper &h_obj_w) {
-    if (h_obj_w.has_data()) construct(h_obj_w.operator*());
+  inline mjz_stack_obj_warper(const mjz_stack_obj_warper &s_obj_w) {
+    if (s_obj_w.has_data()) construct(s_obj_w.operator*());
   }
-  inline heap_obj_warper(heap_obj_warper &h_obj_w) {
-    if (h_obj_w.has_data()) construct(h_obj_w.operator*());
+  inline mjz_stack_obj_warper(mjz_stack_obj_warper &s_obj_w) {
+    if (s_obj_w.has_data()) construct(s_obj_w.operator*());
   }
-  inline heap_obj_warper(const Type &obj) { construct(obj); }
-  inline heap_obj_warper(Type &obj) { construct(obj); }
-  inline heap_obj_warper(Type &&obj) { construct(std::move(obj)); }
+  inline mjz_stack_obj_warper(const Type &obj) { construct(obj); }
+  inline mjz_stack_obj_warper(Type &obj) { construct(obj); }
+  inline mjz_stack_obj_warper(Type &&obj) { construct(std::move(obj)); }
 
  public:
-  inline heap_obj_warper &operator=(Type &&obj) {
+  inline mjz_stack_obj_warper &operator=(Type &&obj) {
     construct(std::move(obj));
     return *this;
   }
-  inline heap_obj_warper &operator=(Type &obj) {
+  inline mjz_stack_obj_warper &operator=(Type &obj) {
     construct(obj);
     return *this;
   }
-  inline heap_obj_warper &operator=(const Type &obj) {
+  inline mjz_stack_obj_warper &operator=(const Type &obj) {
     construct(obj);
     return *this;
   }
-  inline heap_obj_warper &operator=(heap_obj_warper &&h_obj_w) {
-    if (!!h_obj_w) operator=(std::move(h_obj_w.operator*()));
+  inline mjz_stack_obj_warper &operator=(mjz_stack_obj_warper &&s_obj_w) {
+    if (!!s_obj_w) operator=(std::move(s_obj_w.operator*()));
     return *this;
   }
-  inline heap_obj_warper &operator=(const heap_obj_warper &h_obj_w) {
-    if (!!h_obj_w) operator=(h_obj_w.operator*());
+  inline mjz_stack_obj_warper &operator=(const mjz_stack_obj_warper &s_obj_w) {
+    if (!!s_obj_w) operator=(s_obj_w.operator*());
     return *this;
   }
-  inline heap_obj_warper &operator=(heap_obj_warper &h_obj_w) {
-    if (!!h_obj_w) operator=(h_obj_w.operator*());
+  inline mjz_stack_obj_warper &operator=(mjz_stack_obj_warper &s_obj_w) {
+    if (!!s_obj_w) operator=(s_obj_w.operator*());
     return *this;
   }
 
  public:
-  inline void init(const heap_obj_warper &obj) { operator=(obj); }
-  inline void init(heap_obj_warper &obj) { operator=(obj); }
-  inline void init(heap_obj_warper &&obj) { operator=(std::move(obj)); }
+  inline void init(const mjz_stack_obj_warper &obj) { operator=(obj); }
+  inline void init(mjz_stack_obj_warper &obj) { operator=(obj); }
+  inline void init(mjz_stack_obj_warper &&obj) { operator=(std::move(obj)); }
   template <typename arg_T, typename Type>
   inline void init(std::initializer_list<arg_T> list) {
     construct(list);
@@ -3276,13 +3454,13 @@ struct heap_obj_warper {
   constexpr inline const Type *pointer_to_data() const {
     if (!m_Has_data)
       throw std::exception(
-          "mjz_ard::heap_obj_warper::pointer_to_data bad access");
+          "mjz_ard::mjz_stack_obj_warper::pointer_to_data bad access");
     return pointer_to_unsafe_data();
   }
   constexpr inline Type *pointer_to_data() {
     if (!m_Has_data)
       throw std::exception(
-          "mjz_ard::heap_obj_warper::pointer_to_data bad access");
+          "mjz_ard::mjz_stack_obj_warper::pointer_to_data bad access");
     return pointer_to_unsafe_data();
   }
 
@@ -3293,9 +3471,9 @@ struct heap_obj_warper {
     return pointer_to_data()->*my_var;
   }
   constexpr inline Type &operator*() { return *operator->(); }
-  inline heap_obj_warper *operator&() { return this; }              // &obj
+  inline mjz_stack_obj_warper *operator&() { return this; }              // &obj
   inline Type *operator&(int) { return pointer_to_data(); }         // obj&0
-  inline const heap_obj_warper *operator&() const { return this; }  // &obj
+  inline const mjz_stack_obj_warper *operator&() const { return this; }  // &obj
   inline const Type *operator&(int) const {
     return pointer_to_data();
   }  // obj&0
@@ -3307,32 +3485,32 @@ struct heap_obj_warper {
   constexpr inline const Type &operator*() const { return *operator->(); }
 
  public:
-  inline bool operator==(const heap_obj_warper &other) const {
+  inline bool operator==(const mjz_stack_obj_warper &other) const {
     return operator() == other.operator();
   }
 
-  inline bool operator!=(const heap_obj_warper &other) const {
+  inline bool operator!=(const mjz_stack_obj_warper &other) const {
     return operator() != other.operator();
   }
 
-  inline bool operator<(const heap_obj_warper &other) const {
+  inline bool operator<(const mjz_stack_obj_warper &other) const {
     return (operator()) < (other.operator());
   }
 
-  inline bool operator<=(const heap_obj_warper &other) const {
+  inline bool operator<=(const mjz_stack_obj_warper &other) const {
     return (operator()) <= (other.operator());
   }
 
-  inline bool operator>(const heap_obj_warper &other) const {
+  inline bool operator>(const mjz_stack_obj_warper &other) const {
     return (operator()) > (other.operator());
   }
 
-  inline bool operator>=(const heap_obj_warper &other) const {
+  inline bool operator>=(const mjz_stack_obj_warper &other) const {
     return (operator()) >= (other.operator());
   }
 
 #if 0
- inline bool operator<=>(const heap_obj_warper &other) const  { 
+ inline bool operator<=>(const mjz_stack_obj_warper &other) const  { 
  return operator() <=> other.operator();
   }
 #endif  // ! Arduino
@@ -3355,33 +3533,33 @@ struct heap_obj_warper {
   inline Type &move_to(Type &dest, bool dest_has_obj) {
     return *move_to(&dest, dest_has_obj);
   }
-  inline heap_obj_warper &copy_to(heap_obj_warper &dest) {
+  inline mjz_stack_obj_warper &copy_to(mjz_stack_obj_warper &dest) {
     if (this != &dest)
     dest.init_with_unsafe_placement_new(
         copy_to(dest.pointer_to_unsafe_data(), dest.has_data()));
     return dest;
   }
-  inline heap_obj_warper &move_to(heap_obj_warper &dest) {
+  inline mjz_stack_obj_warper &move_to(mjz_stack_obj_warper &dest) {
     if (this != &dest)
     dest.init_with_unsafe_placement_new(
         move_to(dest.pointer_to_unsafe_data(), dest.has_data()));
     return dest;
   }
-  inline heap_obj_warper *copy_to(heap_obj_warper *dest) {
+  inline mjz_stack_obj_warper *copy_to(mjz_stack_obj_warper *dest) {
     return &copy_to(*dest);
   }
-  inline heap_obj_warper *move_to(heap_obj_warper *dest) {
+  inline mjz_stack_obj_warper *move_to(mjz_stack_obj_warper *dest) {
     return &move_to(*dest);
   }
 };
 template <typename Type, bool construct_obj_on_constructor,
           class my_obj_creator>
-my_obj_creator heap_obj_warper<Type, construct_obj_on_constructor,
+my_obj_creator mjz_stack_obj_warper<Type, construct_obj_on_constructor,
                                   my_obj_creator>::m_obj_creator{};
 
 template <class Type, size_t m_Size, bool error_check = 1,
           bool construct_obj_on_constructor = 1,
-          class my_obj_creator = mjz_allocator_warpper<
+          class my_obj_creator = mjz_temp_type_obj_creator_warpper_t<
               Type>>        // i promise  that their is no allocation
 class extended_mjz_Array {  // fixed size extended_mjz_Array of values
  public:
@@ -3394,7 +3572,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
   using size_type = size_t;
 
   using my_heap_obj_buffer_t =
-      heap_obj_warper<Type, construct_obj_on_constructor, my_obj_creator>;
+      mjz_stack_obj_warper<Type, construct_obj_on_constructor, my_obj_creator>;
 
   using iterator_r = iterator_template<my_heap_obj_buffer_t, error_check>;
   using const_iterator_r =
@@ -7104,9 +7282,9 @@ using arr = mjz_Array<T, size>;
 template <typename T>
 using vect = mjz_Vector<T>;
 template <typename T>
-using obj_wr = heap_obj_warper<T>;
+using obj_wr = mjz_stack_obj_warper<T>;
 template <typename T>
-using hobj_wr = heap_obj_warper<T>;
+using hobj_wr = mjz_stack_obj_warper<T>;
 template <typename T>
 using alctr = mjz_allocator_warpper<T>;
 template <typename T>
@@ -7140,9 +7318,9 @@ using arena_allocator = arena_allocator;
 template <typename T>
 using vector = mjz_Vector<T>;
 template <typename T>
-using obj_warper = heap_obj_warper<T>;
+using obj_warper = mjz_stack_obj_warper<T>;
 template <typename T>
-using heap_obj_warper = heap_obj_warper<T>;
+using mjz_stack_obj_warper = mjz_stack_obj_warper<T>;
 template <typename T>
 using allocator = mjz_allocator_warpper<T>;
 template <typename T>
