@@ -635,6 +635,11 @@ class mjz_arena_allocator_t {
   size_t get_size(void *ptr) {
     return get_real_size(get_index_of_pointer(ptr));
   }
+  bool is_valid(void* ptr) {
+      if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return 0;
+      return !(((size_t)((size_t)ptr - (size_t)m_blocks.begin())) %
+               block_length);
+  }
   mjz_arena_allocator_t() {}
   ~mjz_arena_allocator_t() {}
 
@@ -643,6 +648,8 @@ class mjz_arena_allocator_t {
   mjz_arena_allocator_t &operator=(mjz_arena_allocator_t &&) = delete;
   mjz_arena_allocator_t &operator=(const mjz_arena_allocator_t &) = delete;
 };
+
+
 struct arena_allocator : public mjz_arena_allocator_t<1024, 1024> {};
 template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
