@@ -230,59 +230,89 @@ class vr_Scoped_speed_Timer : public Scoped_speed_Timer {
 template <class counter_class>
 class mjz_class_operation_reporter_t {
   static counter_class index;
-  // for writing self writing code
   template <typename... argT>
-  static void inline do_(const argT&... args) {}
-  template <typename... argT>
-   mjz_class_operation_reporter_t& println(argT&&... args) {
-    print(std::forward<argT>(args)...);
+  mjz_class_operation_reporter_t& println(argT&&... args) {
+    print_c_str(std::forward<argT>(args)...);
     std::cout << '\n';
     return *this;
   }
   template <typename... argT>
-   mjz_class_operation_reporter_t& println_wf(
+  mjz_class_operation_reporter_t& println_wf(
       mjz_class_operation_reporter_t& obj, argT&&... args) {
     print(std::forward<argT>(args)...);
-    println(" with ID: ", UUID(), " from ID:", obj.UUID());
+    print_c_str(" with ID: ");
+    std::cout << (UUID());
+    print_c_str(" from ID:");
+    std::cout << (obj.UUID());
+    std::cout << '\n';
 
     return *this;
   }
   template <typename... argT>
-   mjz_class_operation_reporter_t& println_w( argT&&... args) {
-    print(std::forward<argT>(args)...);
-    println(" with ID: ", UUID());
-
+  mjz_class_operation_reporter_t& println_w(argT&&... args) {
+    print_c_str(std::forward<argT>(args)...);
+    print_c_str(" with ID: ");
+    std::cout << (UUID());
+    std::cout << '\n';
     return *this;
   }
   template <typename... argT>
-    mjz_class_operation_reporter_t& print(argT&&... args) {
-    do_((std::cout << std::forward<argT>(args))...);
+  mjz_class_operation_reporter_t& println_wi(const counter_class& index,
+                                             argT&&... args) {
+    print_c_str(std::forward<argT>(args)...);
+    std::cout << index;
+    print_c_str(" with ID: ");
+    std::cout << (UUID());
+    std::cout << '\n';
+    return *this;
+  }
+  template <typename... argT>
+  mjz_class_operation_reporter_t& printsv(argT&&... args) {
+    std::initializer_list<std::string_view> list = {
+        std::forward<argT>(args)...};
+    for (auto& s : list) std::cout << s;
+    return *this;
+  }
+  template <typename... argT>
+  mjz_class_operation_reporter_t& print_c_str(argT&&... args) {
+    std::initializer_list<const char*> list = {std::forward<argT>(args)...};
+    for (auto& s : list) std::cout << s;
+    return *this;
+  }
+  template <typename... argT>
+  mjz_class_operation_reporter_t& print(argT&&... args) {
+    auto list =
+        std::initializer_list<std::function<void(void)>>{[&](void) -> void {
+          std::cout << std::forward<argT>(args);
+          return;
+        }...};  // do all tasks in thr rigth order
+    for (auto& f : list) f();
     return *this;
   }
   template <typename T>
-    mjz_class_operation_reporter_t& println_o(T&& arg) {
-    println("operator", std::forward<T>(arg), "()");
+  mjz_class_operation_reporter_t& println_o(T&& arg) {
+    println_w("operator", std::forward<T>(arg), "()");
     return *this;
   }
   template <typename T>
-    mjz_class_operation_reporter_t& println_oi(T&& arg) {
-    println("operator", std::forward<T>(arg), "(int)");
+  mjz_class_operation_reporter_t& println_oi(T&& arg) {
+    println_w("operator", std::forward<T>(arg), "(int)");
     return *this;
   }
   template <typename T>
-    mjz_class_operation_reporter_t& println_obj(T&& arg) {  // oobj
-    println("operator", std::forward<T>(arg), "(const obj&)");
+  mjz_class_operation_reporter_t& println_obj(T&& arg) {  // oobj
+    println_w("operator", std::forward<T>(arg), "(const obj&)");
     return *this;
   }
 
  public:
   char filler = '|';
   inline const void* UUID() const { return this; };
-  mjz_class_operation_reporter_t() { println_w(" created : ", index++); }
+  mjz_class_operation_reporter_t() { println_wi(index++, " created : "); }
   mjz_class_operation_reporter_t(int i) : filler(i) {
-    println_w(" created with int : ", index++);
+    println_wi(index++, " created with int : ");
   }
-  ~mjz_class_operation_reporter_t() { println_w(" destroyed : ", --index); }
+  ~mjz_class_operation_reporter_t() { println_wi(--index, " destroyed : "); }
   mjz_class_operation_reporter_t(mjz_class_operation_reporter_t&& obj) {
     index++;
     println_wf(obj, " move constructed ");
@@ -434,11 +464,11 @@ class mjz_class_operation_reporter_t {
 };
 template <class counter_class>
 counter_class mjz_class_operation_reporter_t<counter_class>::index{};
-using operation_reporter = mjz_class_operation_reporter_t<uint32_t>;
+using operation_reporter = mjz_class_operation_reporter_t<size_t>;
 
 namespace have_mjz_ard_removed {
 
-using operation_reporter = mjz_class_operation_reporter_t<uint32_t>;
+using operation_reporter = mjz_class_operation_reporter_t<size_t>;
 typedef vr_Scoped_speed_Timer vr_Scoped_speed_Timer;
 typedef speed_Timer speed_Timer;
 typedef Scoped_speed_Timer Scoped_speed_Timer;

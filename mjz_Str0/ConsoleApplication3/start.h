@@ -9,6 +9,32 @@ class main_class {
   inline virtual bool catch_exceptions() { return false; }
 
  public:
+  template <typename T>
+  inline static const T& print(const T& obj) {
+    std::cout << obj;
+    return obj;
+  }
+  template <typename T>
+  inline static const T& println(const T& obj) {
+    std::cout << obj << '\n';
+    return obj;
+  }
+  inline static void print() {}
+  inline static void println() { std::cout << '\n'; }
+  template <typename... argT>
+  void print(argT&&... args) {
+    auto list =
+        std::initializer_list<std::function<void(void)>>{[&](void) -> void {
+          std::cout << std::forward<argT>(args);
+          return;
+        }...};  // do all tasks in thr rigth order
+    for (auto& f : list) f();
+  }
+  template <typename... argT>
+  void println(argT&&... args) {
+    print(std::forward<argT>(args)...);
+    std::cout << '\n';
+  }
   inline int setup(int argc, const char* const* const argv) {
     int return_val{-1};
     std::unique_ptr<main_class> ptr = run(argc, argv);
