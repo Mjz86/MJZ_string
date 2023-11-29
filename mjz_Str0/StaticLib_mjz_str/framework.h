@@ -370,6 +370,17 @@ class mjz_class_operation_reporter_t {
       const mjz_class_operation_reporter_t&) {
     return println_obj("-");
   }
+  mjz_class_operation_reporter_t& operator-() {
+    return println_o("-");
+  }
+  mjz_class_operation_reporter_t* operator&() {// baaaaaaaaaaaaaaad practic
+      println_o("&");
+    return this;
+  }
+  mjz_class_operation_reporter_t& operator*() {  
+    println_o("*");
+    return *this;
+  }
   mjz_class_operation_reporter_t& operator*(
       const mjz_class_operation_reporter_t&) {
     return println_obj("*");

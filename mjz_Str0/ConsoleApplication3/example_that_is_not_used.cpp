@@ -31,7 +31,7 @@ int my_main::main(int argc, const char* const* const argv) {
     operation_reporter op;
     getline(std::cin, test());
     println(test);
-    if (op ^ op) op *= op;
+    if (op ^ op) op *= **(&op);
   }
 
   println("test is ",test);
