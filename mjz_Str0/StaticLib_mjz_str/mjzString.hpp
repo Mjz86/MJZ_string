@@ -2576,13 +2576,11 @@ class static_str_algo {
     bool set(bool STR_is_in_stack_) {
       STR_is_in_stack = STR_is_in_stack_;
 
-      if (STR_is_in_stack_) {
-        goto _return___;
+      if (!STR_is_in_stack_) 
+      {
+        static_str_algo::memset(stack_buffer, 0, stack_buffer_size);
+        stack_buffer[stack_buffer_size] = 0;
       }
-
-      static_str_algo::memset(stack_buffer, 0, stack_buffer_size);
-      stack_buffer[stack_buffer_size] = 0;
-    _return___:
       return STR_is_in_stack;
     }
     bool get() { return STR_is_in_stack; }
@@ -7522,13 +7520,15 @@ void mjz_ard::mjz_str_t<T>::init(bool) {
 template <typename T>
 void mjz_ard::mjz_str_t<T>::invalidate(bool constructor) {
   if (!m_buffer) {
-    goto _end__;
+    //goto _end__;
+    m_capacity = m_length = 0;
+    return;
   }
 
   free_pv(m_buffer, constructor);
   stack_obj_buf.set(0);
   m_buffer = NULL;
-_end__:
+//_end__:
   m_capacity = m_length = 0;
 }
 template <typename T>
@@ -7536,20 +7536,16 @@ bool mjz_ard::mjz_str_t<T>::reserve(size_t m_size, bool just_size,
                                     bool constructor) {
   int64_t different_of_size_and_cap = (int64_t)m_size - (int64_t)m_capacity;
 
-  if (just_size || different_of_size_and_cap < 0) {
-    goto ignored_stack;
+  if(!(just_size || different_of_size_and_cap < 0)) {
+    if (m_size < stack_buffer_size) {
+      m_size = stack_buffer_size;
+    } else {
+      int64_t minimumcapadd = min_macro_(m_capacity / 5, stack_buffer_size);
+      m_size +=
+          (size_t)(static_cast<int64_t>(5) * (different_of_size_and_cap < 5) +
+                   minimumcapadd * (different_of_size_and_cap < minimumcapadd));
+    }
   }
-
-  if (m_size < stack_buffer_size) {
-    m_size = stack_buffer_size;
-  } else {
-    int64_t minimumcapadd = min_macro_(m_capacity / 5, stack_buffer_size);
-    m_size +=
-        (size_t)(static_cast<int64_t>(5) * (different_of_size_and_cap < 5) +
-                 minimumcapadd * (different_of_size_and_cap < minimumcapadd));
-  }
-
-ignored_stack:
 
   if (m_buffer && m_capacity >= m_size) {
     return 1;
@@ -8319,11 +8315,10 @@ void mjz_ard::mjz_str_t<T>::remove(size_t index, size_t count) {
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::erase(size_t pos_, size_t len_) {
   if (len_ <= pos_ || length() < (len_ + pos_)) {
-    goto _end__;
+    return *this;
   }
 
   remove((size_t)pos_, (size_t)min(len_, length() - pos_));
-_end__:
   return *this;
 }
 template <typename T>

@@ -66,18 +66,17 @@ class Scoped_speed_Timer {
 
     if ((stoped && !(cmd_ & timer_cmd::Force_log)) ||
         !!(cmd_ & timer_cmd::just_Stop)) {
-      goto return_;
+     
+    }else {
+      if (m_uomp) {
+        timer_info& ti_ = (*m_uomp)[m_Name];
+        ti_.atempt_num++;
+        ti_.Time_ns += time;
+      } else {
+        std::cout << "[TIMER] " << m_Name << " - " << time << "ns\n";
+      }
     }
 
-    if (m_uomp) {
-      timer_info& ti_ = (*m_uomp)[m_Name];
-      ti_.atempt_num++;
-      ti_.Time_ns += time;
-    } else {
-      std::cout << "[TIMER] " << m_Name << " - " << time << "ns\n";
-    }
-
-  return_:
 
     if (!(cmd_ & timer_cmd::NO_Stop)) {
       stoped = 1;
