@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cstdarg> 
 #include <cassert>
 #include <chrono>
 #include <cstring>

@@ -66,8 +66,7 @@ class Scoped_speed_Timer {
 
     if ((stoped && !(cmd_ & timer_cmd::Force_log)) ||
         !!(cmd_ & timer_cmd::just_Stop)) {
-     
-    }else {
+    } else {
       if (m_uomp) {
         timer_info& ti_ = (*m_uomp)[m_Name];
         ti_.atempt_num++;
@@ -76,7 +75,6 @@ class Scoped_speed_Timer {
         std::cout << "[TIMER] " << m_Name << " - " << time << "ns\n";
       }
     }
-
 
     if (!(cmd_ & timer_cmd::NO_Stop)) {
       stoped = 1;
@@ -232,42 +230,207 @@ class vr_Scoped_speed_Timer : public Scoped_speed_Timer {
 template <class counter_class>
 class mjz_class_operation_reporter_t {
   static counter_class index;
+  // for writing self writing code
+  template <typename... argT>
+  static void inline do_(const argT&... args) {}
+  template <typename... argT>
+   mjz_class_operation_reporter_t& println(argT&&... args) {
+    print(std::forward<argT>(args)...);
+    std::cout << '\n';
+    return *this;
+  }
+  template <typename... argT>
+   mjz_class_operation_reporter_t& println_wf(
+      mjz_class_operation_reporter_t& obj, argT&&... args) {
+    print(std::forward<argT>(args)...);
+    println(" with ID: ", UUID(), " from ID:", obj.UUID());
+
+    return *this;
+  }
+  template <typename... argT>
+   mjz_class_operation_reporter_t& println_w( argT&&... args) {
+    print(std::forward<argT>(args)...);
+    println(" with ID: ", UUID());
+
+    return *this;
+  }
+  template <typename... argT>
+    mjz_class_operation_reporter_t& print(argT&&... args) {
+    do_((std::cout << std::forward<argT>(args))...);
+    return *this;
+  }
+  template <typename T>
+    mjz_class_operation_reporter_t& println_o(T&& arg) {
+    println("operator", std::forward<T>(arg), "()");
+    return *this;
+  }
+  template <typename T>
+    mjz_class_operation_reporter_t& println_oi(T&& arg) {
+    println("operator", std::forward<T>(arg), "(int)");
+    return *this;
+  }
+  template <typename T>
+    mjz_class_operation_reporter_t& println_obj(T&& arg) {  // oobj
+    println("operator", std::forward<T>(arg), "(const obj&)");
+    return *this;
+  }
+
  public:
   char filler = '|';
   inline const void* UUID() const { return this; };
-
-  mjz_class_operation_reporter_t() {
-    std::cout << " created : " << index++ << " with ID: " << UUID() << " \n";
+  mjz_class_operation_reporter_t() { println_w(" created : ", index++); }
+  mjz_class_operation_reporter_t(int i) : filler(i) {
+    println_w(" created with int : ", index++);
   }
-  mjz_class_operation_reporter_t(int i): filler(i) {
-    std::cout << " created with int : " << index++ << " with ID: " << UUID()
-              << " \n";
-  }
-  ~mjz_class_operation_reporter_t() {
-    std::cout << " destroyed : " << --index << " with ID: " << UUID() << " \n";
-  }
+  ~mjz_class_operation_reporter_t() { println_w(" destroyed : ", --index); }
   mjz_class_operation_reporter_t(mjz_class_operation_reporter_t&& obj) {
     index++;
-    std::cout << " move constructed "
-              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
+    println_wf(obj, " move constructed ");
   }
   mjz_class_operation_reporter_t& operator=(
       mjz_class_operation_reporter_t&& obj) {
-    std::cout << " moved to me  "
-              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
+    println_wf(obj, " moved to me  ");
     return *this;
   }
   mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t& obj) {
     index++;
-    std::cout << " copy constructed "
-              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
+    println_wf(obj, " copy constructed ");
   }
   mjz_class_operation_reporter_t& operator=(
       const mjz_class_operation_reporter_t& obj) {
-    std::cout << " copied to me   "
-              << " with ID: " << UUID() << " from ID:" << obj.UUID() << " \n";
+    println_wf(obj, " copied to me   ");
     return *this;
   }
+  mjz_class_operation_reporter_t& operator()() { return println_o("()"); }
+  mjz_class_operation_reporter_t& operator()(int) { return println_oi("()"); }
+  mjz_class_operation_reporter_t& operator++(int) { return println_oi("++"); }
+  mjz_class_operation_reporter_t& operator++() { return println_o("++()"); }
+  mjz_class_operation_reporter_t& operator--(int) { return println_oi("--"); }
+  mjz_class_operation_reporter_t& operator--() { return println_o("--"); }
+
+  mjz_class_operation_reporter_t& operator<=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("<=");
+  }
+  mjz_class_operation_reporter_t& operator>=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj(">=");
+  }
+  mjz_class_operation_reporter_t& operator<(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("<");
+  }
+  mjz_class_operation_reporter_t& operator>(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj(">");
+  }
+  mjz_class_operation_reporter_t& operator==(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("==");
+  }
+  mjz_class_operation_reporter_t& operator!=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("!=");
+  }
+  mjz_class_operation_reporter_t& operator+(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("+");
+  }
+  mjz_class_operation_reporter_t& operator-(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("-");
+  }
+  mjz_class_operation_reporter_t& operator*(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("*");
+  }
+  mjz_class_operation_reporter_t& operator/(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("/");
+  }
+  mjz_class_operation_reporter_t& operator>>(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj(">>");
+  }
+  mjz_class_operation_reporter_t& operator<<(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("<<");
+  }
+  mjz_class_operation_reporter_t& operator&(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("&");
+  }
+  mjz_class_operation_reporter_t& operator|(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("|");
+  }
+  mjz_class_operation_reporter_t& operator^(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("^");
+  }
+  mjz_class_operation_reporter_t&
+  operator&&(  // really bad practic to overload these dont do in any other
+               // senario
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("&&");
+  }
+  mjz_class_operation_reporter_t&
+  operator||(  // really bad practic to overload these  dont do in any other
+               // senario
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("||");
+  }
+
+  mjz_class_operation_reporter_t& operator+=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("+=");
+  }
+  mjz_class_operation_reporter_t& operator-=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("-=");
+  }
+  mjz_class_operation_reporter_t& operator*=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("*=");
+  }
+  mjz_class_operation_reporter_t& operator/=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("/=");
+  }
+  mjz_class_operation_reporter_t& operator>>=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj(">>=");
+  }
+  mjz_class_operation_reporter_t& operator<<=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("<<=");
+  }
+  mjz_class_operation_reporter_t& operator&=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("&=");
+  }
+  mjz_class_operation_reporter_t& operator|=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("|=");
+  }
+  mjz_class_operation_reporter_t& operator^=(
+      const mjz_class_operation_reporter_t&) {
+    return println_obj("^=");
+  }
+
+  mjz_class_operation_reporter_t& operator->() { return println_o("->"); }
+  template <typename T>
+  auto operator->*(T p) {
+    println_o("->*");
+    return this->*p;
+  }
+  inline operator bool() {
+    println_o(" bool ");
+    return filler;
+  }
+
+  mjz_class_operation_reporter_t& operator!() { return println_o("!"); }
+  mjz_class_operation_reporter_t& operator~() { return println_o("~"); }
 };
 template <class counter_class>
 counter_class mjz_class_operation_reporter_t<counter_class>::index{};
