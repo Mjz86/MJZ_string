@@ -759,9 +759,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="example_that_is_not_used.cpp" />
+    <ClCompile Include="my_main.cpp" />
     <ClCompile Include="start.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="my_main.h" />
     <ClInclude Include="start.h" />
   </ItemGroup>
   <ItemGroup>

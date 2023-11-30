@@ -1,6 +1,9 @@
 #pragma once
 
 #include "compiher_wr.h"
+#include <iostream>
+#include <fstream>
+#include "fstream"
 class main_class {
   std::unique_ptr<main_class> run(int argc, const char* const* const argv);
 
@@ -132,7 +135,7 @@ class main_class {
     int return_val{-1};
     std::unique_ptr<main_class> ptr = run(argc, argv);
     if (ptr->catch_exceptions()) {
-      try {
+      
         try {
           return_val = ptr->main(argc, argv);
         } catch (std::exception ex) {
@@ -141,8 +144,17 @@ class main_class {
           std::cout << "\n\n\n EXEPTION : " << ex;
         } catch (mjz_ard::basic_mjz_Str_view ex) {
           std::cout << "\n\n\n EXEPTION : " << ex;
-        }
-      } catch (...) {
+        } catch (void* ex) {
+          std::cout << "\n\n\n EXEPTION : " << ex;
+          if (ex == 0) {
+            mjz_ard::static_str_algo::trap_crash();
+          }
+        } catch (int ex) {
+          std::cout << "\n\n\n EXEPTION : " << ex;
+          if (ex == -1) {
+            mjz_ard::static_str_algo::trap_crash();
+          }
+        } catch (...) {
         std::cout << "\n\n\n EXEPTION happened :( ";
       }
     } else {
