@@ -3555,7 +3555,7 @@ template <typename Type, bool construct_obj_on_constructor,
 my_obj_creator mjz_stack_obj_warper<Type, construct_obj_on_constructor,
                                   my_obj_creator>::m_obj_creator{};
 
-template <class Type, size_t m_Size, bool error_check = 1,
+template <class Type, const size_t m_Size, bool error_check = 1,
           bool construct_obj_on_constructor = 1,
           class my_obj_creator = mjz_temp_type_obj_creator_warpper_t<
               Type>>        // i promise  that their is no allocation
@@ -3569,12 +3569,12 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
   using const_reference = const Type &;
   using size_type = size_t;
 
-  using my_heap_obj_buffer_t =
+  using my_stack_obj_buffer_t =
       mjz_stack_obj_warper<Type, construct_obj_on_constructor, my_obj_creator>;
 
-  using iterator_r = iterator_template<my_heap_obj_buffer_t, error_check>;
+  using iterator_r = iterator_template<my_stack_obj_buffer_t, error_check>;
   using const_iterator_r =
-      iterator_template<const my_heap_obj_buffer_t, error_check>;
+      iterator_template<const my_stack_obj_buffer_t, error_check>;
   using iterator = iterator_template_ptr_warper<iterator_r, Type>;
   using const_iterator = iterator_template_ptr_warper<const_iterator_r, Type>;
 
@@ -3698,10 +3698,17 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     return *m_elements[m_Size - 1];
   }
 
-  [[nodiscard]] my_heap_obj_buffer_t *data() noexcept { return m_elements; }
+  [[nodiscard]] my_stack_obj_buffer_t *data() noexcept { return m_elements; }
 
-  [[nodiscard]] const my_heap_obj_buffer_t *data() const noexcept {
+  [[nodiscard]] const my_stack_obj_buffer_t *data() const noexcept {
     return m_elements;
+  }
+  [[nodiscard]] iterator_r get_wrapper_it() noexcept {
+    return {m_elements, m_Size};
+  }
+
+  [[nodiscard]]  const_iterator_r  get_wrapper_it() const noexcept {
+    return {m_elements, m_Size};
   }
 
   [[noreturn]] void invld_throw() const {
@@ -3709,7 +3716,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
   }
   iterator_r base() { return iterator_r(m_elements, m_Size); }
   const_iterator_r base() const { return const_iterator_r(m_elements, m_Size); }
-  my_heap_obj_buffer_t m_elements[m_Size];
+  my_stack_obj_buffer_t m_elements[m_Size];
 };
 
 template <class my_reallocator>
@@ -5815,47 +5822,27 @@ class mjz_Str : public basic_mjz_String,
   */
 
   template <typename... arguments_types>
-  int scanf(const char *format, arguments_types &...  arguments_arr) {
+  int scanf(const char *format, arguments_types &&...  arguments_arr) {
     int ret = sscanf((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
-  int scanf(const mjz_str_t<T> &format, arguments_types &...  arguments_arr) {
+  int scanf(const basic_mjz_Str_view &format,
+            arguments_types &&...arguments_arr) {
     int ret =
         sscanf((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
+
+ 
   template <typename... arguments_types>
-  int scanf(const char *format, const arguments_types &...  arguments_arr) {
-    int ret = sscanf((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
-    return ret;
-  }
-  template <typename... arguments_types>
-  int scanf(const mjz_str_t<T> &format,
-            const arguments_types &...  arguments_arr) {
-    int ret =
-        sscanf((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
-    return ret;
-  }
-  template <typename... arguments_types>
-  int scanf_s(const char *format, arguments_types &...  arguments_arr) {
+  int scanf_s(const char *format, arguments_types &&...  arguments_arr) {
     int ret = sscanf_s((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
   template <typename... arguments_types>
-  int scanf_s(const mjz_str_t<T> &format, arguments_types &...  arguments_arr) {
-    int ret =
-        sscanf_s((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
-    return ret;
-  }
-  template <typename... arguments_types>
-  int scanf_s(const char *format, const arguments_types &...  arguments_arr) {
-    int ret = sscanf_s((char *)buffer_ref(), format,  std::forward<arguments_types>(arguments_arr)...);
-    return ret;
-  }
-  template <typename... arguments_types>
-  int scanf_s(const mjz_str_t<T> &format,
-              const arguments_types &...  arguments_arr) {
+  int scanf_s(const basic_mjz_Str_view &format,
+              arguments_types &&...arguments_arr) {
     int ret =
         sscanf_s((char *)buffer_ref(), format.buffer_ref(),  std::forward<arguments_types>(arguments_arr)...);
     return ret;
@@ -6380,6 +6367,10 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   }
   extended_mjz_str_t &operator=(mjz_str_t<T> &&s) {
     mjz_str_t::operator=(std::move(s));
+    return *this;
+  }
+  extended_mjz_str_t &operator=(const basic_mjz_Str_view & s) {
+    mjz_str_t::operator=(s);
     return *this;
   }
   virtual ~extended_mjz_str_t() = default;

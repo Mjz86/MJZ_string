@@ -31,6 +31,99 @@ class main_class {
     for (auto& f : list) f();
   }
   template <typename... argT>
+  void print_arr(argT&&... args) {
+    auto list =
+        std::initializer_list<std::function<void(void)>>{[&](void) -> void {
+          std::cout << std::forward<argT>(args);
+          return;
+        }...};  // do all tasks in thr rigth order
+    auto it = list.begin(), end = list.end();
+    if (it == end) return;
+    std::cout << "{ ";
+    for (;;) {
+      (*it)();
+      if (++it < end) {
+          std::cout << " , ";
+          continue;
+      }
+      std::cout << " }";
+      break;
+    }
+  }
+  template <class T>
+  void print_it(const T&obj ) {
+    auto it = obj.begin(), end = obj.end();
+    if (it == end) return;
+    std::cout << "{ ";
+    for (;;) {
+      std::cout << (*it);
+      if (++it < end) {
+          std::cout << " , ";
+          continue;
+      }
+      std::cout << " }";
+      break;
+    }
+  }
+  template <class T, typename FNT>
+  void for_each(const T& obj, FNT function) {
+    auto it = obj.begin(), end = obj.end();
+    if (it == end) return;
+    for (;;) {
+      function(*it);
+      if (++it < end) {
+          continue;
+      }
+      break;
+    }
+  }
+  template <class T,typename FNT>
+  void for_each(T& obj, FNT function) {
+    auto it = obj.begin(), end = obj.end();
+    if (it == end) return;
+    for (;;) {
+      function(*it);
+      if (++it < end) {
+          continue;
+      }
+      break;
+    }
+  }
+  template <class T>
+  void println_it_FE(const T& obj) {
+    auto it = obj.begin(), end = obj.end();
+    if (it == end) return;
+    for (;;) {
+      std::cout << (*it) <<'\n';
+      if (++it < end) {
+          continue;
+      }
+      break;
+    }
+  }
+  template <typename... argT>
+  void println_FE(argT&&... args) {//println_for_each
+    auto list =
+        std::initializer_list<std::function<void(void)>>{[&](void) -> void {
+          std::cout << std::forward<argT>(args);
+          std::cout << '\n';
+          return;
+        }...};  // do all tasks in thr rigth order
+    auto it = list.begin(), end = list.end();
+    if (it == end) return;
+    for (auto& f:list)f();
+  }
+  template <typename... argT>
+  void println_arr(argT&&... args) {
+    print_arr(std::forward<argT>(args)...);
+    std::cout << '\n';
+  }
+  template <class T>
+  void println_it(const T& obj) {
+    print_it(obj);
+    std::cout << '\n';
+  }
+  template <typename... argT>
   void println(argT&&... args) {
     print(std::forward<argT>(args)...);
     std::cout << '\n';

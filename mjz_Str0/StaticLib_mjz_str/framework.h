@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "mjzString_helper.hpp"
+
 namespace mjz_ard {
 
 class speed_Timer {
@@ -610,9 +611,36 @@ class mjz_class_operation_reporter_t {
     println_obj(obj, "!=");
     return compare(obj) != 0;
   }
-
   inline mjz_class_operation_reporter_t& none() { return *this; }
+   template <class the_Stream>
+  friend the_Stream& operator<<(the_Stream& COUT, const mjz_class_operation_reporter_t& non_const_opr) {
+    mjz_class_operation_reporter_t& opr =
+        *(mjz_class_operation_reporter_t*)(&non_const_opr);  // i promise  that ther will be no changes in print functions but they are not const for being more usable
+    opr.print_c_str(" ostream operator<< (obj) c:\'");
+    opr.print_c_str_len_1(&opr.filler, 1);
+    opr.print_c_str("\' ID : ");
+    opr.print(opr.UUID());
+    opr.print_c_str("\n");
+    COUT << opr.filler;
+        return COUT;
+   }
+   template <class the_Stream>
+   friend the_Stream& operator>>(the_Stream& CIN,
+                                 mjz_class_operation_reporter_t& opr) {
+      
+        opr.print_c_str(" istream operator>> (obj) c:\'");
+        opr.print_c_str_len_1(&opr.filler, 1);
+        opr.print_c_str("\' to \'");
+        CIN >> opr.filler;
+        opr.print_c_str_len_1(&opr.filler, 1);
+        opr.print_c_str("\' ID : ");
+        opr.print(opr.UUID());
+        opr.print_c_str("\n");
+        return CIN;
+   }
 };
+
+
 template <class counter_class, class my_stream>
 counter_class mjz_class_operation_reporter_t<counter_class, my_stream>::index{};
 using operation_reporter = mjz_class_operation_reporter_t<size_t>;
