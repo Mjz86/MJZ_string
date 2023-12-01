@@ -112,8 +112,8 @@ void print_it(const T begin, T end) {
 
 
 template <class T, typename FNT>
-void for_each(T begin, T end, FNT function) {
-  auto& it = begin;
+T for_each(T begin, T end, FNT function) {
+  auto  it = begin;
   if (it == end) return;
   for (;;) {
     function(*it);
@@ -122,6 +122,7 @@ void for_each(T begin, T end, FNT function) {
     }
     break;
   }
+  return begin;
 }
 template <class T>
 void println_it_FE(T begin, T end) {
@@ -136,7 +137,7 @@ void println_it_FE(T begin, T end) {
   }
 }
 template <class T>
-void print_it(const T& obj) {
+const T& print_it(const T& obj) {
   auto it = obj.begin(), end = obj.end();
   if (it == end) return;
   std::cout << "{ ";
@@ -151,9 +152,9 @@ void print_it(const T& obj) {
   }
 }
 template <class T, typename FNT>
-void for_each(const T& obj, FNT function) {
+const T& for_each(const T& obj, FNT function) {
   auto it = obj.begin(), end = obj.end();
-  if (it == end) return;
+  if (it == end) return obj;
   for (;;) {
     function(*it);
     if (++it < end) {
@@ -161,11 +162,12 @@ void for_each(const T& obj, FNT function) {
     }
     break;
   }
+  return obj;
 }
 template <class T, typename FNT>
-void for_each(T& obj, FNT function) {
+T& for_each(T& obj, FNT function) {
   auto it = obj.begin(), end = obj.end();
-  if (it == end) return;
+  if (it == end) return obj;  
   for (;;) {
     function(*it);
     if (++it < end) {
@@ -173,6 +175,7 @@ void for_each(T& obj, FNT function) {
     }
     break;
   }
+  return obj;
 }
 template <class T>
 void println_it_FE(const T& obj) {

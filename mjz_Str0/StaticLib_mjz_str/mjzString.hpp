@@ -73,9 +73,14 @@ class __FlashStringHelper;
 namespace mjz_ard {
 extern uint32_t num_allocations;
 
+template <class Type>
+using mjz_get_value_Type = typename Type::value_type;
+
+template <class Type>
+using mjz_get_pointer_Type = typename Type::pointer;
 // iterator_template Class
 template <typename Type, bool error_check = 1>
-class iterator_template {
+class iterator_template_t {
  protected:
   Type *m_iterator;
   Type *m_iterator_begin_ptr;
@@ -92,24 +97,24 @@ class iterator_template {
   using size_type = size_t;
 
   // using iterator_concept = std::contiguous_iterator_tag;
-  inline constexpr iterator_template() noexcept
-      : iterator_template(nullptr, nullptr, (Type *)-1) {}
+  inline constexpr iterator_template_t() noexcept
+      : iterator_template_t(nullptr, nullptr, (Type *)-1) {}
   // iterator_template(Type *iter ) noexcept: m_iterator { iter }   {  }
 
-  inline constexpr iterator_template(Type *iter, Type *min_end,
+  inline constexpr iterator_template_t(Type *iter, Type *min_end,
                                      Type *max_end) noexcept
       : m_iterator{iter},
         m_iterator_begin_ptr{min_end},
         m_iterator_end_ptr{max_end} {}
 
-  inline constexpr iterator_template(Type *arr, size_t len) noexcept
+  inline constexpr iterator_template_t(Type *arr, size_t len) noexcept
       : m_iterator(arr),
         m_iterator_begin_ptr(arr),
         m_iterator_end_ptr(arr + len) {}
 
-  inline constexpr iterator_template(const Type *First_arg,
+  inline constexpr iterator_template_t(const Type *First_arg,
                                      const Type *Last_arg) noexcept
-      : iterator_template(First_arg, First_arg, Last_arg) {}
+      : iterator_template_t(First_arg, First_arg, Last_arg) {}
 
   // inline constexpr iterator_template(std::initializer_list<Type>list)
   // noexcept
@@ -133,37 +138,37 @@ class iterator_template {
   }
   constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
 
-  constexpr iterator_template(const iterator_template &p) noexcept
+  constexpr iterator_template_t(const iterator_template_t &p) noexcept
       : m_iterator(p.m_iterator),
         m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template(iterator_template &&p) noexcept
+  constexpr iterator_template_t(iterator_template_t &&p) noexcept
       : m_iterator(p.m_iterator),
         m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template &operator=(Type *iter) {
+  constexpr iterator_template_t &operator=(Type *iter) {
     m_iterator = iter;
     throw_if_bad();
     return *this;
   }
-  constexpr iterator_template &operator=(const iterator_template &p) {
+  constexpr iterator_template_t &operator=(const iterator_template_t &p) {
     m_iterator = (p.m_iterator);
     m_iterator_begin_ptr = p.m_iterator_begin_ptr;
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     throw_if_bad();
     return *this;
   }
-  constexpr iterator_template &operator=(iterator_template &&p) noexcept {
+  constexpr iterator_template_t &operator=(iterator_template_t &&p) noexcept {
     m_iterator = (p.m_iterator);
     m_iterator_begin_ptr = p.m_iterator_begin_ptr;
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     return *this;
   }
-  inline ~iterator_template() { m_iterator = 0; }
-  constexpr bool operator==(const iterator_template &other) const noexcept {
+  inline ~iterator_template_t() { m_iterator = 0; }
+  constexpr bool operator==(const iterator_template_t &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
-  constexpr bool operator!=(const iterator_template &other) const noexcept {
+  constexpr bool operator!=(const iterator_template_t &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
   constexpr reference operator*() const {
@@ -182,8 +187,8 @@ class iterator_template {
   inline constexpr const Type *end() const { return m_iterator_end_ptr; }
   inline constexpr Type *begin() { return m_iterator_begin_ptr; }
   inline constexpr Type *end() { return m_iterator_end_ptr; }
-  inline constexpr iterator_template base() {
-    return iterator_template(m_iterator_begin_ptr, m_iterator_begin_ptr,
+  inline constexpr iterator_template_t base() {
+    return iterator_template_t(m_iterator_begin_ptr, m_iterator_begin_ptr,
                              m_iterator_end_ptr);
   }
 
@@ -192,41 +197,41 @@ class iterator_template {
                                (const uint8_t *)m_iterator_begin_ptr) /
            sizeof(Type);
   }
-  constexpr iterator_template &operator++() noexcept {
+  constexpr iterator_template_t &operator++() noexcept {
     ++m_iterator;
     return *this;
   }
-  constexpr iterator_template operator++(int) noexcept {
-    iterator_template tmp(*this);
+  constexpr iterator_template_t operator++(int) noexcept {
+    iterator_template_t tmp(*this);
     ++(*this);
     return tmp;
   }
-  constexpr iterator_template &operator--() noexcept {
+  constexpr iterator_template_t &operator--() noexcept {
     --m_iterator;
     return *this;
   }
-  constexpr iterator_template operator--(int) noexcept {
-    iterator_template tmp(*this);
+  constexpr iterator_template_t operator--(int) noexcept {
+    iterator_template_t tmp(*this);
     --(*this);
     return tmp;
   }
-  constexpr iterator_template &operator+=(
+  constexpr iterator_template_t &operator+=(
       const difference_type other) noexcept {
     m_iterator += other;
     return *this;
   }
-  constexpr iterator_template &operator-=(
+  constexpr iterator_template_t &operator-=(
       const difference_type other) noexcept {
     m_iterator -= other;
     return *this;
   }
-  constexpr iterator_template &operator+=(
-      const iterator_template &other) noexcept {
+  constexpr iterator_template_t &operator+=(
+      const iterator_template_t &other) noexcept {
     m_iterator += other.m_iterator;
     return *this;
   }
-  constexpr iterator_template &operator-=(
-      const iterator_template &other) noexcept {
+  constexpr iterator_template_t &operator-=(
+      const iterator_template_t &other) noexcept {
     m_iterator -= other.m_iterator;
     return *this;
   }
@@ -234,16 +239,16 @@ class iterator_template {
     throw_if_bad(m_iterator + index);
     return m_iterator[index];
   }
-  constexpr bool operator<(const iterator_template &other) const noexcept {
+  constexpr bool operator<(const iterator_template_t &other) const noexcept {
     return m_iterator < other.m_iterator;
   }
-  constexpr bool operator>(const iterator_template &other) const noexcept {
+  constexpr bool operator>(const iterator_template_t &other) const noexcept {
     return m_iterator > other.m_iterator;
   }
-  constexpr bool operator<=(const iterator_template &other) const noexcept {
+  constexpr bool operator<=(const iterator_template_t &other) const noexcept {
     return m_iterator <= other.m_iterator;
   }
-  constexpr bool operator>=(const iterator_template &other) const noexcept {
+  constexpr bool operator>=(const iterator_template_t &other) const noexcept {
     return m_iterator >= other.m_iterator;
   }
   constexpr operator pointer() {
@@ -262,19 +267,19 @@ class iterator_template {
     throw_if_bad();
     return m_iterator;
   }
-  constexpr friend iterator_template operator+(
-      const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(me.m_iterator + other, me.m_iterator_begin_ptr,
+  constexpr friend iterator_template_t operator+(
+      const iterator_template_t &me, const difference_type other) noexcept {
+    return iterator_template_t(me.m_iterator + other, me.m_iterator_begin_ptr,
                              me.m_iterator_end_ptr);
   }
-  constexpr friend iterator_template operator-(
-      const iterator_template &me, const difference_type other) noexcept {
-    return iterator_template(me.m_iterator - other, me.m_iterator_begin_ptr,
+  constexpr friend iterator_template_t operator-(
+      const iterator_template_t &me, const difference_type other) noexcept {
+    return iterator_template_t(me.m_iterator - other, me.m_iterator_begin_ptr,
                              me.m_iterator_end_ptr);
   }
-  constexpr friend iterator_template operator+(
-      const difference_type other, const iterator_template &me) noexcept {
-    return iterator_template(
+  constexpr friend iterator_template_t operator+(
+      const difference_type other, const iterator_template_t &me) noexcept {
+    return iterator_template_t(
         other + me.m_iterator,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
@@ -283,20 +288,20 @@ class iterator_template {
   // iterator_template& me) noexcept  {  // bad function dont use
   // return iterator_template(me.m_iterator - (pointer)other);
   //  }
-  constexpr friend iterator_template operator+(
-      const iterator_template &other, const iterator_template &me) noexcept {
-    return iterator_template(
+  constexpr friend iterator_template_t operator+(
+      const iterator_template_t &other, const iterator_template_t &me) noexcept {
+    return iterator_template_t(
         other.m_iterator + me,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
   constexpr friend difference_type operator-(
-      const iterator_template &other, const iterator_template &me) noexcept {
+      const iterator_template_t &other, const iterator_template_t &me) noexcept {
     return std::distance(other.m_iterator, me.m_iterator);
   }
-  constexpr friend void swap(iterator_template &lhs,
-                             iterator_template &rhs) noexcept {
-    iterator_template lhsm_iterator = lhs;
+  constexpr friend void swap(iterator_template_t &lhs,
+                             iterator_template_t &rhs) noexcept {
+    iterator_template_t lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
   }
@@ -489,11 +494,15 @@ bool dummy_iterator_template_filter_warper_filter(const Type &) {
 }
 template <typename Type, typename iterator_t>
 class iterator_template_filter_warper {
+    public:
+    
+  using filter_type = std::function<bool(const Type &)>;
  protected:
   iterator_t m_iterator;
 
-  std::function<bool(const Type &)> m_filter =
-      dummy_iterator_template_filter_warper_filter<Type>;
+ 
+
+ filter_type m_filter = dummy_iterator_template_filter_warper_filter<Type>;
 
  public:
   using value_type = Type;
@@ -508,10 +517,10 @@ class iterator_template_filter_warper {
   inline constexpr iterator_template_filter_warper(iterator_t iter) noexcept
       : m_iterator(iter) {}
   inline constexpr iterator_template_filter_warper(
-      std::function<bool(const Type &)> filter) noexcept
+      filter_type filter) noexcept
       : m_iterator(), m_filter(filter) {}
   inline constexpr iterator_template_filter_warper(
-      iterator_t iter, std::function<bool(const Type &)> filter) noexcept
+      iterator_t iter, filter_type filter) noexcept
       : m_iterator(iter), m_filter(filter) {}
 
   constexpr iterator_template_filter_warper(
@@ -523,11 +532,11 @@ class iterator_template_filter_warper {
 
   constexpr iterator_template_filter_warper(
       const iterator_template_filter_warper &p,
-      std::function<bool(const Type &)> filter) noexcept
+      filter_type filter) noexcept
       : m_iterator(p.m_iterator), m_filter(filter) {}
   constexpr iterator_template_filter_warper(
       iterator_template_filter_warper &&p,
-      std::function<bool(const Type &)> filter) noexcept
+      filter_type filter) noexcept
       : m_iterator(p.m_iterator), m_filter(filter) {}
 
   constexpr iterator_template_filter_warper &operator=(Type *iter) {
@@ -549,16 +558,16 @@ class iterator_template_filter_warper {
 
   inline constexpr iterator_template_filter_warper(
       Type *iter, Type *min_end, Type *max_end,
-      std::function<bool(const Type &)> filter) noexcept
+      filter_type filter) noexcept
       : m_iterator(iter, min_end, max_end), m_filter(filter) {}
 
   inline constexpr iterator_template_filter_warper(
-      Type *arr, size_t len, std::function<bool(const Type &)> filter) noexcept
+      Type *arr, size_t len, filter_type filter) noexcept
       : m_iterator(arr, len), m_filter(filter) {}
 
   inline constexpr iterator_template_filter_warper(
       const Type *First_arg, const Type *Last_arg,
-      std::function<bool(const Type &)> filter) noexcept
+      filter_type filter) noexcept
       : iterator_template_filter_warper(First_arg, First_arg, Last_arg),
         m_filter(filter) {}
   constexpr iterator_template_filter_warper &operator=(iterator_t iter) {
@@ -689,7 +698,7 @@ class iterator_template_filter_warper {
     return *this;
   }
   constexpr reference operator[](std::size_t index) const {
-    return *m_iterator[index];
+    return  m_iterator[index];
   }
   constexpr bool operator<(
       const iterator_template_filter_warper &other) const noexcept {
@@ -748,6 +757,16 @@ class iterator_template_filter_warper {
     rhs = lhsm_iterator;
   }
 };
+template <class iterator_t>
+
+iterator_template_filter_warper<mjz_get_value_Type<iterator_t>, iterator_t>
+to_filter_it(
+    iterator_t it,
+    typename iterator_template_filter_warper<mjz_get_value_Type<iterator_t>,
+                                             iterator_t>::filter_type filter) {
+  return {it, filter};
+}
+
 template <class it_T>
 class iterator_warper_template_t {
  protected:
@@ -772,18 +791,18 @@ class iterator_warper_template_t {
 
   ~iterator_warper_template_t() {}
 
-  inline it_T &begin() { return m_begin; }
-  inline it_T &end() { return m_end; }
-  inline const it_T &begin() const { return m_begin; }
-  inline const it_T &end() const { return m_end; }
-  inline const it_T &cbegin() const { return m_begin; }
-  inline const it_T &cend() const { return m_end; }
-  inline r_it_T &rbegin() { return m_end; }
-  inline r_it_T &rend() { return m_begin; }
-  inline const r_it_T &rbegin() const { return m_end; }
-  inline const r_it_T &rend() const { return m_begin; }
-  inline const r_it_T &crbegin() const { return m_end; }
-  inline const r_it_T &crend() const { return m_begin; }
+  inline it_T  begin() { return m_begin; }
+  inline it_T  end() { return m_end; }
+  inline const it_T  begin() const { return m_begin; }
+  inline const it_T  end() const { return m_end; }
+  inline const it_T  cbegin() const { return m_begin; }
+  inline const it_T  cend() const { return m_end; }
+  inline r_it_T  rbegin() { return m_end; }
+  inline r_it_T  rend() { return m_begin; }
+  inline const r_it_T  rbegin() const { return m_end; }
+  inline const r_it_T  rend() const { return m_begin; }
+  inline const r_it_T  crbegin() const { return m_end; }
+  inline const r_it_T  crend() const { return m_begin; }
   
 
 };
@@ -836,7 +855,7 @@ class mjz_to_iterator_template_warper_t {
   iterator_t m_iterator;
 
  public:
-  using r_iterator_t = std::reverse_iterator<iterator_t>;
+  using r_iterator_t_wr_t = std::reverse_iterator<mjz_to_iterator_template_warper_t>;
   inline mjz_to_iterator_template_warper_t(
       mjz_to_iterator_template_warper_t &&obj)
       : m_begin(std::move(obj.m_begin)),
@@ -862,20 +881,70 @@ class mjz_to_iterator_template_warper_t {
         m_end(std::move(_end)),
         m_iterator(std::move(it)) {}
 
+   inline mjz_to_iterator_template_warper_t(
+                                           const iterator_t &_begin,
+                                           const iterator_t &_end)
+      : m_begin(_begin), m_end(_end), m_iterator(_begin) {}
+  inline mjz_to_iterator_template_warper_t( iterator_t &_begin,
+                                           iterator_t &_end)
+       : m_begin(_begin), m_end(_end), m_iterator(_begin) {}
+  inline mjz_to_iterator_template_warper_t( iterator_t &&_begin,
+                                           iterator_t &&_end)
+      : m_begin(_begin),
+        m_end(std::move(_end)),
+        m_iterator(std::move(_begin)) {}
+
   ~mjz_to_iterator_template_warper_t() {}
 
-  inline iterator_t &begin() { return m_begin; }
-  inline iterator_t &end() { return m_end; }
-  inline const iterator_t &begin() const { return m_begin; }
-  inline const iterator_t &end() const { return m_end; }
-  inline const iterator_t &cbegin() const { return m_begin; }
-  inline const iterator_t &cend() const { return m_end; }
-  inline r_iterator_t &rbegin() { return m_end; }
-  inline r_iterator_t &rend() { return m_begin; }
-  inline const r_iterator_t &rbegin() const { return m_end; }
-  inline const r_iterator_t &rend() const { return m_begin; }
-  inline const r_iterator_t &crbegin() const { return m_end; }
-  inline const r_iterator_t &crend() const { return m_begin; }
+
+
+
+  mjz_to_iterator_template_warper_t& operator=(const mjz_to_iterator_template_warper_t&obj) {
+    m_begin = obj. m_begin;
+    m_end = obj.m_end;
+    m_iterator = obj.m_iterator;
+    return *this;
+  }
+  mjz_to_iterator_template_warper_t &operator=(
+       mjz_to_iterator_template_warper_t &obj) {
+    m_begin = obj.m_begin;
+    m_end = obj.m_end;
+    m_iterator = obj.m_iterator;
+    return *this;
+  }
+  mjz_to_iterator_template_warper_t &operator=(
+       mjz_to_iterator_template_warper_t &&obj) {
+    m_begin = std::move(obj.m_begin);
+    m_end = std::move(obj.m_end);
+    m_iterator = std::move(obj.m_iterator);
+    return *this;
+  }
+
+
+
+  inline mjz_to_iterator_template_warper_t  begin() {
+    return {m_begin, m_begin, m_end};
+  }
+  inline mjz_to_iterator_template_warper_t  end() {
+    return {m_end, m_begin, m_end};
+   
+  }
+  inline const mjz_to_iterator_template_warper_t  begin() const {
+    return {m_begin, m_begin, m_end};
+  }
+  inline const mjz_to_iterator_template_warper_t end() const {
+    return   {m_end, m_begin, m_end};
+  }
+  inline const mjz_to_iterator_template_warper_t  cbegin() const {
+    return begin();
+  }
+  inline const mjz_to_iterator_template_warper_t cend() const { return end(); }
+  inline r_iterator_t_wr_t  rbegin() { return end(); }
+  inline r_iterator_t_wr_t  rend() { return begin(); }
+  inline const r_iterator_t_wr_t  rbegin() const { return end(); }
+  inline const r_iterator_t_wr_t  rend() const { return begin(); }
+  inline const r_iterator_t_wr_t  crbegin() const { return end(); }
+  inline const r_iterator_t_wr_t  crend() const { return begin(); }
 
  public:
   using value_type = Type;
@@ -894,8 +963,8 @@ class mjz_to_iterator_template_warper_t {
       const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
-  constexpr reference operator*() const { return m_iterator.operator*(); }
-  constexpr pointer operator->() const { return m_iterator.operator->(); }
+  constexpr reference operator*() const { return *m_iterator; }
+  constexpr pointer operator->() const { return &operator*(); }
   template <typename my_type, typename iterator_t = value_type>
   inline auto operator->*(my_type my_var) {
     return operator->()->*my_var;
@@ -943,7 +1012,7 @@ class mjz_to_iterator_template_warper_t {
     return *this;
   }
   constexpr reference operator[](std::size_t index) const {
-    return *m_iterator[index];
+    return  m_iterator[index];
   }
   constexpr bool operator<(
       const mjz_to_iterator_template_warper_t &other) const noexcept {
@@ -961,10 +1030,10 @@ class mjz_to_iterator_template_warper_t {
       const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator >= other.m_iterator;
   }
-  constexpr operator pointer() { return m_iterator; }
-  constexpr explicit operator pointer &() { return m_iterator; }
-  constexpr pointer get_pointer() const { return m_iterator; }
-  constexpr pointer &get_pointer() { return m_iterator; }
+  constexpr operator pointer() { return &operator*(); }
+  constexpr explicit operator pointer &() { return &operator*(); }
+  constexpr pointer get_pointer() const { return &operator*(); }
+  constexpr pointer &get_pointer() { return &operator*(); }
   constexpr friend mjz_to_iterator_template_warper_t operator+(
       const mjz_to_iterator_template_warper_t &me,
       const difference_type other) noexcept {
@@ -1006,44 +1075,35 @@ class mjz_to_iterator_template_warper_t {
     rhs = lhsm_iterator;
   }
 };
-
-template <typename Type, class iterator_t>
-mjz_to_iterator_template_warper_t< Type,std::reverse_iterator<iterator_t>>
-to_revurse_it(mjz_to_iterator_template_warper_t<Type,iterator_t> &it) {
-  return {it.rbegin(), it.rend()};
+template<class iterator_T>
+mjz_to_iterator_template_warper_t<mjz_get_value_Type<iterator_T>, iterator_T>
+to_mjz_it(iterator_T begin, iterator_T end) {
+  return {std::move(begin), std::move(end)};
+}
+template <class T>
+mjz_to_iterator_template_warper_t<T, T*>
+to_mjz_it(T* begin, T* end) {
+  return {std::move(begin), std::move(end)};
+}
+template <class T>
+auto to_mjz_it(T &obj) {
+  return mjz_to_iterator_template_warper_t<mjz_get_value_Type<T>,
+                                           decltype(obj.begin())>{
+      obj.begin(),
+                                                                  obj.end()};
+}
+template <class T>
+auto to_mjz_it(const T &obj) {
+  return mjz_to_iterator_template_warper_t<mjz_get_value_Type<const T>,
+                                           decltype(obj.begin())>{obj.begin(),
+                                                                  obj.end()};
 }
 
-template <typename Type, class iterator_t>
-const mjz_to_iterator_template_warper_t< Type,std::reverse_iterator<iterator_t>>
-to_revurse_it(const mjz_to_iterator_template_warper_t<Type,iterator_t> &it) {
-  return {it.rbegin(), it.rend()};
-}
 
-template <typename Type, class iterator_t>
-mjz_to_iterator_template_warper_t< Type,std::reverse_iterator<iterator_t>>
-to_revurse_it(iterator_t &it) {
-  return to_revurse_it(it.begin(), it.end());
-}
 
-template <typename Type, class iterator_t>
-const mjz_to_iterator_template_warper_t< Type,std::reverse_iterator<iterator_t>>
-to_revurse_it(const iterator_t &it) {
-  return to_revurse_it(it.begin(), it.end());
-}
 
-template <typename Type, class iterator_t>
-const mjz_to_iterator_template_warper_t< Type,std::reverse_iterator<iterator_t>>
-to_revurse_it(const iterator_t &_begin, const iterator_t &_end) {
-  return {std::reverse_iterator<iterator_t>(_end),
-          std::reverse_iterator<iterator_t>(_begin)};
-}
 
-template <typename Type, class iterator_t>
-mjz_to_iterator_template_warper_t< Type,std::reverse_iterator<iterator_t>>
-to_revurse_it(iterator_t &_begin, iterator_t &_end) {
-  return {std::reverse_iterator<iterator_t>(_end),
-          std::reverse_iterator<iterator_t>(_begin)};
-}
+
 
 
 
@@ -1214,8 +1274,6 @@ class mjz_arena_allocator_t {
 };
 
 struct arena_allocator : public mjz_arena_allocator_t<1024, 1024> {};
-template <class Type>
-using mjz_get_value_Type = typename Type::value_type;
 
 template <class std_allocator, typename Type,
           bool DO_std_reallocator_warper_LOG = log_all_allocations_globaly,
@@ -1945,8 +2003,8 @@ class mjz_Array {  // fixed size mjz_Array of values
   using const_reference = const Type &;
   using size_type = size_t;
 
-  using iterator = iterator_template<Type, error_check>;
-  using const_iterator = iterator_template<const Type, error_check>;
+  using iterator = iterator_template_t<Type, error_check>;
+  using const_iterator = iterator_template_t<const Type, error_check>;
 
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
@@ -2102,8 +2160,8 @@ class mjz_obj_Array {  // fixed size mjz_obj_Array of values
   using const_reference = const Type &;
   using size_type = size_t;
 
-  using iterator = iterator_template<Type, error_check>;
-  using const_iterator = iterator_template<const Type, error_check>;
+  using iterator = iterator_template_t<Type, error_check>;
+  using const_iterator = iterator_template_t<const Type, error_check>;
 
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
@@ -3828,12 +3886,12 @@ enum Dealocation_state : uint8_t {
 };
 
 template <class T>
-inline constexpr const T *begin(iterator_template<T> it) noexcept {
+inline constexpr const T *begin(iterator_template_t<T> it) noexcept {
   return it.begin();
 }
 
 template <class T>
-inline constexpr const T *end(iterator_template<T> it) noexcept {
+inline constexpr const T *end(iterator_template_t<T> it) noexcept {
   return it.end();
 }
 
@@ -3945,7 +4003,7 @@ struct mjz_stack_obj_warper {
     construct(list);
   }
   template <typename arg_T>
-  inline void init(iterator_template<arg_T> list) {
+  inline void init(iterator_template_t<arg_T> list) {
     construct(list);
   }
 
@@ -4123,9 +4181,9 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
   using my_stack_obj_buffer_t =
       mjz_stack_obj_warper<Type, construct_obj_on_constructor, my_obj_creator>;
 
-  using iterator_r = iterator_template<my_stack_obj_buffer_t, error_check>;
+  using iterator_r = iterator_template_t<my_stack_obj_buffer_t, error_check>;
   using const_iterator_r =
-      iterator_template<const my_stack_obj_buffer_t, error_check>;
+      iterator_template_t<const my_stack_obj_buffer_t, error_check>;
   using iterator = iterator_template_ptr_warper<iterator_r, Type>;
   using const_iterator = iterator_template_ptr_warper<const_iterator_r, Type>;
 
@@ -5859,7 +5917,7 @@ class mjz_Str : public basic_mjz_String,
   }
 
   mjz_str_t<T> &assign_range(std::initializer_list<const char> list);
-  mjz_str_t<T> &assign_range(iterator_template<const char> list);
+  mjz_str_t<T> &assign_range(iterator_template_t<const char> list);
 
 #ifdef Arduino
   mjz_Str<T>(String &x)
@@ -6174,8 +6232,8 @@ class mjz_Str : public basic_mjz_String,
   const char *end_c_str() const { return m_buffer + length(); }
 
   // Iterator Class
-  using const_iterator = iterator_template<const char>;
-  using iterator = iterator_template<char>;
+  using const_iterator = iterator_template_t<const char>;
+  using iterator = iterator_template_t<char>;
 
   const_iterator begin() const { return cbegin(); }
   inline const_iterator end() const { return cend(); }
@@ -6607,7 +6665,7 @@ class mjz_Str : public basic_mjz_String,
       *ptr_++ = cr;
     }
   }
-  mjz_str_t(mjz_ard::iterator_template<const char> list) {
+  mjz_str_t(mjz_ard::iterator_template_t<const char> list) {
     init();
     size_t newlen = list.size();
     addto_length(newlen);
@@ -6790,7 +6848,7 @@ class mjz_str_view : public basic_mjz_Str_view {
   constexpr mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
   constexpr mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
   inline ~mjz_str_view() = default;
-  using iterator_template_CC = iterator_template<const char>;
+  using iterator_template_CC = iterator_template_t<const char>;
   using const_iterator = iterator_template_CC;
 
   inline const_iterator begin() const {
@@ -7875,15 +7933,15 @@ template <typename T, size_t size>
 using array = mjz_Array<T, size>;
 
 template <typename T>
-using iterator = iterator_template<T>;
+using iterator = iterator_template_t<T>;
 template <typename T>
-using iterator_template = iterator_template<T>;
+using iterator_template  = iterator_template_t<T>;
 template <typename T>
 using filter_iterator =
-    iterator_template_filter_warper<T, iterator_template<T>>;
+    iterator_template_filter_warper<T, iterator_template_t<T>>;
 template <typename T>
 using filter_iterator_template =
-    iterator_template_filter_warper<T, iterator_template<T>>;
+    iterator_template_filter_warper<T, iterator_template_t<T>>;
 template <typename it_T>
 using iterator_warper = iterator_warper_template_t<it_T>;
 template <typename it_T>
@@ -8014,7 +8072,7 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
 
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
-    iterator_template<const char> list) {
+    iterator_template_t<const char> list) {
   (*this)();
   size_t newlen = list.size();
   addto_length(newlen);
@@ -8908,8 +8966,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::erase(size_t pos_, size_t len_) {
   return *this;
 }
 template <typename T>
-iterator_template<char> mjz_ard::mjz_str_t<T>::erase(
-    iterator_template<char> p) {
+iterator_template_t<char> mjz_ard::mjz_str_t<T>::erase(
+    iterator_template_t<char> p) {
   if (p < begin() || end() < p) {
     return begin();
   }
@@ -8919,8 +8977,8 @@ iterator_template<char> mjz_ard::mjz_str_t<T>::erase(
   return p;
 }
 template <typename T>
-iterator_template<char> mjz_ard::mjz_str_t<T>::erase(
-    iterator_template<char> first, iterator_template<char> last) {
+iterator_template_t<char> mjz_ard::mjz_str_t<T>::erase(
+    iterator_template_t<char> first, iterator_template_t<char> last) {
   if ((last <= first) || (end() < last) || (first < begin())) {
     return begin();
   }
