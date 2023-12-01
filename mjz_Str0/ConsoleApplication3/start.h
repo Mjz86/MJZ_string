@@ -2,8 +2,7 @@
 
 #include <fstream>
 #include <iostream>
-
-#include "compiher_wr.h"
+#include "mjzString.hpp"
 #include "fstream"
 class main_class {
   std::unique_ptr<main_class> run(int argc, const char* const* const argv);
@@ -22,6 +21,8 @@ class main_class {
       } catch (std::exception ex) {
         std::cout << "\n\n\n EXEPTION : " << ex.what();
       } catch (mjz_ard::StringSumHelper ex) {
+        std::cout << "\n\n\n EXEPTION : " << ex;
+      } catch (mjz_ard::mjz_Str ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
       } catch (mjz_ard::basic_mjz_Str_view ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
@@ -90,6 +91,47 @@ void print_arr(argT&&... args) {
       continue;
     }
     std::cout << " }";
+    break;
+  }
+}
+template <class T>
+void print_it(const T begin, T end) {
+  auto& it = begin;
+  if (it == end) return;
+  std::cout << "{ ";
+  for (;;) {
+    std::cout << (*it);
+    if (++it < end) {
+      std::cout << " , ";
+      continue;
+    }
+    std::cout << " }";
+    break;
+  }
+}
+
+
+template <class T, typename FNT>
+void for_each(T begin, T end, FNT function) {
+  auto& it = begin;
+  if (it == end) return;
+  for (;;) {
+    function(*it);
+    if (++it < end) {
+      continue;
+    }
+    break;
+  }
+}
+template <class T>
+void println_it_FE(T begin, T end) {
+  auto& it = begin;
+  if (it == end) return;
+  for (;;) {
+    std::cout << (*it) << '\n';
+    if (++it < end) {
+      continue;
+    }
     break;
   }
 }

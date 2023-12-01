@@ -473,8 +473,8 @@ bool Get_nth_bit_andret8(const void* data,
 /*********************************************/
 
 std::ostream& operator<<(std::ostream& CIN, const mjz_ard::SHA256_CTX& obj) {
-  char buffer[1024]{};
-  CIN << obj.copy_to_c_str(buffer, 1024);
+  char buffer[2*1025]{};
+  CIN << obj.copy_to_c_str(buffer, 2 * 1024);
   return CIN;
 }
 
@@ -514,7 +514,7 @@ char* itoa(int value, char* buffer, int radix) {
 }
 
 char* SHA256_CTX::copy_to_c_str(char* buf, size_t len) const {
-  if (len < 1024) {
+  if (len < 2*1024) {
     return 0;
   }
 
@@ -525,9 +525,9 @@ char* mjz_ard::SHA256_CTX::to_c_string(char* buf_) const {
   char* buf = buf_;
   auto paste_str = [&](mjz_ard::mjz_str_view str) {
     static_str_algo::memmove(buf, str.data(), str.length());
-    buf += str.length();
+    buf += str.length() - 1;
   };
-  auto str_left = [&]() { return 1024 - (size_t)buf_ + (size_t)buf; };
+  auto str_left = [&]() { return 1024 - (size_t)(buf-buf_); };
   paste_str("const char ");
   paste_str("hash");
   paste_str(" [] = { ");
