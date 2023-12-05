@@ -473,6 +473,10 @@ class mjz_class_operation_reporter_t {
       const mjz_class_operation_reporter_t& obj) {
     return println_obj(obj, "/");
   }
+  mjz_class_operation_reporter_t& operator%(
+      const mjz_class_operation_reporter_t& obj) {
+    return println_obj(obj, "%");
+  }
   mjz_class_operation_reporter_t& operator>>(
       const mjz_class_operation_reporter_t& obj) {
     return println_obj(obj, ">>");
@@ -510,6 +514,10 @@ class mjz_class_operation_reporter_t {
   mjz_class_operation_reporter_t& operator/=(
       const mjz_class_operation_reporter_t& obj) {
     return println_obj(obj, "/=");
+  }
+  mjz_class_operation_reporter_t& operator%=(
+      const mjz_class_operation_reporter_t& obj) {
+    return println_obj(obj, "%=");
   }
   mjz_class_operation_reporter_t& operator>>=(
       const mjz_class_operation_reporter_t& obj) {
