@@ -1286,7 +1286,7 @@ struct std_reallocator_warper {
     return reallocate((my_value_Type_t *)hint, n);
   }
 
-  void deallocate(my_value_Type_t *p, size_t n) noexcept { free(p); }
+  void deallocate(my_value_Type_t *p, size_t n) noexcept { free_calller(p); }
 
  protected:
   [[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
@@ -1295,7 +1295,7 @@ struct std_reallocator_warper {
   [[nodiscard]] void *allocate_raw(size_t n, const void *hint) {
     return reallocate_raw((void *)hint, n);
   }
-  void deallocate_raw(void *p, size_t number_of_bytes) noexcept { free(p); }
+  void deallocate_raw(void *p, size_t number_of_bytes) noexcept { free_calller(p); }
 
  private:
   [[nodiscard]] my_value_Type_t *reallocate(my_value_Type_t *ptr, size_t n) {
@@ -1303,7 +1303,7 @@ struct std_reallocator_warper {
     // sizeof(my_value_Type_t)) throw std::bad_array_new_length();
 
     if (auto p = static_cast<my_value_Type_t *>(
-            realloc(ptr, n * sizeof(my_value_Type_t)))) {
+            realloc_calller(ptr, n * sizeof(my_value_Type_t)))) {
       return p;
     }
     // throw std::bad_alloc();
@@ -1312,7 +1312,7 @@ struct std_reallocator_warper {
   [[nodiscard]] void *reallocate_raw(void *ptr, size_t number_of_bytes) {
     // if (n > std::numeric_limits<std::size_t>::max() /
     // sizeof(my_value_Type_t)) throw std::bad_array_new_length();
-    if (auto p = static_cast<void *>(realloc(ptr, number_of_bytes))) {
+    if (auto p = static_cast<void *>(realloc_calller(ptr, number_of_bytes))) {
       return p;
     }
     // throw std::bad_alloc();
@@ -1358,38 +1358,48 @@ struct std_reallocator_warper {
     return p;
   }
   static std_allocator my_std_allocator_;
-  void *realloc(void *ptr, size_t size) {
+  void *realloc_calller(void *ptr, size_t size) {
     if constexpr (DO_std_reallocator_warper_LOG)
       if (!get_size_of_mem(ptr)) num_allocations++;
     realloc_log(get_real_mem(ptr), get_size_of_mem(ptr));
     void *ptr2{};
     if constexpr (use_free_and_realloc) {
-      void *real_ptr = get_real_mem(ptr);
-      void *real_reallocated_ptr =
-          mjz_ard::realloc(real_ptr, get_needed_size_of_mem(size));
-      ptr2 = get_fake_mem(real_reallocated_ptr);
+      ptr2 = realloc_no_std(ptr, size);
     } else {
-      ptr2 = get_fake_mem(
-          my_std_allocator_.allocate(get_needed_size_of_mem(size)));
-      if (ptr2 && ptr) {
-        memmove(ptr2, ptr,
-                min(get_needed_size_of_mem(size), get_size_of_mem(ptr)));
-      }
-      this->free(ptr);
+      ptr2 = realloc_in_std(ptr, size);
     }
     get_size_of_mem(ptr2) = get_needed_size_of_mem(size);
     alloc_log(get_real_mem(ptr2), get_size_of_mem(ptr2));
     return ptr2;
   }
-  void free(void *ptr) {
+  void free_calller(void *ptr) {
     free_log(get_real_mem(ptr), get_size_of_mem(ptr));
     if constexpr (DO_std_reallocator_warper_LOG) num_allocations--;
     if constexpr (use_free_and_realloc) {
-      mjz_ard::free(get_real_mem(ptr));
+      free_no_std(ptr);
     } else {
-      my_std_allocator_.deallocate((uint8_t *)get_real_mem(ptr),
-                                   get_size_of_mem(ptr));
+      free_in_std(ptr);
     }
+  }
+  void free_in_std(void*ptr) {
+    my_std_allocator_.deallocate((uint8_t *)get_real_mem(ptr), get_size_of_mem(ptr));
+  }
+  void free_no_std(void*ptr) { mjz_ard::free(get_real_mem(ptr));
+  }
+  void* realloc_in_std(void *ptr, size_t len) {
+    size_t needed_len = get_needed_size_of_mem(len);
+   void* ptr2 = get_fake_mem(my_std_allocator_.allocate(needed_len));
+    if (ptr2 && ptr) {
+      memmove(ptr2, ptr,min(needed_len, get_size_of_mem(ptr)) - get_needed_size_of_mem(0));
+    }
+    this->free_in_std(ptr);
+    return ptr2;
+  }
+  void* realloc_no_std(void *ptr,size_t len) { 
+        void *real_ptr = get_real_mem(ptr);
+    void *real_reallocated_ptr =
+        mjz_ard::realloc(real_ptr, get_needed_size_of_mem(len));
+   return get_fake_mem(real_reallocated_ptr);
   }
 };
 template <class std_allocator, typename Type,
@@ -1464,6 +1474,8 @@ class mjz_obj_constructor {
   }
   friend constexpr Type *addressof(Type &obj) { return &obj; }
   friend constexpr const Type *addressof(const Type &obj) { return &obj; }
+  static constexpr Type *addressof(Type &obj) { return &obj; }
+  static constexpr const Type *addressof(const Type &obj) { return &obj; }
   friend constexpr Type *to_address(Type *p) noexcept { return p; }
   friend constexpr const Type *to_address(const Type &obj) noexcept {
     return &obj;
@@ -1495,18 +1507,17 @@ class mjz_obj_destructor {
   static inline void destroy(mjz_obj_destructor &a, Type *p) {
     a.destroy_at(p);
   }
-  inline void destroy(Type *p) { destroy_at(p); }
+  inline void destroy(Type *p) { this->destroy_at(p); }
   template <class ForwardIt, class Size>
   ForwardIt destroy_n(ForwardIt first, Size n) {
-    for (; n > 0; (void)++first, --n) destroy_at(addressof(*first));
+    for (; n > 0; (void)++first, --n) this->destroy_at(&(*first));
     return first;
   }
 
   template <class ForwardIt>
-  constexpr  // since C++20
       void
       destroy(ForwardIt first, ForwardIt last) {
-    for (; first != last; ++first) destroy_at(addressof(*first));
+    for (; first != last; ++first) this->destroy_at(&(*first));
   }
 };
 
@@ -1579,6 +1590,16 @@ template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
 struct mjz_temp_type_obj_algorithims_warpper_t
     : public mjz_temp_type_obj_creator_warpper_t<Type, my_destructor,
                                                  my_constructor> {
+  template <typename TTT>
+ static inline auto addressof(const TTT&obj) {
+    return &obj;
+  }
+  template <typename TTT>
+  static inline auto addressof(const TTT &&obj) = delete;
+  template <typename TTT>
+  static inline auto addressof( TTT &obj) {
+    return &obj;
+  }
   template <class InputIt, class Size, class NoThrowForwardIt>
   NoThrowForwardIt uninitialized_copy_n(InputIt first, Size count,
                                         NoThrowForwardIt d_first) {
@@ -1599,7 +1620,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     ForwardIt current = first;
     try {
       for (; current != last; ++current)
-        construct_at(addressof(*current), value);
+        this->construct_at(addressof(*current), value);
     } catch (...) {
       for (; first != current; ++first) first->~V();
       throw;
@@ -1607,10 +1628,11 @@ struct mjz_temp_type_obj_algorithims_warpper_t
   }
   template <class ForwardIt, class Size, class T>
   ForwardIt uninitialized_fill_n(ForwardIt first, Size count, const T &value) {
+    using V = typename std::iterator_traits<ForwardIt>::value_type;
     ForwardIt current = first;
     try {
       for (; count > 0; ++current, (void)--count)
-        construct_at(addressof(*current), value);
+        this->construct_at(addressof(*current), value);
       return current;
     } catch (...) {
       for (; first != current; ++first) first->~V();
@@ -1623,10 +1645,10 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     NoThrowForwardIt current = d_first;
     try {
       for (; first != last; ++first, (void)++current)
-        construct_at(addressof(*current), std::move(*first));
+        this->construct_at(addressof(*current), std::move(*first));
       return current;
     } catch (...) {
-      destroy(d_first, current);
+      this->destroy(d_first, current);
       throw;
     }
   }
@@ -1636,9 +1658,9 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     NoThrowForwardIt current = d_first;
     try {
       for (; count > 0; ++first, (void)++current, --count)
-        construct_at(addressof(*current), std::move(*first));
+        this->construct_at(addressof(*current), std::move(*first));
     } catch (...) {
-      destroy(d_first, current);
+      this->destroy(d_first, current);
       throw;
     }
     return {first, current};
@@ -2283,8 +2305,8 @@ class mjz_obj_Array {  // fixed size mjz_obj_Array of values
     return m_elements()[_Pos];
   }
 
-  [[nodiscard]] reference operator[](_In_range_(0, m_Size - 1)
-                                         size_type _Pos) noexcept
+  [[nodiscard]] reference operator[]( 
+                                         size_type _Pos)  
   /* strengthened */ {
     if constexpr (error_check) {
       if (_Pos >= m_Size) {
@@ -2295,8 +2317,7 @@ class mjz_obj_Array {  // fixed size mjz_obj_Array of values
     return m_elements()[_Pos];
   }
 
-  [[nodiscard]] constexpr const_reference operator[](
-      _In_range_(0, m_Size - 1) size_type _Pos) const noexcept
+  [[nodiscard]] constexpr const_reference operator[](  size_type _Pos) const  
   /* strengthened */ {
     if constexpr (error_check) {
       {
@@ -2618,7 +2639,70 @@ class mjz_Vector {
       m_allocator.destroy(m_data + m_size);
     }
   }
+  bool add_size(size_type n) {
+    if (n == m_size) return 1;
+    reserve(size() + n);
+    if ((size() + n) > m_capacity) return 0;
+    auto it = begin() + size();
+    auto it_e = it + n;
+    while (it < it_e) {
+      m_allocator.construct(it);
+      ++it;
+    }
+    m_size += n;
+    return 1;
 
+  }
+  bool add_size(size_type n, const value_type &value) {
+    if (n == m_size) return 1;
+    reserve(size() + n);
+    if ((size() + n) > m_capacity) return 0;
+    m_allocator.uninitialized_fill_n(begin() + size(), n, value);
+    m_size += n;
+    return 1;
+  }
+  bool add_size(size_type n, value_type &&value) {
+    if (n == m_size) return 1;
+    reserve(size() + n);
+    if ((size() + n) > m_capacity) return 0;
+    if ((n - 1)>0)
+      m_allocator.uninitialized_fill_n(begin() + size(), n - 1, value);
+    m_allocator.construct(m_allocator,begin() + size() + n - 1,
+                          std::move(value));
+    m_size += n;
+    return 1;
+  }
+  bool resize(size_type n) {
+    if (m_size < n)return add_size(n - m_size);
+    if(m_size > n) {
+      destroy(begin()+n,end( ));
+      m_size = n;
+      return 1;
+    }
+    return 1;
+    
+  }
+  bool resize(size_type n, const value_type &value) {
+    if (m_size < n) return add_size(n - m_size, std::move(value));
+    if (m_size > n) {
+      destroy(begin() + n, end());
+      m_size = n;
+      return 1;
+    }
+    return 1;
+  }
+  bool resize(size_type n, value_type &&value) {
+    if (m_size < n) return add_size(n - m_size, std::move(value));
+    if (m_size > n) {
+      destroy(begin() + n, end());
+      m_size = n;
+      return 1;
+    }
+    return 1;
+  }
+  
+  reference push_back(const T &value) { return emplace_back(value); }
+  reference push_back(T &&value) { return emplace_back(std::move(value)); }
  private:
   allocator_type m_allocator;
   size_type m_size;
@@ -2678,17 +2762,7 @@ class mjz_static_vector_template_t {
  protected:
   size_type m_length{};
   static my_obj_constructor my_obj_cntr;
-  inline bool init_data(size_type n) {
-    if (m_capacity < n) return 0;
-    if (m_length < n) {
-      my_obj_cntr.construct_arr_at(m_elements(), n);
-      m_length = n;
-    } else if (m_length > n) {
-      my_obj_cntr.obj_destructor_arr(m_elements() + n, m_length - n);
-      m_length = n;
-    } else {
-    }
-    return 1;
+   bool init_data(size_type n) {return resize(n);
   }
   inline void deinit_data() {
     my_obj_cntr.obj_destructor_arr(m_elements(), size());
@@ -3000,7 +3074,7 @@ class mjz_static_vector_template_t {
     return pos;
   }
   iterator insert(const_iterator pos, size_type count, const Type &val) {
-    if (error_check(count, pos)) return begin();
+    if (error_check(count, pos)) return {};
     auto offset = pos - cbegin();
     my_obj_cntr.move_backward(begin() + offset, end() - count, end());
     my_obj_cntr.uninitialized_fill_n(begin() + offset, count, val);
@@ -3009,9 +3083,9 @@ class mjz_static_vector_template_t {
   }
   template <typename InputIt>
   iterator insert(const_iterator pos, InputIt first, InputIt last) {
-    if (first >= last) return begin();
+    if (first >= last) return {};
     auto count = std::distance(first, last);
-    if (error_check(count)) return begin();
+    if (error_check(count)) return {};
     auto offset = pos - cbegin();
     my_obj_cntr.move_backward(begin() + offset, end() - count, end());
     my_obj_cntr.uninitialized_copy(first, last, begin() + offset);
@@ -3024,7 +3098,7 @@ class mjz_static_vector_template_t {
 
   template <typename... Args>
   iterator emplace(const_iterator pos, Args &&...args) {
-    if (error_check(pos)) return begin();
+    if (error_check(pos)) return {};
     auto offset = pos - cbegin();
     my_obj_cntr.move_backward(begin() + offset, end() - 1, end());
     my_obj_cntr.construct(my_obj_cntr,m_elements() + offset,
@@ -3034,7 +3108,7 @@ class mjz_static_vector_template_t {
   }
   iterator erase(const_iterator pos) { return erase(pos, pos + 1); }
   iterator erase(const_iterator first, const_iterator last) {
-    if (error_check(first, last, false)) return begin();
+    if (error_check(first, last, false)) return {};
     auto offset = first - cbegin();
     auto count = last - first;
     destroy(begin() + offset, end());
@@ -3044,12 +3118,55 @@ class mjz_static_vector_template_t {
   }
   template <typename... Args>
   reference emplace_back(Args &&...args) {
-    if (error_check()) return back();
+    if (error_check()) return *((pointer)nullptr);
+    
     my_obj_cntr.construct(my_obj_cntr,m_elements() + size(),
                                   std::forward<Args>(args)...);
     ++m_length;
     return back();
   }
+  bool resize(size_type n){
+    if (m_capacity < n) return 0;
+    if (m_length < n) {
+      my_obj_cntr.construct_arr_at(m_elements() + m_length, n - m_length);
+      m_length = n;
+    } else if (m_length > n) {
+      my_obj_cntr.obj_destructor_arr(m_elements() + n, m_length - n);
+      m_length = n;
+    } else {
+    }
+    return 1;
+  }
+  bool resize(size_type n, const value_type& value) {
+    if (m_capacity < n) return 0;
+    if (m_length < n) {
+      my_obj_cntr.construct_arr_at(m_elements() + m_length, n - m_length, 0,
+                                   value);
+      m_length = n;
+    } else if (m_length > n) {
+      my_obj_cntr.obj_destructor_arr(m_elements() + n, m_length - n);
+      m_length = n;
+    } else {
+    }
+    return 1;
+  }
+  bool resize(size_type n,  value_type&&value) {
+    if (m_capacity < n) return 0;
+    if (m_length < n) {
+      if ((n - 1) > 0)
+        my_obj_cntr.construct_arr_at(m_elements() + m_length, n - m_length - 1,
+                                     0, value);
+      my_obj_cntr.construct_at(m_elements() + n - 1, std::move(value));
+      m_length = n;
+    } else if (m_length > n) {
+      my_obj_cntr.obj_destructor_arr(m_elements() + n, m_length - n);
+      m_length = n;
+    } else {
+    }
+    return 1;
+  }
+  reference push_back(const Type &value) { return emplace_back(value);}
+  reference push_back(Type &&value) { return emplace_back(std::move(value));}
 
   void pop_back() {
     if (size() > 0) {
@@ -4448,7 +4565,7 @@ inline constexpr const T *end(iterator_template_t<T> it) noexcept {
 }
 
 template <typename Type, bool construct_obj_on_constructor = true,
-          class my_obj_creator_t = mjz_temp_type_obj_creator_warpper_t<Type>>
+          class my_obj_creator_t = mjz_temp_type_obj_creator_warpper_t<Type>,bool do_error_check=1>
 struct mjz_stack_obj_warper_template_t {
  public:
   static constexpr size_t size = sizeof(Type);
@@ -4622,19 +4739,23 @@ struct mjz_stack_obj_warper_template_t {
   }
 
  public:
-  constexpr inline const Type *pointer_to_data() const {
-    if (!m_Has_data)
-      throw std::exception(
-          "mjz_ard::mjz_stack_obj_warper_template_t::pointer_to_data bad "
-          "access");
+  constexpr inline const Type *throw_if_no_data_or_give_data() const {
+    if (!m_Has_data) {
+      if constexpr (do_error_check) {
+        throw std::exception(
+            "mjz_ard::mjz_stack_obj_warper_template_t::pointer_to_data bad "
+            "access");
+      } else {
+        return (const Type *)nullptr;  // :(
+      }
+    }
     return pointer_to_unsafe_data();
   }
+  constexpr inline const Type *pointer_to_data() const {
+    return throw_if_no_data_or_give_data();
+  }
   constexpr inline Type *pointer_to_data() {
-    if (!m_Has_data)
-      throw std::exception(
-          "mjz_ard::mjz_stack_obj_warper_template_t::pointer_to_data bad "
-          "access");
-    return pointer_to_unsafe_data();
+    return remove_const(throw_if_no_data_or_give_data());
   }
 
  public:
@@ -4732,9 +4853,10 @@ struct mjz_stack_obj_warper_template_t {
   }
 };
 template <typename Type, bool construct_obj_on_constructor,
-          class my_obj_creator>
+          class my_obj_creator, bool do_error_check>
 my_obj_creator mjz_stack_obj_warper_template_t<
-    Type, construct_obj_on_constructor, my_obj_creator>::m_obj_creator{};
+    Type, construct_obj_on_constructor, my_obj_creator,
+    do_error_check>::m_obj_creator{};
 
 template <class Type, const size_t m_Size, bool error_check = 1,
           bool construct_obj_on_constructor = 1,
