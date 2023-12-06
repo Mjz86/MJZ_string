@@ -139,7 +139,7 @@ void println_it_FE(T begin, T end) {
 template <class T>
 const T& print_it(const T& obj) {
   auto it = obj.begin(), end = obj.end();
-  if (it == end) return;
+  if (it == end) return obj;
   std::cout << "{ ";
   for (;;) {
     std::cout << (*it);
@@ -150,6 +150,7 @@ const T& print_it(const T& obj) {
     std::cout << " }";
     break;
   }
+  return obj;
 }
 template <class T, typename FNT>
 const T& for_each(const T& obj, FNT function) {

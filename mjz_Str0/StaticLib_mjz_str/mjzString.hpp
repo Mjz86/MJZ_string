@@ -50,7 +50,7 @@ unsigned long millis();
 #ifndef log_all_allocations_globaly
 // true
 // false
-#define log_all_allocations_globaly false
+#define log_all_allocations_globaly true
 #endif  // !log_all_allocations_globaly
 
 #ifndef global_mjz_areana_allocator_on
@@ -58,7 +58,7 @@ constexpr size_t number_of_global_mjz_areana_allocator_blocks = 1024 * 64;
 constexpr size_t size_of_global_mjz_areana_allocator_blocks = 1024;
 // true
 // false
-#define global_mjz_areana_allocator_on false
+#define global_mjz_areana_allocator_on true
 #endif  // !log_all_allocations_globaly
 
 namespace mjz_ard {
@@ -314,11 +314,6 @@ class iterator_template_t {
     iterator_template_t lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
-  }
-  constexpr friend void swap(reference lhs, reference rhs) noexcept {
-    value_type lhsm_ = lhs;
-    lhs = rhs;
-    rhs = lhsm_;
   }
 };
 // iterator_template_ptr_warper Class
@@ -1260,7 +1255,7 @@ struct arena_allocator : public mjz_arena_allocator_t<1024, 1024> {};
 
 template <class std_allocator, typename Type,
           bool DO_std_reallocator_warper_LOG = log_all_allocations_globaly,
-          bool use_free_and_realloc = true>
+          bool use_free_and_realloc = log_all_allocations_globaly>
 struct std_reallocator_warper {
   using my_value_Type_t = Type;
   using value_type = my_value_Type_t;
@@ -1912,7 +1907,7 @@ struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
   constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
 };
 
-#if log_all_allocations_globaly
+#if log_all_allocations_globaly 
 }
 inline mjz_ard::basic_mjz_allocator<uint8_t> &get_CPP_local_global_allocator() {
   static mjz_ard::basic_mjz_allocator<uint8_t> CPP_local_global_allocator_;
@@ -2769,6 +2764,7 @@ class mjz_static_vector_template_t {
     m_length = 0;
   }
   inline Type *m_elements() { return (Type *)m_elements_data; }
+  inline const Type *m_elements()const { return (Type *)m_elements_data; }
   uint8_t m_elements_data[my_obj_constructor::size_of_type() * m_capacity];
   inline bool is_full() { return size() >= max_size(); }
   inline bool is_full(size_type n) { return (size() + n) > max_size(); }
