@@ -78,7 +78,15 @@ using mjz_get_value_Type = typename Type::value_type;
 
 template <class Type>
 using mjz_get_pointer_Type = typename Type::pointer;
-// iterator_template Class
+template <class Type>
+Type *remove_const(const Type * o) {
+  return const_cast<Type *>(o);
+}
+template <class Type>
+Type& remove_const(const Type& o) {
+  return *remove_const(std::addressof(o));
+}
+    // iterator_template Class
 template <typename Type, bool error_check = 1>
 class iterator_template_t {
  protected:
@@ -2060,8 +2068,7 @@ class mjz_Array {  // fixed size mjz_Array of values
     return m_elements[_Pos];
   }
 
-  [[nodiscard]] reference operator[](_In_range_(0, m_Size - 1)
-                                         size_type _Pos) noexcept
+  [[nodiscard]] reference operator[](size_type _Pos) noexcept
   /* strengthened */ {
     if constexpr (error_check) {
       if (_Pos >= m_Size) {
@@ -2073,7 +2080,7 @@ class mjz_Array {  // fixed size mjz_Array of values
   }
 
   [[nodiscard]] constexpr const_reference operator[](
-      _In_range_(0, m_Size - 1) size_type _Pos) const noexcept
+      size_type _Pos) const noexcept
   /* strengthened */ {
     if constexpr (error_check) {
       {
@@ -2110,12 +2117,70 @@ class mjz_Array {  // fixed size mjz_Array of values
   [[noreturn]] void invld_throw() const {
     throw std::exception("invalid mjz_Array<T, N> subscript");
   }
+  static mjz_temp_type_obj_algorithims_warpper_t<Type> mjz_obj_algorithims;
+
+  template <size_t O_size, bool O_err>
+  inline mjz_Array (mjz_Array<Type, O_size, O_err> &&other) {
+    size_t len = min(other.size(), this->max_size());
+    mjz_obj_algorithims.uninitialized_move_n(other.begin(), len, this->begin());
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_Array (
+      const mjz_Array<Type, O_size, O_err> &other) {
+    size_t len = min(other.size(), this->max_size());
+    mjz_obj_algorithims.uninitialized_copy_n(other.begin(), len, this->begin());
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_Array<Type, m_Size, error_check> &operator=(
+      mjz_Array<Type, O_size, O_err> &&other) {
+    size_t len = min(other.size(), this->max_size());
+    mjz_obj_algorithims.move_backward(other.begin(), other.begin() + len,
+                                      this->begin());
+    return *this;
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_Array<Type, m_Size, error_check> &operator=(
+      const mjz_Array<Type, O_size, O_err> &other) {
+    size_t len = min(other.size(), this->max_size());
+    mjz_obj_algorithims.copy_backward(other.begin(), other.begin() + len,
+                                      this->begin());
+    return *this;
+  }
+  template <bool O_err>
+  inline mjz_Array(
+      mjz_Array<Type, m_Size, O_err> &&other) {
+    mjz_obj_algorithims.uninitialized_move_n(other.begin(), other.size(),
+                                             this->begin());
+  }
+  template <bool O_err>
+  inline mjz_Array (
+      const mjz_Array<Type, m_Size, O_err> &other) {
+    mjz_obj_algorithims.uninitialized_copy_n(other.begin(), other.size(),
+                                             this->begin());
+  }
+  template <bool O_err>
+  inline mjz_Array<Type, m_Size, error_check> &operator=(mjz_Array<Type, m_Size, O_err> &&other) {
+    mjz_obj_algorithims.move_backward(
+        other.begin(), other.begin() + this->size(), this->begin());
+    return *this;
+  }
+  template <bool O_err>
+  inline mjz_Array<Type, m_Size, error_check> &operator=(const mjz_Array<Type, m_Size, O_err> &other) {
+    mjz_obj_algorithims.copy_backward(
+        other.begin(), other.begin() + this->size(), this->begin());
+    return *this;
+  }
 
   Type m_elements[m_Size];
 };
 
+template <class Type, size_t m_Size, bool error_check>
+
+mjz_temp_type_obj_algorithims_warpper_t<Type>
+    mjz_Array<Type, m_Size, error_check>::mjz_obj_algorithims;
 template <class Type, size_t m_Size,
-          class my_obj_constructor = mjz_temp_type_obj_creator_warpper_t<Type>,
+          class my_obj_constructor =
+              mjz_temp_type_obj_algorithims_warpper_t<Type>,
           bool error_check = 1>
 class mjz_obj_Array {  // fixed size mjz_obj_Array of values
   static my_obj_constructor my_obj_cntr;
@@ -2269,10 +2334,61 @@ class mjz_obj_Array {  // fixed size mjz_obj_Array of values
     throw std::exception("invalid mjz_obj_Array<T, N> subscript");
   }
   inline mjz_obj_Array() { init_data(); }
-  inline mjz_obj_Array(mjz_obj_Array &&) = default;
-  inline mjz_obj_Array(const mjz_obj_Array &) = default;
-  inline mjz_obj_Array &operator=(mjz_obj_Array &&) = default;
-  inline mjz_obj_Array &operator=(const mjz_obj_Array &) = default;
+
+  template <size_t O_size, bool O_err>
+  inline mjz_obj_Array(
+      mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &&other) {
+    size_t len = min(other.size(), this->max_size());
+    my_obj_cntr.uninitialized_move_n(other.begin(), len, this->begin());
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_obj_Array(
+      const mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &other) {
+    size_t len = min(other.size(), this->max_size());
+    my_obj_cntr.uninitialized_copy_n(other.begin(), len, this->begin());
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_obj_Array &operator=(
+      mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &&other) {
+    size_t len = min(other.size(), this->max_size());
+    my_obj_cntr.move_backward(other.begin(), other.begin() + len,
+                                      this->begin());
+    return *this;
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_obj_Array &operator=(
+      const mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &other) {
+    size_t len = min(other.size(), this->max_size());
+    my_obj_cntr.copy_backward(other.begin(), other.begin() + len,
+                                      this->begin());
+    return *this;
+  }
+  template <bool O_err>
+  inline mjz_obj_Array(
+      mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &&other) {
+    my_obj_cntr.uninitialized_move_n(other.begin(), other.size(),
+                                             this->begin());
+  }
+  template <bool O_err>
+  inline mjz_obj_Array(
+      const mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &other) {
+    my_obj_cntr.uninitialized_copy_n(other.begin(), other.size(),
+                                             this->begin());
+  }
+  template <bool O_err>
+  inline mjz_obj_Array &operator= (
+      mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &&other) {
+    my_obj_cntr.move_backward(
+        other.begin(), other.begin() + this->size(), this->begin());
+    return *this;
+  }
+  template <bool O_err>
+  inline mjz_obj_Array &operator=(
+      const mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &other) {
+    my_obj_cntr.copy_backward(
+        other.begin(), other.begin() + this->size(), this->begin());
+    return *this;
+  }
   inline ~mjz_obj_Array() { deinit_data(); }
 
  protected:
@@ -2294,6 +2410,9 @@ T exchange(T &obj, U &&new_value) {
   obj = std::forward<U>(new_value);
   return old_value;
 }
+
+
+
 template <typename T, typename Allocator = mjz_allocator_warpper<T>>
 class mjz_Vector {
  public:
@@ -2535,6 +2654,419 @@ class mjz_Vector {
     if (m_size < size) throw std::exception(" bad accesses");
   }
 };
+
+
+template <class Type, size_t m_capacity,
+          class my_obj_constructor = mjz_temp_type_obj_creator_warpper_t<Type>,
+          bool do_error_check = 1>
+class mjz_static_vector_template_t {
+ public:
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using difference_type = std::ptrdiff_t;
+  using value_type = Type;
+  using const_reference = const Type &;
+  using size_type = size_t;
+
+  using iterator = iterator_template_t<Type, do_error_check>;
+  using const_iterator = iterator_template_t<const Type, do_error_check>;
+
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+ protected:
+  size_type m_length{};
+  static my_obj_constructor my_obj_cntr;
+  inline bool init_data(size_type n) {
+    if (m_capacity < n) return 0;
+    if (m_length < n) {
+      my_obj_cntr.construct_arr_at(m_elements(), n);
+      m_length = n;
+    } else if (m_length > n) {
+      my_obj_cntr.obj_destructor_arr(m_elements() + n, m_length - n);
+      m_length = n;
+    } else {
+    }
+    return 1;
+  }
+  inline void deinit_data() {
+    my_obj_cntr.obj_destructor_arr(m_elements(), size());
+    m_length = 0;
+  }
+  inline Type *m_elements() { return (Type *)m_elements_data; }
+  uint8_t m_elements_data[my_obj_constructor::size_of_type() * m_capacity];
+  inline bool is_full() { return size() >= max_size(); }
+  inline bool is_full(size_type n) { return (size() + n) > max_size(); }
+  inline bool valid_itrator(const_iterator first, const_iterator last) {
+    if (first >= last) return 1;
+    if (first < begin() || end() < last) return 1;
+    return 0;
+  }
+  inline bool error_check() {
+    if constexpr (do_error_check) return is_full();
+    return 0;
+  }
+  inline bool error_check(size_type n) {
+    if constexpr (do_error_check) return is_full(n);
+    return 0;
+  }
+
+  inline bool error_check(size_type n, const_iterator first,
+                          const_iterator last, bool do_n = true) {
+    if constexpr (do_error_check)
+      return (do_n && is_full(n)) || valid_itrator(first, last);
+    return 0;
+  }
+  inline bool error_check(size_type n, const_iterator first, bool do_n = true) {
+    if constexpr (do_error_check)
+      return (do_n && is_full(n)) || (first < begin() || end() < first);
+    return 0;
+  }
+  inline bool error_check(const_iterator first, const_iterator last,
+                          bool do_n = true) {
+    if constexpr (do_error_check)
+      return (do_n && is_full(std::distance(first, last))) ||
+             valid_itrator(first, last);
+    return 0;
+  }
+  inline bool error_check(const_iterator first, bool do_n = true) {
+    if constexpr (do_error_check)
+      return (do_n && is_full()) || (first < begin() || end() < first);
+    return 0;
+  }
+
+ public:
+  void assign(const Type &_Value) { fill(_Value); }
+  bool add_to_length(size_type n) {
+      return   init_data(m_length+n);
+  }
+  bool remove_from_length(size_type n) {
+    if (m_length < n)return 0;
+    if (m_length==n) {
+      deinit_data();
+      return 1;
+    }
+      return init_data(m_length - n); }
+  void fill(const Type &value) {
+    iterator fst = begin();
+    iterator lst = end();
+    while (fst < lst) *fst++ = value;
+  }
+  void swap(mjz_static_vector_template_t &other) {
+    iterator fst[2] = {begin(), other.begin()};
+    iterator lst[2] = {end(), other.end()};
+    while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
+      std::swap(*fst[0]++, *fst[1]++);
+  }
+
+  [[nodiscard]] iterator begin() noexcept {
+    return iterator(m_elements(), m_elements(), m_elements() + size());
+  }
+
+  [[nodiscard]] const_iterator begin() const noexcept {
+    return const_iterator(m_elements(), m_elements(), m_elements() + size());
+  }
+
+  [[nodiscard]] iterator end() noexcept {
+    return iterator(m_elements() + size(), m_elements(), m_elements() + size());
+  }
+
+  [[nodiscard]] const_iterator end() const noexcept {
+    return const_iterator(m_elements() + size(), m_elements(),
+                          m_elements() + size());
+  }
+
+  [[nodiscard]] reverse_iterator rbegin() noexcept {
+    return reverse_iterator(end());
+  }
+
+  [[nodiscard]] const_reverse_iterator rbegin() const noexcept {
+    return const_reverse_iterator(end());
+  }
+
+  [[nodiscard]] reverse_iterator rend() noexcept {
+    return reverse_iterator(begin());
+  }
+
+  [[nodiscard]] const_reverse_iterator rend() const noexcept {
+    return const_reverse_iterator(begin());
+  }
+
+  [[nodiscard]] const_iterator cbegin() const noexcept { return begin(); }
+
+  [[nodiscard]] const_iterator cend() const noexcept { return end(); }
+
+  [[nodiscard]] const_reverse_iterator crbegin() const noexcept {
+    return rbegin();
+  }
+
+  [[nodiscard]] const_reverse_iterator crend() const noexcept { return rend(); }
+
+  [[nodiscard]] constexpr size_type size() const noexcept { return m_length; }
+
+  [[nodiscard]] constexpr size_type max_size() const noexcept {
+    return capacity();
+  }
+
+  constexpr bool empty() const noexcept { return !!size(); }
+
+  [[nodiscard]] reference at(size_type _Pos) {
+    if constexpr (do_error_check) {
+      if (size() <= _Pos) {
+        invld_throw();
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] constexpr const_reference at(size_type _Pos) const {
+    if constexpr (do_error_check) {
+      if (size() <= _Pos) {
+        invld_throw();
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] reference operator[](size_type _Pos)
+  /* strengthened */ {
+    if constexpr (do_error_check) {
+      if (_Pos >= size()) {
+        throw std::exception{
+            "mjz_static_vector_template_t subscript out of range"};
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] constexpr const_reference operator[](size_type _Pos) const
+  /* strengthened */ {
+    if constexpr (do_error_check) {
+      {
+        if (_Pos >= size())
+          throw std::exception{
+              "mjz_static_vector_template_t subscript out of range"};
+      }
+    }
+
+    return m_elements()[_Pos];
+  }
+
+  [[nodiscard]] reference front() noexcept /* strengthened */ {
+    return m_elements()[0];
+  }
+
+  [[nodiscard]] constexpr const_reference front() const noexcept
+  /* strengthened */ {
+    return m_elements()[0];
+  }
+
+  [[nodiscard]] reference back() noexcept /* strengthened */ {
+    return m_elements()[size() - 1];
+  }
+
+  [[nodiscard]] constexpr const_reference back() const noexcept
+  /* strengthened */ {
+    return m_elements()[size() - 1];
+  }
+
+  [[nodiscard]] Type *data() noexcept { return m_elements(); }
+
+  [[nodiscard]] const Type *data() const noexcept { return m_elements(); }
+
+  [[noreturn]] void invld_throw() const {
+    throw std::exception(
+        "invalid mjz_static_vector_template_t<T, N> subscript");
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_static_vector_template_t(
+      mjz_static_vector_template_t<Type, O_size, my_obj_constructor, O_err>
+          &&other) {
+    size_t len = min(other.size(), this->max_size());
+    my_obj_cntr.uninitialized_move_n(other.begin(), len, this->begin());
+    m_length = len;
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_static_vector_template_t(
+      const mjz_static_vector_template_t<Type, O_size, my_obj_constructor,
+                                         O_err> &other) {
+    size_t len = min(other.size(), this->max_size());
+    my_obj_cntr.uninitialized_copy_n(other.begin(), len, this->begin());
+    m_length = len;
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_static_vector_template_t &operator=(
+      mjz_static_vector_template_t<Type, O_size, my_obj_constructor, O_err>
+          &&other) {
+    size_t fill_len = min(other.size(), this->max_size());
+    auto o_it_b = other.begin();
+    if (fill_len < this->size()) {
+      my_obj_cntr.move_backward(o_it_b, o_it_b + fill_len,
+                                        this->begin());
+      init_data(fill_len);
+      return *this;
+    }
+    size_t un_init_len = fill_len - this->size();
+    my_obj_cntr.move_backward(o_it_b, o_it_b + this->size(),
+                                      this->begin());
+    o_it_b += this->size();
+    if (0 < un_init_len) {
+      auto o_it_e = o_it_b + un_init_len;
+      my_obj_cntr.uninitialized_move_n(o_it_b, o_it_e,
+                                               this->begin() + this->size());
+    }
+    m_length = fill_len;
+    return *this;
+  }
+  template <size_t O_size, bool O_err>
+  inline mjz_static_vector_template_t &operator=(
+      const mjz_static_vector_template_t<Type, O_size, my_obj_constructor,
+                                         O_err> &other) {
+
+    size_t fill_len = min(other.size(), this->max_size());
+    auto o_it_b = other.begin();
+    if (fill_len < this->size()) {
+      my_obj_cntr.copy_backward(o_it_b, o_it_b + fill_len,
+                                        this->begin());
+      init_data(fill_len);
+      return *this;
+    }
+    size_t un_init_len = fill_len - this->size();
+    my_obj_cntr.copy_backward(o_it_b, o_it_b + this->size(),
+                                      this->begin());
+    o_it_b += this->size();
+    if (0 < un_init_len) {
+      auto o_it_e = o_it_b + un_init_len;
+      my_obj_cntr.uninitialized_copy_n(o_it_b, o_it_e,
+                                               this->begin() + this->size());
+    }
+    m_length = fill_len;
+    return *this;
+  }
+  mjz_static_vector_template_t &operator=(std::initializer_list<Type> li) {
+    size_t fill_len = min(li.size(), this->max_size());
+    auto o_it_b = li.begin();
+    if (fill_len < this->size()) {
+      my_obj_cntr.copy_backward(o_it_b, o_it_b + fill_len,
+                                        this->begin());
+      init_data(fill_len);
+      return *this;
+    }
+    size_t un_init_len = fill_len - this->size();
+    my_obj_cntr.copy_backward(o_it_b, o_it_b + this->size(),
+                                      this->begin());
+    o_it_b += this->size();
+    if (0 < un_init_len) {
+      auto o_it_e = o_it_b + un_init_len;
+      my_obj_cntr.uninitialized_copy_n(o_it_b, o_it_e,
+                                               this->begin() + this->size());
+    }
+    m_length = fill_len;
+    return *this;
+  }
+
+  // Constructors
+  mjz_static_vector_template_t() noexcept {}
+  explicit mjz_static_vector_template_t(size_type count) { init_data(count);
+  }
+  explicit mjz_static_vector_template_t(size_type count,
+                                        const Type &value ) {
+    my_obj_cntr.uninitialized_fill_n(m_elements(), count, value);
+    m_length = count;
+  }
+
+  template <typename InputIt>
+  mjz_static_vector_template_t(InputIt first, InputIt last) {
+    if (init_data(std::distance(first, last)))
+      my_obj_cntr.copy(first, last, begin());
+  }
+  mjz_static_vector_template_t(std::initializer_list<Type> il)
+      : mjz_static_vector_template_t(il.begin(), il.end()) {}
+  ~mjz_static_vector_template_t() { deinit_data(); }
+
+  void reserve(size_type) {}
+ constexpr size_type capacity() const noexcept { return m_capacity; }
+  void shrink_to_fit() {}
+  void clear() noexcept { deinit_data(); }
+  iterator insert(const_iterator pos, const Type &val) {
+    return insert(pos, 1, val);
+  }
+  iterator insert(const_iterator pos, Type &&val) {
+    emplace(pos, std::move(val));
+    return pos;
+  }
+  iterator insert(const_iterator pos, size_type count, const Type &val) {
+    if (error_check(count, pos)) return begin();
+    auto offset = pos - cbegin();
+    my_obj_cntr.move_backward(begin() + offset, end() - count, end());
+    my_obj_cntr.uninitialized_fill_n(begin() + offset, count, val);
+    m_length += count;
+    return begin() + offset;
+  }
+  template <typename InputIt>
+  iterator insert(const_iterator pos, InputIt first, InputIt last) {
+    if (first >= last) return begin();
+    auto count = std::distance(first, last);
+    if (error_check(count)) return begin();
+    auto offset = pos - cbegin();
+    my_obj_cntr.move_backward(begin() + offset, end() - count, end());
+    my_obj_cntr.uninitialized_copy(first, last, begin() + offset);
+    m_length += count;
+    return begin() + offset;
+  }
+  iterator insert(const_iterator pos, std::initializer_list<Type> ilist) {
+    return insert(pos, ilist.begin(), ilist.end());
+  }
+
+  template <typename... Args>
+  iterator emplace(const_iterator pos, Args &&...args) {
+    if (error_check(pos)) return begin();
+    auto offset = pos - cbegin();
+    my_obj_cntr.move_backward(begin() + offset, end() - 1, end());
+    my_obj_cntr.construct(my_obj_cntr,m_elements() + offset,
+                                  std::forward<Args>(args)...);
+    ++m_length;
+    return begin() + offset;
+  }
+  iterator erase(const_iterator pos) { return erase(pos, pos + 1); }
+  iterator erase(const_iterator first, const_iterator last) {
+    if (error_check(first, last, false)) return begin();
+    auto offset = first - cbegin();
+    auto count = last - first;
+    destroy(begin() + offset, end());
+    std::move(begin() + offset + count, end(), begin() + offset);
+    m_length -= count;
+    return begin() + offset;
+  }
+  template <typename... Args>
+  reference emplace_back(Args &&...args) {
+    if (error_check()) return back();
+    my_obj_cntr.construct(my_obj_cntr,m_elements() + size(),
+                                  std::forward<Args>(args)...);
+    ++m_length;
+    return back();
+  }
+
+  void pop_back() {
+    if (size() > 0) {
+      --m_length;
+      my_obj_cntr.destroy(m_elements() + size());
+    }
+  }
+
+  void destroy(iterator first, iterator last) {
+    my_obj_cntr.destroy(first, last);
+  }
+};
+
+template <class Type, size_t m_capacity, class my_obj_constructor,
+          bool do_error_check>
+my_obj_constructor mjz_static_vector_template_t<
+    Type, m_capacity, my_obj_constructor, do_error_check>::my_obj_cntr;
 
 struct UINT64_X2_32_t {
   union {
@@ -4305,8 +4837,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     return *m_elements[_Pos];
   }
 
-  [[nodiscard]] reference operator[](_In_range_(0, m_Size - 1)
-                                         size_type _Pos) noexcept
+  [[nodiscard]] reference operator[](size_type  _Pos) 
   /* strengthened */ {
     if constexpr (error_check) {
       if (_Pos >= m_Size) {
@@ -4318,7 +4849,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
   }
 
   [[nodiscard]] constexpr const_reference operator[](
-      _In_range_(0, m_Size - 1) size_type _Pos) const noexcept
+      size_type _Pos) const noexcept
   /* strengthened */ {
     if constexpr (error_check) {
       {
@@ -8070,6 +8601,8 @@ template <typename T, size_t size>
 using exarr = extended_mjz_Array<T, size>;
 template <typename T, size_t size>
 using arr = mjz_Array<T, size>;
+template <typename T, size_t max_size>
+using s_vect = mjz_static_vector_template_t<T, max_size>;
 template <typename T>
 using vect = mjz_Vector<T>;
 template <typename T>
@@ -8109,6 +8642,9 @@ template <typename T>
 using Vector = mjz_Vector<T>;
 template <typename T, size_t size>
 using array = mjz_Array<T, size>;
+
+template <typename T, size_t max_size>
+using static_vector = mjz_static_vector_template_t<T, max_size>;
 
 template <typename T>
 using iterator = iterator_template_t<T>;
@@ -9098,12 +9634,12 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
   }
   if (str.length() > len) {
     size_t new_cap = m_length + str.length() - len;
-      if (!reserve(new_cap+1)) {
-        return *this;
-      }
+    if (!reserve(new_cap + 1)) {
+      return *this;
+    }
     size_t length_left = str.length();
     const char *data_left = str.c_str();
-      char *m_buf_ptr = m_buffer + pos;
+    char *m_buf_ptr = m_buffer + pos;
     memmove(m_buf_ptr, data_left, len);
     length_left -= len;
     data_left += len;

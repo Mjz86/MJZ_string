@@ -259,7 +259,7 @@ class mjz_class_operation_reporter_t {
     return *this;
   }
   template <typename... argT>
-  mjz_class_operation_reporter_t& println_wf(
+  mjz_class_operation_reporter_t& println_wf(const 
       mjz_class_operation_reporter_t& obj, argT&&... args) {
     print(std::forward<argT>(args)...);
     print_c_str(" with ID: ");
@@ -581,7 +581,8 @@ class mjz_class_operation_reporter_t {
                // senario
       const mjz_class_operation_reporter_t& obj) {
      println_obj(obj, "&&");
-    return operator char() && obj.operator char();
+    return operator char() &&
+          ((mjz_class_operation_reporter_t*)(&obj))->operator char();
   }
   bool
   operator||(  // really bad practic to overload these  dont do in any other
