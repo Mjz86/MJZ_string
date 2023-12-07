@@ -1654,6 +1654,40 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       throw;
     }
   }
+  template <class ForwardIt, class T>
+  void uninitialized_fill(ForwardIt first, ForwardIt last, T &&value) {
+    using V = typename std::iterator_traits<ForwardIt>::value_type;
+    ForwardIt current = first;
+    try {
+      if (current != last) {
+        construct_at(addressof(*first), value);
+        ++current;
+        for (; current != last; ++current)
+          construct_at(addressof(*current), *first);
+      }
+    } catch (...) {
+      for (; first != current; ++first) first->~V();
+      throw;
+    }
+  }
+  template <class ForwardIt, class Size, class T>
+  ForwardIt uninitialized_fill_n(ForwardIt first, Size count, T &&value) {      
+    using V = typename std::iterator_traits<ForwardIt>::value_type;
+    ForwardIt current = first;
+    try {
+      if (count > 0) {
+        construct_at(addressof(*first), std::move(value));
+        ++current;
+        (void)--count;
+        for (; count > 0; ++current, (void)--count)
+          construct_at(addressof(*current), *first);
+      }
+      return current;
+    } catch (...) {
+      for (; first != current; ++first) first->~V();
+      throw;
+    }
+  }
   template <class InputIt, class NoThrowForwardIt>
   NoThrowForwardIt uninitialized_move(InputIt first, InputIt last,
                                       NoThrowForwardIt d_first) {
