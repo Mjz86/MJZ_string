@@ -50,15 +50,15 @@ unsigned long millis();
 #ifndef log_all_allocations_globaly
 // true
 // false
-#define log_all_allocations_globaly true
+#define log_all_allocations_globaly false
 #endif  // !log_all_allocations_globaly
 
 #ifndef global_mjz_areana_allocator_on
-constexpr size_t number_of_global_mjz_areana_allocator_blocks = 1024 * 64;
-constexpr size_t size_of_global_mjz_areana_allocator_blocks = 1024;
+constexpr size_t number_of_global_mjz_areana_allocator_blocks = 1024 * 1024;
+constexpr size_t size_of_global_mjz_areana_allocator_blocks = 128;
 // true
 // false
-#define global_mjz_areana_allocator_on true
+#define global_mjz_areana_allocator_on false
 #endif  // !log_all_allocations_globaly
 
 namespace mjz_ard {
@@ -1086,7 +1086,9 @@ auto to_mjz_it(const T &obj) {
                                                                   obj.end()};
 }
 
-template <size_t number_of_blocks = 1024, size_t block_length = 1024>
+template <size_t number_of_blocks =
+              number_of_global_mjz_areana_allocator_blocks,
+          size_t block_length=size_of_global_mjz_areana_allocator_blocks,bool KEEP_the_heap_clean=false>
 class mjz_arena_allocator_t {
   template <typename T, size_t m_size>
   struct data_buffer {
@@ -1101,6 +1103,7 @@ class mjz_arena_allocator_t {
 
  public:
   constexpr static size_t not_valid = (((size_t)-1 >> 1) - 1);
+  constexpr static char EMPTY_char = 'A';
   struct block_data {
     size_t index_of_begin = not_valid;
     size_t index_of_end = not_valid;
@@ -1109,7 +1112,11 @@ class mjz_arena_allocator_t {
  protected:
   data_buffer<data_buffer<uint8_t, block_length>, number_of_blocks> m_blocks;
   data_buffer<block_data, number_of_blocks> m_block_data;
-
+  inline void clean_all_data() {
+    if constexpr (KEEP_the_heap_clean)
+      memset((char *)m_blocks.begin(), EMPTY_char,
+             ((char *)m_blocks.end()) - ((char *)m_blocks.begin()));
+  }
   size_t get_index_of_pointer(void *ptr) {
     if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return not_valid;
     size_t ptr_diff = (size_t)((size_t)ptr - (size_t)m_blocks.begin());
@@ -1176,7 +1183,17 @@ class mjz_arena_allocator_t {
   void deallocate_block(size_t index) {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return;
-    deallocate_rage(index, m_block_data[index].index_of_end);
+    if constexpr (KEEP_the_heap_clean) {
+      size_t end_i = m_block_data[index].index_of_end;
+   size_t beg_i = index;
+   deallocate_rage(beg_i, end_i);
+   char *beg_p = (char *)(m_blocks[beg_i]).data();
+   char *end_p = (char *)(m_blocks[end_i]).data();
+   memset(beg_p, EMPTY_char, end_p - beg_p);
+
+    } else {
+      deallocate_rage(index, m_block_data[index].index_of_end);
+    }
   }
 
   void *get_ptr(size_t index) {
@@ -1242,8 +1259,11 @@ class mjz_arena_allocator_t {
     if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return 0;
     return !(((size_t)((size_t)ptr - (size_t)m_blocks.begin())) % block_length);
   }
-  mjz_arena_allocator_t() {}
-  ~mjz_arena_allocator_t() {}
+ 
+  mjz_arena_allocator_t() { clean_all_data(); 
+  }
+  ~mjz_arena_allocator_t() { clean_all_data(); 
+  }
 
   mjz_arena_allocator_t(mjz_arena_allocator_t &&) = delete;
   mjz_arena_allocator_t(const mjz_arena_allocator_t &) = delete;
@@ -1909,8 +1929,12 @@ struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
 
 #if log_all_allocations_globaly 
 }
-inline mjz_ard::basic_mjz_allocator<uint8_t> &get_CPP_local_global_allocator() {
-  static mjz_ard::basic_mjz_allocator<uint8_t> CPP_local_global_allocator_;
+inline mjz_ard::std_reallocator_warper<std::allocator<uint8_t>, uint8_t, true,
+                                       true>
+    &get_CPP_local_global_allocator() {
+  static mjz_ard::std_reallocator_warper<std::allocator<uint8_t>, uint8_t, true,
+                                         true>
+      CPP_local_global_allocator_;
   return CPP_local_global_allocator_;
 }
 
@@ -1946,30 +1970,29 @@ inline void operator delete[](void *p, size_t) {
 }
 namespace mjz_ard {
 #endif  //  log_all_allocations_globaly
-inline mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
-                             number_of_global_mjz_areana_allocator_blocks>
-    &my_global_allocator(bool delete_it = 0) {
-  static mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
-                               number_of_global_mjz_areana_allocator_blocks>
-      *my_ptr{};
-  if (delete_it) {
-    if (!my_ptr) throw std::exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-    my_ptr->~mjz_arena_allocator_t();
-    free(my_ptr);
-    throw std::exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-  }
-  if (!my_ptr) {
-    my_ptr =
-        (mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
-                               number_of_global_mjz_areana_allocator_blocks>
-             *)::
-            malloc(sizeof(mjz_arena_allocator_t<
+using mjz_global_arena_allocator_type =
+    mjz_arena_allocator_t<number_of_global_mjz_areana_allocator_blocks,
                           size_of_global_mjz_areana_allocator_blocks,
-                          number_of_global_mjz_areana_allocator_blocks>));
-    if (!my_ptr) throw std::exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
-    new (my_ptr)
-        mjz_arena_allocator_t<size_of_global_mjz_areana_allocator_blocks,
-                              number_of_global_mjz_areana_allocator_blocks>();
+                          log_all_allocations_globaly>;
+inline mjz_global_arena_allocator_type
+    &my_global_allocator(bool delete_it = 0) {
+    using Alctr_T=mjz_global_arena_allocator_type;
+  auto throw_ex = [](){
+    throw std::exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+  };
+  static Alctr_T
+      *my_ptr{};
+  if (!my_ptr) {
+  if (delete_it) {
+      my_ptr->~mjz_arena_allocator_t();
+      ::free(my_ptr);
+    throw_ex();
+  }
+    my_ptr = (Alctr_T *)::malloc(sizeof(Alctr_T));
+  if (!my_ptr) {
+     throw_ex();
+  }
+    new (my_ptr) Alctr_T();
   }
   return *my_ptr;
 }
