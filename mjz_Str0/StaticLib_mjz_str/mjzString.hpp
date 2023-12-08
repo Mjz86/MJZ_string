@@ -1470,6 +1470,7 @@ inline constexpr bool operator!=(const basic_mjz_allocator<Type> &,
 template <typename Type>
 class mjz_obj_constructor {
  public:
+  
   template <typename... args_t>
   inline Type *construct_at(Type *dest, args_t &&...args) noexcept {
     Type *ptr{};
@@ -1487,6 +1488,38 @@ class mjz_obj_constructor {
   static inline void construct(mjz_obj_constructor &a, T *p, Args &&...args) {
     a.construct_at(p, std::forward<Args>(args)...);
   }
+  static inline Type &obj_move_to_obj(Type &dest, Type &&src) {
+    return dest=(std::move(src));
+  }
+  static inline Type &obj_copy_to_obj(Type &dest, Type &src) {
+    return dest=(src);
+  }
+  static inline Type &obj_copy_to_obj(Type &dest,const Type &src) {
+    return dest=(src);
+  }
+  static inline Type &obj_move_to_obj(Type *dest, Type *src) {//src is &&
+    return obj_move_to_obj(*dest, std::move(*src));
+  }
+  static inline Type &obj_copy_to_obj(Type*dest, Type *src) {
+    return obj_copy_to_obj(*dest, *src);
+  }
+  static inline Type &obj_copy_to_obj(Type *dest, const Type *src) {
+    return obj_copy_to_obj(*dest, *src);
+  }
+  static inline Type &obj_go_to_obj(Type &dest, const Type &src) {
+    return obj_copy_to_obj( dest,  src);
+  }
+  static inline Type &obj_go_to_obj(Type &dest,  Type &src) {
+    return obj_copy_to_obj( dest,  src);
+  }
+  static inline Type &obj_go_to_obj(Type &dest,  Type &&src) {
+    return obj_move_to_obj(dest, std::move(src));
+  }
+  template <typename... Args>
+  static inline Type &obj_equals(Type &dest, Args &&...args) {
+    return dest.operator = (std::forward<Args>(args)...);
+  }
+
   friend constexpr Type *addressof(Type &obj) { return &obj; }
   friend constexpr const Type *addressof(const Type &obj) { return &obj; }
   static constexpr Type *addressof(Type &obj) { return &obj; }
@@ -1542,6 +1575,16 @@ template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
 struct mjz_temp_type_obj_creator_warpper_t : public my_destructor,
                                              public my_constructor {
   constexpr static inline size_t size_of_type() { return sizeof(Type); }
+
+
+  void swap(Type& a, Type& b) { uint8_t buf[size_of_type()];
+    Type *temp_p = (Type *)buf;
+    this->construct_at(temp_p, std::move(a));
+    this->obj_move_to_obj(a, std::move(b));
+    this->obj_move_to_obj(b, std::move(*temp_p));
+    this->destroy_at(temp_p);
+  }
+
 
   inline bool obj_destructor_arr(Type *arr, size_t n, bool in_reveres = 1) {
     bool was_successful{1};
@@ -1774,19 +1817,21 @@ struct mjz_temp_type_obj_algorithims_warpper_t
   }
   template <class BidirIt1, class BidirIt2>
   BidirIt2 move_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last) {
-    while (first != last) *(--d_last) = std::move(*(--last));
+    while (first != last) obj_move_to_obj(*(--d_last) , std::move(*(--last)));
 
     return d_last;
   }
   template <class BidirIt1, class BidirIt2>
   BidirIt2 copy_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last) {
-    while (first != last) *(--d_last) = std::forward(*(--last));
+    while (first != last)
+      obj_copy_to_obj (* (--d_last) , std::forward(*(--last)));
 
     return d_last;
   }
   template <class InputIt, class OutputIt>
   OutputIt copy(InputIt first, InputIt last, OutputIt d_first) {
-    for (; first != last; (void)++first, (void)++d_first) *d_first = *first;
+    for (; first != last; (void)++first, (void)++d_first)
+      obj_copy_to_obj (*d_first , *first);
 
     return d_first;
   }
@@ -1795,7 +1840,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
                    UnaryPredicate pred) {
     for (; first != last; ++first)
       if (pred(*first)) {
-        *d_first = *first;
+        obj_copy_to_obj( *d_first , *first);
         ++d_first;
       }
 
@@ -2279,13 +2324,13 @@ class mjz_obj_Array {  // fixed size mjz_obj_Array of values
   void fill(const Type &value) {
     iterator fst = begin();
     iterator lst = end();
-    while (fst < lst) *fst++ = value;
+    while (fst < lst) my_obj_cntr.obj_copy_to_obj(*fst++ , value);
   }
   void swap(mjz_obj_Array &other) {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
     while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
-      std::swap(*fst[0]++, *fst[1]++);
+      my_obj_cntr.swap(*fst[0]++, *fst[1]++);
   }
 
   [[nodiscard]] iterator begin() noexcept {
@@ -2680,7 +2725,7 @@ class mjz_Vector {
     if (m_size == m_capacity) {
       reserve(m_capacity == 0 ? 1 : m_capacity * 2);
     }
-    m_allocator.construct(m_data + m_size, std::forward<Args>(args)...);
+    m_allocator.construct_at(m_data + m_size, std::forward<Args>(args)...);
     ++m_size;
     return back();
   }
@@ -2698,7 +2743,7 @@ class mjz_Vector {
     auto it = begin() + size();
     auto it_e = it + n;
     while (it < it_e) {
-      m_allocator.construct(it);
+      m_allocator.construct_at(it);
       ++it;
     }
     m_size += n;
@@ -2862,7 +2907,10 @@ class mjz_static_vector_template_t {
       return (do_n && is_full()) || (first < begin() || end() < first);
     return 0;
   }
-
+  
+  void swap_elms(Type &a, Type &b) {  my_obj_cntr.swap(a, b);
+  
+  }
  public:
   void assign(const Type &_Value) { fill(_Value); }
   bool add_to_length(size_type n) {
@@ -2878,14 +2926,14 @@ class mjz_static_vector_template_t {
   void fill(const Type &value) {
     iterator fst = begin();
     iterator lst = end();
-    while (fst < lst) *fst++ = value;
+    while (fst < lst) my_obj_cntr.obj_copy_to_obj(*fst++, value);
   }
   void swap(mjz_static_vector_template_t &other) {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
-    while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
-      std::swap(*fst[0]++, *fst[1]++);
+    while ((fst[0] < lst[0]) && (fst[1] < lst[1]))swap_elms(*fst[0]++, *fst[1]++);
   }
+
 
   [[nodiscard]] iterator begin() noexcept {
     return iterator(m_elements(), m_elements(), m_elements() + size());
@@ -4629,12 +4677,54 @@ struct mjz_stack_obj_warper_template_t {
   static my_obj_creator_t m_obj_creator;
 
  private:
+  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+                                         Type &&src) {
+    if (plc_has_obj) {
+      m_obj_creator.obj_go_to_obj(*place, std::move(src));
+      return place;
+    }
+    return m_obj_creator.construct_at(place, std::move(src));
+  }
+  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+                                         Type &src) {
+    if (plc_has_obj) {
+      m_obj_creator.obj_go_to_obj(*place, src);
+      return place;
+    }
+    return m_obj_creator.construct_at(place, src);
+  }
+  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+                                         const Type &src) {
+    if (plc_has_obj) {
+      m_obj_creator.obj_go_to_obj(*place, src);
+      return place;
+    }
+    return m_obj_creator.construct_at(place, src);
+  }
   template <typename... args_t>
   static inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          args_t &&...args) {
-    if (plc_has_obj) destroy_at_place(place);
+    if (plc_has_obj) {
+      uint8_t buf[size];
+      Type *that = (Type *)buf;
+      m_obj_creator.construct_at(that, std::forward<args_t>(args)...);
+      m_obj_creator.obj_go_to_obj(*place, std::move(*that));
+      m_obj_creator.destroy_at(that);
+      return place;
+    }
     return m_obj_creator.construct_at(place, std::forward<args_t>(args)...);
   }
+  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+                                         Type *src) {
+    return construct_in_place(place, *src);
+  }
+  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+                                        const Type *src) {
+    return construct_in_place(place, *src);
+  }
+
+
+
   static inline void destroy_at_place(Type *place) {
     m_obj_creator.destroy_at(place);
   }
@@ -4697,6 +4787,7 @@ struct mjz_stack_obj_warper_template_t {
 
  public:
   inline mjz_stack_obj_warper_template_t &operator=(Type &&obj) {
+     
     construct(std::move(obj));
     return *this;
   }
