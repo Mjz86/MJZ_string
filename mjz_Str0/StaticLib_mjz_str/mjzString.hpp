@@ -3405,7 +3405,8 @@ MJZ_memcmp_data MJZ_strcmp(const void *ptr_1, const void *ptr_2) {
   ret.num_delta += (((uint8_t *)ptr_1)[len_1_] != ((uint8_t *)ptr_2)[len_2_]);
   return ret;
 }
-char GET_CHAR_from_int(uint8_t intager_in, bool is_upper_case);
+char GET_CHAR_from_int(uint8_t intager_in,
+                                                       bool is_upper_case);
 int MJZ_STRCMP(const char *p1, const char *p2);
 int MJZ_STRnCMP(const char *p1, const char *p2, size_t lenght);
 
@@ -3655,14 +3656,43 @@ class static_str_algo {
     if (ptr != str) return ptr;
     return NULL;
   }
-
+static  inline constexpr bool mem_equals(const uint8_t *p1, const uint8_t *p2,
+                                   size_t count) {
+    if (!count) return 1;
+    if (p1 == p2) return 1;
+    if (*p1 != *p2) return 0;
+    constexpr size_t size_of_s_t = sizeof(size_t);
+    size_t len_of_big = count / size_of_s_t;
+    size_t len_of_small = count % size_of_s_t;
+    if (len_of_big) {
+      const size_t *P1 = (size_t *)p1;
+      const size_t *P2 = (size_t *)p2;
+      while (len_of_big-- && *P2++ == *P1++)
+        ;
+      if (P2[-1] != P1[-1]) return 0;
+    }
+    if (len_of_small) {
+      size_t shift = count - len_of_small;
+      p1 += shift;
+      p2 += shift;
+      while (len_of_small-- && *p2++ == *p1++)
+        ;
+      if (p2[-1] != p1[-1]) return 0;
+    }
+    return 1;
+}
+constexpr static inline bool mem_equals(const void *p1, const void *p2,
+                                        size_t count) {
+    return mem_equals((const uint8_t *)p1, (const uint8_t *)p2, count);
+}
   constexpr static inline const char *r_strstr(const char *const haystack_,
                                                const size_t haystack_len,
                                                const char *const needle_,
                                                const size_t needle_len) {
     if (needle_len > haystack_len) return NULL;
     if (needle_len == haystack_len)
-      return memcmp(haystack_, needle_, haystack_len) == 0 ? haystack_
+      return mem_equals( haystack_,  needle_, haystack_len)
+                 ? haystack_
                                                            : nullptr;
     if (!(haystack_len && needle_len && needle_ && haystack_)) return NULL;
     if (!(*needle_ && *haystack_)) return NULL;
@@ -3702,7 +3732,8 @@ class static_str_algo {
                                              const size_t needle_len) {
     if (needle_len > haystack_len) return NULL;
     if (needle_len == haystack_len)
-      return memcmp(haystack_, needle_, haystack_len) == 0 ? haystack_
+      return mem_equals( haystack_,  needle_, haystack_len)
+                 ? haystack_
                                                            : nullptr;
     if (!(haystack_len && needle_len && needle_ && haystack_)) return NULL;
     if (!(*needle_ && *haystack_)) return NULL;
@@ -3868,8 +3899,7 @@ class static_str_algo {
       return 0;
     }
 
-    return !memcmp(rhs, lhs, rhs_l);
-    // return compare_two_str(rhs, rhs_l, lhs, lhs_l) == 0;
+    return mem_equals( rhs,  lhs, rhs_l);
   }
   struct _char_8_a {
     union {
@@ -4917,35 +4947,127 @@ struct mjz_stack_obj_warper_template_t {
     return pointer_to_data()->*my_var;
   }
   constexpr inline const Type &operator*() const { return *operator->(); }
+  constexpr inline const Type &operator()() const { return **this; }
+  constexpr inline  Type &operator()()  { return **this; }
 
  public:
+
   inline bool operator==(const mjz_stack_obj_warper_template_t &other) const {
-    return operator() == other.operator();
+    return **this== *other;
   }
 
   inline bool operator!=(const mjz_stack_obj_warper_template_t &other) const {
-    return operator() != other.operator();
+    return **this!= *other;
   }
 
   inline bool operator<(const mjz_stack_obj_warper_template_t &other) const {
-    return (operator()) < (other.operator());
+    return **this < (*other);
   }
 
   inline bool operator<=(const mjz_stack_obj_warper_template_t &other) const {
-    return (operator()) <= (other.operator());
+    return **this <= (*other);
   }
 
   inline bool operator>(const mjz_stack_obj_warper_template_t &other) const {
-    return (operator()) > (other.operator());
+    return **this > (*other);
   }
 
   inline bool operator>=(const mjz_stack_obj_warper_template_t &other) const {
-    return (operator()) >= (other.operator());
+    return **this >= (*other);
   }
 
 #if 0
  inline bool operator<=>(const mjz_stack_obj_warper_template_t &other) const  { 
- return operator() <=> other.operator();
+ return **this<=> (*other);
+  }
+#endif  // ! Arduino
+
+  inline bool operator==( mjz_stack_obj_warper_template_t &other) const {
+    return **this == *other;
+  }
+
+  inline bool operator!=( mjz_stack_obj_warper_template_t &other) const {
+    return **this != *other;
+  }
+
+  inline bool operator<( mjz_stack_obj_warper_template_t &other) const {
+    return **this < (*other);
+  }
+
+  inline bool operator<=( mjz_stack_obj_warper_template_t &other) const {
+    return **this <= (*other);
+  }
+
+  inline bool operator>( mjz_stack_obj_warper_template_t &other) const {
+    return **this > (*other);
+  }
+
+  inline bool operator>=( mjz_stack_obj_warper_template_t &other) const {
+    return **this >= (*other);
+  }
+
+#if 0
+ inline bool operator<=>( mjz_stack_obj_warper_template_t &other) const  { 
+ return **this<=> (*other);
+  }
+#endif  // ! Arduino
+
+  inline bool operator==(const mjz_stack_obj_warper_template_t &other)   {
+    return **this == *other;
+  }
+
+  inline bool operator!=(const mjz_stack_obj_warper_template_t &other)   {
+    return **this != *other;
+  }
+
+  inline bool operator<(const mjz_stack_obj_warper_template_t &other)   {
+    return **this < (*other);
+  }
+
+  inline bool operator<=(const mjz_stack_obj_warper_template_t &other)   {
+    return **this <= (*other);
+  }
+
+  inline bool operator>(const mjz_stack_obj_warper_template_t &other)   {
+    return **this > (*other);
+  }
+
+  inline bool operator>=(const mjz_stack_obj_warper_template_t &other)   {
+    return **this >= (*other);
+  }
+
+#if 0
+ inline bool operator<=>(const mjz_stack_obj_warper_template_t &other)   { 
+ return **this<=> (*other);
+  }
+#endif  // ! Arduino
+  inline bool operator==(  mjz_stack_obj_warper_template_t &other) {
+    return **this == *other;
+  }
+
+  inline bool operator!=(  mjz_stack_obj_warper_template_t &other) {
+    return **this != *other;
+  }
+
+  inline bool operator<(  mjz_stack_obj_warper_template_t &other) {
+    return **this < (*other);
+  }
+
+  inline bool operator<=(  mjz_stack_obj_warper_template_t &other) {
+    return **this <= (*other);
+  }
+
+  inline bool operator>(  mjz_stack_obj_warper_template_t &other) {
+    return **this > (*other);
+  }
+
+  inline bool operator>=(  mjz_stack_obj_warper_template_t &other) {
+    return **this >= (*other);
+  }
+
+#if 0
+ inline bool operator<=>( mjz_stack_obj_warper_template_t &other)   { 
+ return **this<=> (*other);
   }
 #endif  // ! Arduino
   constexpr inline bool has_data() { return m_Has_data; }
@@ -5317,32 +5439,32 @@ class mjz_heap_obj_warper_template_t {
 
  public:
   inline bool operator==(const mjz_heap_obj_warper_template_t &other) const {
-    return operator() == other.operator();
+    return **this== (*other);
   }
 
   inline bool operator!=(const mjz_heap_obj_warper_template_t &other) const {
-    return operator() != other.operator();
+    return **this!= (*other);
   }
 
   inline bool operator<(const mjz_heap_obj_warper_template_t &other) const {
-    return (operator()) < (other.operator());
+    return **this < (*other);
   }
 
   inline bool operator<=(const mjz_heap_obj_warper_template_t &other) const {
-    return (operator()) <= (other.operator());
+    return **this <= (*other);
   }
 
   inline bool operator>(const mjz_heap_obj_warper_template_t &other) const {
-    return (operator()) > (other.operator());
+    return **this > (*other);
   }
 
   inline bool operator>=(const mjz_heap_obj_warper_template_t &other) const {
-    return (operator()) >= (other.operator());
+    return **this >= (*other);
   }
 
 #if 0
  inline bool operator<=>(const mjz_heap_obj_warper_template_t &other) const  { 
- return operator() <=> other.operator();
+ return **this<=> *other;
   }
 #endif  // ! Arduino
   constexpr inline bool has_data() { return m_ptr->has_data(); }
@@ -5613,7 +5735,7 @@ struct SHA256_CTX {
     return !SHA256_CTX::compare_hash(rhs.hashed_data, lhs.hashed_data);
   }
   inline static int real_compare_hash(const void *rhs, const void *lhs) {
-    return static_str_algo::memcmp(rhs, lhs, SHA256_BLOCK_SIZE);
+    return !static_str_algo::mem_equals( rhs,  lhs, SHA256_BLOCK_SIZE);
   }
   static inline int compare_hash(const void *rhs, const void *lhs) {
     return real_compare_hash(rhs, lhs);
@@ -6344,11 +6466,12 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
 
   constexpr bool equals(const char *cstr, size_t cstr_len) const {
+
     return are_two_str_equale(m_buffer, m_length, cstr, cstr_len);
   }
   constexpr bool equals(const basic_mjz_Str_view &s2) const {
     //
-    return (m_length == s2.m_length && compareTo(s2) == 0);
+    return equals(s2.data(),s2.length());
   }
   constexpr inline bool equals(const char *cstr) const {
     return equals(cstr, strlen(cstr));
@@ -8969,6 +9092,7 @@ struct hash<mjz_ard::basic_mjz_Str_view> {
   }
 };  // namespace std::hash
 
+
 template <typename T>
 struct hash<mjz_ard::mjz_str_t<T>> {
   size_t operator()(const mjz_ard::mjz_str_t<T> &k) const {
@@ -8989,9 +9113,89 @@ struct hash<mjz_ard::mjz_virtual_string_view> {
 };  // namespace std::hash
 
 template <typename Type>
+struct hash<mjz_ard::Vector3<Type>> {
+  size_t operator()(const mjz_ard::Vector3<Type> &k) const {
+    return hash<mjz_ard::mjz_str_view>()(mjz_ard::mjz_str_view(
+        (const char *)&k, sizeof(mjz_ard::Vector3<Type>)));
+  }
+};
+template <typename Type>
+struct hash<mjz_ard::Vector2<Type>> {
+  size_t operator()(const mjz_ard::Vector2<Type> &k) const {
+    return hash<mjz_ard::mjz_str_view>()(mjz_ard::mjz_str_view(
+        (const char *)&k, sizeof(mjz_ard::Vector2<Type>)));
+  }
+};
+template <typename Type>
 inline mjz_ard::Vector3<Type> sqrt(mjz_ard::Vector3<Type> v) {
   return mjz_ard::Vector3<Type>(sqrt(v.x()), sqrt(v.y()), sqrt(v.z()));
 }
+
+
+template <typename Type>
+struct hash<mjz_ard::iterator_template_t<Type>> {
+  size_t operator()(const mjz_ard::iterator_template_t<Type> &k) const {
+    return hash()(k.get_pointer());
+  }
+};
+
+    template <typename... Types>
+    struct hash <mjz_ard::iterator_template_filter_warper<Types...>> {
+  size_t operator()(
+      const mjz_ard::iterator_template_filter_warper<Types...> &k) const {
+    return hash()(k.get_pointer());
+  }
+};
+    template <typename... Types>
+struct hash<mjz_ard::iterator_warper_template_t<Types...>> {
+  size_t operator()(
+      const mjz_ard::iterator_warper_template_t<Types...> &k) const {
+    return hash()(mjz_ard::Vector2<size_t>(hash()(k.m_begin), hash()(k.m_end)));
+  }
+    };
+    template <typename... Types>
+    struct hash<mjz_ard::mjz_to_iterator_template_warper_t<Types...>> {
+  size_t operator()(
+      const mjz_ard::mjz_to_iterator_template_warper_t<Types...> &k) const {
+    return hash() (k.get_pointer());
+  }
+    };
+
+ template <size_t number_of_blocks ,size_t block_length , bool KEEP_the_heap_clean >
+    struct hash<mjz_ard::mjz_arena_allocator_t<number_of_blocks, block_length,
+                                               KEEP_the_heap_clean>> {
+  size_t operator()(    const mjz_ard::mjz_arena_allocator_t<number_of_blocks, block_length,
+                                           KEEP_the_heap_clean> &k) const {
+    return hash()(&k);
+  }
+ };
+ template <typename...Types>
+ struct hash<mjz_ard::mjz_stack_obj_warper_template_t<Types...>> {
+  size_t operator()(
+      const mjz_ard::mjz_stack_obj_warper_template_t<Types...> &k) const {
+    return hash()(*k);
+  }
+ };
+ template <typename... Types>
+ struct hash<mjz_ard::mjz_heap_obj_warper_template_t<Types...>> {
+  size_t operator()(
+      const mjz_ard::mjz_heap_obj_warper_template_t<Types...> &k) const {
+    return hash()(*k);
+  }
+ };
+ template <typename... Types>
+ struct hash<mjz_ard::mjz_temp_malloc_wrapper_t<Types...>> {
+  size_t operator()(
+      const mjz_ard::mjz_temp_malloc_wrapper_t<Types...> &k) const {
+    return hash()(k.get_ptr());
+  }
+ };
+ template <>
+ struct hash<mjz_ard::hash_sha256> {
+  size_t operator()(const mjz_ard::hash_sha256 &k) const {
+    return *((size_t *)k.data);
+  }
+ };
 }  // namespace std
 
 namespace mjz_ard {

@@ -253,14 +253,14 @@ template <class counter_class, class my_stream = std_stream_class_warper>
 class mjz_class_operation_reporter_t {
   static counter_class index;
   template <typename... argT>
-  mjz_class_operation_reporter_t& println(argT&&... args) {
+  mjz_class_operation_reporter_t& println(argT&&... args)const {
     print_c_str(std::forward<argT>(args)...);
     print('\n');
-    return *this;
+    return none();
   }
   template <typename... argT>
   mjz_class_operation_reporter_t& println_wf(const 
-      mjz_class_operation_reporter_t& obj, argT&&... args) {
+      mjz_class_operation_reporter_t& obj, argT&&... args) const {
     print(std::forward<argT>(args)...);
     print_c_str(" with ID: ");
     print(UUID());
@@ -268,86 +268,87 @@ class mjz_class_operation_reporter_t {
     print(obj.UUID());
     print('\n');
 
-    return *this;
+    return none();
   }
   template <typename... argT>
-  mjz_class_operation_reporter_t& println_w(argT&&... args) {
+  mjz_class_operation_reporter_t& println_w(argT&&... args) const {
     print_c_str(std::forward<argT>(args)...);
     print_c_str(" with ID: ");
     print(UUID());
     print('\n');
-    return *this;
+    return none();
   }
   template <typename... argT>
   mjz_class_operation_reporter_t& println_wi(const counter_class& index,
-                                             argT&&... args) {
+                                             argT&&... args) const {
     print_c_str(std::forward<argT>(args)...);
     print(index);
     print_c_str(" with ID: ");
     print(UUID());
     print('\n');
-    return *this;
+    return none();
   }
   template <typename... argT>
-  mjz_class_operation_reporter_t& printsv(argT&&... args) {
+  mjz_class_operation_reporter_t& printsv(argT&&... args) const {
     std::initializer_list<std::string_view> list = {
         std::forward<argT>(args)...};
     for (auto& s : list) print(s);
-    return *this;
+    return none();
   }
   template <typename... argT>
-  mjz_class_operation_reporter_t& print_c_str(argT&&... args) {
+  mjz_class_operation_reporter_t& print_c_str(argT&&... args)const {
     std::initializer_list<const char*> list = {std::forward<argT>(args)...};
     for (auto& s : list) print(s);
-    return *this;
+    return none();
   }
-  mjz_class_operation_reporter_t& print_c_str(const char* s) {
+  mjz_class_operation_reporter_t& print_c_str(const char* s) const {
     print_c_str_len_1(s, strlen(s));
-    return *this;
+    return none();
   }
   template <typename... argT>
-  mjz_class_operation_reporter_t& print(argT&&... args) {
+  mjz_class_operation_reporter_t& print(argT&&... args) const {
     auto list =
         std::initializer_list<std::function<void(void)>>{[&](void) -> void {
           print(std::forward<argT>(args));
           return;
         }...};  // do all tasks in thr rigth order
     for (auto& f : list) f();
-    return *this;
+    return none();
   }
   template <typename T>
-  mjz_class_operation_reporter_t& print(T&& arg) {
+  mjz_class_operation_reporter_t& print(T&& arg) const {
     my_stream::get() << std::forward<T>(arg);
-    return *this;
+    return none();
   }
-  mjz_class_operation_reporter_t& print_c_str_len_1(const char* s, size_t l) {
+  mjz_class_operation_reporter_t& print_c_str_len_1(const char* s,
+                                                    size_t l) const {
     my_stream::get().write(s, l);
-    return *this;
+    return none();
   }
 
   template <typename T>
-  mjz_class_operation_reporter_t& println_o(T&& arg) {
+  mjz_class_operation_reporter_t& println_o(T&& arg) const {
     println_w("operator", std::forward<T>(arg), "()");
-    return *this;
+    return none();
   }
   template <typename T>
-  mjz_class_operation_reporter_t& println_oi(T&& arg) {
+  mjz_class_operation_reporter_t& println_oi(T&& arg) const {
     println_w("operator", std::forward<T>(arg), "(int)");
-    return *this;
+    return none();
   }
   template <typename T>
   mjz_class_operation_reporter_t& println_obj(
-      const mjz_class_operation_reporter_t& obj, T&& arg) {  // oobj
+      const mjz_class_operation_reporter_t& obj, T&& arg) const {  // oobj
     print_c_str("  ID: (");
     print(UUID());
     print(" ) operator", std::forward<T>(arg), "(const obj&)", "  ID: ( ");
     print(obj.UUID());
     print(" )\n");
-    return *this;
+    return none();
   }
 
  public:
-  char filler = '|';
+mutable  char filler = '|';
   inline const void* UUID() const { return this; };
   mjz_class_operation_reporter_t() { println_wi(index++, " created : "); }
   mjz_class_operation_reporter_t(int i) : filler(i) {
@@ -415,163 +416,163 @@ class mjz_class_operation_reporter_t {
   mjz_class_operation_reporter_t& operator=(
       mjz_class_operation_reporter_t&& obj) {
     println_wf(obj, " moved to me  ");
-    return *this;
+    return none();
   }
   mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t& obj) {
     index++;
     println_wf(obj, " copy constructed ");
   }
   mjz_class_operation_reporter_t& operator=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj) const {
     println_wf(obj, " copied to me   ");
-    return *this;
+    return none();
   }
-  mjz_class_operation_reporter_t& operator()() { return println_o("()"); }
-  mjz_class_operation_reporter_t& operator()(std::string_view v) {
+  mjz_class_operation_reporter_t& operator()() const { return println_o("()"); }
+  mjz_class_operation_reporter_t& operator()(std::string_view v) const {
     print("operator()(string_view) : (");
     print(v);
     return print_c_str_len_1(") ", 2);
   }
-  mjz_class_operation_reporter_t& operator()(const char* s) {
+  mjz_class_operation_reporter_t& operator()(const char* s) const {
     print("operator()(c_str) : (");
     print(s);
     return print_c_str_len_1(") ", 2);
   }
   mjz_class_operation_reporter_t& operator()(
-      mjz_class_operation_reporter_t& obj) {
+      mjz_class_operation_reporter_t& obj) const {
     return println("operator()(obj&)");
   }
   mjz_class_operation_reporter_t& operator()(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj) const {
     return println("operator()(const obj&)");
   }
   mjz_class_operation_reporter_t& operator()(
-      mjz_class_operation_reporter_t&& obj) {
+      mjz_class_operation_reporter_t&& obj) const {
     return println("operator()(obj&&)");
   }
 
-  mjz_class_operation_reporter_t& operator()(int) { return println_oi("()"); }
-  mjz_class_operation_reporter_t& operator++(int) { return println_oi("++"); }
-  mjz_class_operation_reporter_t& operator++() { return println_o("++()"); }
-  mjz_class_operation_reporter_t& operator--(int) { return println_oi("--"); }
-  mjz_class_operation_reporter_t& operator--() { return println_o("--"); }
+  mjz_class_operation_reporter_t& operator()(int)const{ return println_oi("()"); }
+  mjz_class_operation_reporter_t& operator++(int)const{ return println_oi("++"); }
+  mjz_class_operation_reporter_t& operator++()const{ return println_o("++()"); }
+  mjz_class_operation_reporter_t& operator--(int)const{ return println_oi("--"); }
+  mjz_class_operation_reporter_t& operator--()const{ return println_o("--"); }
 
   mjz_class_operation_reporter_t& operator+(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "+");
   }
   mjz_class_operation_reporter_t& operator-(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "-");
   }
 
   mjz_class_operation_reporter_t& operator*(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "*");
   }
   mjz_class_operation_reporter_t& operator/(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "/");
   }
   mjz_class_operation_reporter_t& operator%(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "%");
   }
   mjz_class_operation_reporter_t& operator>>(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, ">>");
   }
   mjz_class_operation_reporter_t& operator<<(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "<<");
   }
   mjz_class_operation_reporter_t& operator&(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "&");
   }
   mjz_class_operation_reporter_t& operator|(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "|");
   }
   mjz_class_operation_reporter_t& operator^(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "^");
   }
   
 
   mjz_class_operation_reporter_t& operator+=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "+=");
   }
   mjz_class_operation_reporter_t& operator-=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "-=");
   }
   mjz_class_operation_reporter_t& operator*=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "*=");
   }
   mjz_class_operation_reporter_t& operator/=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "/=");
   }
   mjz_class_operation_reporter_t& operator%=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "%=");
   }
   mjz_class_operation_reporter_t& operator>>=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, ">>=");
   }
   mjz_class_operation_reporter_t& operator<<=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "<<=");
   }
   mjz_class_operation_reporter_t& operator&=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "&=");
   }
   mjz_class_operation_reporter_t& operator|=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "|=");
   }
   mjz_class_operation_reporter_t& operator^=(
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "^=");
   }
-  mjz_class_operation_reporter_t& operator-() { return println_o("-"); }
-  mjz_class_operation_reporter_t* operator&() {  // baaaaaaaaaaaaaaad practic
+  mjz_class_operation_reporter_t& operator-()const{ return println_o("-"); }
+  mjz_class_operation_reporter_t* operator&()const{  // baaaaaaaaaaaaaaad practic
     println_o("&");
-    return this;
+    return (mjz_class_operation_reporter_t*)this;
   }
-  mjz_class_operation_reporter_t& operator*() {
+  mjz_class_operation_reporter_t& operator*()const{
     println_o("*");
-    return *this;
+    return none();
   }
-  mjz_class_operation_reporter_t* operator->() {
+  mjz_class_operation_reporter_t* operator->()const{
     println_o("->");
-    return this;
+    return (mjz_class_operation_reporter_t*)this;
   }
   template <typename T>
-  auto operator->*(T p) {
+  auto operator->*(T p)const{
     println_o("->*");
     return this->*p;
   }
-  inline operator bool() {
+  inline operator bool()const{
     println_o(" bool ");
     return filler;
   }
-  inline operator char() {
+  inline operator char()const{
     println_o(" char ");
     return filler;
   }
 
-  inline operator int() {
+  inline operator int()const{
     println_o(" int ");
     return filler;
   }
-  mjz_class_operation_reporter_t& operator!() { return println_o("!"); }
-  mjz_class_operation_reporter_t& operator~() { return println_o("~"); }
+  mjz_class_operation_reporter_t& operator!()const{ return println_o("!"); }
+  mjz_class_operation_reporter_t& operator~()const{ return println_o("~"); }
 
 
 
@@ -579,7 +580,7 @@ class mjz_class_operation_reporter_t {
   bool 
   operator&&(  // really bad practic to overload these dont do in any other
                // senario
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
      println_obj(obj, "&&");
     return operator char() &&
           ((mjz_class_operation_reporter_t*)(&obj))->operator char();
@@ -587,40 +588,54 @@ class mjz_class_operation_reporter_t {
   bool
   operator||(  // really bad practic to overload these  dont do in any other
                // senario
-      const mjz_class_operation_reporter_t& obj) {
+      const mjz_class_operation_reporter_t& obj)const{
      println_obj(obj, "||");
     return operator char() || obj.operator char();
   }
 
-  inline int64_t compare(const mjz_class_operation_reporter_t& obj) {
+  inline int64_t compare(const mjz_class_operation_reporter_t& obj)const{
     return (int64_t)((char*)UUID() - (char*)obj.UUID());
   }
-  bool operator<=(const mjz_class_operation_reporter_t& obj) {
+  bool operator<=(const mjz_class_operation_reporter_t& obj)const{
     println_obj(obj, "<=");
     return compare(obj) <= 0;
   }
-  bool operator>=(const mjz_class_operation_reporter_t& obj) {
+  bool operator>=(const mjz_class_operation_reporter_t& obj)const{
     println_obj(obj, ">=");
 
     return compare(obj) >= 0;
   }
-  bool operator<(const mjz_class_operation_reporter_t& obj) {
+  bool operator<(const mjz_class_operation_reporter_t& obj)const{
     println_obj(obj, "<");
     return compare(obj) < 0;
   }
-  bool operator>(const mjz_class_operation_reporter_t& obj) {
+  bool operator>(const mjz_class_operation_reporter_t& obj)const{
     println_obj(obj, ">");
     return compare(obj) > 0;
   }
-  bool operator==(const mjz_class_operation_reporter_t& obj) {
+  bool operator==(const mjz_class_operation_reporter_t& obj)const{
     println_obj(obj, "==");
     return compare(obj) == 0;
   }
-  bool operator!=(const mjz_class_operation_reporter_t& obj) {
+  bool operator!=(const mjz_class_operation_reporter_t& obj)const{
     println_obj(obj, "!=");
     return compare(obj) != 0;
   }
-  inline mjz_class_operation_reporter_t& none() { return *this; }
+  inline mjz_class_operation_reporter_t& none() const {
+    return *((mjz_class_operation_reporter_t*)this);
+  }
+
+  
+  inline operator mjz_class_operation_reporter_t&() const {
+    return *((mjz_class_operation_reporter_t*)(this));
+  }
+  inline operator mjz_class_operation_reporter_t&()  {
+    return * this ;
+  }
+  inline operator const mjz_class_operation_reporter_t&() const {
+    return none();
+  }
+  inline operator const mjz_class_operation_reporter_t&() { return none(); }
    template <class the_Stream>
   friend the_Stream& operator<<(the_Stream& COUT, const mjz_class_operation_reporter_t& non_const_opr) {
     mjz_class_operation_reporter_t& opr =
