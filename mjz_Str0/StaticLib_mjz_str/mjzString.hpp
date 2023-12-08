@@ -1468,7 +1468,7 @@ inline constexpr bool operator!=(const basic_mjz_allocator<Type> &,
 }
 
 template <typename Type>
-class mjz_obj_constructor {
+class mjz_obj_manager_template_t {
  public:
   
   template <typename... args_t>
@@ -1485,7 +1485,7 @@ class mjz_obj_constructor {
     return Type(std::forward<args_t>(args)...);
   }
   template <class T, class... Args>
-  static inline void construct(mjz_obj_constructor &a, T *p, Args &&...args) {
+  static inline void construct(mjz_obj_manager_template_t &a, T *p, Args &&...args) {
     a.construct_at(p, std::forward<Args>(args)...);
   }
   static inline Type &obj_move_to_obj(Type &dest, Type &&src) {
@@ -1532,10 +1532,6 @@ class mjz_obj_constructor {
   friend constexpr Type *to_address(Type &obj) noexcept { return &obj; }
 
   friend Type *pointer_to(Type &r) noexcept { return &r; }
-};
-template <typename Type>
-class mjz_obj_destructor {
- public:
   inline bool destroy_at(Type *ptr) noexcept {
     try {
       ptr->~Type();
@@ -1552,7 +1548,7 @@ class mjz_obj_destructor {
     }
     return true;
   }
-  static inline void destroy(mjz_obj_destructor &a, Type *p) {
+  static inline void destroy(mjz_obj_manager_template_t &a, Type *p) {
     a.destroy_at(p);
   }
   inline void destroy(Type *p) { this->destroy_at(p); }
@@ -1563,17 +1559,15 @@ class mjz_obj_destructor {
   }
 
   template <class ForwardIt>
-      void
-      destroy(ForwardIt first, ForwardIt last) {
+  void destroy(ForwardIt first, ForwardIt last) {
     for (; first != last; ++first) this->destroy_at(&(*first));
   }
 };
 
-template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
-          class my_constructor = mjz_obj_constructor<Type>>
+template <typename Type,
+          class my_constructor = mjz_obj_manager_template_t<Type>>
 
-struct mjz_temp_type_obj_creator_warpper_t : public my_destructor,
-                                             public my_constructor {
+struct mjz_temp_type_obj_creator_warpper_t : public my_constructor {
   constexpr static inline size_t size_of_type() { return sizeof(Type); }
 
 
@@ -1592,13 +1586,13 @@ struct mjz_temp_type_obj_creator_warpper_t : public my_destructor,
       Type *ptr = arr + n;
       Type *ptr_end = arr - 1;
       while ((--ptr) > ptr_end) {
-        was_successful &= my_destructor::destroy_at(ptr);
+        was_successful &= my_constructor::destroy_at(ptr);
       }
     } else {
       Type *ptr = arr - 1;
       Type *ptr_end = arr + n;
       while ((++ptr) < ptr_end) {
-        was_successful &= my_destructor::destroy_at(ptr);
+        was_successful &= my_constructor::destroy_at(ptr);
       }
     }
     return was_successful;
@@ -1643,10 +1637,10 @@ struct mjz_temp_type_obj_creator_warpper_t : public my_destructor,
   }
 };
 
-template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
-          class my_constructor = mjz_obj_constructor<Type>>
+template <typename Type,
+          class my_constructor = mjz_obj_manager_template_t<Type>>
 struct mjz_temp_type_obj_algorithims_warpper_t
-    : public mjz_temp_type_obj_creator_warpper_t<Type, my_destructor,
+    : public mjz_temp_type_obj_creator_warpper_t<Type, 
                                                  my_constructor> {
   template <typename TTT>
  static inline auto addressof(const TTT&obj) {
@@ -1848,12 +1842,12 @@ struct mjz_temp_type_obj_algorithims_warpper_t
   }
 };
 
-template <typename Type, class my_destructor = mjz_obj_destructor<Type>,
-          class my_constructor = mjz_obj_constructor<Type>,
+template <typename Type,
+          class my_constructor = mjz_obj_manager_template_t<Type>,
           class my_reallocator = basic_mjz_allocator<Type>>
 
 struct mjz_temp_type_allocator_warpper_t
-    : public mjz_temp_type_obj_algorithims_warpper_t<Type, my_destructor,
+    : public mjz_temp_type_obj_algorithims_warpper_t<Type, 
                                                      my_constructor>,
       protected my_reallocator {
  public:
@@ -1959,37 +1953,37 @@ struct mjz_temp_type_allocator_warpper_t
                                    raw ? n : size_of_array_with(n));
   }
 
-  template <typename _Type, class _destructor, class _constructor,
+  template <typename _Type, class _constructor,
             class _reallocator>
   friend bool operator==(
-      mjz_temp_type_allocator_warpper_t<Type, my_destructor, my_constructor,
+      mjz_temp_type_allocator_warpper_t<Type,  my_constructor,
                                         my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _destructor, _constructor,
+      mjz_temp_type_allocator_warpper_t<_Type,  _constructor,
                                         _reallocator>) {
     return false;
   }
-  template <typename _Type, class _destructor, class _constructor,
+  template <typename _Type, class _constructor,
             class _reallocator>
   friend bool operator!=(
-      mjz_temp_type_allocator_warpper_t<Type, my_destructor, my_constructor,
+      mjz_temp_type_allocator_warpper_t<Type,   my_constructor,
                                         my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _destructor, _constructor,
+      mjz_temp_type_allocator_warpper_t<_Type,  _constructor,
                                         _reallocator>) {
     return true;
   }
-  template <typename _Type, class _destructor, class _constructor>
+  template <typename _Type, class _constructor>
   friend bool operator==(
-      mjz_temp_type_allocator_warpper_t<Type, my_destructor, my_constructor,
+      mjz_temp_type_allocator_warpper_t<Type,  my_constructor,
                                         my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _destructor, _constructor,
+      mjz_temp_type_allocator_warpper_t<_Type,  _constructor,
                                         my_reallocator>) {
     return true;
   }
-  template <typename _Type, class _destructor, class _constructor>
+  template <typename _Type,  class _constructor>
   friend bool operator!=(
-      mjz_temp_type_allocator_warpper_t<Type, my_destructor, my_constructor,
+      mjz_temp_type_allocator_warpper_t<Type, my_constructor,
                                         my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _destructor, _constructor,
+      mjz_temp_type_allocator_warpper_t<_Type,   _constructor,
                                         my_reallocator>) {
     return false;
   }
@@ -1997,7 +1991,7 @@ struct mjz_temp_type_allocator_warpper_t
 
 template <typename Type, class my_reallocator = basic_mjz_allocator<Type>>
 using mjz_allocator_warpper_r_t = mjz_temp_type_allocator_warpper_t<
-    Type, mjz_obj_destructor<Type>, mjz_obj_constructor<Type>, my_reallocator>;
+    Type, mjz_obj_manager_template_t<Type>, my_reallocator>;
 template <class Type>
 struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
   constexpr mjz_allocator_warpper() = default;
@@ -2838,7 +2832,7 @@ class mjz_Vector {
 
 
 template <class Type, size_t m_capacity,
-          class my_obj_constructor = mjz_temp_type_obj_creator_warpper_t<Type>,
+          class my_obj_constructor = mjz_temp_type_obj_algorithims_warpper_t<Type>,
           bool do_error_check = 1>
 class mjz_static_vector_template_t {
  public:
@@ -4666,7 +4660,7 @@ inline constexpr const T *end(iterator_template_t<T> it) noexcept {
 }
 
 template <typename Type, bool construct_obj_on_constructor = true,
-          class my_obj_creator_t = mjz_temp_type_obj_creator_warpper_t<Type>,bool do_error_check=1>
+          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<Type>,bool do_error_check=1>
 struct mjz_stack_obj_warper_template_t {
  public:
   static constexpr size_t size = sizeof(Type);
@@ -5004,7 +4998,7 @@ my_obj_creator mjz_stack_obj_warper_template_t<
 
 template <class Type, const size_t m_Size, bool error_check = 1,
           bool construct_obj_on_constructor = 1,
-          class my_obj_creator = mjz_temp_type_obj_creator_warpper_t<
+          class my_obj_creator = mjz_temp_type_obj_algorithims_warpper_t<
               Type>>        // i promise  that their is no allocation
 class extended_mjz_Array {  // fixed size extended_mjz_Array of values
  public:
@@ -5167,7 +5161,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
 };
 
 template <typename Type, bool construct_obj_on_constructor = true,
-          class my_obj_creator_t = mjz_temp_type_obj_creator_warpper_t<Type>>
+          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<Type>>
 class mjz_heap_obj_warper_template_t {
   using mjz_sow_t =
       mjz_stack_obj_warper_template_t<Type, construct_obj_on_constructor,

@@ -242,7 +242,6 @@ class P {// no one can do anything with P except  mjz_obj_destructor<P> and mjz_
 
  public:
   inline void f() { ::mjz_ard::println(" \n f called \n"); }
-  friend class ::mjz_ard::mjz_obj_destructor<P>;
-  friend class ::mjz_ard::mjz_obj_constructor<P>;
+  friend class ::mjz_ard::mjz_obj_manager_template_t<P>;
 };
 }  // namespace API_of_obj_cnstructor_example
