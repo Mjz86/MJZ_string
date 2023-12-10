@@ -2000,6 +2000,14 @@ struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
   template <class T>
   constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
 };
+struct mjz_normal_allocator : public mjz_allocator_warpper<char> {
+  mjz_normal_allocator() {}
+  ~mjz_normal_allocator() {}
+  mjz_normal_allocator(const mjz_normal_allocator &) {}
+  mjz_normal_allocator operator=(const mjz_normal_allocator &) {}
+  mjz_normal_allocator( mjz_normal_allocator &&) {}
+  mjz_normal_allocator operator=( mjz_normal_allocator &&) {}
+};
 
 #if global_mjz_areana_allocator_on
 }
@@ -3490,13 +3498,13 @@ class StringSumHelper_t;
 
 template <typename T>
 class mjz_str_t;
-using mjz_Str = typename mjz_str_t<mjz_allocator_warpper<char>>;
-using StringSumHelper = typename StringSumHelper_t<mjz_allocator_warpper<char>>;
+using mjz_Str = typename mjz_str_t<mjz_normal_allocator>;
+using StringSumHelper = typename StringSumHelper_t<mjz_normal_allocator>;
 
-template <typename T = mjz_allocator_warpper<char>>
+template <typename T = mjz_normal_allocator>
 class extended_mjz_str_t;
 using extended_mjz_Str =
-    typename extended_mjz_str_t<mjz_allocator_warpper<char>>;
+    typename extended_mjz_str_t<mjz_normal_allocator>;
 
 // Define constants and variables for buffering incoming serial data. We're
 // using a ring buffer (I think), in which head is the index of the location
@@ -5722,7 +5730,7 @@ class mjz_temp_malloc_wrapper_t {
 };
 template <typename my_reallocator>
 my_reallocator mjz_temp_malloc_wrapper_t<my_reallocator>::my_allocator{};
-using malloc_wrapper = mjz_temp_malloc_wrapper_t<mjz_allocator_warpper<char>>;
+using malloc_wrapper = mjz_temp_malloc_wrapper_t<mjz_normal_allocator>;
 
 /*********************************************************************
  Filename: sha256.h
@@ -5757,7 +5765,7 @@ struct SHA256_CTX {
   WORD datalen{};
   unsigned long long bitlen{};
   WORD state[8]{};
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> to_string() const;
   friend std::ostream &operator<<(std::ostream &CIN, const SHA256_CTX &obj);
   static inline int compare_hash(const void *rhs, const SHA256_CTX &lhs) {
@@ -6816,34 +6824,34 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
 
  public:
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   std::pair<hash_sha256, mjz_str_t<T>> hash_with_output(uint8_t n = 0) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring(size_t beginIndex);
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring(size_t beginIndex, size_t endIndex) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring_beg_n(size_t beginIndex, size_t number) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substr(size_t pos = 0, size_t len = npos) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring(int64_t beginIndex, int64_t endIndex) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring(int64_t beginIndex) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number);
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring_beg_n(unsigned int beginIndex,
                                unsigned int number) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring(int beginIndex) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring(int beginIndex, int endIndex) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring_beg_n(int beginIndex, int number) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring(size_t beginIndex) const;
-  template <typename T = mjz_allocator_warpper<char>>
+  template <typename T = mjz_normal_allocator>
   mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number) const;
 };
 
@@ -8378,7 +8386,7 @@ class type_fn_class {
     return _function(x);
   }
 };
-template <typename T = mjz_allocator_warpper<char>>
+template <typename T = mjz_normal_allocator>
 mjz_ard::mjz_str_t<T> ULL_LL_to_str(size_t value, int radix, bool is_signed,
                                     bool force_neg = 0);
 template <typename T>
@@ -9078,8 +9086,8 @@ using mjz_allocator = mjz_allocator_warpper<T>;
 template <typename T>
 using mjz_allocator_warpper = mjz_allocator_warpper<T>;
 using mlc_wrp = malloc_wrapper;
-using mjz_StringSumHelper = StringSumHelper_t<mjz_allocator_warpper<char>>;
-using StringSumHelper = StringSumHelper_t<mjz_allocator_warpper<char>>;
+using mjz_StringSumHelper = StringSumHelper_t<mjz_normal_allocator>;
+using StringSumHelper = StringSumHelper_t<mjz_normal_allocator>;
 using mjz_str_view = mjz_str_view;
 using mstrview = mjz_str_view;
 using mstrv = mjz_str_view;
@@ -11735,7 +11743,7 @@ mjz_str_t<T> SHA256_CTX::to_string() const {
   return mjz_str_t<T>(SHA256_CTX::to_c_string(buffer));
 }
 
-template <typename T = mjz_allocator_warpper<char>>
+template <typename T = mjz_normal_allocator>
 mjz_str_t<T> float_get_bits_interpretation(float x) {
   auto bits = mjz_ard::get_bit_representation<float>(x);
   mjz_str_t<T> str(" ");
