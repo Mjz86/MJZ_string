@@ -2081,7 +2081,7 @@ inline void *realloc(void *p, size_t s) {
 inline void free(void *p) { return ::free(p); }
 #endif
 
-constexpr bool log_it = true;
+constexpr bool log_it = false;
 namespace log_functions {
 inline void log(const char *const str, size_t n, const void *const in) {
   std::cout << '\n' << str << " " << n << " bytes in:" << in << ".\n";
