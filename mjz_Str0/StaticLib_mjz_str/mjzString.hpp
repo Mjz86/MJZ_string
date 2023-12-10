@@ -2081,11 +2081,10 @@ inline void *realloc(void *p, size_t s) {
 inline void free(void *p) { return ::free(p); }
 #endif
 
-constexpr bool log_it{true};
+constexpr bool log_it = true;
+namespace log_functions {
 inline void log(const char *const str, size_t n, const void *const in) {
-  if constexpr (log_it) {
-    std::cout << '\n' << str << " " << n << " bytes in:" << in << ".\n";
-  }
+  std::cout << '\n' << str << " " << n << " bytes in:" << in << ".\n";
 }
 inline constexpr void *get_fake_mem(void *ptr) {
   if (ptr == 0) return ptr;
@@ -2127,6 +2126,27 @@ inline void free_pv(void *p) {
     log("freed !(BUG)! ", 0, nullptr);
   }
 }
+}  // namespace log_functions
+namespace no_log_functions {
+inline void free_pv(void *p) { return free(p); }
+
+inline void *realloc_pv(void *p, size_t s) { return realloc(p, s); }
+}  // namespace no_log_functions
+
+inline void free_pv(void *p) {
+  if constexpr (log_it) {
+    return log_functions::free_pv(p);
+  }
+  return no_log_functions::free_pv(p);
+}
+
+inline void *realloc_pv(void *p, size_t s) {
+  if constexpr (log_it) {
+    return log_functions::realloc_pv(p, s);
+  }
+  return no_log_functions::realloc_pv(p, s);
+}
+
 }  // namespace private_dont_use_it
 inline void free(void *p) {
   namespace pv = private_dont_use_it;
@@ -3131,7 +3151,7 @@ class mjz_static_vector_template_t {
     if (0 < un_init_len) {
       auto o_it_e = o_it_b + un_init_len;
       my_obj_cntr.uninitialized_move(o_it_b, o_it_e,
-                                       this->begin() + this->size());
+                                     this->begin() + this->size());
     }
     m_length = fill_len;
     return *this;
@@ -3152,8 +3172,8 @@ class mjz_static_vector_template_t {
     o_it_b += this->size();
     if (0 < un_init_len) {
       auto o_it_e = o_it_b + un_init_len;
-      my_obj_cntr.uninitialized_copy (o_it_b, o_it_e,
-                                       this->begin() + this->size());
+      my_obj_cntr.uninitialized_copy(o_it_b, o_it_e,
+                                     this->begin() + this->size());
     }
     m_length = fill_len;
     return *this;
@@ -3475,7 +3495,8 @@ using StringSumHelper = typename StringSumHelper_t<mjz_allocator_warpper<char>>;
 
 template <typename T = mjz_allocator_warpper<char>>
 class extended_mjz_str_t;
-using extended_mjz_Str = typename extended_mjz_str_t<mjz_allocator_warpper<char>>;
+using extended_mjz_Str =
+    typename extended_mjz_str_t<mjz_allocator_warpper<char>>;
 
 // Define constants and variables for buffering incoming serial data. We're
 // using a ring buffer (I think), in which head is the index of the location
@@ -11740,27 +11761,44 @@ class mv_to_T2 {
     return TO(std::forward<Types>(obj)...);
   }
 };
-template <typename Tc1 , typename Tc2 ,
-          typename T1, typename T2>
+template <typename Tc1, typename Tc2, typename T1, typename T2>
 inline StringSumHelper operator+(T1 lhs, T2 rhs) {
   return operator_plus(Tc1()(lhs), Tc2()(rhs));
 }
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(const mjz_Str &, const mjz_str_view &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(const mjz_Str &, const StringSumHelper &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(const mjz_Str &, const basic_mjz_Str_view &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(mjz_Str &&, const mjz_str_view &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(mjz_Str &&, const StringSumHelper &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(mjz_Str &&, const basic_mjz_Str_view &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(StringSumHelper &&, const mjz_str_view &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(StringSumHelper &&, const StringSumHelper &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(StringSumHelper &&,
-                                   const basic_mjz_Str_view &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(const StringSumHelper &,
-                                   const mjz_str_view &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(const StringSumHelper &,
-                                   const StringSumHelper &);
-template StringSumHelper operator+<mv_to_T2<mjz_Str>,mv_to_T2<mjz_Str>>(const StringSumHelper &,
-                                   const basic_mjz_Str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const mjz_Str &,
+                                           const mjz_str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const mjz_Str &,
+                                           const StringSumHelper &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const mjz_Str &,
+                                           const basic_mjz_Str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(mjz_Str &&, const mjz_str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(mjz_Str &&, const StringSumHelper &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(mjz_Str &&,
+                                           const basic_mjz_Str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(StringSumHelper &&,
+                                           const mjz_str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(StringSumHelper &&,
+                                           const StringSumHelper &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(StringSumHelper &&,
+                                           const basic_mjz_Str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const StringSumHelper &,
+                                           const mjz_str_view &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const StringSumHelper &,
+                                           const StringSumHelper &);
+template StringSumHelper operator+
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const StringSumHelper &,
+                                           const basic_mjz_Str_view &);
 
 template <typename T2>
 inline StringSumHelper operator+(StringSumHelper &&lhs, T2 rhs) {
