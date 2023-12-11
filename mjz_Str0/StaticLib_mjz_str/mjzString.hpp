@@ -1268,38 +1268,40 @@ class mjz_arena_allocator_t {
 struct arena_allocator : public mjz_arena_allocator_t<1024, 1024> {};
 
 template <size_t block_length = size_of_global_mjz_areana_allocator_blocks,
-          bool KEEP_the_heap_clean = false>
+          bool KEEP_the_heap_clean = false,typename size_type=size_t>
 class dynamic_mjz_arena_allocator_t {
  private:
-  template <typename T, size_t m_size>
+  template <typename T, size_type m_size>
   struct data_buffer {
     T m_data[m_size];
-    inline constexpr size_t size() { return m_size; }
+    inline constexpr size_type size() { return m_size; }
     inline constexpr T *begin() { return data(); }
     inline constexpr T *end() { return data() + m_size; }
     inline constexpr T *data() { return m_data; }
-    inline constexpr const T &operator[](int64_t i) const { return m_data[i]; }
-    inline constexpr T &operator[](int64_t i) { return m_data[i]; }
+    inline constexpr const T &operator[](size_type i) const {
+      return m_data[i];
+    }
+    inline constexpr T &operator[](size_type i) { return m_data[i]; }
   };
 
  public:
-  constexpr static size_t not_valid = (((size_t)-1 >> 1) - 1);
+  constexpr static size_type not_valid = (((size_type)-1 >> 1) - 1);
   constexpr static char EMPTY_char = 'A';
   struct block_data {
-    block_data() : index_of_begin(not_valid), index_of_end(not_valid)
-    {}
+    block_data() : index_of_begin(not_valid), index_of_end(not_valid) {}
     void init() {
       index_of_begin = not_valid;
       index_of_end = not_valid;
     }
-    size_t index_of_begin = not_valid;
-    size_t index_of_end = not_valid;
+    size_type index_of_begin = not_valid;
+    size_type index_of_end = not_valid;
   };
 
-  static constexpr size_t block_required_size =
+  static constexpr size_type block_required_size =
       block_length + sizeof(block_data);
+
  protected:
-  size_t number_of_blocks{};
+  size_type number_of_blocks{};
   iterator_template_t<data_buffer<uint8_t, block_length>> m_blocks;
   iterator_template_t<block_data> m_block_data;
   inline void clean_all_data() {
@@ -1307,14 +1309,14 @@ class dynamic_mjz_arena_allocator_t {
       memset((char *)m_blocks.begin(), EMPTY_char,
              ((char *)m_blocks.end()) - ((char *)m_blocks.begin()));
   }
-  size_t get_index_of_pointer(void *ptr) {
+  size_type get_index_of_pointer(void *ptr) {
     if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return not_valid;
-    size_t ptr_diff = (size_t)((size_t)ptr - (size_t)m_blocks.begin());
+    size_type ptr_diff = (size_type)((size_type)ptr - (size_type)m_blocks.begin());
     if ((ptr_diff % block_length) && ptr_diff) return not_valid;
     return (ptr_diff / block_length);
   }
-  size_t get_index_of_pointer_that_is_not_allocated(
-      size_t number_of_blocks_in_a_row = 1, size_t begin_search_at_index = 0) {
+  size_type get_index_of_pointer_that_is_not_allocated(
+      size_type number_of_blocks_in_a_row = 1, size_type begin_search_at_index = 0) {
     block_data *begin_it = m_block_data.begin() + begin_search_at_index;
     block_data *end_it = m_block_data.end();
     while (1) {
@@ -1327,13 +1329,13 @@ class dynamic_mjz_arena_allocator_t {
              (begin_it->index_of_begin == not_valid))
         begin_it++;
       if (end_of_row_it == begin_it)
-        return (size_t)(begin_it_buf - m_block_data.begin());
+        return (size_type)(begin_it_buf - m_block_data.begin());
     }
   }
 
-  size_t allocate_block(size_t size, size_t realloc_index = not_valid) {
+  size_type allocate_block(size_type size, size_type realloc_index = not_valid) {
     bool reallocatating = (realloc_index != not_valid);
-    size_t index = get_index_of_pointer_that_is_not_allocated(
+    size_type index = get_index_of_pointer_that_is_not_allocated(
         reallocatating ? (size - get_size_in_blocks(realloc_index)) : size,
         reallocatating ? m_block_data[realloc_index].index_of_end : 0);
     if (reallocatating) {
@@ -1345,10 +1347,10 @@ class dynamic_mjz_arena_allocator_t {
     }
 
     if (index == not_valid) return not_valid;
-    set_range_to(index, {index + size});
+    set_range_to((size_type)index, (size_type)index + (size_type)size);
     return index;
   }
-  void set_range_to(size_t ren_beg, size_t ren_end, size_t beg, size_t end) {
+  void set_range_to(size_type ren_beg, size_type ren_end, size_type beg, size_type end) {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + beg;
     auto index_end_it = the_begin_data_ptr + end;
@@ -1357,10 +1359,10 @@ class dynamic_mjz_arena_allocator_t {
       (*index_beg_it++).index_of_end = end;
     }
   }
-  void set_range_to(size_t ren_beg, size_t ren_end) {
+  void set_range_to(size_type ren_beg, size_type ren_end) {
     set_range_to(ren_beg, ren_end, ren_beg, ren_end);
   }
-  void deallocate_rage(size_t index_begin, size_t index_end) {
+  void deallocate_rage(size_type index_begin, size_type index_end) {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + index_begin;
     auto index_end_it = the_begin_data_ptr + index_end;
@@ -1370,12 +1372,12 @@ class dynamic_mjz_arena_allocator_t {
     }
   }
 
-  void deallocate_block(size_t index) {
+  void deallocate_block(size_type index) {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return;
     if constexpr (KEEP_the_heap_clean) {
-      size_t end_i = m_block_data[index].index_of_end;
-      size_t beg_i = index;
+      size_type end_i = m_block_data[index].index_of_end;
+      size_type beg_i = index;
       deallocate_rage(beg_i, end_i);
       char *beg_p = (char *)(m_blocks[beg_i]).data();
       char *end_p = (char *)(m_blocks[end_i]).data();
@@ -1386,21 +1388,21 @@ class dynamic_mjz_arena_allocator_t {
     }
   }
 
-  void *get_ptr(size_t index) {
+  void *get_ptr(size_type index) {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_blocks[index]).data();
   }
-  size_t get_size_in_blocks(size_t index) {
+  size_type get_size_in_blocks(size_type index) {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_block_data[index].index_of_end - index);
   }
-  size_t get_real_size(size_t index) {
+  size_type get_real_size(size_type index) {
     return get_size_in_blocks(index) * block_length;
   }
 
-  size_t size_to_number_of_blocks(size_t size) {
+  size_type size_to_number_of_blocks(size_type size) {
     return (size % block_length) ? ((size / block_length) + 1)
                                  : (size / block_length);
   }
@@ -1415,15 +1417,15 @@ class dynamic_mjz_arena_allocator_t {
   }
 
  public:
-  void *malloc(size_t size) {
+  void *malloc(size_type size) {
     size = size_to_number_of_blocks(size);
     return get_ptr(allocate_block(size));
   }
-  void *realloc(void *ptr, size_t size) {
-    size_t index_of_ptr = get_index_of_pointer(ptr);
+  void *realloc(void *ptr, size_type size) {
+    size_type index_of_ptr = get_index_of_pointer(ptr);
     if (index_of_ptr == not_valid) return malloc(size);
     size = size_to_number_of_blocks(size);
-    size_t size_of_current_ptr = get_size_in_blocks(index_of_ptr);
+    size_type size_of_current_ptr = get_size_in_blocks(index_of_ptr);
     if (size < size_of_current_ptr) {
       deallocate_rage(index_of_ptr + size, index_of_ptr + size_of_current_ptr);
       set_range_to(index_of_ptr, index_of_ptr + size);
@@ -1436,7 +1438,7 @@ class dynamic_mjz_arena_allocator_t {
       free(ptr);
       return 0;
     }
-    size_t index = allocate_block(size, index_of_ptr);
+    size_type index = allocate_block(size, index_of_ptr);
     if (index == not_valid) {
       free(ptr);
       return 0;
@@ -1451,15 +1453,15 @@ class dynamic_mjz_arena_allocator_t {
     return 0;
   }
   void free(void *ptr) { deallocate_block(get_index_of_pointer(ptr)); }
-  size_t get_size(void *ptr) {
+  size_type get_size(void *ptr) {
     return get_real_size(get_index_of_pointer(ptr));
   }
   bool is_valid(void *ptr) {
     if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return 0;
-    return !(((size_t)((size_t)ptr - (size_t)m_blocks.begin())) % block_length);
+    return !(((size_type)((size_type)ptr - (size_type)m_blocks.begin())) % block_length);
   }
 
-  dynamic_mjz_arena_allocator_t(void *data_mem, size_t tatal_size)
+  dynamic_mjz_arena_allocator_t(void *data_mem, size_type tatal_size)
       : number_of_blocks(tatal_size / block_required_size),
         m_blocks(((data_buffer<uint8_t, block_length> *)data_mem),
                  number_of_blocks),
@@ -1484,12 +1486,44 @@ struct dynamic_arena_allocator : public dynamic_mjz_arena_allocator_t<64> {
   dynamic_arena_allocator(void *p, size_t cap)
       : dynamic_mjz_arena_allocator_t(p, cap) {}
   ~dynamic_arena_allocator() {}
-  void *unsafe_data() { return m_blocks.get_pointer();
-  }
+  void *unsafe_data() { return m_blocks.get_pointer(); }
   size_t unsafe_size() {
     return ((char *)m_blocks.end()) - ((char *)m_blocks.begin());
   }
 };
+template <size_t block_length = 64,
+          bool KEEP_the_heap_clean = false, typename size_type = uint32_t>
+struct small_dynamic_arena_allocator_t
+    : public dynamic_mjz_arena_allocator_t<block_length, KEEP_the_heap_clean,
+                                           size_type> {
+    using me =small_dynamic_arena_allocator_t;
+  small_dynamic_arena_allocator_t(void *p, size_t cap)
+      : dynamic_mjz_arena_allocator_t<block_length, KEEP_the_heap_clean,
+                                      size_type>(p, cap) {}
+  ~small_dynamic_arena_allocator_t() {}
+  void *unsafe_data() { return me::m_blocks.get_pointer(); }
+  size_t unsafe_size() {
+    return ((char *)me::m_blocks.end()) - ((char *)me::m_blocks.begin());
+  }
+};
+struct small_dynamic_arena_allocator : public small_dynamic_arena_allocator_t<64,false,uint32_t> {
+  small_dynamic_arena_allocator(void *p, size_t cap)
+      : small_dynamic_arena_allocator_t<64, false, uint32_t>(p, cap) {}
+  ~small_dynamic_arena_allocator() {}
+};
+struct tiny_dynamic_arena_allocator
+    : public small_dynamic_arena_allocator_t<64, false, uint16_t> {
+  tiny_dynamic_arena_allocator(void *p, size_t cap)
+      : small_dynamic_arena_allocator_t<64, false, uint16_t>(p, cap) {}
+  ~tiny_dynamic_arena_allocator() {}
+};
+struct vary_tiny_dynamic_arena_allocator
+    : public small_dynamic_arena_allocator_t<16, false, uint8_t> {
+  vary_tiny_dynamic_arena_allocator(void *p, size_t cap)
+      : small_dynamic_arena_allocator_t<16, false, uint8_t>(p, cap) {}
+  ~vary_tiny_dynamic_arena_allocator() {}
+};
+
 template <class my_free_realloc_wrpr_t, typename Type>
 struct mjz_reallocator_template_t {
   using my_value_Type_t = Type;
@@ -1504,6 +1538,8 @@ struct mjz_reallocator_template_t {
   using propagate_on_container_move_assignment = std::true_type;
   constexpr mjz_reallocator_template_t(){};
   ~mjz_reallocator_template_t(){};
+  mjz_reallocator_template_t(void *p, size_t n)
+      : my_free_realloc_wrpr_obj(p, n) {}
 
   template <class T>
   constexpr mjz_reallocator_template_t(
@@ -1606,8 +1642,12 @@ class C_realloc_free_package_example {
   }
 };
 template <class C_realloc_free_package_t = C_realloc_free_package_example>
-class C_allocate_free_warpper {
+struct C_allocate_free_warpper {
  public:
+  C_allocate_free_warpper() {}
+  ~C_allocate_free_warpper() {}
+  C_allocate_free_warpper(void *p, size_t n) : my_c_allocator(p, n) {}
+
   void free(void *ptr, size_t len) { my_c_allocator.free(ptr); }
   void *realloc(void *ptr, size_t, size_t needed_len) {
     return my_c_allocator.realloc(ptr, needed_len);
@@ -1618,8 +1658,12 @@ class C_allocate_free_warpper {
 };
 
 template <class std_allocator_for_char>
-class std_reallocator_free_realloc_warper {
+struct std_reallocator_free_realloc_warper {
   using char_type = mjz_get_value_Type<std_allocator_for_char>;
+  std_reallocator_free_realloc_warper(void *p, size_t n)
+      : my_std_allocator_(p, n) {}
+  constexpr std_reallocator_free_realloc_warper() {}
+  ~std_reallocator_free_realloc_warper() {}
 
  public:
   void free(void *ptr, size_t len) {
@@ -1644,17 +1688,37 @@ class std_reallocator_free_realloc_warper {
 template <class std_allocator_for_char, typename Type>
 struct std_reallocator_warper
     : public mjz_reallocator_template_t<
-          std_reallocator_free_realloc_warper<std_allocator_for_char>, Type> {};
+          std_reallocator_free_realloc_warper<std_allocator_for_char>, Type> {
+  std_reallocator_warper(void *p, size_t n)
+      : mjz_reallocator_template_t<
+            std_reallocator_free_realloc_warper<std_allocator_for_char>, Type>(
+            p, n) {}
+  constexpr std_reallocator_warper() {}
+  ~std_reallocator_warper() {}
+};
 
 template <class C_realloc_free_package_t, typename Type>
 struct C_reallocator_warper_t
     : public mjz_reallocator_template_t<
-          C_allocate_free_warpper<C_realloc_free_package_t>, Type> {};
+          C_allocate_free_warpper<C_realloc_free_package_t>, Type> {
+  constexpr C_reallocator_warper_t() {}
+  C_reallocator_warper_t(void *p, size_t n)
+      : mjz_reallocator_template_t<
+            C_allocate_free_warpper<C_realloc_free_package_t>, Type>(p, n) {}
+  ~C_reallocator_warper_t() {}
+};
 
 template <typename Type>
 struct C_reallocator_warper
     : public mjz_reallocator_template_t<
-          C_allocate_free_warpper<C_realloc_free_package_example>, Type> {};
+          C_allocate_free_warpper<C_realloc_free_package_example>, Type> {
+  constexpr C_reallocator_warper() {}
+  ~C_reallocator_warper() {}
+  C_reallocator_warper(void *p, size_t n)
+      : mjz_reallocator_template_t<
+            C_allocate_free_warpper<C_realloc_free_package_example>, Type>(p,
+                                                                           n) {}
+};
 
 template <typename Type,
           size_t number_of_blocks =
@@ -1665,12 +1729,22 @@ struct mjz_arena_allocator_warper
     : public C_reallocator_warper_t<
           mjz_arena_allocator_t<number_of_blocks, block_length,
                                 KEEP_the_heap_clean>,
-          Type> {};
+          Type> {
+  constexpr mjz_arena_allocator_warper() {}
+  mjz_arena_allocator_warper(void *p, size_t n)
+      : C_reallocator_warper_t<
+            mjz_arena_allocator_t<number_of_blocks, block_length,
+                                  KEEP_the_heap_clean>,
+            Type>(p, n) {}
+  ~mjz_arena_allocator_warper() {}
+};
 
 template <class Type>
 struct basic_mjz_allocator
     : std_reallocator_warper<std::allocator<uint8_t>, Type> {
   constexpr basic_mjz_allocator(){};
+  basic_mjz_allocator(void *p, size_t n)
+      : std_reallocator_warper<std::allocator<uint8_t>, Type>(p, n){};
   ~basic_mjz_allocator(){};
   template <class T>
   constexpr basic_mjz_allocator(const basic_mjz_allocator<T> &) noexcept {}
@@ -1689,7 +1763,7 @@ inline constexpr bool operator!=(const basic_mjz_allocator<Type> &,
 }
 
 template <typename Type>
-class mjz_obj_manager_template_t {
+struct mjz_obj_manager_template_t {
   using me = mjz_obj_manager_template_t;
 
  public:
@@ -2083,6 +2157,8 @@ template <typename Type,
 struct mjz_temp_type_allocator_warpper_t
     : public mjz_temp_type_obj_algorithims_warpper_t<Type, my_constructor>,
       protected my_reallocator {
+  using me = mjz_temp_type_allocator_warpper_t;
+
  public:
   using my_value_Type_t = Type;
   using value_type = my_value_Type_t;
@@ -2096,6 +2172,7 @@ struct mjz_temp_type_allocator_warpper_t
   using propagate_on_container_move_assignment = std::true_type;
 
   constexpr mjz_temp_type_allocator_warpper_t(){};
+  mjz_temp_type_allocator_warpper_t(void *p, size_t n) : my_reallocator(p, n){};
   ~mjz_temp_type_allocator_warpper_t(){};
 
   template <class U>
@@ -2124,7 +2201,7 @@ struct mjz_temp_type_allocator_warpper_t
   inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
     // new Type(std::forward<args_t>(args)...);
     Type *ptr = allocate_pv(1, 0);
-
+    if (!ptr) return nullptr;
     *get_real_array_ptr<size_t>(ptr) = 1;
     return my_constructor::construct_at(ptr, std::forward<args_t>(args)...);
   }
@@ -2133,16 +2210,18 @@ struct mjz_temp_type_allocator_warpper_t
                                                 args_t &&...args) {
     // new Type(std::forward<args_t>(args)...)[len];
     Type *ptr = allocate_pv(len, 0);
+    if (!ptr) return nullptr;
     *get_real_array_ptr<size_t>(ptr) = len;
-    return construct_arr_at(ptr, len, in_reveres,
-                            std::forward<args_t>(args)...);
+    return me::construct_arr_at(ptr, len, in_reveres,
+                                std::forward<args_t>(args)...);
   }
   template <typename... args_t>
   inline [[nodiscard]] Type *allocate_obj_array(size_t len,
                                                 bool in_reveres = 0) {
     Type *ptr = allocate_pv(len, 0);
+    if (!ptr) return nullptr;
     *get_real_array_ptr<size_t>(ptr) = len;
-    return construct_arr_at(ptr, len, in_reveres);
+    return me::construct_arr_at(ptr, len, in_reveres);
   }
   constexpr inline size_t get_number_of_obj_in_array(Type *ptr) {
     return *get_real_array_ptr<size_t>(ptr);
@@ -2212,6 +2291,20 @@ struct mjz_temp_type_allocator_warpper_t
   }
 };
 
+template <typename Type,
+          class my_constructor = mjz_obj_manager_template_t<Type>,
+          class C_free_realloc = C_realloc_free_package_example>
+struct C_mjz_temp_type_allocator_warpper_t
+    : public mjz_temp_type_allocator_warpper_t<
+          Type, my_constructor, C_reallocator_warper_t<C_free_realloc, Type>> {
+  constexpr C_mjz_temp_type_allocator_warpper_t() {}
+  ~C_mjz_temp_type_allocator_warpper_t() {}
+  C_mjz_temp_type_allocator_warpper_t(void *p, size_t n)
+      : mjz_temp_type_allocator_warpper_t<
+            Type, my_constructor, C_reallocator_warper_t<C_free_realloc, Type>>(
+            p, n) {}
+};
+
 template <typename Type, class my_reallocator = basic_mjz_allocator<Type>>
 using mjz_allocator_warpper_r_t =
     mjz_temp_type_allocator_warpper_t<Type, mjz_obj_manager_template_t<Type>,
@@ -2219,6 +2312,8 @@ using mjz_allocator_warpper_r_t =
 template <class Type>
 struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
   constexpr mjz_allocator_warpper() = default;
+  mjz_allocator_warpper(void *p, size_t n)
+      : mjz_allocator_warpper_r_t<Type>(p, n){};
   ~mjz_allocator_warpper() = default;
   template <class T>
   constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
@@ -2389,7 +2484,7 @@ inline void *realloc(void *p, size_t n) {
 }
 
 template <class Type, size_t m_Size, bool error_check = 1>
-class mjz_Array {  // fixed size mjz_Array of values
+struct mjz_Array {  // fixed size mjz_Array of values
  public:
   using value_type = Type;
   using reference = value_type &;
@@ -2589,7 +2684,7 @@ class mjz_Array {  // fixed size mjz_Array of values
     return *this;
   }
 
-  Type m_elements[m_Size];
+  Type m_elements[m_Size]{};
 };
 
 template <class Type, size_t m_Size, bool error_check>
@@ -2600,7 +2695,7 @@ template <class Type, size_t m_Size,
           class my_obj_constructor =
               mjz_temp_type_obj_algorithims_warpper_t<Type>,
           bool error_check = 1>
-class mjz_obj_Array {  // fixed size mjz_obj_Array of values
+struct mjz_obj_Array {  // fixed size mjz_obj_Array of values
   static my_obj_constructor my_obj_cntr;
 
  public:
@@ -2828,7 +2923,7 @@ T exchange(T &obj, U &&new_value) {
 }
 
 template <typename T, typename Allocator = mjz_allocator_warpper<T>>
-class mjz_Vector {
+struct mjz_Vector {
  public:
   using value_type = T;
   using allocator_type = Allocator;
@@ -3135,7 +3230,7 @@ template <class Type, size_t m_capacity,
           class my_obj_constructor =
               mjz_temp_type_obj_algorithims_warpper_t<Type>,
           bool do_error_check = 1>
-class mjz_static_vector_template_t {
+struct mjz_static_vector_template_t {
  public:
   using value_type = Type;
   using reference = value_type &;
@@ -9260,6 +9355,12 @@ using Vector = mjz_Vector<T>;
 template <typename T, size_t size>
 using array = mjz_Array<T, size>;
 
+template <typename T, class C_free_realloc>
+using mjz_C_allocator_warpper =
+    C_mjz_temp_type_allocator_warpper_t<T, mjz_obj_manager_template_t<T>,
+                                        C_free_realloc>;
+template <class C_free_realloc>
+using C_char_allocator_warpper = mjz_C_allocator_warpper<char, C_free_realloc>;
 template <typename T, size_t max_size>
 using static_vector = mjz_static_vector_template_t<T, max_size>;
 
