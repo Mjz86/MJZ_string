@@ -4,6 +4,7 @@
 #include <iostream>
 #include "mjzString.hpp"
 #include "fstream"
+#include "my_vm.h"
 class main_class {
   std::unique_ptr<main_class> run(int argc, const char* const* const argv);
 
