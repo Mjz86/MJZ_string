@@ -1259,10 +1259,12 @@ class mjz_arena_allocator_t {
   mjz_arena_allocator_t() { clean_all_data(); }
   ~mjz_arena_allocator_t() { clean_all_data(); }
 
-  mjz_arena_allocator_t(mjz_arena_allocator_t &&) = delete;
-  mjz_arena_allocator_t(const mjz_arena_allocator_t &) = delete;
-  mjz_arena_allocator_t &operator=(mjz_arena_allocator_t &&) = delete;
-  mjz_arena_allocator_t &operator=(const mjz_arena_allocator_t &) = delete;
+  mjz_arena_allocator_t(mjz_arena_allocator_t &&) : mjz_arena_allocator_t(){};
+  mjz_arena_allocator_t(const mjz_arena_allocator_t &)
+      : mjz_arena_allocator_t(){};
+  mjz_arena_allocator_t &operator=(mjz_arena_allocator_t &&)
+  {};
+  mjz_arena_allocator_t &operator=(const mjz_arena_allocator_t &){};
 };
 
 struct arena_allocator : public mjz_arena_allocator_t<1024, 1024> {};
@@ -1417,6 +1419,7 @@ class dynamic_mjz_arena_allocator_t {
   }
 
  public:
+
   void *malloc(size_type size) {
     size = size_to_number_of_blocks(size);
     return get_ptr(allocate_block(size));
@@ -1473,23 +1476,42 @@ class dynamic_mjz_arena_allocator_t {
     clean_all_data();
   }
   ~dynamic_mjz_arena_allocator_t() { clean_all_data(); }
+  void *unsafe_data() { return m_blocks.get_pointer(); }
+  size_t unsafe_size() {
+    return ((char *)m_blocks.end()) - ((char *)m_blocks.begin());
+  }
 
-  dynamic_mjz_arena_allocator_t(dynamic_mjz_arena_allocator_t &&) = delete;
-  dynamic_mjz_arena_allocator_t(const dynamic_mjz_arena_allocator_t &) = delete;
-  dynamic_mjz_arena_allocator_t &operator=(dynamic_mjz_arena_allocator_t &&) =
-      delete;
+ private:// this section may not be used 
+  dynamic_mjz_arena_allocator_t(dynamic_mjz_arena_allocator_t &&not_for_real_stuff)
+      : number_of_blocks(not_for_real_stuff.number_of_blocks),
+        m_blocks(std::move(not_for_real_stuff.m_blocks)),
+        m_block_data(std::move(not_for_real_stuff.m_block_data))
+             {}
+  dynamic_mjz_arena_allocator_t(
+      const dynamic_mjz_arena_allocator_t &not_for_real_stuff)
+      : number_of_blocks(not_for_real_stuff.number_of_blocks),
+        m_blocks(not_for_real_stuff.m_blocks),
+        m_block_data(not_for_real_stuff.m_block_data) {}
+
   dynamic_mjz_arena_allocator_t &operator=(
-      const dynamic_mjz_arena_allocator_t &) = delete;
+      dynamic_mjz_arena_allocator_t &&not_for_real_stuff)
+      {
+    this->~dynamic_mjz_arena_allocator_t();
+    new (this) dynamic_mjz_arena_allocator_t(std::move(not_for_real_stuff));
+  }
+  dynamic_mjz_arena_allocator_t &operator=(
+      const dynamic_mjz_arena_allocator_t &not_for_real_stuff) {
+    this->~dynamic_mjz_arena_allocator_t();
+    new (this) dynamic_mjz_arena_allocator_t(not_for_real_stuff);
+  
+  }
 };
 
 struct dynamic_arena_allocator : public dynamic_mjz_arena_allocator_t<64> {
   dynamic_arena_allocator(void *p, size_t cap)
       : dynamic_mjz_arena_allocator_t(p, cap) {}
   ~dynamic_arena_allocator() {}
-  void *unsafe_data() { return m_blocks.get_pointer(); }
-  size_t unsafe_size() {
-    return ((char *)m_blocks.end()) - ((char *)m_blocks.begin());
-  }
+ 
 };
 template <size_t block_length = 64,
           bool KEEP_the_heap_clean = false, typename size_type = uint32_t>
@@ -2632,7 +2654,12 @@ struct mjz_Array {  // fixed size mjz_Array of values
     throw std::exception("invalid mjz_Array<T, N> subscript");
   }
   static mjz_temp_type_obj_algorithims_warpper_t<Type> mjz_obj_algorithims;
+  mjz_Array( ) {
 
+  }
+  ~mjz_Array( ) {
+
+  }
   template <size_t O_size, bool O_err>
   inline mjz_Array(mjz_Array<Type, O_size, O_err> &&other) {
     size_t len = min(other.size(), this->max_size());
@@ -2648,7 +2675,7 @@ struct mjz_Array {  // fixed size mjz_Array of values
       mjz_Array<Type, O_size, O_err> &&other) {
     size_t len = min(other.size(), this->max_size());
     mjz_obj_algorithims.move_backward(other.begin(), other.begin() + len,
-                                      this->begin());
+                                      this->end());
     return *this;
   }
   template <size_t O_size, bool O_err>
@@ -2656,7 +2683,7 @@ struct mjz_Array {  // fixed size mjz_Array of values
       const mjz_Array<Type, O_size, O_err> &other) {
     size_t len = min(other.size(), this->max_size());
     mjz_obj_algorithims.copy_backward(other.begin(), other.begin() + len,
-                                      this->begin());
+                                      this->end());
     return *this;
   }
   template <bool O_err>
@@ -2673,14 +2700,14 @@ struct mjz_Array {  // fixed size mjz_Array of values
   inline mjz_Array<Type, m_Size, error_check> &operator=(
       mjz_Array<Type, m_Size, O_err> &&other) {
     mjz_obj_algorithims.move_backward(
-        other.begin(), other.begin() + this->size(), this->begin());
+        other.begin(), other.begin() + this->size(), this->end());
     return *this;
   }
   template <bool O_err>
   inline mjz_Array<Type, m_Size, error_check> &operator=(
       const mjz_Array<Type, m_Size, O_err> &other) {
     mjz_obj_algorithims.copy_backward(
-        other.begin(), other.begin() + this->size(), this->begin());
+        other.begin(), other.begin() + this->size(), this->end());
     return *this;
   }
 
@@ -2863,7 +2890,7 @@ struct mjz_obj_Array {  // fixed size mjz_obj_Array of values
       mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &&other) {
     size_t len = min(other.size(), this->max_size());
     my_obj_cntr.move_backward(other.begin(), other.begin() + len,
-                              this->begin());
+                              this->end());
     return *this;
   }
   template <size_t O_size, bool O_err>
@@ -2871,7 +2898,7 @@ struct mjz_obj_Array {  // fixed size mjz_obj_Array of values
       const mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &other) {
     size_t len = min(other.size(), this->max_size());
     my_obj_cntr.copy_backward(other.begin(), other.begin() + len,
-                              this->begin());
+                              this->end());
     return *this;
   }
   template <bool O_err>
@@ -2890,14 +2917,14 @@ struct mjz_obj_Array {  // fixed size mjz_obj_Array of values
   inline mjz_obj_Array &operator=(
       mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &&other) {
     my_obj_cntr.move_backward(other.begin(), other.begin() + this->size(),
-                              this->begin());
+                              this->end());
     return *this;
   }
   template <bool O_err>
   inline mjz_obj_Array &operator=(
       const mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &other) {
     my_obj_cntr.copy_backward(other.begin(), other.begin() + this->size(),
-                              this->begin());
+                              this->end());
     return *this;
   }
   inline ~mjz_obj_Array() { deinit_data(); }
@@ -3467,12 +3494,12 @@ struct mjz_static_vector_template_t {
     size_t fill_len = min(other.size(), this->max_size());
     auto o_it_b = other.begin();
     if (fill_len < this->size()) {
-      my_obj_cntr.move_backward(o_it_b, o_it_b + fill_len, this->begin());
+      my_obj_cntr.move_backward(o_it_b, o_it_b + fill_len, this->end());
       init_data(fill_len);
       return *this;
     }
     size_t un_init_len = fill_len - this->size();
-    my_obj_cntr.move_backward(o_it_b, o_it_b + this->size(), this->begin());
+    my_obj_cntr.move_backward(o_it_b, o_it_b + this->size(), this->end());
     o_it_b += this->size();
     if (0 < un_init_len) {
       auto o_it_e = o_it_b + un_init_len;
@@ -3489,12 +3516,12 @@ struct mjz_static_vector_template_t {
     size_t fill_len = min(other.size(), this->max_size());
     auto o_it_b = other.begin();
     if (fill_len < this->size()) {
-      my_obj_cntr.copy_backward(o_it_b, o_it_b + fill_len, this->begin());
+      my_obj_cntr.copy_backward(o_it_b, o_it_b + fill_len, this->end());
       init_data(fill_len);
       return *this;
     }
     size_t un_init_len = fill_len - this->size();
-    my_obj_cntr.copy_backward(o_it_b, o_it_b + this->size(), this->begin());
+    my_obj_cntr.copy_backward(o_it_b, o_it_b + this->size(), this->end());
     o_it_b += this->size();
     if (0 < un_init_len) {
       auto o_it_e = o_it_b + un_init_len;
@@ -3508,12 +3535,12 @@ struct mjz_static_vector_template_t {
     size_t fill_len = min(li.size(), this->max_size());
     auto o_it_b = li.begin();
     if (fill_len < this->size()) {
-      my_obj_cntr.copy_backward(o_it_b, o_it_b + fill_len, this->begin());
+      my_obj_cntr.copy_backward(o_it_b, o_it_b + fill_len, this->end());
       init_data(fill_len);
       return *this;
     }
     size_t un_init_len = fill_len - this->size();
-    my_obj_cntr.copy_backward(o_it_b, o_it_b + this->size(), this->begin());
+    my_obj_cntr.copy_backward(o_it_b, o_it_b + this->size(), this->end());
     o_it_b += this->size();
     if (0 < un_init_len) {
       auto o_it_e = o_it_b + un_init_len;
@@ -5957,18 +5984,20 @@ class mjz_temp_malloc_wrapper_t {
     return move(otr);
   }
   inline ~mjz_temp_malloc_wrapper_t() { free(); }
-  mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &) = delete;
+  mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &)
+      : mjz_temp_malloc_wrapper_t() {}
   inline mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &&otr) noexcept {
     move(otr);
   }
-  mjz_temp_malloc_wrapper_t(const mjz_temp_malloc_wrapper_t &) = delete;
-  mjz_temp_malloc_wrapper_t &operator=(mjz_temp_malloc_wrapper_t &) = delete;
+  mjz_temp_malloc_wrapper_t(const mjz_temp_malloc_wrapper_t &)
+      : mjz_temp_malloc_wrapper_t(){};
+  mjz_temp_malloc_wrapper_t &operator=(mjz_temp_malloc_wrapper_t &)
+      {};
   inline mjz_temp_malloc_wrapper_t &operator=(
       mjz_temp_malloc_wrapper_t &&otr) noexcept {
     return move(otr);
   };
-  mjz_temp_malloc_wrapper_t &operator=(const mjz_temp_malloc_wrapper_t &) =
-      delete;
+  mjz_temp_malloc_wrapper_t &operator=(const mjz_temp_malloc_wrapper_t &){};
   template <typename Type = void>
   constexpr inline Type *get_ptr_as() {
     return (Type *)m_data_ptr;
