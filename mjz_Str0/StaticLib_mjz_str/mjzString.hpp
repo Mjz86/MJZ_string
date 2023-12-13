@@ -4389,7 +4389,7 @@ class static_str_algo {
     mutable uint8_t STR_is_in_stack{};
 
    public:
-    char stack_buffer[stack_buffer_size + 1]{};  // ptr you're searching for
+    char stack_buffer[stack_buffer_size + 1];  // ptr you're searching for
     stack_str_buf() : STR_is_in_stack(0) {
       stack_buffer[stack_buffer_size] = 0;
     }
@@ -4401,7 +4401,7 @@ class static_str_algo {
       STR_is_in_stack = STR_is_in_stack_;
 
       if (!STR_is_in_stack_) {
-        static_str_algo::memset(stack_buffer, 0, stack_buffer_size);
+       // static_str_algo::memset(stack_buffer, 0, stack_buffer_size);// SLOOOOW
         stack_buffer[stack_buffer_size] = 0;
       }
       return STR_is_in_stack;
@@ -5113,38 +5113,41 @@ template <typename Type, bool construct_obj_on_constructor = true,
           class my_obj_creator_t =
               mjz_temp_type_obj_algorithims_warpper_t<Type>,
           bool do_error_check = 1>
-struct mjz_stack_obj_warper_template_t {
+struct mjz_stack_obj_warper_template_t
+    : private my_obj_creator_t // for that 1 exetera (compiler added )  memory
+{
  public:
   static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
 
  protected:
+  inline const my_obj_creator_t &m_obj_creator() const { return *this; }
+  inline my_obj_creator_t &m_obj_creator() { return *this; }
   bool m_Has_data{};
-   my_obj_creator_t m_obj_creator;
  private:
-   uint8_t m_data[sizeof_Type]{};
+   uint8_t m_data[sizeof_Type];
     inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          Type &&src) {
     if (plc_has_obj) {
-      m_obj_creator.obj_go_to_obj(*place, std::move(src));
+      m_obj_creator().obj_go_to_obj(*place, std::move(src));
       return place;
     }
-    return m_obj_creator.construct_at(place, std::move(src));
+    return m_obj_creator().construct_at(place, std::move(src));
   }
     inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          Type &src) {
     if (plc_has_obj) {
-      m_obj_creator.obj_go_to_obj(*place, src);
+      m_obj_creator().obj_go_to_obj(*place, src);
       return place;
     }
-    return m_obj_creator.construct_at(place, src);
+    return m_obj_creator().construct_at(place, src);
   }
     inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          const Type &src) {
     if (plc_has_obj) {
-      m_obj_creator.obj_go_to_obj(*place, src);
+      m_obj_creator().obj_go_to_obj(*place, src);
       return place;
     }
-    return m_obj_creator.construct_at(place, src);
+    return m_obj_creator().construct_at(place, src);
   }
   template <typename... args_t>
     inline Type *construct_in_place(Type *place, bool plc_has_obj,
@@ -5152,20 +5155,20 @@ struct mjz_stack_obj_warper_template_t {
     if (plc_has_obj) {
       uint8_t buf[sizeof_Type];
       Type *that = (Type *)buf;
-      m_obj_creator.construct_at(that, std::forward<args_t>(args)...);
-      m_obj_creator.obj_go_to_obj(*place, std::move(*that));
-      m_obj_creator.destroy_at(that);
+      m_obj_creator().construct_at(that, std::forward<args_t>(args)...);
+      m_obj_creator().obj_go_to_obj(*place, std::move(*that));
+      m_obj_creator().destroy_at(that);
       return place;
     }
-    return m_obj_creator.construct_at(place, std::forward<args_t>(args)...);
+    return m_obj_creator().construct_at(place, std::forward<args_t>(args)...);
   }
   inline Type *construct_in_place(Type *place, bool plc_has_obj) {
     if (plc_has_obj) {
-      m_obj_creator.destroy_at(place);
-      m_obj_creator.construct_at(place);
+      m_obj_creator().destroy_at(place);
+      m_obj_creator().construct_at(place);
       return place;
     }
-    return m_obj_creator.construct_at(place);
+    return m_obj_creator().construct_at(place);
   }
     inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          Type *src) {
@@ -5177,7 +5180,7 @@ struct mjz_stack_obj_warper_template_t {
   }
 
     inline void destroy_at_place(Type *place) {
-    m_obj_creator.destroy_at(place);
+    m_obj_creator().destroy_at(place);
   }
 
   template <typename... args_t>

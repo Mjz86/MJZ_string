@@ -218,6 +218,30 @@ void println(argT&&... args) {
   print(std::forward<argT>(args)...);
   std::cout << '\n';
 }
+namespace print_c_str_n {
+inline void print() {}
+template <typename... args_t>
+inline void print(const char* c_str, size_t n, args_t&&... args) {
+  std::cout.write(c_str, n);
+  return print(std::forward<args_t>(args)...);
+}
+template <typename T, typename... args_t>
+inline void print(const T& arg0, args_t&&... args) {
+  std::cout << arg0;
+  return print(std::forward<args_t>(args)...);
+}
+template <typename T, typename... args_t>
+inline void print(T& arg0, args_t&&... args) {
+  std::cout << arg0;
+  return print(std::forward<args_t>(args)...);
+}
+
+template < typename... args_t>
+inline void println(args_t&&... args) {
+   print(std::forward<args_t>(args)...);
+  std::cout << std::endl;
+}
+}
 }  // namespace mjz_ard
 
 namespace API_of_obj_cnstructor_example {
