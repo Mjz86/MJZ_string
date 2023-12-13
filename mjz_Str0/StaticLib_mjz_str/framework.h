@@ -540,7 +540,8 @@ mutable  char filler = '|';
       const mjz_class_operation_reporter_t& obj)const{
     return println_obj(obj, "^=");
   }
-  mjz_class_operation_reporter_t& operator-()const{ return println_o("-"); }
+  mjz_class_operation_reporter_t& operator-() const { return println_o("-"); }
+  mjz_class_operation_reporter_t& operator+() const { return println_o("+"); }
   mjz_class_operation_reporter_t* operator&()const{  // baaaaaaaaaaaaaaad practic
     println_o("&");
     return (mjz_class_operation_reporter_t*)this;

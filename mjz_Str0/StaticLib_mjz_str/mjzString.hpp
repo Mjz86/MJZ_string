@@ -802,6 +802,7 @@ class iterator_warper_template_t {
   inline const r_it_T crend() const { return m_begin; }
 };
 
+
 template <class it_T>
 iterator_warper_template_t<std::reverse_iterator<it_T>> to_revurse(
     iterator_warper_template_t<it_T> &it) {
@@ -5114,15 +5115,14 @@ template <typename Type, bool construct_obj_on_constructor = true,
           bool do_error_check = 1>
 struct mjz_stack_obj_warper_template_t {
  public:
-  static constexpr size_t size = sizeof(Type);
+  static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
 
  protected:
-  uint8_t m_data[size]{};
   bool m_Has_data{};
-  static my_obj_creator_t m_obj_creator;
-
+   my_obj_creator_t m_obj_creator;
  private:
-  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+   uint8_t m_data[sizeof_Type]{};
+    inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          Type &&src) {
     if (plc_has_obj) {
       m_obj_creator.obj_go_to_obj(*place, std::move(src));
@@ -5130,7 +5130,7 @@ struct mjz_stack_obj_warper_template_t {
     }
     return m_obj_creator.construct_at(place, std::move(src));
   }
-  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+    inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          Type &src) {
     if (plc_has_obj) {
       m_obj_creator.obj_go_to_obj(*place, src);
@@ -5138,7 +5138,7 @@ struct mjz_stack_obj_warper_template_t {
     }
     return m_obj_creator.construct_at(place, src);
   }
-  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+    inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          const Type &src) {
     if (plc_has_obj) {
       m_obj_creator.obj_go_to_obj(*place, src);
@@ -5147,10 +5147,10 @@ struct mjz_stack_obj_warper_template_t {
     return m_obj_creator.construct_at(place, src);
   }
   template <typename... args_t>
-  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+    inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          args_t &&...args) {
     if (plc_has_obj) {
-      uint8_t buf[size];
+      uint8_t buf[sizeof_Type];
       Type *that = (Type *)buf;
       m_obj_creator.construct_at(that, std::forward<args_t>(args)...);
       m_obj_creator.obj_go_to_obj(*place, std::move(*that));
@@ -5159,16 +5159,24 @@ struct mjz_stack_obj_warper_template_t {
     }
     return m_obj_creator.construct_at(place, std::forward<args_t>(args)...);
   }
-  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+  inline Type *construct_in_place(Type *place, bool plc_has_obj) {
+    if (plc_has_obj) {
+      m_obj_creator.destroy_at(place);
+      m_obj_creator.construct_at(place);
+      return place;
+    }
+    return m_obj_creator.construct_at(place);
+  }
+    inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          Type *src) {
     return construct_in_place(place, *src);
   }
-  static inline Type *construct_in_place(Type *place, bool plc_has_obj,
+    inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          const Type *src) {
     return construct_in_place(place, *src);
   }
 
-  static inline void destroy_at_place(Type *place) {
+    inline void destroy_at_place(Type *place) {
     m_obj_creator.destroy_at(place);
   }
 
@@ -5194,7 +5202,7 @@ struct mjz_stack_obj_warper_template_t {
     if (has_data())
       return construct_in_place(dest, dest_has_obj,
                                 std::move(*pointer_to_unsafe_data()));
-    m_Has_data = 0;
+    destroy();
     return 0;
   }
   inline Type *copy_to_place(Type *dest, bool dest_has_obj) {
@@ -5296,7 +5304,7 @@ struct mjz_stack_obj_warper_template_t {
 
   inline void de_init(int fill_VAL) {
     destroy();
-    static_str_algo::memset(m_data, fill_VAL, size);
+    static_str_algo::memset(m_data, fill_VAL, sizeof_Type);
   }
 
  public:
@@ -5379,8 +5387,62 @@ struct mjz_stack_obj_warper_template_t {
   constexpr inline const Type &operator*() const { return *operator->(); }
   constexpr inline const Type &operator()() const { return **this; }
   constexpr inline Type &operator()() { return **this; }
-  inline void operator~() { de_init();
+  
+  using my_Type_t =mjz_stack_obj_warper_template_t;
+  inline my_Type_t& operator~() { de_init();
+    return *this;
   }
+  inline my_Type_t &operator+() {
+    if (has_data()) {
+      return *this;
+    }
+    construct();
+    return *this;
+  }
+
+  inline my_Type_t &operator-() {
+    if (has_data()) {
+      de_init();
+      return *this;
+    }
+    construct();
+    return *this;
+  }
+
+  inline mjz_stack_obj_warper_template_t &operator--() {
+    de_init();
+    return *this;
+  }
+  inline mjz_stack_obj_warper_template_t operator--(int) {
+    my_Type_t temp(std::move(**this));
+  de_init();
+  return temp;
+  }
+  inline mjz_stack_obj_warper_template_t &operator++() {
+  //de_init();
+  construct();
+  return *this;
+  }
+  inline mjz_stack_obj_warper_template_t operator++(int) {
+  my_Type_t temp (std::move(**this));
+ // you may want to reuse data soo
+ //de_init();
+  construct();
+  return temp;
+  }
+  Type *begin() { return pointer_to_data();}
+  Type *end() { return begin() + 1; }
+  const Type *begin() const { return pointer_to_data(); }
+  const Type *end() const { return begin() + 1; }
+  const Type *cbegin() const { return begin(); }
+  const Type *cend() const { return end(); }
+
+ inline constexpr static size_t size() { return 1; }// for iterator
+  inline constexpr static size_t my_size() {
+  return sizeof_Type;
+  } 
+  inline constexpr static size_t size_T() { return my_size(); } 
+
 
   
    inline Type &operator()(Type &&moved) {
@@ -5562,11 +5624,7 @@ struct mjz_stack_obj_warper_template_t {
     return &move_to(*dest);
   }
 };
-template <typename Type, bool construct_obj_on_constructor,
-          class my_obj_creator, bool do_error_check>
-my_obj_creator mjz_stack_obj_warper_template_t<
-    Type, construct_obj_on_constructor, my_obj_creator,
-    do_error_check>::m_obj_creator{};
+
 
 template <class Type, const size_t m_Size, bool error_check = 1,
           bool construct_obj_on_constructor = 1,
@@ -5894,7 +5952,62 @@ class mjz_heap_obj_warper_template_t {
   inline auto operator->*(my_type my_var) {
     return pointer_to_data()->*my_var;
   }
-  inline void operator~() { de_init(); }
+  using my_Type_t=mjz_heap_obj_warper_template_t;
+  inline my_Type_t &operator~() {
+    de_init();
+    return *this;
+  }
+  inline my_Type_t &operator+() {
+    if (has_data()) {
+      return *this;
+    }
+    init();
+    return *this;
+  }
+
+  inline my_Type_t &operator-() {
+    if (has_data()) {
+      de_init();
+      return *this;
+    }
+    init();
+    return *this;
+  }
+
+  inline my_Type_t &operator--() {
+    de_init();
+    return *this;
+  }
+  inline my_Type_t operator--(int) {
+    my_Type_t temp(std::move(**this));
+    de_init();
+    return temp;
+  }
+  inline my_Type_t &operator++() {
+    // de_init();
+    init();
+    return *this;
+  }
+  inline my_Type_t operator++(int) {
+    my_Type_t temp(std::move(**this));
+    // you may want to reuse data soo
+    // de_init();
+    init();
+    return temp;
+  }
+  Type *begin() { return pointer_to_data(); }
+  Type *end() { return begin() + 1; }
+  const Type *begin() const { return pointer_to_data(); }
+  const Type *end() const { return begin() + 1; }
+  const Type *cbegin() const { return begin(); }
+  const Type *cend() const { return end(); }
+
+  inline constexpr static size_t size() { return 1; }  // for iterator
+  inline constexpr static size_t my_size() {
+    return mjz_get_value_Type<decltype(m_ptr)>::my_size();
+  }
+  inline constexpr static size_t size_T() { return my_size(); } 
+
   constexpr inline Type &operator*() { return *operator->(); }
   inline mjz_heap_obj_warper_template_t *operator&() { return this; }  // &obj
   inline Type *operator&(int) { return pointer_to_data(); }            // obj&0
