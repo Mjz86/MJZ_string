@@ -424,13 +424,15 @@
       <AdditionalIncludeDirectories>$(SolutionDir)mjz_vm_lib;$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <AdditionalOptions>-pg %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <Profile>true</Profile>
       <ShowProgress>LinkVerbose</ShowProgress>
       <AssemblyDebug>true</AssemblyDebug>
+      <AdditionalOptions>-pg %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
@@ -557,15 +559,17 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)mjz_vm_lib;$(SolutionDir)StaticLib1;$(SolutionDir)StaticLib_mjz_str;$(SolutionDir)StaticLib_mjz_str</AdditionalIncludeDirectories>
       <UseFullPaths>false</UseFullPaths>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <ShowProgress>LinkVerbose</ShowProgress>
       <Profile>true</Profile>
-      <AssemblyDebug>true</AssemblyDebug>
+      <AssemblyDebug>false</AssemblyDebug>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='dll|x64'">

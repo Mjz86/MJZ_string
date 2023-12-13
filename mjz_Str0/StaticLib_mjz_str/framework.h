@@ -26,6 +26,24 @@ class speed_Timer {
  private:
   std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
 };
+class tiny_scoped_timer {
+ private:
+  std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
+  const char*  str = "";
+
+ public:
+  tiny_scoped_timer(const char* s)
+      : m_Start(std::chrono::high_resolution_clock::now()), str(s) {
+
+  }
+  ~tiny_scoped_timer() { 
+      size_t time = (std::chrono::duration_cast<std::chrono::nanoseconds>(
+                       std::chrono::high_resolution_clock::now() - m_Start)
+                       .count());
+ std::cout << str << " : " << time<< " ns\n";
+  }
+
+};
 struct timer_info {
   long double Time_ns;
   long double atempt_num;
