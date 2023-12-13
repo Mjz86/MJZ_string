@@ -234,10 +234,10 @@ class P {// no one can do anything with P except  mjz_obj_destructor<P> and mjz_
   inline static [[nodiscard]] void* operator new(size_t m_size) { return 0; }
   inline static [[nodiscard]] void* operator new[](size_t m_size) { return 0; }
   inline static void *operator new(size_t, void *where) { return where; }
-  inline static void operator delete(void *p) {}
-  inline static void operator delete[](void *p) {}
-  inline static void operator delete(void *p, size_t) {}
-  inline static void operator delete[](void *p, size_t) {}
+  inline static void operator delete(void * ) {}
+  inline static void operator delete[](void * ) {}
+  inline static void operator delete(void * , size_t) {}
+  inline static void operator delete[](void * , size_t) {}
   inline static void operator delete(void *, void *) {}
   inline static void operator delete(void *, size_t, void *) {}
 
