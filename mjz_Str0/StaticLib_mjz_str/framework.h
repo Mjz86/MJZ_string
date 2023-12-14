@@ -374,6 +374,31 @@ mutable  char filler = '|';
     print(i);
     println_wi(index++, ")  ");
   }
+  mjz_class_operation_reporter_t(float i) : filler(i) {
+    print_c_str(" created with float :(");
+    print(i);
+    println_wi(index++, ")  ");
+  }
+  mjz_class_operation_reporter_t(double i) : filler(i) {
+    print_c_str(" created with double :(");
+    print(i);
+    println_wi(index++, ")  ");
+  }
+  mjz_class_operation_reporter_t(size_t i) : filler(i) {
+    print_c_str(" created with size_t :(");
+    print(i);
+    println_wi(index++, ")  ");
+  }
+  mjz_class_operation_reporter_t(int64_t i) : filler(i) {
+    print_c_str(" created with int64_t :(");
+    print(i);
+    println_wi(index++, ")  ");
+  }
+  mjz_class_operation_reporter_t(void* i) : filler(i) {
+    print_c_str(" created with size_t :(");
+    print(i);
+    println_wi(index++, ")  ");
+  }
   mjz_class_operation_reporter_t(char c) : filler(c) {
     print_c_str(" created with char :(");
     print(c);

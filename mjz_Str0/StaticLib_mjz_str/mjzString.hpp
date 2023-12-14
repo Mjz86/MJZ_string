@@ -4684,7 +4684,7 @@ class static_str_algo {
     for (int64_t i = 1; i <= number_of_terms; i++) {
       Type term{1};
       for (int64_t j = 1; j <= i; j++) {
-        term *= x / j;
+        term *= x / Type(j);
       }
       retval += term;
     }
@@ -4693,11 +4693,13 @@ class static_str_algo {
 
   template <typename Type>
   constexpr static inline Type expt(int32_t number) {
-    return ((0 < number) ? expULt(number) : (Type)1 / expULt(-(number)));
+    return ((number > Type{0}) ? expULt<Type>(number)
+                         : (Type)1 / expULt<Type>(-(number)));
   }
   template <typename Type>
   constexpr static inline Type expt(Type number) {
-    return ((0 < number) ? expUt(number) : (Type)1 / expUt(-(number)));
+    return ((number > Type{0}) ? expUt<Type>(number)
+                         : (Type)1 / expUt<Type>(-(number)));
   }
 
   template <typename Type>
@@ -5472,15 +5474,95 @@ struct mjz_stack_obj_warper_template_t
   inline Type &operator()(Type &moved) { return *this = moved; }
   inline Type &operator()(const Type &moved) { return *this = moved; }
 
-  template <class function_type, class return_type, typename... args_t>
-  inline return_type operator()(function_type f, args_t &&...args) const {
+  template <class return_type = auto, class function_type, typename... args_t>
+  inline return_type do_or_throw(function_type f,  args_t &&...args) const {
     return f(**this, std::forward<args_t>(args)...);
   }
-  template <class function_type, class return_type, typename... args_t>
-  inline return_type operator()(function_type f, args_t &&...args) {
+  template <class return_type = auto, class function_type, typename... args_t>
+  inline return_type do_or_throw(function_type f,  args_t &&...args) {
     return f(**this, std::forward<args_t>(args)...);
+  }
+  template <class function_type,  typename... args_t>
+ inline void operator()(function_type f, args_t &&...args) {
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
+  }
+  template <class function_type, typename... args_t>
+ inline void operator()(function_type f, args_t &&...args) const {
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
   }
 
+  template <class function_type,  typename... args_t>
+  inline void i_do_nt_know(bool do_throw, function_type f,  
+                         args_t &&...args) const {
+      if(do_throw) {
+      f(**this, std::forward<args_t>(args)...);
+      return;
+    }
+      if (has_data()) f(O(), std::forward<args_t>(args)...);
+    return;
+
+  }
+  template <class function_type,  typename... args_t>
+  inline void i_do_nt_know(bool do_throw, function_type f, 
+                                args_t &&...args) {
+    if (do_throw) {
+      f(**this, std::forward<args_t>(args)...);
+      return;
+    }
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
+    return;
+  }
+
+
+      
+  template <class return_type = auto, class has_data_function_type,
+            class no_data_function_type, typename... args_t>
+  inline return_type do_first_if_true_or_second_if_false_ret(
+      has_data_function_type has_data_function,
+      no_data_function_type no_data_function, args_t &&...args) const {
+    if (has_data()) {
+      return has_data_function(O(), std::forward<args_t>(args)...);
+    }
+    return no_data_function(std::forward<args_t>(args)...);
+  }
+
+  template <class return_type = auto, class has_data_function_type,
+            class no_data_function_type, typename... args_t>
+  inline return_type do_first_if_true_or_second_if_false_ret(
+      has_data_function_type has_data_function,
+      no_data_function_type no_data_function, args_t &&...args) {
+    if (has_data()) {
+      return has_data_function(O(), std::forward<args_t>(args)...);
+    }
+    return no_data_function(std::forward<args_t>(args)...);
+  }  
+   template <class has_data_function_type, class no_data_function_type,
+            typename... args_t>
+  inline void do_first_if_true_or_second_if_false(
+      has_data_function_type has_data_function,
+                         no_data_function_type no_data_function,
+                         args_t &&...args) const {
+    if (has_data()) {
+      has_data_function(O(), std::forward<args_t>(args)...);
+      return;
+    }
+    no_data_function(std::forward<args_t>(args)...);
+    return;
+  }
+
+  template <class has_data_function_type, class no_data_function_type,
+            typename... args_t>
+  inline void do_first_if_true_or_second_if_false(
+      has_data_function_type has_data_function,
+                         no_data_function_type no_data_function,
+                         args_t &&...args) {
+    if (has_data()) {
+      has_data_function(O(), std::forward<args_t>(args)...);
+      return;
+    }
+    no_data_function(std::forward<args_t>(args)...);
+    return;
+  }
  public:
   inline bool operator==(const mjz_stack_obj_warper_template_t &other) const {
     return **this == *other;
@@ -5811,13 +5893,30 @@ template <typename Type, bool construct_obj_on_constructor = true,
           class my_obj_creator_t =
               mjz_temp_type_obj_algorithims_warpper_t<Type>>
 class mjz_heap_obj_warper_template_t {
+ private:
   using mjz_sow_t =
       mjz_stack_obj_warper_template_t<Type, construct_obj_on_constructor,
                                       my_obj_creator_t>;
   std::unique_ptr<mjz_sow_t> m_ptr;
-
+    inline Type *OP() { return m_ptr.get().uop(); }
+    inline Type &O() { return *OP(); }
+    inline const Type *OP() const { return m_ptr.get().uop(); }
+    inline const Type &O() const { return *OP(); }
  protected:
  public:
+    inline Type &o() { return **this; }
+    inline Type *op() { return this->operator->(); }
+    inline const Type &o() const { return **this; }
+    inline const Type *op() const { return this->operator->(); }
+
+  // unsafe object  functions begin
+    inline Type &uo()  { return *uop(); }
+    inline Type *uop()  {
+    return m_ptr->uop();
+  }
+    inline const Type &uo() const  { return *uop(); }
+    inline const Type *uop() const { return m_ptr->uop(); }
+  // unsafe object functions end
   constexpr inline mjz_heap_obj_warper_template_t()
       : m_ptr(std::make_unique<mjz_sow_t>()){
 
@@ -5948,13 +6047,106 @@ class mjz_heap_obj_warper_template_t {
   inline Type &operator()(Type &&moved) { return *this = std::move(moved); }
   inline Type &operator()(Type &moved) { return *this = moved; }
   inline Type &operator()(const Type &moved) { return *this = moved; }
-  template <class function_type, class return_type, typename... args_t>
-  inline return_type operator()(function_type f, args_t &&...args) const {
+  template <class return_type = auto, class function_type, 
+            typename... args_t>
+  inline return_type do_or_throw(function_type f,  args_t &&...args) const {
     return f(**this, std::forward<args_t>(args)...);
   }
-  template <class function_type, class return_type, typename... args_t>
-  inline return_type operator()(function_type f, args_t &&...args) {
+  template <class return_type = auto, class function_type, 
+            typename... args_t>
+  inline return_type do_or_throw(function_type f,  args_t &&...args) {
     return f(**this, std::forward<args_t>(args)...);
+  }
+  template <class function_type, typename... args_t>
+  inline void operator()(function_type f, args_t &&...args) {
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
+  }
+  template <class function_type, typename... args_t>
+  inline void operator()(function_type f, args_t &&...args) const {
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
+  }
+
+    template <class function_type, typename... args_t>
+  inline void i_do_nt_know(bool do_throw, function_type f,
+                         args_t &&...args) const {
+    if (do_throw) {
+      f(**this, std::forward<args_t>(args)...);
+      return;
+    }
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
+    return;
+  }
+  template <class function_type, typename... args_t>
+  inline void i_do_nt_know(bool do_throw, function_type f, 
+                         args_t &&...args) {
+    if (do_throw) {
+      f(**this, std::forward<args_t>(args)...);
+      return;
+    }
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
+    return;
+  }
+
+
+
+
+
+      
+  template <class return_type = auto, class has_data_function_type,
+            class no_data_function_type,
+                  typename... args_t>
+  inline return_type do_first_if_true_or_second_if_false_ret(
+            has_data_function_type has_data_function,
+            no_data_function_type no_data_function, args_t &&...args) const {
+    if (has_data()) {
+      return has_data_function(O(), std::forward<args_t>(args)...);
+    
+    }
+    return no_data_function(std::forward<args_t>(args)...);
+   
+  }
+
+  template <class return_type = auto, class has_data_function_type,
+            class no_data_function_type,
+            typename... args_t>
+  inline return_type do_first_if_true_or_second_if_false_ret(
+      has_data_function_type has_data_function,
+      no_data_function_type no_data_function, args_t &&...args) {
+    if (has_data()) {
+      return has_data_function(O(), std::forward<args_t>(args)...);
+      
+    }
+    return no_data_function(std::forward<args_t>(args)...);
+  }
+
+
+
+
+  template <class has_data_function_type, class no_data_function_type,
+            typename... args_t>
+  inline void do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                         no_data_function_type no_data_function, 
+                         args_t &&...args) const {
+    if (has_data()) {
+      has_data_function(O(), std::forward<args_t>(args)...);
+      return;
+    }
+    no_data_function(std::forward<args_t>(args)...);
+    return;
+  }
+
+  template <class has_data_function_type, class no_data_function_type,
+            typename... args_t>
+  inline void do_first_if_true_or_second_if_false(
+      has_data_function_type has_data_function,
+                         no_data_function_type no_data_function, 
+                         args_t &&...args) {
+    if (has_data()) {
+      has_data_function(O(), std::forward<args_t>(args)...);
+      return;
+    }
+    no_data_function(std::forward<args_t>(args)...);
+    return;
   }
   inline const Type &operator()() const { return **this; }
   inline Type &operator()() { return **this; }
@@ -9120,7 +9312,7 @@ class Vector2 {
   };
 
   inline constexpr Vector2() : m_x{}, m_y{} {}
-  inline constexpr Vector2(const Type &s = Type()) : m_x(s), m_y(s) {}
+  inline constexpr Vector2(const Type &s ) : m_x(s), m_y(s) {}
   inline constexpr Vector2(const Type &x, const Type &y) : m_x(x), m_y(y) {}
   inline constexpr Vector2(const Vector2<Type> &v) : m_x(v.m_x), m_y(v.m_y) {}
 
