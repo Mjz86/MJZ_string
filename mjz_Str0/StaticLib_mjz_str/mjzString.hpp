@@ -4694,12 +4694,12 @@ class static_str_algo {
   template <typename Type>
   constexpr static inline Type expt(int32_t number) {
     return ((number > Type{0}) ? expULt<Type>(number)
-                         : (Type)1 / expULt<Type>(-(number)));
+                               : (Type)1 / expULt<Type>(-(number)));
   }
   template <typename Type>
   constexpr static inline Type expt(Type number) {
     return ((number > Type{0}) ? expUt<Type>(number)
-                         : (Type)1 / expUt<Type>(-(number)));
+                               : (Type)1 / expUt<Type>(-(number)));
   }
 
   template <typename Type>
@@ -5221,25 +5221,23 @@ struct mjz_stack_obj_warper_template_t
   }
 
  public:
- constexpr inline Type& o( ) { return **this;}
+  constexpr inline Type &o() { return **this; }
   constexpr inline Type *op() { return this->operator->(); }
- constexpr inline const Type &o() const { return **this; }
+  constexpr inline const Type &o() const { return **this; }
   constexpr inline const Type *op() const { return this->operator->(); }
 
-
   // unsafe object  functions begin
- constexpr inline Type &uo() noexcept { return *uop(); }  
+  constexpr inline Type &uo() noexcept { return *uop(); }
   constexpr inline Type *uop() noexcept {
     if (m_Has_data) return OP();
     return nullptr;
- }
- constexpr inline const Type &uo() const noexcept { return *uop(); }
+  }
+  constexpr inline const Type &uo() const noexcept { return *uop(); }
   constexpr inline const Type *uop() const noexcept {
     if (m_Has_data) return OP();
     return nullptr;
   }
   // unsafe object functions end
-  
 
   constexpr inline mjz_stack_obj_warper_template_t() {
     if constexpr (construct_obj_on_constructor) {
@@ -5369,8 +5367,7 @@ struct mjz_stack_obj_warper_template_t
     return (uint8_t *)(m_data);
   }
   constexpr inline Type *pointer_to_unsafe_data() { return OP(); }
-  constexpr inline const Type *pointer_to_unsafe_data() const { return OP();
-  }
+  constexpr inline const Type *pointer_to_unsafe_data() const { return OP(); }
 
  public:
   constexpr inline const Type *throw_if_no_data_or_give_data() const {
@@ -5475,36 +5472,34 @@ struct mjz_stack_obj_warper_template_t
   inline Type &operator()(const Type &moved) { return *this = moved; }
 
   template <class return_type = auto, class function_type, typename... args_t>
-  inline return_type do_or_throw(function_type f,  args_t &&...args) const {
+  inline return_type do_or_throw(function_type f, args_t &&...args) const {
     return f(**this, std::forward<args_t>(args)...);
   }
   template <class return_type = auto, class function_type, typename... args_t>
-  inline return_type do_or_throw(function_type f,  args_t &&...args) {
+  inline return_type do_or_throw(function_type f, args_t &&...args) {
     return f(**this, std::forward<args_t>(args)...);
   }
-  template <class function_type,  typename... args_t>
- inline void operator()(function_type f, args_t &&...args) {
+  template <class function_type, typename... args_t>
+  inline void operator()(function_type f, args_t &&...args) {
     if (has_data()) f(O(), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
- inline void operator()(function_type f, args_t &&...args) const {
+  inline void operator()(function_type f, args_t &&...args) const {
     if (has_data()) f(O(), std::forward<args_t>(args)...);
   }
 
-  template <class function_type,  typename... args_t>
-  inline void i_do_nt_know(bool do_throw, function_type f,  
-                         args_t &&...args) const {
-      if(do_throw) {
+  template <class function_type, typename... args_t>
+  inline void i_do_nt_know(bool do_throw, function_type f,
+                           args_t &&...args) const {
+    if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
     }
-      if (has_data()) f(O(), std::forward<args_t>(args)...);
+    if (has_data()) f(O(), std::forward<args_t>(args)...);
     return;
-
   }
-  template <class function_type,  typename... args_t>
-  inline void i_do_nt_know(bool do_throw, function_type f, 
-                                args_t &&...args) {
+  template <class function_type, typename... args_t>
+  inline void i_do_nt_know(bool do_throw, function_type f, args_t &&...args) {
     if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
@@ -5513,8 +5508,6 @@ struct mjz_stack_obj_warper_template_t
     return;
   }
 
-
-      
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
   inline return_type do_first_if_true_or_second_if_false_ret(
@@ -5535,13 +5528,12 @@ struct mjz_stack_obj_warper_template_t
       return has_data_function(O(), std::forward<args_t>(args)...);
     }
     return no_data_function(std::forward<args_t>(args)...);
-  }  
-   template <class has_data_function_type, class no_data_function_type,
+  }
+  template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
   inline void do_first_if_true_or_second_if_false(
       has_data_function_type has_data_function,
-                         no_data_function_type no_data_function,
-                         args_t &&...args) const {
+      no_data_function_type no_data_function, args_t &&...args) const {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return;
@@ -5554,8 +5546,7 @@ struct mjz_stack_obj_warper_template_t
             typename... args_t>
   inline void do_first_if_true_or_second_if_false(
       has_data_function_type has_data_function,
-                         no_data_function_type no_data_function,
-                         args_t &&...args) {
+      no_data_function_type no_data_function, args_t &&...args) {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return;
@@ -5563,6 +5554,7 @@ struct mjz_stack_obj_warper_template_t
     no_data_function(std::forward<args_t>(args)...);
     return;
   }
+
  public:
   inline bool operator==(const mjz_stack_obj_warper_template_t &other) const {
     return **this == *other;
@@ -5683,11 +5675,33 @@ struct mjz_stack_obj_warper_template_t
   }
 #endif  // ! Arduino
   constexpr inline bool has_data() { return m_Has_data; }
-  bool operator!() const { return !m_Has_data; }
-  explicit operator bool() const { return m_Has_data; }
+  constexpr inline bool operator!() const noexcept { return !m_Has_data; }
   inline operator Type &() { return *pointer_to_data(); }
   inline operator const Type &() const { return *pointer_to_data(); }
+  constexpr explicit operator bool() const noexcept { return has_data(); }
+  constexpr bool has_value() const noexcept { return has_data(); }
 
+  constexpr Type &&value() && { return **this; }
+  constexpr const Type &value() const & { return **this; }
+  constexpr Type &value() & { return **this; }
+
+  /*
+  i didnt know before that ret_t (class::*) (arg_t) could change based on  & or
+  && this is like ret_t name_fn(arg_t...) && {.....}    ====     
+  ret_t (class::&&) (arg_t...) 
+  
+  ret_t name_fn(arg_t...) & {.....}  ====       
+  ret_t (class::&) (arg_t) 
+  
+  
+  ret_t name_fn(arg_t...)const & {.....}  ====       
+  ret_t(const class::&) (arg_t)
+
+        i just knew
+
+  ret_t name_fn(arg_t...)const  {.....}  ====
+  ret_t (const class::) (arg_t)
+  */
  public:
   inline Type *copy_to(Type *dest, bool dest_has_obj) {
     return copy_to_place(dest, dest_has_obj);
@@ -5898,24 +5912,23 @@ class mjz_heap_obj_warper_template_t {
       mjz_stack_obj_warper_template_t<Type, construct_obj_on_constructor,
                                       my_obj_creator_t>;
   std::unique_ptr<mjz_sow_t> m_ptr;
-    inline Type *OP() { return m_ptr.get().uop(); }
-    inline Type &O() { return *OP(); }
-    inline const Type *OP() const { return m_ptr.get().uop(); }
-    inline const Type &O() const { return *OP(); }
+  inline Type *OP() { return m_ptr.get().uop(); }
+  inline Type &O() { return *OP(); }
+  inline const Type *OP() const { return m_ptr.get().uop(); }
+  inline const Type &O() const { return *OP(); }
+
  protected:
  public:
-    inline Type &o() { return **this; }
-    inline Type *op() { return this->operator->(); }
-    inline const Type &o() const { return **this; }
-    inline const Type *op() const { return this->operator->(); }
+  inline Type &o() { return **this; }
+  inline Type *op() { return this->operator->(); }
+  inline const Type &o() const { return **this; }
+  inline const Type *op() const { return this->operator->(); }
 
   // unsafe object  functions begin
-    inline Type &uo()  { return *uop(); }
-    inline Type *uop()  {
-    return m_ptr->uop();
-  }
-    inline const Type &uo() const  { return *uop(); }
-    inline const Type *uop() const { return m_ptr->uop(); }
+  inline Type &uo() { return *uop(); }
+  inline Type *uop() { return m_ptr->uop(); }
+  inline const Type &uo() const { return *uop(); }
+  inline const Type *uop() const { return m_ptr->uop(); }
   // unsafe object functions end
   constexpr inline mjz_heap_obj_warper_template_t()
       : m_ptr(std::make_unique<mjz_sow_t>()){
@@ -6047,14 +6060,12 @@ class mjz_heap_obj_warper_template_t {
   inline Type &operator()(Type &&moved) { return *this = std::move(moved); }
   inline Type &operator()(Type &moved) { return *this = moved; }
   inline Type &operator()(const Type &moved) { return *this = moved; }
-  template <class return_type = auto, class function_type, 
-            typename... args_t>
-  inline return_type do_or_throw(function_type f,  args_t &&...args) const {
+  template <class return_type = auto, class function_type, typename... args_t>
+  inline return_type do_or_throw(function_type f, args_t &&...args) const {
     return f(**this, std::forward<args_t>(args)...);
   }
-  template <class return_type = auto, class function_type, 
-            typename... args_t>
-  inline return_type do_or_throw(function_type f,  args_t &&...args) {
+  template <class return_type = auto, class function_type, typename... args_t>
+  inline return_type do_or_throw(function_type f, args_t &&...args) {
     return f(**this, std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
@@ -6066,9 +6077,9 @@ class mjz_heap_obj_warper_template_t {
     if (has_data()) f(O(), std::forward<args_t>(args)...);
   }
 
-    template <class function_type, typename... args_t>
+  template <class function_type, typename... args_t>
   inline void i_do_nt_know(bool do_throw, function_type f,
-                         args_t &&...args) const {
+                           args_t &&...args) const {
     if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
@@ -6077,8 +6088,7 @@ class mjz_heap_obj_warper_template_t {
     return;
   }
   template <class function_type, typename... args_t>
-  inline void i_do_nt_know(bool do_throw, function_type f, 
-                         args_t &&...args) {
+  inline void i_do_nt_know(bool do_throw, function_type f, args_t &&...args) {
     if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
@@ -6087,46 +6097,33 @@ class mjz_heap_obj_warper_template_t {
     return;
   }
 
-
-
-
-
-      
   template <class return_type = auto, class has_data_function_type,
-            class no_data_function_type,
-                  typename... args_t>
+            class no_data_function_type, typename... args_t>
   inline return_type do_first_if_true_or_second_if_false_ret(
-            has_data_function_type has_data_function,
-            no_data_function_type no_data_function, args_t &&...args) const {
+      has_data_function_type has_data_function,
+      no_data_function_type no_data_function, args_t &&...args) const {
     if (has_data()) {
       return has_data_function(O(), std::forward<args_t>(args)...);
-    
     }
     return no_data_function(std::forward<args_t>(args)...);
-   
   }
 
   template <class return_type = auto, class has_data_function_type,
-            class no_data_function_type,
-            typename... args_t>
+            class no_data_function_type, typename... args_t>
   inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) {
     if (has_data()) {
       return has_data_function(O(), std::forward<args_t>(args)...);
-      
     }
     return no_data_function(std::forward<args_t>(args)...);
   }
 
-
-
-
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  inline void do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
-                         no_data_function_type no_data_function, 
-                         args_t &&...args) const {
+  inline void do_first_if_true_or_second_if_false(
+      has_data_function_type has_data_function,
+      no_data_function_type no_data_function, args_t &&...args) const {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return;
@@ -6139,8 +6136,7 @@ class mjz_heap_obj_warper_template_t {
             typename... args_t>
   inline void do_first_if_true_or_second_if_false(
       has_data_function_type has_data_function,
-                         no_data_function_type no_data_function, 
-                         args_t &&...args) {
+      no_data_function_type no_data_function, args_t &&...args) {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return;
@@ -9312,7 +9308,7 @@ class Vector2 {
   };
 
   inline constexpr Vector2() : m_x{}, m_y{} {}
-  inline constexpr Vector2(const Type &s ) : m_x(s), m_y(s) {}
+  inline constexpr Vector2(const Type &s) : m_x(s), m_y(s) {}
   inline constexpr Vector2(const Type &x, const Type &y) : m_x(x), m_y(y) {}
   inline constexpr Vector2(const Vector2<Type> &v) : m_x(v.m_x), m_y(v.m_y) {}
 
@@ -9854,6 +9850,12 @@ template <typename T, bool init = true>
 using mjz_stack_obj_warper = mjz_stack_obj_warper_template_t<T, init>;
 template <typename T, bool init = true>
 using hobj_warper = mjz_heap_obj_warper_template_t<T, init>;
+
+template <typename T>
+using optional = mjz_stack_obj_warper_template_t<T, false>;
+template <typename T>
+using mjz_optional = mjz_stack_obj_warper_template_t<T, false>;
+
 template <typename T, bool init = true>
 using mjz_heap_obj_warper = mjz_heap_obj_warper_template_t<T, init>;
 template <typename T>
@@ -12657,7 +12659,9 @@ bool mjz_RingBufferN<N>::isFull() {
 }
 
 }  // namespace mjz_ard
-
+namespace mjz_ard_types = mjz_ard::have_mjz_ard_removed;
+namespace mjz = mjz_ard;
+namespace mjzt = mjz_ard_types;
 #undef NO_IGNORE_CHAR
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus

@@ -714,7 +714,6 @@ counter_class mjz_class_operation_reporter_t<counter_class, my_stream>::index{};
 using operation_reporter = mjz_class_operation_reporter_t<size_t>;
 
 namespace have_mjz_ard_removed {
-
 using operation_reporter = mjz_class_operation_reporter_t<size_t>;
 typedef vr_Scoped_speed_Timer vr_Scoped_speed_Timer;
 typedef speed_Timer speed_Timer;
