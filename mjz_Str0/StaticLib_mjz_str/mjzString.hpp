@@ -5111,6 +5111,9 @@ struct mjz_stack_obj_warper_template_t
  public:
   static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
 
+  inline my_obj_creator_t get_obj_creator() {
+    return my_obj_creator_t(*((const my_obj_creator_t*)this));
+  }
  protected:
   inline const my_obj_creator_t &m_obj_creator() const & { return *this; }
   inline my_obj_creator_t &m_obj_creator() & { return *this; }
@@ -8196,12 +8199,12 @@ class mjz_Str : public basic_mjz_String,
     // obj.mjz_Str<T>::~mjz_Str<T>();//bad not calling virtually
     // obj->~mjz_Str<T>(); // good calls the most derived constructor
     where.~mjz_str_t<T>();  // end lifetime
-    new (&where) mjz_str_t<T>;
+    new (&where) mjz_str_t<T>;// create an object in the place of the peivios one
     return where;
   }
   inline static mjz_str_t<T> *replace_with_new_str(mjz_str_t<T> *where) {
     where->~mjz_str_t<T>();  // end lifetime
-    new (where) mjz_str_t<T>;
+    new (where) mjz_str_t<T>;// create an object in the place of the peivios one
     return where;
   }
   template <typename my_type>
@@ -8675,12 +8678,7 @@ class mjz_Str : public basic_mjz_String,
   mjz_str_t<T> &ULL_LL_to_str_rep(size_t value, int radix, bool is_signed,
                                   bool force_neg = 0);
   friend void swap(mjz_str_t<T> &lhs, mjz_str_t<T> &rhs) { lhs.swap(rhs); }
-  void swap(mjz_str_t<T> &rhs) {
-    mjz_str_t<T> &lhs = *this;
-    mjz_str_t<T> lhs_buffer(std::move(lhs));  // be careful
-    new (&lhs) mjz_str_t<T>;                  // be careful
-    lhs = std::move(rhs);
-    rhs = std::move(lhs_buffer);
+  void swap(mjz_str_t<T> &rhs) { std::swap(*this, rhs);
   }
   char &at(int64_t i) & { return operator[](i); }
   char &front() & { return operator[]((int64_t)-1); }
@@ -12478,7 +12476,7 @@ mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str() {
   return ret;
   */
   mjz_ard::mjz_str_t<T> ret = std::move(*this);  // be careful
-  new (this) mjz_ard::mjz_str_t<T>;              // be careful
+  replace_with_new_str(this);
   return ret;
 }
 template <typename T>
