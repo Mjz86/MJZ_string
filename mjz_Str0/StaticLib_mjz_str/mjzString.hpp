@@ -5681,11 +5681,129 @@ struct mjz_stack_obj_warper_template_t
   constexpr explicit operator bool() const noexcept { return has_data(); }
   constexpr bool has_value() const noexcept { return has_data(); }
 
+  template <class... Args>
+  T& emplace(Args &&...args) {
+    construct(std::forward<Args>(args)...);
+  }
+  template <class U, class... Args>
+  T& emplace(std::initializer_list<U> ilist, Args &&...args) {
+    construct(ilist, std::forward<Args>(args)...);
+  }
+  void reset( ) noexcept {
+      try{
+      ~(*this);
+          }
+      catch(...) {
+
+      }
+  }
+  template <class F>
+    mjz_stack_obj_warper_template_t or_else(F &&f) const & {
+      return has_data() ? *this : std::forward<F>(f)();
+  }
+  template <class F>
+    mjz_stack_obj_warper_template_t or_else(F &&f) && {
+      return has_data() ? std::move(*this) : std::forward<F>(f)();
+  }
   constexpr Type &&value() && { return **this; }
   constexpr const Type &value() const & { return **this; }
   constexpr Type &value() & { return **this; }
+  template <class U>
+  constexpr   Type value_or(U &&default_value) const & {
+    return has_data() ? **this : static_cast<T>(std::forward<U>(default_value));
+  }
+  template <class U>
+  constexpr Type value_or(U &&default_value) & {
+    return has_data() ? **this : static_cast<T>(std::forward<U>(default_value));
+  }
+  template <class U>
+  constexpr Type value_or(U &&default_value) && {
+    return has_data() ? std::move(**this)
+                       : static_cast<T>(std::forward<U>(default_value));
+  }
+ 
+ template <class F>
+ constexpr auto transform(F&& f)& {
+          if(has_data( )) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(O()))>(
+          std::forward<F>(f)(O()));
+    }
+      return {};
+  }
+  template <class F>
+  constexpr auto transform(F&& f) const& {
+           if(has_data( )) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(O()))>(
+          std::forward<F>(f)(O()));
+    }
+      return {};
+  }
+  template <class F>
+  constexpr auto transform(F&& f)&& {
+           if(has_data( )) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
+          std::move(O())))>(
+          std::forward<F>(f)(std::move(O())));
+    }
+      return {};
+  }
+  template <class F>
+  constexpr auto transform(F &&f) const && {
+      if(has_data( )) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
+          std::move(O())))>(
+          std::forward<F>(f)(std::move(O())));
+    }
+      return {};
+  }
+  template <class F>
+  constexpr auto and_then(F &&f) & {
+      if (has_data()) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
+           O()))>(std::forward<F>(f)(O()));
+      }
+      return {};
+  }
+
+   template <class F>
+  constexpr auto and_then(F &&f) const & {
+      if (has_data()) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(O()))>(
+          std::forward<F>(f)(O()));
+      }
+      return {};
+  }
+   template <class F>
+   constexpr auto and_then(F &&f) && {
+      if (has_data()) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
+          std::move(O())))>(std::forward<F>(f)(std::move(O())));
+      }
+      return {};
+   }
+  template <class F>
+  constexpr auto and_then(F &&f) const &&{
+      if (has_data()) {
+      return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
+          std::move(O())))>(std::forward<F>(f)(std::move(O())));
+      }
+      return {};
+  }
+  
 
   /*
+  
+  https://en.cppreference.com/w/cpp/language/member_functions
+  * 
+  * Member functions with ref-qualifier
+An implicit object member function can be declared with no ref-qualifier, with an lvalue ref-qualifier (the token & after the parameter list) or the rvalue ref-qualifier (the token && after the parameter list). During overload resolution, an implicit object member function with a cv-qualifier sequence of class X is treated as follows:
+
+no ref-qualifier: the implicit object parameter has type lvalue reference to cv-qualified X and is additionally allowed to bind rvalue implied object argument
+lvalue ref-qualifier: the implicit object parameter has type lvalue reference to cv-qualified X
+rvalue ref-qualifier: the implicit object parameter has type rvalue reference to cv-qualified X
+  * 
+  * 
+  * 
   i didnt know before that ret_t (class::*) (arg_t) could change based on  & or
   && this is like ret_t name_fn(arg_t...) && {.....}    ====     
   ret_t (class::&&) (arg_t...) 
