@@ -5124,7 +5124,15 @@ struct mjz_stack_obj_warper_template_t
   inline my_obj_creator_t &m_obj_creator() { return *this; }
   bool m_Has_data{};
  private:
-   uint8_t m_data[sizeof_Type];
+  union {
+    uint8_t m_data[sizeof_Type];
+    struct {
+      Type
+          Object;  // https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
+      // the object is just for us to use normally it dose not be (constructed /
+      // destructed / moved / copied) implicitly
+    };
+  };
     inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                          Type &&src) {
     if (plc_has_obj) {
@@ -5199,7 +5207,7 @@ struct mjz_stack_obj_warper_template_t
   }
   constexpr inline Type *init_with_unsafe_data(bool initialized) {
     m_Has_data = initialized;
-    return (Type *)(m_data);
+    return &Object;
   }
   inline Type *move_to_place(Type *dest, bool dest_has_obj) {
     if (has_data())
@@ -5342,9 +5350,8 @@ struct mjz_stack_obj_warper_template_t
   constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const {
     return (uint8_t *)(m_data);
   }
-  constexpr inline Type *pointer_to_unsafe_data() { return (Type *)(m_data); }
-  constexpr inline const Type *pointer_to_unsafe_data() const {
-    return (const Type *const)(m_data);
+  constexpr inline Type *pointer_to_unsafe_data() { return &Object; }
+  constexpr inline const Type *pointer_to_unsafe_data() const { return &Object;
   }
 
  public:
@@ -9042,9 +9049,19 @@ namespace mjz_ard {
 template <class Type>
 class Vector2 {
  public:
-  Type m_x;
-  Type m_y;
-  inline ~Vector2() = default;
+  union {
+    struct {
+      Type m_x, m_y;
+    };
+    struct {
+      Type x, y;
+    };
+  };
+  inline ~Vector2() 
+      {
+      m_x.~Type();// the https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
+      m_y.~Type();
+      };
   constexpr inline Vector2 &operator=(const Vector2 &v) {
     m_x = (v.m_x);
     m_y = (v.m_y);
@@ -9094,10 +9111,6 @@ class Vector2 {
     return your_function_returning(operator()(0, your_function));
   };
 
-  inline constexpr Type &x() { return m_x; }
-  inline constexpr Type &y() { return m_y; }
-  inline constexpr const Type &x() const { return m_x; }
-  inline constexpr const Type &y() const { return m_y; }
 
   inline constexpr Vector2(const Type &s = Type()) : m_x(s), m_y(s) {}
   inline constexpr Vector2(const Type &x, const Type &y) : m_x(x), m_y(y) {}
@@ -9247,7 +9260,18 @@ class Vector2 {
   friend inline constexpr Type cross(const Vector2<Type> &v1,
                                      const Vector2<Type> &v2) {
     return v1.cross(v2);
+
   }
+
+  inline constexpr Type *begin() { return &m_x; }
+  inline constexpr Type *end() { return begin() + size(); }
+  inline constexpr const Type *begin() const { return &m_x; }
+  inline constexpr const Type *end() const { return begin() + size(); }
+  inline constexpr const Type *cbegin() const { return begin(); }
+  inline constexpr const Type *cend() const { return end(); }
+  inline constexpr static const size_t size() { return 2; }
+  inline constexpr bool operator!() const { return !m_x && !m_y ; }
+  inline constexpr operator bool() const { return !!*this; }
 };
 
 /*********************************************************************************
@@ -9257,10 +9281,19 @@ class Vector2 {
 template <class Type>
 class Vector3 {
  public:
-  Type m_x;
-  Type m_y;
-  Type m_z;
-  inline ~Vector3() = default;
+  union {
+    struct {
+      Type m_x, m_y, m_z;
+    };
+    struct {
+      Type x, y, z;
+    };
+  };
+  inline ~Vector3(){//https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
+    m_x.~Type();
+    m_y.~Type();
+    m_z.~Type();
+  };
 
   constexpr inline Vector3 &operator()(Vector3 &obj) { return *this = obj; };
   constexpr inline Vector3 &operator()(Vector3 &&obj) { return *this = obj; };
@@ -9304,12 +9337,7 @@ class Vector3 {
     return your_function_returning(operator()(0, your_function));
   };
 
-  inline constexpr Type &x() { return m_x; }
-  inline constexpr Type &y() { return m_y; }
-  inline constexpr Type &z() { return m_z; }
-  inline constexpr const Type &x() const { return m_x; }
-  inline constexpr const Type &y() const { return m_y; }
-  inline constexpr const Type &z() const { return m_z; }
+ 
 
   inline constexpr Vector3(const Type &s = Type()) : m_x(s), m_y(s), m_z(s) {}
   inline constexpr Vector3(const Type &x, const Type &y, const Type &z)
@@ -9347,6 +9375,16 @@ class Vector3 {
   **********************************************/
   inline constexpr Type &operator[](int i) { return *(&m_x + i); }
   const Type operator[](int i) const { return *(&m_x + i); }
+  /**********************************************
+ Itrator
+ **********************************************/
+  inline constexpr Type *begin() { return &m_x;}
+  inline constexpr Type *end() { return begin() + size(); }
+  inline constexpr const Type *begin() const { return &m_x; }
+  inline constexpr const Type *end() const { return begin() + size(); }
+  inline constexpr const Type *cbegin() const { return begin(); }
+  inline constexpr const Type *cend() const { return end(); }
+  inline constexpr static const size_t size() { return 3; }
 
   /*********************************************
   Non modifying math operators
@@ -9419,6 +9457,9 @@ class Vector3 {
   inline constexpr operator const Type *() const {
     return static_cast<Type *>(&m_x);
   }
+
+  inline constexpr bool  operator!() const { return !m_x && !m_y && !m_z; }
+  inline constexpr operator bool()const { return !!*this; }
   inline constexpr operator Type *() { return static_cast<Type *>(&m_x); }
 
   /********************************************
@@ -9495,6 +9536,8 @@ class Vector3 {
                          v1.m_z * v2.m_x - v1.m_x * v2.m_z,
                          v1.m_x * v2.m_y - v1.m_y * v2.m_x);
   }
+
+  
 };
 
 /******************************************************************************************
