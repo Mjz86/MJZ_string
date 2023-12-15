@@ -6523,6 +6523,12 @@ struct mjz_stack_obj_warper_template_t
 #endif  // ! Arduino
   constexpr inline bool has_data() const { return m_Has_data; }
   constexpr inline bool operator!() const noexcept { return !m_Has_data; }
+
+  
+  inline operator Type *() & { return pointer_to_data(); }
+  inline operator const Type *() & { return pointer_to_data(); }
+  inline operator const Type *() const & { return pointer_to_data(); }
+
   inline operator Type &() & { return *pointer_to_data(); }
   inline operator const Type &() & { return *pointer_to_data(); }
   inline operator const Type &() const & { return *pointer_to_data(); }
