@@ -56,7 +56,7 @@ constexpr size_t size_of_global_mjz_areana_allocator_blocks = 32;
 #define global_mjz_areana_allocator_on true
 #endif  // !global_mjz_areana_allocator_on
 #ifndef global_mjz_areana_allocator_log
-#define global_mjz_areana_allocator_log true
+#define global_mjz_areana_allocator_log false
 #endif
 inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
@@ -1696,7 +1696,9 @@ constexpr inline void free(void *p) { return ::free(p); }
 constexpr bool log_it = global_mjz_areana_allocator_log;
 namespace log_functions {
 inline void log(const char *const str, size_t n, const void *const in) {
+#if global_mjz_areana_allocator_log
   std::cout << '\n' << str << " " << n << " bytes in:" << in << ".\n";
+#endif
 }
 inline constexpr void *get_fake_mem(void *ptr) {
   if (ptr == 0) return ptr;
@@ -6532,8 +6534,16 @@ struct mjz_stack_obj_warper_template_t
   inline operator const Type &() & { return *pointer_to_data(); }
   inline operator const Type &() const & { return *pointer_to_data(); }
 
+
   inline operator Type &&() && { return std::move(*temp_me()); }
+  inline operator const Type &&() && { return std::move(*temp_me()); }
   inline operator const Type &&() const && { return std::move(*temp_me()); }
+
+  
+  inline operator Type() & { return *pointer_to_data(); }
+  inline operator Type() const & { return *pointer_to_data(); }
+  inline operator Type() && { return std::move(*temp_me()); }
+  inline operator Type() const && { return std::move(*temp_me()); }
 
   constexpr explicit operator bool() const noexcept { return has_data(); }
   constexpr bool has_value() const noexcept { return has_data(); }
@@ -6698,6 +6708,14 @@ struct mjz_stack_obj_warper_template_t
   Type &&remove_const_obj() const && { return std::move(*((Type *)mm_data)); }
   Type &remove_const_obj() & { return *((Type *)mm_data); }
   Type &&remove_const_obj() && { return std::move(*((Type *)mm_data)); }
+
+  
+const Type &&move() const & { return std::move(o()); }
+  const Type &&move() const && {
+    return std::move(o());
+  }
+Type &&move() & { return std::move(o()); }
+  Type &&move() && { return std::move(o()); }
 };
 
 template <class Type, const size_t m_Size, bool error_check = 1,
@@ -7512,7 +7530,14 @@ class mjz_heap_obj_warper_template_t {
   inline operator const Type &() const & { return *pointer_to_data(); }
 
   inline operator Type &&() && { return std::move(*temp_me()); }
+  inline operator const Type &&()   && { return std::move(*temp_me()); }
   inline operator const Type &&() const && { return std::move(*temp_me()); }
+
+  
+  inline operator Type() & { return *pointer_to_data(); }
+  inline operator Type() const & { return *pointer_to_data(); }
+  inline operator Type() && { return std::move(*temp_me()); }
+  inline operator Type() const && { return std::move(*temp_me()); }
 
   constexpr explicit operator bool() const noexcept { return has_data(); }
   constexpr bool has_value() const noexcept { return has_data(); }
