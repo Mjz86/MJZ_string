@@ -1952,6 +1952,48 @@ struct mjz_obj_manager_template_t {
   static constexpr inline [[nodiscard]] Type obj_constructor(args_t &&...args) {
     return Type(std::forward<args_t>(args)...);
   }
+  template <typename... args_t>
+  static constexpr inline [[nodiscard]] Type &&obj_constructor_on(
+      Type &&uninitilized_object, args_t &&...args) {
+    return std::move(
+        *construct_at(&uninitilized_object, std::forward<args_t>(args)...));
+  }
+  template <typename... args_t>
+  static constexpr inline [[nodiscard]] Type &obj_constructor_on(
+      Type &uninitilized_object, args_t &&...args) {
+    return *construct_at(&uninitilized_object, std::forward<args_t>(args)...);
+  }
+  template <typename... args_t>
+  static constexpr inline [[nodiscard]] Type *obj_constructor_on(
+      Type *uninitilized_object, args_t &&...args) {
+    return construct_at(uninitilized_object, std::forward<args_t>(args)...);
+  }
+  static constexpr inline void obj_destructor_on(
+      Type &&obj_that_will_be_destroyed) {
+    destroy_at(obj_that_will_be_destroyed);
+  }
+  static constexpr inline void obj_destructor_on(
+      Type &obj_that_will_be_destroyed) {
+    destroy_at(obj_that_will_be_destroyed);
+  }
+  static constexpr inline void obj_destructor_on(
+      Type *obj_that_will_be_destroyed) {
+    destroy_at(obj_that_will_be_destroyed);
+  }
+  union simple_init_obj_wrpr {
+    simple_init_obj_wrpr() { obj_constructor_on(address_()); }
+    template <class T0, class... Ts>
+    simple_init_obj_wrpr(T0 &&arg0, Ts &&...args) {
+      obj_constructor_on(address_(), std::forward<T0>(arg0),
+                         std::forward<Ts>(args)...);
+    }
+    ~simple_init_obj_wrpr() { obj_destructor_on(address_()); }
+    Type obj;
+    Type *address_() { return (Type *)&NO_USE_; }//union
+   private:
+    char NO_USE_;
+  };
+
   template <class T, class... Args>
   static constexpr inline void construct(mjz_obj_manager_template_t &a, T *p,
                                          Args &&...args) {
@@ -6534,16 +6576,23 @@ struct mjz_stack_obj_warper_template_t
   inline operator const Type &() & { return *pointer_to_data(); }
   inline operator const Type &() const & { return *pointer_to_data(); }
 
-
   inline operator Type &&() && { return std::move(*temp_me()); }
   inline operator const Type &&() && { return std::move(*temp_me()); }
   inline operator const Type &&() const && { return std::move(*temp_me()); }
 
+  inline operator Type() & {
+    return get_obj_creator().obj_constructor(*pointer_to_data());
+  }
+  inline operator Type() const & {
+    return get_obj_creator().obj_constructor(*pointer_to_data());
+  }
+  inline operator Type() && {
+    return get_obj_creator().obj_constructor(std::move(*temp_me()));
+  }
+  inline operator Type() const && {
+    return get_obj_creator().obj_constructor(std::move(*temp_me()));
+  }
   
-  inline operator Type() & { return *pointer_to_data(); }
-  inline operator Type() const & { return *pointer_to_data(); }
-  inline operator Type() && { return std::move(*temp_me()); }
-  inline operator Type() const && { return std::move(*temp_me()); }
 
   constexpr explicit operator bool() const noexcept { return has_data(); }
   constexpr bool has_value() const noexcept { return has_data(); }
@@ -6709,12 +6758,9 @@ struct mjz_stack_obj_warper_template_t
   Type &remove_const_obj() & { return *((Type *)mm_data); }
   Type &&remove_const_obj() && { return std::move(*((Type *)mm_data)); }
 
-  
-const Type &&move() const & { return std::move(o()); }
-  const Type &&move() const && {
-    return std::move(o());
-  }
-Type &&move() & { return std::move(o()); }
+  const Type &&move() const & { return std::move(o()); }
+  const Type &&move() const && { return std::move(o()); }
+  Type &&move() & { return std::move(o()); }
   Type &&move() && { return std::move(o()); }
 };
 
@@ -7530,14 +7576,22 @@ class mjz_heap_obj_warper_template_t {
   inline operator const Type &() const & { return *pointer_to_data(); }
 
   inline operator Type &&() && { return std::move(*temp_me()); }
-  inline operator const Type &&()   && { return std::move(*temp_me()); }
+  inline operator const Type &&() && { return std::move(*temp_me()); }
   inline operator const Type &&() const && { return std::move(*temp_me()); }
 
-  
-  inline operator Type() & { return *pointer_to_data(); }
-  inline operator Type() const & { return *pointer_to_data(); }
-  inline operator Type() && { return std::move(*temp_me()); }
-  inline operator Type() const && { return std::move(*temp_me()); }
+  inline operator Type() & {
+    return get_obj_creator().obj_constructor(*pointer_to_data());
+  }
+  inline operator Type() const & {
+    return get_obj_creator().obj_constructor(*pointer_to_data());
+  }
+  inline operator Type() && {
+    return get_obj_creator().obj_constructor(std::move(*temp_me()));
+  }
+  inline operator Type() const && {
+    return get_obj_creator().obj_constructor(std::move(*temp_me()));
+  }
+ 
 
   constexpr explicit operator bool() const noexcept { return has_data(); }
   constexpr bool has_value() const noexcept { return has_data(); }
