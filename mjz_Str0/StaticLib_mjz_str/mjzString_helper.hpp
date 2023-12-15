@@ -68,7 +68,7 @@ union my_data_randomizer_union {
 };
 extern my_data_randomizer_union my_data_randomizer_uni;
 template <typename... Type>
-uint32_t esp_random(Type... arggs) {
+constexpr inline uint32_t esp_random(Type... arggs) {
   ++my_data_randomizer_uni.my_data_randomizer_d;
   my_data_randomizer_uni.my_data_randomizer_d *=
       my_data_randomizer_uni.my_data_randomizer_u;
@@ -728,15 +728,6 @@ typedef void (*voidFuncPtrParam)(void*);
 typedef bool boolean;
 // typedef uint8_t uint8_t;
 typedef uint16_t word;
-
-void init(void);
-void initVariant(void);
-
-#ifndef HOST
-int atexit(void (*func)()) __attribute__((weak));
-#endif
-int main() __attribute__((weak));
-
 #ifdef EXTENDED_PIN_MODE
 // Platforms who want to declare more than 256 pins need to define
 // EXTENDED_PIN_MODE globally
@@ -749,19 +740,6 @@ typedef uint8_t pin_size_t;
 
 #define word(...) makeWord(__VA_ARGS__)
 
-unsigned long pulseIn(uint8_t pin, uint8_t state,
-                      unsigned long timeout = 1000000L);
-unsigned long pulseInLong(uint8_t pin, uint8_t state,
-                          unsigned long timeout = 1000000L);
-
-void tone(uint8_t _pin, unsigned int frequency, unsigned long duration = 0);
-void noTone(uint8_t _pin);
-
-// WMath prototypes
-long random(long);
-long random(long, long);
-void randomSeed(unsigned long);
-long map(long, long, long, long, long);
 }
 #endif  // __cplusplus
 
@@ -808,74 +786,74 @@ long map(long, long, long, long, long);
 namespace mjz_ard {
 
 // WCharacter.h prototypes
-inline bool isAlphaNumeric(int c) __attribute__((always_inline));
-inline bool isAlpha(int c) __attribute__((always_inline));
-inline bool isAscii(int c) __attribute__((always_inline));
-inline bool isWhitespace(int c) __attribute__((always_inline));
-inline bool isControl(int c) __attribute__((always_inline));
-inline bool isDigit(int c) __attribute__((always_inline));
-inline bool isGraph(int c) __attribute__((always_inline));
-inline bool isLowerCase(int c) __attribute__((always_inline));
-inline bool isPrintable(int c) __attribute__((always_inline));
-inline bool isPunct(int c) __attribute__((always_inline));
-inline bool isSpace(int c) __attribute__((always_inline));
-inline bool isUpperCase(int c) __attribute__((always_inline));
-inline bool isHexadecimalDigit(int c) __attribute__((always_inline));
-inline int toAscii(int c) __attribute__((always_inline));
-inline int toLowerCase(int c) __attribute__((always_inline));
-inline int toUpperCase(int c) __attribute__((always_inline));
+ constexpr inline  bool isAlphaNumeric(int c) __attribute__((always_inline));
+ constexpr inline  bool isAlpha(int c) __attribute__((always_inline));
+ constexpr inline  bool isAscii(int c) __attribute__((always_inline));
+ constexpr inline  bool isWhitespace(int c) __attribute__((always_inline));
+ constexpr inline  bool isControl(int c) __attribute__((always_inline));
+ constexpr inline  bool isDigit(int c) __attribute__((always_inline));
+ constexpr inline  bool isGraph(int c) __attribute__((always_inline));
+ constexpr inline  bool isLowerCase(int c) __attribute__((always_inline));
+ constexpr inline  bool isPrintable(int c) __attribute__((always_inline));
+ constexpr inline  bool isPunct(int c) __attribute__((always_inline));
+ constexpr inline  bool isSpace(int c) __attribute__((always_inline));
+ constexpr inline  bool isUpperCase(int c) __attribute__((always_inline));
+ constexpr inline  bool isHexadecimalDigit(int c) __attribute__((always_inline));
+ constexpr inline  int toAscii(int c) __attribute__((always_inline));
+ constexpr inline  int toLowerCase(int c) __attribute__((always_inline));
+ constexpr inline  int toUpperCase(int c) __attribute__((always_inline));
 
 // Checks for an alphanumeric character.
 // It is equivalent to (isalpha(c) || isdigit(c)).
-inline bool isAlphaNumeric(int c) { return (isalnum(c) == 0 ? false : true); }
+ constexpr inline  bool isAlphaNumeric(int c) { return (isalnum(c) == 0 ? false : true); }
 
 // Checks for an alphabetic character.
 // It is equivalent to (isupper(c) || islower(c)).
-inline bool isAlpha(int c) { return (isalpha(c) == 0 ? false : true); }
+ constexpr inline  bool isAlpha(int c) { return (isalpha(c) == 0 ? false : true); }
 
 // Checks whether c is a 7-bit unsigned char value
 // that fits into the ASCII character set.
-inline bool isAscii(int c) { return ((c & ~0x7f) != 0 ? false : true); }
+ constexpr inline  bool isAscii(int c) { return ((c & ~0x7f) != 0 ? false : true); }
 
 // Checks for a blank character,that is,a space or a tab.
-inline bool isWhitespace(int c) { return (isblank(c) == 0 ? false : true); }
+ constexpr inline  bool isWhitespace(int c) { return (isblank(c) == 0 ? false : true); }
 
 // Checks for a control character.
-inline bool isControl(int c) { return (iscntrl(c) == 0 ? false : true); }
+ constexpr inline  bool isControl(int c) { return (iscntrl(c) == 0 ? false : true); }
 
 // Checks for a digit (0 through 9).
-inline bool isDigit(int c) { return (isdigit(c) == 0 ? false : true); }
+ constexpr inline  bool isDigit(int c) { return (isdigit(c) == 0 ? false : true); }
 
 // Checks for any printable character except space.
-inline bool isGraph(int c) { return (isgraph(c) == 0 ? false : true); }
+ constexpr inline  bool isGraph(int c) { return (isgraph(c) == 0 ? false : true); }
 
 // Checks for a lower-case character.
-inline bool isLowerCase(int c) { return (islower(c) == 0 ? false : true); }
+ constexpr inline  bool isLowerCase(int c) { return (islower(c) == 0 ? false : true); }
 
 // Checks for any printable character including space.
-inline bool isPrintable(int c) { return (isprint(c) == 0 ? false : true); }
+ constexpr inline  bool isPrintable(int c) { return (isprint(c) == 0 ? false : true); }
 
 // Checks for any printable character which is not a space
 // or an alphanumeric character.
-inline bool isPunct(int c) { return (ispunct(c) == 0 ? false : true); }
+ constexpr inline  bool isPunct(int c) { return (ispunct(c) == 0 ? false : true); }
 
 // Checks for white-space characters. For the avr-libc library,
 // these are: space,formfeed ('\f'),newline ('\n'),carriage
 // return ('\r'),horizontal tab ('\t'),and vertical tab ('\v').
-inline bool isSpace(int c) { return (isspace(c) == 0 ? false : true); }
+ constexpr inline  bool isSpace(int c) { return (isspace(c) == 0 ? false : true); }
 
 // Checks for an uppercase letter.
-inline bool isUpperCase(int c) { return (isupper(c) == 0 ? false : true); }
+ constexpr inline  bool isUpperCase(int c) { return (isupper(c) == 0 ? false : true); }
 
 // Checks for a hexadecimal digits,i.e. one of 0 1 2 3 4 5 6 7
 // 8 9 a b c d e f A B C D E F.
-inline bool isHexadecimalDigit(int c) {
+ constexpr inline  bool isHexadecimalDigit(int c) {
   return (isxdigit(c) == 0 ? false : true);
 }
 
 // Converts c to a 7-bit unsigned char value that fits into the
 // ASCII character set,by clearing the high-order bits.
-inline int toAscii(int c) { return (c & 0x7f); }
+ constexpr inline  int toAscii(int c) { return (c & 0x7f); }
 
 // Warning:
 // Many people will be unhappy if you use this function.
@@ -883,10 +861,15 @@ inline int toAscii(int c) { return (c & 0x7f); }
 // characters.
 
 // Converts the letter c to lower case,if possible.
-inline int toLowerCase(int c) { return tolower(c); }
+ constexpr inline int toLowerCase(int c) {
+  if (!((c > 96) && (c < 123))) c ^= 0x20;
+  return c;
+ }
 
 // Converts the letter c to upper case,if possible.
-inline int toUpperCase(int c) { return toupper(c); }
+ constexpr inline int toUpperCase(int c) {
+  if ((c > 96) && (c < 123)) c ^= 0x20;
+     return c; }
 
 #define ard_lowByte(w) ((uint8_t)((w)&0xff))
 #define ard_highByte(w) ((uint8_t)((w) >> 8))
@@ -909,7 +892,25 @@ inline int toUpperCase(int c) { return toupper(c); }
 #define ard_sq(x) ((x) * (x))
 }  // namespace mjz_ard
 #endif
+#ifndef Arduino
+namespace mjz_ard {
+// Public Methods //////////////////////////////////////////////////////////////
+/* C++ prototypes */
+constexpr inline long map(long x, long in_min, long in_max, long out_min,
+                          long out_max) {
+     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+constexpr inline long long map(long long x, long long in_min, long long in_max,
+                               long long out_min, long long out_max) {
+     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+constexpr inline uint16_t makeWord(uint16_t w) { return w; }
+constexpr inline uint16_t makeWord(uint8_t h, uint8_t l) {
+     return (h << 8) | l;
+}
 
+}  // namespace mjz_ard
+#endif
 #ifdef Arduino
 #include "optional_otr.hpp"
 #endif
