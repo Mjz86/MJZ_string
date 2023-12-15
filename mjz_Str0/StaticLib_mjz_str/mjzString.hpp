@@ -4053,7 +4053,7 @@ class static_str_algo {
 
  public:
   // this will crash the program
-  [[noreturn]] static  void trap_crash(void) {
+  [[noreturn]] static void trap_crash(void) {
     *(volatile char *)0 = (volatile char)0;  // address 0 is invalid
     // this will crash the program
   }
@@ -5746,7 +5746,8 @@ struct mjz_stack_obj_warper_template_t
   using Type = static_str_algo::remove_reference_t<my_iner_Type_>;
 
  public:
-  static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
+  static constexpr size_t sizeof_Type =
+      max_macro_(sizeof(Type), my_obj_creator_t::size_of_type());
 
   inline my_obj_creator_t get_obj_creator() {
     return my_obj_creator_t(*((const my_obj_creator_t *)this));
@@ -5757,16 +5758,16 @@ struct mjz_stack_obj_warper_template_t
   inline my_obj_creator_t &m_obj_creator() & { return *this; }
   inline const my_obj_creator_t &&m_obj_creator() const && { return temp_me(); }
   inline my_obj_creator_t &&m_obj_creator() && { return temp_me(); }
-  bool m_Has_data{};
 
  private:
-  union {
-    uint8_t m_data[sizeof_Type];
-    struct {
-      Type
-          m_Object;  // https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
-      // the object is just for us to use normally it dose not be (constructed /
-      // destructed / moved / copied) implicitly
+  struct {
+    union {
+      bool m_Has_data{false};
+      mutable bool mm_Has_data;
+    };
+    union {
+      mutable uint8_t mm_data[sizeof_Type];
+      uint8_t m_data[sizeof_Type];
     };
   };
   constexpr inline Type *OP() & { return (Type *)&m_data[0]; }
@@ -6058,7 +6059,7 @@ struct mjz_stack_obj_warper_template_t
     return throw_if_no_data_or_give_data();
   }
   constexpr inline Type *pointer_to_data() & {
-    return remove_const(throw_if_no_data_or_give_data());
+    return mjz_ard::remove_const(throw_if_no_data_or_give_data());
   }
 
  public:
@@ -6523,9 +6524,12 @@ struct mjz_stack_obj_warper_template_t
   constexpr inline bool has_data() const { return m_Has_data; }
   constexpr inline bool operator!() const noexcept { return !m_Has_data; }
   inline operator Type &() & { return *pointer_to_data(); }
+  inline operator const Type &() & { return *pointer_to_data(); }
   inline operator const Type &() const & { return *pointer_to_data(); }
+
   inline operator Type &&() && { return std::move(*temp_me()); }
   inline operator const Type &&() const && { return std::move(*temp_me()); }
+
   constexpr explicit operator bool() const noexcept { return has_data(); }
   constexpr bool has_value() const noexcept { return has_data(); }
 
@@ -6673,6 +6677,22 @@ struct mjz_stack_obj_warper_template_t
       mjz_stack_obj_warper_template_t *dest) {
     return &move_to(*dest);
   }
+
+ public:  // unsafe may cuse undefined behavior
+  mjz_stack_obj_warper_template_t &remove_const() const & {
+    return *mjz_ard::remove_const(this);
+  }
+  mjz_stack_obj_warper_template_t &&remove_const() const && {
+    return std::move(*mjz_ard::remove_const(this));
+  }
+  mjz_stack_obj_warper_template_t &remove_const() & { return *this; }
+  mjz_stack_obj_warper_template_t &&remove_const() && {
+    return std::move(*this);
+  }
+  Type &remove_const_obj() const & { return *((Type *)mm_data); }
+  Type &&remove_const_obj() const && { return std::move(*((Type *)mm_data)); }
+  Type &remove_const_obj() & { return *((Type *)mm_data); }
+  Type &&remove_const_obj() && { return std::move(*((Type *)mm_data)); }
 };
 
 template <class Type, const size_t m_Size, bool error_check = 1,
@@ -10944,11 +10964,12 @@ struct hash<mjz_ard::mjz_arena_allocator_t<number_of_blocks, block_length,
     return hash()(&k);
   }
 };
-template <typename... Types>
-struct hash<mjz_ard::mjz_stack_obj_warper_template_t<Types...>> {
-  size_t operator()(
-      const mjz_ard::mjz_stack_obj_warper_template_t<Types...> &k) const {
-    return hash()(*k);
+template <typename T, bool COOC_t, class MOC_t, bool DEC_t>
+struct hash<mjz_ard::mjz_stack_obj_warper_template_t<T, COOC_t, MOC_t, DEC_t>> {
+  inline size_t operator()(
+      const mjz_ard::mjz_stack_obj_warper_template_t<T, COOC_t, MOC_t, DEC_t>
+          &k) const {
+    return hash<T>()(*k);
   }
 };
 template <typename... Types>
