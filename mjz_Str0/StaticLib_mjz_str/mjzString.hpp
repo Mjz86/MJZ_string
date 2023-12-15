@@ -7703,6 +7703,10 @@ class mjz_heap_obj_warper_template_t {
   Type &remove_const_obj() & { GET_RVR_BASE_MHOWTT(remove_const_obj); }
   Type &&remove_const_obj() && { GET_RVR_BASE_MHOWTT(remove_const_obj); }
 
+  const Type &&move() const & { return std::move(o()); }
+  const Type &&move() const && { return std::move(o()); }
+  Type &&move() & { return std::move(o()); }
+  Type &&move() && { return std::move(o()); }
 #undef GET_RVR_BASE_MHOWTT
 #undef Ret_me_RVR_BASE_MHOWTT
 #undef GET_LVR_BASE_MHOWTT
