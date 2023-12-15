@@ -56,7 +56,7 @@ constexpr size_t size_of_global_mjz_areana_allocator_blocks = 32;
 #define global_mjz_areana_allocator_on true
 #endif  // !global_mjz_areana_allocator_on
 #ifndef global_mjz_areana_allocator_log
-#define global_mjz_areana_allocator_log false
+#define global_mjz_areana_allocator_log true
 #endif
 inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
@@ -6867,7 +6867,6 @@ template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
           class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
               static_str_algo::remove_reference_t<my_iner_Type_>>>
 class mjz_heap_obj_warper_template_t {
-
  private:
   using Type = static_str_algo::remove_reference_t<my_iner_Type_>;
   using container_Type =
@@ -6876,6 +6875,7 @@ class mjz_heap_obj_warper_template_t {
   using container_Type_ptr = std::unique_ptr<container_Type>;
   container_Type_ptr m_ptr;
   static constexpr size_t sizeof_Type = container_Type::sizeof_Type;
+
  public:
   inline ~mjz_heap_obj_warper_template_t() {}
   inline mjz_heap_obj_warper_template_t()
@@ -6934,7 +6934,7 @@ class mjz_heap_obj_warper_template_t {
     return *this;
   }
   inline mjz_heap_obj_warper_template_t &operator=(
-   const   mjz_heap_obj_warper_template_t &&obj) {
+      const mjz_heap_obj_warper_template_t &&obj) {
     base() = std::move(obj.base());
     return *this;
   }
@@ -6983,7 +6983,6 @@ class mjz_heap_obj_warper_template_t {
   inline mjz_heap_obj_warper_template_t &operator=(const Type &obj) {
     Ret_me_LVR_BASE_MHOWTT(operator=, obj);
   }
-  
 
  public:
   inline void init(const mjz_heap_obj_warper_template_t &obj) & {

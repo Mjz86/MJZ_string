@@ -10,9 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <cstdarg> 
 #include <cassert>
 #include <chrono>
+#include <cstdarg>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -49,14 +49,16 @@ constexpr inline int sprintf_alt_(char* const buffer_for_print,
 #define MJZ_logic_BITMASK_CHECK_ANY(x, mask) ((x) & (mask))
 #define min_macro_(_a, _b) (((_a) < (_b)) ? (_a) : (_b))
 #define max_macro_(_a, _b) (((_a) < (_b)) ? (_b) : (_a))
-#define MJZ_logic_BL_bit_to_64_bits_not_bool(B) ((((uint64_t) !(B)) + (uint64_t)(-1)))
+#define MJZ_logic_BL_bit_to_64_bits_not_bool(B) \
+  ((((uint64_t) !(B)) + (uint64_t)(-1)))
 #define MJZ_logic_BL_bit_to_64_bits(B) (-((int64_t)(B)))
 #define MJZ_logic_bit_to_64_bits(B) ((B) ? (uint64_t)(-1) : 0ULL)
-
-#define MJZ_DONT_OPTIMIZE(x)              \
-  do {                                    \
-    auto volatile dont_optimize_me = (x); \
-  } while (0)
+#define get_the_absoulot_typed_name(X) ((const char* const)#X)
+#define MJZ_DONT_OPTIMIZE(x)            \
+  [&]() mutable -> decltype((x)) {      \
+    bool volatile dont_optimize_me = 0; \
+    return (x);                         \
+  }()
 
 #ifdef Arduino
 #include <sys/time.h>
@@ -740,7 +742,6 @@ typedef uint8_t pin_size_t;
 #ifndef Arduino
 
 #define word(...) makeWord(__VA_ARGS__)
-
 }
 #endif  // __cplusplus
 
@@ -787,74 +788,98 @@ typedef uint8_t pin_size_t;
 namespace mjz_ard {
 
 // WCharacter.h prototypes
- constexpr inline  bool isAlphaNumeric(int c) __attribute__((always_inline));
- constexpr inline  bool isAlpha(int c) __attribute__((always_inline));
- constexpr inline  bool isAscii(int c) __attribute__((always_inline));
- constexpr inline  bool isWhitespace(int c) __attribute__((always_inline));
- constexpr inline  bool isControl(int c) __attribute__((always_inline));
- constexpr inline  bool isDigit(int c) __attribute__((always_inline));
- constexpr inline  bool isGraph(int c) __attribute__((always_inline));
- constexpr inline  bool isLowerCase(int c) __attribute__((always_inline));
- constexpr inline  bool isPrintable(int c) __attribute__((always_inline));
- constexpr inline  bool isPunct(int c) __attribute__((always_inline));
- constexpr inline  bool isSpace(int c) __attribute__((always_inline));
- constexpr inline  bool isUpperCase(int c) __attribute__((always_inline));
- constexpr inline  bool isHexadecimalDigit(int c) __attribute__((always_inline));
- constexpr inline  int toAscii(int c) __attribute__((always_inline));
- constexpr inline  int toLowerCase(int c) __attribute__((always_inline));
- constexpr inline  int toUpperCase(int c) __attribute__((always_inline));
+constexpr inline bool isAlphaNumeric(int c) __attribute__((always_inline));
+constexpr inline bool isAlpha(int c) __attribute__((always_inline));
+constexpr inline bool isAscii(int c) __attribute__((always_inline));
+constexpr inline bool isWhitespace(int c) __attribute__((always_inline));
+constexpr inline bool isControl(int c) __attribute__((always_inline));
+constexpr inline bool isDigit(int c) __attribute__((always_inline));
+constexpr inline bool isGraph(int c) __attribute__((always_inline));
+constexpr inline bool isLowerCase(int c) __attribute__((always_inline));
+constexpr inline bool isPrintable(int c) __attribute__((always_inline));
+constexpr inline bool isPunct(int c) __attribute__((always_inline));
+constexpr inline bool isSpace(int c) __attribute__((always_inline));
+constexpr inline bool isUpperCase(int c) __attribute__((always_inline));
+constexpr inline bool isHexadecimalDigit(int c) __attribute__((always_inline));
+constexpr inline int toAscii(int c) __attribute__((always_inline));
+constexpr inline int toLowerCase(int c) __attribute__((always_inline));
+constexpr inline int toUpperCase(int c) __attribute__((always_inline));
 
 // Checks for an alphanumeric character.
 // It is equivalent to (isalpha(c) || isdigit(c)).
- constexpr inline  bool isAlphaNumeric(int c) { return (isalnum(c) == 0 ? false : true); }
+constexpr inline bool isAlphaNumeric(int c) {
+  return (isalnum(c) == 0 ? false : true);
+}
 
 // Checks for an alphabetic character.
 // It is equivalent to (isupper(c) || islower(c)).
- constexpr inline  bool isAlpha(int c) { return (isalpha(c) == 0 ? false : true); }
+constexpr inline bool isAlpha(int c) {
+  return (isalpha(c) == 0 ? false : true);
+}
 
 // Checks whether c is a 7-bit unsigned char value
 // that fits into the ASCII character set.
- constexpr inline  bool isAscii(int c) { return ((c & ~0x7f) != 0 ? false : true); }
+constexpr inline bool isAscii(int c) {
+  return ((c & ~0x7f) != 0 ? false : true);
+}
 
 // Checks for a blank character,that is,a space or a tab.
- constexpr inline  bool isWhitespace(int c) { return (isblank(c) == 0 ? false : true); }
+constexpr inline bool isWhitespace(int c) {
+  return (isblank(c) == 0 ? false : true);
+}
 
 // Checks for a control character.
- constexpr inline  bool isControl(int c) { return (iscntrl(c) == 0 ? false : true); }
+constexpr inline bool isControl(int c) {
+  return (iscntrl(c) == 0 ? false : true);
+}
 
 // Checks for a digit (0 through 9).
- constexpr inline  bool isDigit(int c) { return (isdigit(c) == 0 ? false : true); }
+constexpr inline bool isDigit(int c) {
+  return (isdigit(c) == 0 ? false : true);
+}
 
 // Checks for any printable character except space.
- constexpr inline  bool isGraph(int c) { return (isgraph(c) == 0 ? false : true); }
+constexpr inline bool isGraph(int c) {
+  return (isgraph(c) == 0 ? false : true);
+}
 
 // Checks for a lower-case character.
- constexpr inline  bool isLowerCase(int c) { return (islower(c) == 0 ? false : true); }
+constexpr inline bool isLowerCase(int c) {
+  return (islower(c) == 0 ? false : true);
+}
 
 // Checks for any printable character including space.
- constexpr inline  bool isPrintable(int c) { return (isprint(c) == 0 ? false : true); }
+constexpr inline bool isPrintable(int c) {
+  return (isprint(c) == 0 ? false : true);
+}
 
 // Checks for any printable character which is not a space
 // or an alphanumeric character.
- constexpr inline  bool isPunct(int c) { return (ispunct(c) == 0 ? false : true); }
+constexpr inline bool isPunct(int c) {
+  return (ispunct(c) == 0 ? false : true);
+}
 
 // Checks for white-space characters. For the avr-libc library,
 // these are: space,formfeed ('\f'),newline ('\n'),carriage
 // return ('\r'),horizontal tab ('\t'),and vertical tab ('\v').
- constexpr inline  bool isSpace(int c) { return (isspace(c) == 0 ? false : true); }
+constexpr inline bool isSpace(int c) {
+  return (isspace(c) == 0 ? false : true);
+}
 
 // Checks for an uppercase letter.
- constexpr inline  bool isUpperCase(int c) { return (isupper(c) == 0 ? false : true); }
+constexpr inline bool isUpperCase(int c) {
+  return (isupper(c) == 0 ? false : true);
+}
 
 // Checks for a hexadecimal digits,i.e. one of 0 1 2 3 4 5 6 7
 // 8 9 a b c d e f A B C D E F.
- constexpr inline  bool isHexadecimalDigit(int c) {
+constexpr inline bool isHexadecimalDigit(int c) {
   return (isxdigit(c) == 0 ? false : true);
 }
 
 // Converts c to a 7-bit unsigned char value that fits into the
 // ASCII character set,by clearing the high-order bits.
- constexpr inline  int toAscii(int c) { return (c & 0x7f); }
+constexpr inline int toAscii(int c) { return (c & 0x7f); }
 
 // Warning:
 // Many people will be unhappy if you use this function.
@@ -862,15 +887,16 @@ namespace mjz_ard {
 // characters.
 
 // Converts the letter c to lower case,if possible.
- constexpr inline int toLowerCase(int c) {
+constexpr inline int toLowerCase(int c) {
   if (!((c > 96) && (c < 123))) c ^= 0x20;
   return c;
- }
+}
 
 // Converts the letter c to upper case,if possible.
- constexpr inline int toUpperCase(int c) {
+constexpr inline int toUpperCase(int c) {
   if ((c > 96) && (c < 123)) c ^= 0x20;
-     return c; }
+  return c;
+}
 
 #define ard_lowByte(w) ((uint8_t)((w)&0xff))
 #define ard_highByte(w) ((uint8_t)((w) >> 8))
@@ -899,15 +925,15 @@ namespace mjz_ard {
 /* C++ prototypes */
 constexpr inline long map(long x, long in_min, long in_max, long out_min,
                           long out_max) {
-     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 constexpr inline long long map(long long x, long long in_min, long long in_max,
                                long long out_min, long long out_max) {
-     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 constexpr inline uint16_t makeWord(uint16_t w) { return w; }
 constexpr inline uint16_t makeWord(uint8_t h, uint8_t l) {
-     return (h << 8) | l;
+  return (h << 8) | l;
 }
 
 }  // namespace mjz_ard
