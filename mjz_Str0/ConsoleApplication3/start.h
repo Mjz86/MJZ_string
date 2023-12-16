@@ -4,7 +4,6 @@
 #include <iostream>
 #include "mjzString.hpp"
 #include "fstream"
-#include "my_vm.h"
 class main_class {
   std::unique_ptr<main_class> run(int argc, const char* const* const argv);
 
@@ -252,10 +251,20 @@ class P {// no one can do anything with P except  mjz_obj_destructor<P> and mjz_
   P& operator=(P&) { return *this; }
   P& operator=(const P&) { return *this; }
   P& operator=(P&&) { return *this; }
+  P& operator=(const P&&) { return *this; }
   P(P &) {}
   P(const P &) {}
-  P(P &&) {}
-  inline static [[nodiscard]] void* operator new(size_t m_size) { return 0; }
+  P(P&&) {}
+  P(const P&&) {}
+  inline static 
+      
+      
+      
+      
+      
+      
+      
+      void* operator new(size_t m_size) { return 0; }
   inline static [[nodiscard]] void* operator new[](size_t m_size) { return 0; }
   inline static void *operator new(size_t, void *where) { return where; }
   inline static void operator delete(void * ) {}

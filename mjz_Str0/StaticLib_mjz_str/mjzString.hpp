@@ -1,23 +1,24 @@
 /*
- String library for Wiring & Arduino
+String library for Wiring & Arduino
  ...mostly rewritten by Paul Stoffregen...
- Copyright (c) 2009-10 Hernando Barragan. All right reserved.
- Copyright 2011, Paul Stoffregen, paul@pjrc.com
+Copyright (c) 2009-10 Hernando Barragan. All right reserved.
+Copyright 2011, Paul Stoffregen, paul@pjrc.com
 
- This library is free software; you can redistribute it and/or
+This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  Lesser General Public License for more details.
- You should have received a copy of the GNU Lesser General Public
+You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
 #pragma once
-
+#define _THIS_IS_YOURS_NOW_ [[nodiscard]]
+#define _compiler_can_use_ constexpr
 #define NumberOf(arg) ((size_t)(sizeof(arg) / sizeof(arg[0])))
 #ifdef __cplusplus
 #ifndef __mjz_ard_STRINGS__
@@ -36,22 +37,23 @@
 // override
 #ifndef if_override_then_override
 #define if_override_then_override
-#endif  // if_override_then_override
+#endif // if_override_then_override
 // override
 #ifdef Arduino
 #define if_ard_then_override override
 #else
 #define if_ard_then_override
 unsigned long millis();
-#endif  // Arduino
+#endif // Arduino
 #define log_mjz_str(Function, ...) (Function((const char *)__VA_ARGS__))
 #ifndef global_mjz_areana_allocator_on
-constexpr size_t number_of_global_mjz_areana_allocator_blocks = 64 * 1024;
-constexpr size_t size_of_global_mjz_areana_allocator_blocks = 32;
+_compiler_can_use_ size_t number_of_global_mjz_areana_allocator_blocks =
+    64 * 1024;
+_compiler_can_use_ size_t size_of_global_mjz_areana_allocator_blocks = 32;
 // true
 // false
 #define global_mjz_areana_allocator_on true
-#endif  // !global_mjz_areana_allocator_on
+#endif // !global_mjz_areana_allocator_on
 #ifndef global_mjz_areana_allocator_log
 #define global_mjz_areana_allocator_log false
 #endif
@@ -61,28 +63,23 @@ class __FlashStringHelper;
 namespace mjz_ard {
 extern uint32_t num_allocations;
 
-template <class Type>
-using mjz_get_value_Type = typename Type::value_type;
+template <class Type> using mjz_get_value_Type = typename Type::value_type;
 
-template <class Type>
-using mjz_get_pointer_Type = typename Type::pointer;
-template <class Type>
-Type *remove_const(const Type *o) {
+template <class Type> using mjz_get_pointer_Type = typename Type::pointer;
+template <class Type> Type *remove_const(const Type *o) {
   return const_cast<Type *>(o);
 }
-template <class Type>
-Type &remove_const(const Type &o) {
+template <class Type> Type &remove_const(const Type &o) {
   return *remove_const(std::addressof(o));
 }
 // iterator_template Class
-template <typename Type, bool error_check = 1>
-class iterator_template_t {
- protected:
+template <typename Type, bool error_check = 1> class iterator_template_t {
+protected:
   Type *m_iterator;
   Type *m_iterator_begin_ptr;
   Type *m_iterator_end_ptr;
 
- public:
+public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
@@ -92,29 +89,26 @@ class iterator_template_t {
   using const_reference = const Type &;
   using size_type = size_t;
   // using iterator_concept = std::contiguous_iterator_tag;
-  inline constexpr iterator_template_t() noexcept
+  _compiler_can_use_ inline iterator_template_t() noexcept
       : iterator_template_t(nullptr, nullptr, (Type *)-1) {}
   // iterator_template(Type *iter ) noexcept: m_iterator { iter } { }
-  inline constexpr iterator_template_t(Type *iter, Type *min_end,
-                                       Type *max_end) noexcept
-      : m_iterator{iter},
-        m_iterator_begin_ptr{min_end},
+  _compiler_can_use_ inline iterator_template_t(Type *iter, Type *min_end,
+                                                Type *max_end) noexcept
+      : m_iterator{iter}, m_iterator_begin_ptr{min_end},
         m_iterator_end_ptr{max_end} {}
-  inline constexpr iterator_template_t(Type *arr, size_t len) noexcept
-      : m_iterator(arr),
-        m_iterator_begin_ptr(arr),
+  _compiler_can_use_ inline iterator_template_t(Type *arr, size_t len) noexcept
+      : m_iterator(arr), m_iterator_begin_ptr(arr),
         m_iterator_end_ptr(arr + len) {}
-  inline constexpr iterator_template_t(const Type *First_arg,
-                                       const Type *Last_arg) noexcept
+  _compiler_can_use_ inline iterator_template_t(const Type *First_arg,
+                                                const Type *Last_arg) noexcept
       : iterator_template_t(First_arg, First_arg, Last_arg) {}
-  // inline constexpr iterator_template(std::initializer_list<Type>list)
-  // noexcept
-  // : iterator_template((Type *)(list.begin()), (size_t)list.size()) { }
-  // this is bad for class types becuse ~list => ~Type => } code... => use
-  // after free
+  //  _compiler_can_use_  inline  //
+  // iterator_template(std::initializer_list<Type>list) noexcept :
+  // iterator_template((Type *)(list.begin()), (size_t)list.size()) { } this is
+  // bad for class types becuse ~list => ~Type => } code... => use after free
 
-  inline constexpr void throw_if_bad(Type *_iterator) const {
-    if constexpr (error_check) {
+  _compiler_can_use_ inline void throw_if_bad(Type *_iterator) const {
+    if _compiler_can_use_ (error_check) {
       if (_iterator == (Type *)-1) {
         _iterator = m_iterator;
       }
@@ -125,45 +119,47 @@ class iterator_template_t {
       throw std::exception("bad ptr access : iterator_template::throw_if_bad ");
     }
   }
-  constexpr void throw_if_bad() const { throw_if_bad((Type *)-1); }
-  constexpr iterator_template_t(const iterator_template_t &p) noexcept
-      : m_iterator(p.m_iterator),
-        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+  _compiler_can_use_ void throw_if_bad() const { throw_if_bad((Type *)-1); }
+  _compiler_can_use_ iterator_template_t(const iterator_template_t &p) noexcept
+      : m_iterator(p.m_iterator), m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template_t(iterator_template_t &&p) noexcept
-      : m_iterator(p.m_iterator),
-        m_iterator_begin_ptr(p.m_iterator_begin_ptr),
+  _compiler_can_use_ iterator_template_t(iterator_template_t &&p) noexcept
+      : m_iterator(p.m_iterator), m_iterator_begin_ptr(p.m_iterator_begin_ptr),
         m_iterator_end_ptr(p.m_iterator_end_ptr) {}
-  constexpr iterator_template_t &operator=(Type *iter) {
+  _compiler_can_use_ iterator_template_t &operator=(Type *iter) {
     m_iterator = iter;
     throw_if_bad();
     return *this;
   }
-  constexpr iterator_template_t &operator=(const iterator_template_t &p) {
+  _compiler_can_use_ iterator_template_t &
+  operator=(const iterator_template_t &p) {
     m_iterator = (p.m_iterator);
     m_iterator_begin_ptr = p.m_iterator_begin_ptr;
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     throw_if_bad();
     return *this;
   }
-  constexpr iterator_template_t &operator=(iterator_template_t &&p) noexcept {
+  _compiler_can_use_ iterator_template_t &
+  operator=(iterator_template_t &&p) noexcept {
     m_iterator = (p.m_iterator);
     m_iterator_begin_ptr = p.m_iterator_begin_ptr;
     m_iterator_end_ptr = p.m_iterator_end_ptr;
     return *this;
   }
   inline ~iterator_template_t() { m_iterator = 0; }
-  constexpr bool operator==(const iterator_template_t &other) const noexcept {
+  _compiler_can_use_ bool
+  operator==(const iterator_template_t &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
-  constexpr bool operator!=(const iterator_template_t &other) const noexcept {
+  _compiler_can_use_ bool
+  operator!=(const iterator_template_t &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
-  constexpr reference operator*() const {
+  _compiler_can_use_ reference operator*() const {
     throw_if_bad();
     return *m_iterator;
   }
-  constexpr pointer operator->() const {
+  _compiler_can_use_ pointer operator->() const {
     throw_if_bad();
     return m_iterator;
   }
@@ -171,101 +167,112 @@ class iterator_template_t {
   inline auto operator->*(my_type my_var) {
     return operator->()->*my_var;
   }
-  inline constexpr const Type *begin() const { return m_iterator_begin_ptr; }
-  inline constexpr const Type *end() const { return m_iterator_end_ptr; }
-  inline constexpr Type *begin() { return m_iterator_begin_ptr; }
-  inline constexpr Type *end() { return m_iterator_end_ptr; }
-  inline constexpr iterator_template_t base() {
+  _compiler_can_use_ inline const Type *begin() const {
+    return m_iterator_begin_ptr;
+  }
+  _compiler_can_use_ inline const Type *end() const {
+    return m_iterator_end_ptr;
+  }
+  _compiler_can_use_ inline Type *begin() { return m_iterator_begin_ptr; }
+  _compiler_can_use_ inline Type *end() { return m_iterator_end_ptr; }
+  _compiler_can_use_ inline iterator_template_t base() {
     return iterator_template_t(m_iterator_begin_ptr, m_iterator_begin_ptr,
                                m_iterator_end_ptr);
   }
-  constexpr size_t size() const noexcept {
+  _compiler_can_use_ size_t size() const noexcept {
     return static_cast<size_t>((const uint8_t *)m_iterator_end_ptr -
                                (const uint8_t *)m_iterator_begin_ptr) /
            sizeof(Type);
   }
-  constexpr iterator_template_t &operator++() noexcept {
+  _compiler_can_use_ iterator_template_t &operator++() noexcept {
     ++m_iterator;
     return *this;
   }
-  constexpr iterator_template_t operator++(int) noexcept {
+  _compiler_can_use_ iterator_template_t operator++(int) noexcept {
     iterator_template_t tmp(*this);
     ++(*this);
     return tmp;
   }
-  constexpr iterator_template_t &operator--() noexcept {
+  _compiler_can_use_ iterator_template_t &operator--() noexcept {
     --m_iterator;
     return *this;
   }
-  constexpr iterator_template_t operator--(int) noexcept {
+  _compiler_can_use_ iterator_template_t operator--(int) noexcept {
     iterator_template_t tmp(*this);
     --(*this);
     return tmp;
   }
-  constexpr iterator_template_t &operator+=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ iterator_template_t &
+  operator+=(const difference_type other) noexcept {
     m_iterator += other;
     return *this;
   }
-  constexpr iterator_template_t &operator-=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ iterator_template_t &
+  operator-=(const difference_type other) noexcept {
     m_iterator -= other;
     return *this;
   }
-  constexpr iterator_template_t &operator+=(
-      const iterator_template_t &other) noexcept {
+  _compiler_can_use_ iterator_template_t &
+  operator+=(const iterator_template_t &other) noexcept {
     m_iterator += other.m_iterator;
     return *this;
   }
-  constexpr iterator_template_t &operator-=(
-      const iterator_template_t &other) noexcept {
+  _compiler_can_use_ iterator_template_t &
+  operator-=(const iterator_template_t &other) noexcept {
     m_iterator -= other.m_iterator;
     return *this;
   }
-  constexpr reference operator[](std::size_t index) const {
+  _compiler_can_use_ reference operator[](std::size_t index) const {
     throw_if_bad(m_iterator + index);
     return m_iterator[index];
   }
-  constexpr bool operator<(const iterator_template_t &other) const noexcept {
+  _compiler_can_use_ bool
+  operator<(const iterator_template_t &other) const noexcept {
     return m_iterator < other.m_iterator;
   }
-  constexpr bool operator>(const iterator_template_t &other) const noexcept {
+  _compiler_can_use_ bool
+  operator>(const iterator_template_t &other) const noexcept {
     return m_iterator > other.m_iterator;
   }
-  constexpr bool operator<=(const iterator_template_t &other) const noexcept {
+  _compiler_can_use_ bool
+  operator<=(const iterator_template_t &other) const noexcept {
     return m_iterator <= other.m_iterator;
   }
-  constexpr bool operator>=(const iterator_template_t &other) const noexcept {
+  _compiler_can_use_ bool
+  operator>=(const iterator_template_t &other) const noexcept {
     return m_iterator >= other.m_iterator;
   }
-  constexpr operator pointer() {
+  _compiler_can_use_ operator pointer() {
     throw_if_bad();
     return m_iterator;
   }
-  constexpr explicit operator pointer &() {
+  _compiler_can_use_ explicit operator pointer &() {
     throw_if_bad();
     return m_iterator;
   }
-  constexpr pointer get_pointer() const {
+  _compiler_can_use_ pointer get_pointer() const {
     throw_if_bad();
     return m_iterator;
   }
-  constexpr pointer &get_pointer() {
+  _compiler_can_use_ pointer &get_pointer() {
     throw_if_bad();
     return m_iterator;
   }
-  constexpr friend iterator_template_t operator+(
-      const iterator_template_t &me, const difference_type other) noexcept {
+  _compiler_can_use_ friend iterator_template_t
+  operator+(const iterator_template_t &me,
+            const difference_type other) noexcept {
     return iterator_template_t(me.m_iterator + other, me.m_iterator_begin_ptr,
                                me.m_iterator_end_ptr);
   }
-  constexpr friend iterator_template_t operator-(
-      const iterator_template_t &me, const difference_type other) noexcept {
+  _compiler_can_use_ friend iterator_template_t
+  operator-(const iterator_template_t &me,
+            const difference_type other) noexcept {
     return iterator_template_t(me.m_iterator - other, me.m_iterator_begin_ptr,
                                me.m_iterator_end_ptr);
   }
-  constexpr friend iterator_template_t operator+(
-      const difference_type other, const iterator_template_t &me) noexcept {
+  _compiler_can_use_ friend iterator_template_t
+  operator+(const difference_type other,
+            const iterator_template_t &me) noexcept {
     return iterator_template_t(
         other + me.m_iterator,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
@@ -275,21 +282,21 @@ class iterator_template_t {
   // iterator_template& me) noexcept { // bad function dont use
   // return iterator_template(me.m_iterator - (pointer)other);
   // }
-  constexpr friend iterator_template_t operator+(
-      const iterator_template_t &other,
-      const iterator_template_t &me) noexcept {
+  _compiler_can_use_ friend iterator_template_t
+  operator+(const iterator_template_t &other,
+            const iterator_template_t &me) noexcept {
     return iterator_template_t(
         other.m_iterator + me,
         min(other.m_iterator_begin_ptr, me.m_iterator_begin_ptr),
         max(other.m_iterator_end_ptr, me.m_iterator_end_ptr));
   }
-  constexpr friend difference_type operator-(
-      const iterator_template_t &other,
-      const iterator_template_t &me) noexcept {
+  _compiler_can_use_ friend difference_type
+  operator-(const iterator_template_t &other,
+            const iterator_template_t &me) noexcept {
     return std::distance(other.m_iterator, me.m_iterator);
   }
-  constexpr friend void swap(iterator_template_t &lhs,
-                             iterator_template_t &rhs) noexcept {
+  _compiler_can_use_ friend void swap(iterator_template_t &lhs,
+                                      iterator_template_t &rhs) noexcept {
     iterator_template_t lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
@@ -299,10 +306,10 @@ class iterator_template_t {
 
 template <typename iterator_t, typename Type>
 class iterator_template_ptr_warper {
- protected:
+protected:
   iterator_t m_iterator;
 
- public:
+public:
   using value_type = Type;
   using reference = Type &;
   using pointer = Type *;
@@ -310,159 +317,162 @@ class iterator_template_ptr_warper {
   using difference_type = std::ptrdiff_t;
   using const_reference = const Type &;
   using size_type = size_t;
-  inline constexpr iterator_template_ptr_warper() noexcept : m_iterator() {}
-  inline constexpr iterator_template_ptr_warper(iterator_t iter) noexcept
+  _compiler_can_use_ inline iterator_template_ptr_warper() noexcept
+      : m_iterator() {}
+  _compiler_can_use_ inline iterator_template_ptr_warper(
+      iterator_t iter) noexcept
       : m_iterator(iter) {}
-  constexpr iterator_template_ptr_warper(
-      const iterator_template_ptr_warper &p) noexcept
+  _compiler_can_use_
+  iterator_template_ptr_warper(const iterator_template_ptr_warper &p) noexcept
       : m_iterator(p.m_iterator) {}
-  constexpr iterator_template_ptr_warper(
-      iterator_template_ptr_warper &&p) noexcept
+  _compiler_can_use_
+  iterator_template_ptr_warper(iterator_template_ptr_warper &&p) noexcept
       : m_iterator(p.m_iterator) {}
-  constexpr iterator_template_ptr_warper &operator=(iterator_t iter) {
+  _compiler_can_use_ iterator_template_ptr_warper &operator=(iterator_t iter) {
     m_iterator = iter;
     return *this;
   }
-  constexpr iterator_template_ptr_warper &operator=(
-      const iterator_template_ptr_warper &p) {
+  _compiler_can_use_ iterator_template_ptr_warper &
+  operator=(const iterator_template_ptr_warper &p) {
     m_iterator = (p.m_iterator);
     return *this;
   }
-  constexpr iterator_template_ptr_warper &operator=(
-      iterator_template_ptr_warper &&p) noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper &
+  operator=(iterator_template_ptr_warper &&p) noexcept {
     m_iterator = (p.m_iterator);
     return *this;
   }
   inline ~iterator_template_ptr_warper() { m_iterator = 0; }
-  constexpr bool operator==(
-      const iterator_template_ptr_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator==(const iterator_template_ptr_warper &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
-  constexpr bool operator!=(
-      const iterator_template_ptr_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator!=(const iterator_template_ptr_warper &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
-  constexpr reference operator*() const { return **m_iterator; }
-  constexpr pointer operator->() const { return &(**m_iterator); }
+  _compiler_can_use_ reference operator*() const { return **m_iterator; }
+  _compiler_can_use_ pointer operator->() const { return &(**m_iterator); }
   template <typename my_type, typename iterator_t = value_type>
   inline auto operator->*(my_type my_var) {
     return operator->()->*my_var;
   }
-  inline constexpr const iterator_template_ptr_warper begin() const {
+  _compiler_can_use_ inline const iterator_template_ptr_warper begin() const {
     return iterator_template_ptr_warper(
         {m_iterator.begin(), m_iterator.begin(), m_iterator.end()});
   }
-  inline constexpr const iterator_template_ptr_warper end() const {
+  _compiler_can_use_ inline const iterator_template_ptr_warper end() const {
     return iterator_template_ptr_warper(
         {m_iterator.end(), m_iterator.begin(), m_iterator.end()});
   }
-  inline constexpr iterator_template_ptr_warper begin() {
+  _compiler_can_use_ inline iterator_template_ptr_warper begin() {
     return iterator_template_ptr_warper(
         {m_iterator.begin(), m_iterator.begin(), m_iterator.end()});
   }
-  inline constexpr iterator_template_ptr_warper end() {
+  _compiler_can_use_ inline iterator_template_ptr_warper end() {
     return iterator_template_ptr_warper(
         {m_iterator.end(), m_iterator.begin(), m_iterator.end()});
   }
-  inline constexpr iterator_t base() { return m_iterator; }
-  constexpr size_t size() const noexcept { return m_iterator.size(); }
-  constexpr iterator_template_ptr_warper &operator++() noexcept {
+  _compiler_can_use_ inline iterator_t base() { return m_iterator; }
+  _compiler_can_use_ size_t size() const noexcept { return m_iterator.size(); }
+  _compiler_can_use_ iterator_template_ptr_warper &operator++() noexcept {
     ++m_iterator;
     return *this;
   }
-  constexpr iterator_template_ptr_warper operator++(int) noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper operator++(int) noexcept {
     iterator_template_ptr_warper tmp(*this);
     ++(*this);
     return tmp;
   }
-  constexpr iterator_template_ptr_warper &operator--() noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper &operator--() noexcept {
     --m_iterator;
     return *this;
   }
-  constexpr iterator_template_ptr_warper operator--(int) noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper operator--(int) noexcept {
     iterator_template_ptr_warper tmp(*this);
     --(*this);
     return tmp;
   }
-  constexpr iterator_template_ptr_warper &operator+=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper &
+  operator+=(const difference_type other) noexcept {
     m_iterator += other;
     return *this;
   }
-  constexpr iterator_template_ptr_warper &operator-=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper &
+  operator-=(const difference_type other) noexcept {
     m_iterator -= other;
     return *this;
   }
-  constexpr iterator_template_ptr_warper &operator+=(
-      const iterator_template_ptr_warper &other) noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper &
+  operator+=(const iterator_template_ptr_warper &other) noexcept {
     m_iterator += other.m_iterator;
     return *this;
   }
-  constexpr iterator_template_ptr_warper &operator-=(
-      const iterator_template_ptr_warper &other) noexcept {
+  _compiler_can_use_ iterator_template_ptr_warper &
+  operator-=(const iterator_template_ptr_warper &other) noexcept {
     m_iterator -= other.m_iterator;
     return *this;
   }
-  constexpr reference operator[](std::size_t index) const {
+  _compiler_can_use_ reference operator[](std::size_t index) const {
     return *m_iterator[index];
   }
-  constexpr bool operator<(
-      const iterator_template_ptr_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator<(const iterator_template_ptr_warper &other) const noexcept {
     return m_iterator < other.m_iterator;
   }
-  constexpr bool operator>(
-      const iterator_template_ptr_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator>(const iterator_template_ptr_warper &other) const noexcept {
     return m_iterator > other.m_iterator;
   }
-  constexpr bool operator<=(
-      const iterator_template_ptr_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator<=(const iterator_template_ptr_warper &other) const noexcept {
     return m_iterator <= other.m_iterator;
   }
-  constexpr bool operator>=(
-      const iterator_template_ptr_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator>=(const iterator_template_ptr_warper &other) const noexcept {
     return m_iterator >= other.m_iterator;
   }
-  constexpr operator pointer() { return m_iterator; }
-  constexpr explicit operator pointer &() { return m_iterator; }
-  constexpr pointer get_pointer() const { return m_iterator; }
-  constexpr pointer &get_pointer() { return m_iterator; }
-  constexpr friend iterator_template_ptr_warper operator+(
-      const iterator_template_ptr_warper &me,
-      const difference_type other) noexcept {
+  _compiler_can_use_ operator pointer() { return m_iterator; }
+  _compiler_can_use_ explicit operator pointer &() { return m_iterator; }
+  _compiler_can_use_ pointer get_pointer() const { return m_iterator; }
+  _compiler_can_use_ pointer &get_pointer() { return m_iterator; }
+  _compiler_can_use_ friend iterator_template_ptr_warper
+  operator+(const iterator_template_ptr_warper &me,
+            const difference_type other) noexcept {
     return iterator_template_ptr_warper(me.m_iterator + other);
   }
-  constexpr friend iterator_template_ptr_warper operator-(
-      const iterator_template_ptr_warper &me,
-      const difference_type other) noexcept {
+  _compiler_can_use_ friend iterator_template_ptr_warper
+  operator-(const iterator_template_ptr_warper &me,
+            const difference_type other) noexcept {
     return iterator_template_ptr_warper(me.m_iterator - other);
   }
-  constexpr friend iterator_template_ptr_warper operator+(
-      const difference_type other,
-      const iterator_template_ptr_warper &me) noexcept {
+  _compiler_can_use_ friend iterator_template_ptr_warper
+  operator+(const difference_type other,
+            const iterator_template_ptr_warper &me) noexcept {
     return iterator_template_ptr_warper(other + me.m_iterator);
   }
   // friend iterator_template_ptr_warper operator-(const difference_type other,
   // const iterator_template_ptr_warper& me) noexcept { // bad function dont
   // use return iterator_template_ptr_warper(me.m_iterator - (pointer)other);
   // }
-  constexpr friend iterator_template_ptr_warper operator+(
-      const iterator_template_ptr_warper &other,
-      const iterator_template_ptr_warper &me) noexcept {
+  _compiler_can_use_ friend iterator_template_ptr_warper
+  operator+(const iterator_template_ptr_warper &other,
+            const iterator_template_ptr_warper &me) noexcept {
     return iterator_template_ptr_warper(other.m_iterator + me);
   }
-  constexpr friend difference_type operator-(
-      const iterator_template_ptr_warper &other,
-      const iterator_template_ptr_warper &me) noexcept {
+  _compiler_can_use_ friend difference_type
+  operator-(const iterator_template_ptr_warper &other,
+            const iterator_template_ptr_warper &me) noexcept {
     return operator-(other.m_iterator, me.m_iterator);
   }
-  constexpr friend void swap(iterator_template_ptr_warper &lhs,
-                             iterator_template_ptr_warper &rhs) noexcept {
+  _compiler_can_use_ friend void
+  swap(iterator_template_ptr_warper &lhs,
+       iterator_template_ptr_warper &rhs) noexcept {
     iterator_template_ptr_warper lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
   }
-  constexpr friend void swap(reference lhs, reference rhs) noexcept {
+  _compiler_can_use_ friend void swap(reference lhs, reference rhs) noexcept {
     value_type lhsm_ = lhs;
     lhs = rhs;
     rhs = lhsm_;
@@ -474,14 +484,14 @@ bool dummy_iterator_template_filter_warper_filter(const Type &) {
 }
 template <typename Type, typename iterator_t>
 class iterator_template_filter_warper {
- public:
+public:
   using filter_type = std::function<bool(const Type &)>;
 
- protected:
+protected:
   iterator_t m_iterator;
   filter_type m_filter = dummy_iterator_template_filter_warper_filter<Type>;
 
- public:
+public:
   using value_type = Type;
   using reference = Type &;
   using pointer = Type *;
@@ -489,212 +499,217 @@ class iterator_template_filter_warper {
   using difference_type = std::ptrdiff_t;
   using const_reference = const Type &;
   using size_type = size_t;
-  inline constexpr iterator_template_filter_warper() noexcept : m_iterator() {}
-  inline constexpr iterator_template_filter_warper(iterator_t iter) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper() noexcept
+      : m_iterator() {}
+  _compiler_can_use_ inline iterator_template_filter_warper(
+      iterator_t iter) noexcept
       : m_iterator(iter) {}
-  inline constexpr iterator_template_filter_warper(filter_type filter) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper(
+      filter_type filter) noexcept
       : m_iterator(), m_filter(filter) {}
-  inline constexpr iterator_template_filter_warper(iterator_t iter,
-                                                   filter_type filter) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper(
+      iterator_t iter, filter_type filter) noexcept
       : m_iterator(iter), m_filter(filter) {}
-  constexpr iterator_template_filter_warper(
+  _compiler_can_use_ iterator_template_filter_warper(
       const iterator_template_filter_warper &p) noexcept
       : m_iterator(p.m_iterator), m_filter(p.m_filter) {}
-  constexpr iterator_template_filter_warper(
-      iterator_template_filter_warper &&p) noexcept
+  _compiler_can_use_
+  iterator_template_filter_warper(iterator_template_filter_warper &&p) noexcept
       : m_iterator(p.m_iterator), m_filter(p.m_filter) {}
-  constexpr iterator_template_filter_warper(
-      const iterator_template_filter_warper &p, filter_type filter) noexcept
+  _compiler_can_use_
+  iterator_template_filter_warper(const iterator_template_filter_warper &p,
+                                  filter_type filter) noexcept
       : m_iterator(p.m_iterator), m_filter(filter) {}
-  constexpr iterator_template_filter_warper(iterator_template_filter_warper &&p,
-                                            filter_type filter) noexcept
+  _compiler_can_use_
+  iterator_template_filter_warper(iterator_template_filter_warper &&p,
+                                  filter_type filter) noexcept
       : m_iterator(p.m_iterator), m_filter(filter) {}
-  constexpr iterator_template_filter_warper &operator=(Type *iter) {
+  _compiler_can_use_ iterator_template_filter_warper &operator=(Type *iter) {
     m_iterator = iter;
     return *this;
   }
-  inline constexpr iterator_template_filter_warper(Type *iter, Type *min_end,
-                                                   Type *max_end) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper(
+      Type *iter, Type *min_end, Type *max_end) noexcept
       : m_iterator(iter, min_end, max_end) {}
-  inline constexpr iterator_template_filter_warper(Type *arr,
-                                                   size_t len) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper(Type *arr,
+                                                            size_t len) noexcept
       : m_iterator(arr, len) {}
-  inline constexpr iterator_template_filter_warper(
+  _compiler_can_use_ inline iterator_template_filter_warper(
       const Type *First_arg, const Type *Last_arg) noexcept
       : iterator_template_filter_warper(First_arg, First_arg, Last_arg) {}
-  inline constexpr iterator_template_filter_warper(Type *iter, Type *min_end,
-                                                   Type *max_end,
-                                                   filter_type filter) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper(
+      Type *iter, Type *min_end, Type *max_end, filter_type filter) noexcept
       : m_iterator(iter, min_end, max_end), m_filter(filter) {}
-  inline constexpr iterator_template_filter_warper(Type *arr, size_t len,
-                                                   filter_type filter) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper(
+      Type *arr, size_t len, filter_type filter) noexcept
       : m_iterator(arr, len), m_filter(filter) {}
-  inline constexpr iterator_template_filter_warper(const Type *First_arg,
-                                                   const Type *Last_arg,
-                                                   filter_type filter) noexcept
+  _compiler_can_use_ inline iterator_template_filter_warper(
+      const Type *First_arg, const Type *Last_arg, filter_type filter) noexcept
       : iterator_template_filter_warper(First_arg, First_arg, Last_arg),
         m_filter(filter) {}
-  constexpr iterator_template_filter_warper &operator=(iterator_t iter) {
+  _compiler_can_use_ iterator_template_filter_warper &
+  operator=(iterator_t iter) {
     m_iterator = iter;
     m_filter = (iter.m_filter);
     return *this;
   }
-  constexpr iterator_template_filter_warper &operator=(
-      const iterator_template_filter_warper &p) {
+  _compiler_can_use_ iterator_template_filter_warper &
+  operator=(const iterator_template_filter_warper &p) {
     m_iterator = (p.m_iterator);
     m_filter = (p.m_filter);
     return *this;
   }
-  constexpr iterator_template_filter_warper &operator=(
-      iterator_template_filter_warper &&p) noexcept {
+  _compiler_can_use_ iterator_template_filter_warper &
+  operator=(iterator_template_filter_warper &&p) noexcept {
     m_iterator = (p.m_iterator);
     m_filter = (p.m_filter);
     return *this;
   }
   inline ~iterator_template_filter_warper() {}
-  constexpr bool operator==(
-      const iterator_template_filter_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator==(const iterator_template_filter_warper &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
-  constexpr bool operator!=(
-      const iterator_template_filter_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator!=(const iterator_template_filter_warper &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
-  constexpr reference operator*() {
+  _compiler_can_use_ reference operator*() {
     go_forward();
     return m_iterator.operator*();
   }
-  constexpr pointer operator->() {
+  _compiler_can_use_ pointer operator->() {
     go_forward();
     return m_iterator.operator->();
   }
   template <typename my_type, typename iterator_t = value_type>
-  constexpr inline auto operator->*(my_type my_var) {
+  _compiler_can_use_ inline auto operator->*(my_type my_var) {
     return operator->()->*my_var;
   }
-  inline constexpr const iterator_template_filter_warper begin() const {
+  _compiler_can_use_ inline const iterator_template_filter_warper
+  begin() const {
     iterator_t b = base();
     b = b.begin();
     return iterator_template_filter_warper(b, m_filter);
   }
-  inline constexpr const iterator_template_filter_warper end() const {
+  _compiler_can_use_ inline const iterator_template_filter_warper end() const {
     iterator_t b = base();
     b = b.end();
     return iterator_template_filter_warper(b, m_filter);
   }
-  inline constexpr iterator_template_filter_warper begin() {
+  _compiler_can_use_ inline iterator_template_filter_warper begin() {
     iterator_t b = base();
     b = b.begin();
     return iterator_template_filter_warper(b, m_filter);
   }
-  inline constexpr iterator_template_filter_warper end() {
+  _compiler_can_use_ inline iterator_template_filter_warper end() {
     iterator_t b = base();
     b = b.end();
     return iterator_template_filter_warper(b, m_filter);
   }
-  inline constexpr iterator_t base() { return m_iterator; }
-  inline constexpr const iterator_t base() const { return m_iterator; }
-  constexpr size_t size() const noexcept { return m_iterator.size(); }
-  constexpr void go_forward() {
+  _compiler_can_use_ inline iterator_t base() { return m_iterator; }
+  _compiler_can_use_ inline const iterator_t base() const { return m_iterator; }
+  _compiler_can_use_ size_t size() const noexcept { return m_iterator.size(); }
+  _compiler_can_use_ void go_forward() {
     while ((m_iterator.end() != m_iterator) && !m_filter(*m_iterator)) {
       ++m_iterator;
     }
   }
-  constexpr void go_backward() {
+  _compiler_can_use_ void go_backward() {
     while ((m_iterator.begin() != m_iterator) && !m_filter(*m_iterator)) {
       --m_iterator;
     }
   }
-  constexpr static iterator_template_filter_warper go_forward(
-      iterator_template_filter_warper &&it) {
+  _compiler_can_use_ static iterator_template_filter_warper
+  go_forward(iterator_template_filter_warper &&it) {
     it.go_forward();
     return it;
   }
-  constexpr static iterator_template_filter_warper go_backward(
-      iterator_template_filter_warper &&it) {
+  _compiler_can_use_ static iterator_template_filter_warper
+  go_backward(iterator_template_filter_warper &&it) {
     it.go_backward();
     return it;
   }
-  constexpr iterator_template_filter_warper &operator++() noexcept {
+  _compiler_can_use_ iterator_template_filter_warper &operator++() noexcept {
     ++m_iterator;
     go_forward();
     return *this;
   }
-  constexpr iterator_template_filter_warper operator++(int) noexcept {
+  _compiler_can_use_ iterator_template_filter_warper operator++(int) noexcept {
     iterator_template_filter_warper tmp(*this);
     ++(*this);
     return tmp;
   }
-  constexpr iterator_template_filter_warper &operator--() noexcept {
+  _compiler_can_use_ iterator_template_filter_warper &operator--() noexcept {
     --m_iterator;
     go_backward();
     return *this;
   }
-  constexpr iterator_template_filter_warper operator--(int) noexcept {
+  _compiler_can_use_ iterator_template_filter_warper operator--(int) noexcept {
     iterator_template_filter_warper tmp(*this);
     --(*this);
     return tmp;
   }
-  constexpr iterator_template_filter_warper &operator+=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ iterator_template_filter_warper &
+  operator+=(const difference_type other) noexcept {
     m_iterator += other;
     go_forward();
     return *this;
   }
-  constexpr iterator_template_filter_warper &operator-=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ iterator_template_filter_warper &
+  operator-=(const difference_type other) noexcept {
     m_iterator -= other;
     go_backward();
     return *this;
   }
-  constexpr iterator_template_filter_warper &operator+=(
-      const iterator_template_filter_warper &other) noexcept {
+  _compiler_can_use_ iterator_template_filter_warper &
+  operator+=(const iterator_template_filter_warper &other) noexcept {
     m_iterator += other.m_iterator;
     go_forward();
     return *this;
   }
-  constexpr iterator_template_filter_warper &operator-=(
-      const iterator_template_filter_warper &other) noexcept {
+  _compiler_can_use_ iterator_template_filter_warper &
+  operator-=(const iterator_template_filter_warper &other) noexcept {
     m_iterator -= other.m_iterator;
     go_backward();
     return *this;
   }
-  constexpr reference operator[](std::size_t index) const {
+  _compiler_can_use_ reference operator[](std::size_t index) const {
     return m_iterator[index];
   }
-  constexpr bool operator<(
-      const iterator_template_filter_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator<(const iterator_template_filter_warper &other) const noexcept {
     return m_iterator < other.m_iterator;
   }
-  constexpr bool operator>(
-      const iterator_template_filter_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator>(const iterator_template_filter_warper &other) const noexcept {
     return m_iterator > other.m_iterator;
   }
-  constexpr bool operator<=(
-      const iterator_template_filter_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator<=(const iterator_template_filter_warper &other) const noexcept {
     return m_iterator <= other.m_iterator;
   }
-  constexpr bool operator>=(
-      const iterator_template_filter_warper &other) const noexcept {
+  _compiler_can_use_ bool
+  operator>=(const iterator_template_filter_warper &other) const noexcept {
     return m_iterator >= other.m_iterator;
   }
-  constexpr operator pointer() { return m_iterator; }
-  constexpr explicit operator pointer &() { return m_iterator; }
-  constexpr pointer get_pointer() const { return m_iterator; }
-  constexpr pointer &get_pointer() { return m_iterator; }
-  constexpr friend iterator_template_filter_warper operator+(
-      const iterator_template_filter_warper &me,
-      const difference_type other) noexcept {
+  _compiler_can_use_ operator pointer() { return m_iterator; }
+  _compiler_can_use_ explicit operator pointer &() { return m_iterator; }
+  _compiler_can_use_ pointer get_pointer() const { return m_iterator; }
+  _compiler_can_use_ pointer &get_pointer() { return m_iterator; }
+  _compiler_can_use_ friend iterator_template_filter_warper
+  operator+(const iterator_template_filter_warper &me,
+            const difference_type other) noexcept {
     return go_forward(iterator_template_filter_warper(me.m_iterator + other));
   }
-  constexpr friend iterator_template_filter_warper operator-(
-      const iterator_template_filter_warper &me,
-      const difference_type other) noexcept {
+  _compiler_can_use_ friend iterator_template_filter_warper
+  operator-(const iterator_template_filter_warper &me,
+            const difference_type other) noexcept {
     return go_backward(iterator_template_filter_warper(me.m_iterator - other));
   }
-  constexpr friend iterator_template_filter_warper operator+(
-      const difference_type other,
-      const iterator_template_filter_warper &me) noexcept {
+  _compiler_can_use_ friend iterator_template_filter_warper
+  operator+(const difference_type other,
+            const iterator_template_filter_warper &me) noexcept {
     return go_forward(iterator_template_filter_warper(other + me.m_iterator));
   }
   // friend iterator_template_filter_warper operator-(const difference_type
@@ -702,103 +717,112 @@ class iterator_template_filter_warper {
   // function dont use return iterator_template_filter_warper(me.m_iterator -
   // (pointer)other);
   // }
-  constexpr friend iterator_template_filter_warper operator+(
-      const iterator_template_filter_warper &other,
-      const iterator_template_filter_warper &me) noexcept {
+  _compiler_can_use_ friend iterator_template_filter_warper
+  operator+(const iterator_template_filter_warper &other,
+            const iterator_template_filter_warper &me) noexcept {
     return go_forward(iterator_template_filter_warper(other.m_iterator + me));
   }
-  constexpr friend difference_type operator-(
-      const iterator_template_filter_warper &other,
-      const iterator_template_filter_warper &me) noexcept {
+  _compiler_can_use_ friend difference_type
+  operator-(const iterator_template_filter_warper &other,
+            const iterator_template_filter_warper &me) noexcept {
     return operator-(other.m_iterator, me.m_iterator);
   }
-  constexpr friend void swap(iterator_template_filter_warper &lhs,
-                             iterator_template_filter_warper &rhs) noexcept {
+  _compiler_can_use_ friend void
+  swap(iterator_template_filter_warper &lhs,
+       iterator_template_filter_warper &rhs) noexcept {
     iterator_template_filter_warper<Type, iterator_t> lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
   }
 };
 template <class iterator_t>
-constexpr iterator_template_filter_warper<mjz_get_value_Type<iterator_t>,
-                                          iterator_t>
-to_filter_it(
-    iterator_t it,
-    typename iterator_template_filter_warper<mjz_get_value_Type<iterator_t>,
-                                             iterator_t>::filter_type filter) {
+_compiler_can_use_
+    iterator_template_filter_warper<mjz_get_value_Type<iterator_t>, iterator_t>
+    to_filter_it(
+        iterator_t it,
+        typename iterator_template_filter_warper<
+            mjz_get_value_Type<iterator_t>, iterator_t>::filter_type filter) {
   return {it, filter};
 }
 
-template <class it_T>
-class iterator_warper_template_t {
- protected:
+template <class it_T> class iterator_warper_template_t {
+protected:
   it_T m_begin;
   it_T m_end;
 
- public:
+public:
   using r_it_T = std::reverse_iterator<it_T>;
-  constexpr inline iterator_warper_template_t(iterator_warper_template_t &&obj)
+  _compiler_can_use_ inline iterator_warper_template_t(
+      iterator_warper_template_t &&obj)
       : m_begin(std::move(obj.m_begin)), m_end(std::move(obj.m_end)) {}
-  constexpr inline iterator_warper_template_t(iterator_warper_template_t &obj)
+  _compiler_can_use_ inline iterator_warper_template_t(
+      iterator_warper_template_t &obj)
       : m_begin(obj.m_begin), m_end(obj.m_end) {}
-  constexpr inline iterator_warper_template_t(
+  _compiler_can_use_ inline iterator_warper_template_t(
       const iterator_warper_template_t &obj)
       : m_begin(obj.m_begin), m_end(obj.m_end) {}
-  constexpr inline iterator_warper_template_t(const it_T &_begin,
-                                              const it_T &_end)
+  _compiler_can_use_ inline iterator_warper_template_t(const it_T &_begin,
+                                                       const it_T &_end)
       : m_begin(_begin), m_end(_end) {}
-  constexpr inline iterator_warper_template_t(it_T &_begin, it_T &_end)
+  _compiler_can_use_ inline iterator_warper_template_t(it_T &_begin, it_T &_end)
       : m_begin(_begin), m_end(_end) {}
-  constexpr inline iterator_warper_template_t(it_T &&_begin, it_T &&_end)
+  _compiler_can_use_ inline iterator_warper_template_t(it_T &&_begin,
+                                                       it_T &&_end)
       : m_begin(std::move(_begin)), m_end(std::move(_end)) {}
   ~iterator_warper_template_t() {}
-  constexpr inline it_T begin() { return m_begin; }
-  constexpr inline it_T end() { return m_end; }
-  constexpr inline const it_T begin() const { return m_begin; }
-  constexpr inline const it_T end() const { return m_end; }
-  constexpr inline const it_T cbegin() const { return m_begin; }
-  constexpr inline const it_T cend() const { return m_end; }
-  constexpr inline r_it_T rbegin() { return m_end; }
-  constexpr inline r_it_T rend() { return m_begin; }
-  constexpr inline const r_it_T rbegin() const { return m_end; }
-  constexpr inline const r_it_T rend() const { return m_begin; }
-  constexpr inline const r_it_T crbegin() const { return m_end; }
-  constexpr inline const r_it_T crend() const { return m_begin; }
+  _compiler_can_use_ inline it_T begin() { return m_begin; }
+  _compiler_can_use_ inline it_T end() { return m_end; }
+  _compiler_can_use_ inline const it_T begin() const { return m_begin; }
+  _compiler_can_use_ inline const it_T end() const { return m_end; }
+  _compiler_can_use_ inline const it_T cbegin() const { return m_begin; }
+  _compiler_can_use_ inline const it_T cend() const { return m_end; }
+  _compiler_can_use_ inline r_it_T rbegin() { return m_end; }
+  _compiler_can_use_ inline r_it_T rend() { return m_begin; }
+  _compiler_can_use_ inline const r_it_T rbegin() const { return m_end; }
+  _compiler_can_use_ inline const r_it_T rend() const { return m_begin; }
+  _compiler_can_use_ inline const r_it_T crbegin() const { return m_end; }
+  _compiler_can_use_ inline const r_it_T crend() const { return m_begin; }
 };
 
 template <class it_T>
-constexpr inline iterator_warper_template_t<std::reverse_iterator<it_T>>
+_compiler_can_use_ inline iterator_warper_template_t<
+    std::reverse_iterator<it_T>>
 to_revurse(iterator_warper_template_t<it_T> &it) {
   return {it.rbegin(), it.rend()};
 }
 
 template <class it_T>
-constexpr inline const iterator_warper_template_t<std::reverse_iterator<it_T>>
+_compiler_can_use_ inline const iterator_warper_template_t<
+    std::reverse_iterator<it_T>>
 to_revurse(const iterator_warper_template_t<it_T> &it) {
   return {it.rbegin(), it.rend()};
 }
 
 template <class it_T>
-constexpr inline iterator_warper_template_t<std::reverse_iterator<it_T>>
+_compiler_can_use_ inline iterator_warper_template_t<
+    std::reverse_iterator<it_T>>
 to_revurse(it_T &it) {
   return to_revurse(it.begin(), it.end());
 }
 
 template <class it_T>
-constexpr inline const iterator_warper_template_t<std::reverse_iterator<it_T>>
+_compiler_can_use_ inline const iterator_warper_template_t<
+    std::reverse_iterator<it_T>>
 to_revurse(const it_T &it) {
   return to_revurse(it.begin(), it.end());
 }
 
 template <class it_T>
-constexpr inline const iterator_warper_template_t<std::reverse_iterator<it_T>>
+_compiler_can_use_ inline const iterator_warper_template_t<
+    std::reverse_iterator<it_T>>
 to_revurse(const it_T &_begin, const it_T &_end) {
   return {std::reverse_iterator<it_T>(_end),
           std::reverse_iterator<it_T>(_begin)};
 }
 
 template <class it_T>
-constexpr inline iterator_warper_template_t<std::reverse_iterator<it_T>>
+_compiler_can_use_ inline iterator_warper_template_t<
+    std::reverse_iterator<it_T>>
 to_revurse(it_T &_begin, it_T &_end) {
   return {std::reverse_iterator<it_T>(_end),
           std::reverse_iterator<it_T>(_begin)};
@@ -806,98 +830,104 @@ to_revurse(it_T &_begin, it_T &_end) {
 
 template <typename Type, class iterator_t>
 class mjz_to_iterator_template_warper_t {
- protected:
+protected:
   iterator_t m_begin;
   iterator_t m_end;
   iterator_t m_iterator;
 
- public:
+public:
   using r_iterator_t_wr_t =
       std::reverse_iterator<mjz_to_iterator_template_warper_t>;
-  constexpr inline mjz_to_iterator_template_warper_t(
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
       mjz_to_iterator_template_warper_t &&obj)
-      : m_begin(std::move(obj.m_begin)),
-        m_end(std::move(obj.m_end)),
+      : m_begin(std::move(obj.m_begin)), m_end(std::move(obj.m_end)),
         m_iterator(std::move(obj.m_iterator)) {}
-  constexpr inline mjz_to_iterator_template_warper_t(
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
       mjz_to_iterator_template_warper_t &obj)
       : m_begin(obj.m_begin), m_end(obj.m_end), m_iterator(obj.m_iterator) {}
-  constexpr inline mjz_to_iterator_template_warper_t(
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
       const mjz_to_iterator_template_warper_t &obj)
       : m_begin(obj.m_begin), m_end(obj.m_end), m_iterator(obj.m_iterator) {}
-  constexpr inline mjz_to_iterator_template_warper_t(const iterator_t &it,
-                                                     const iterator_t &_begin,
-                                                     const iterator_t &_end)
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
+      const iterator_t &it, const iterator_t &_begin, const iterator_t &_end)
       : m_begin(_begin), m_end(_end), m_iterator(it) {}
-  constexpr inline mjz_to_iterator_template_warper_t(iterator_t &it,
-                                                     iterator_t &_begin,
-                                                     iterator_t &_end)
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
+      iterator_t &it, iterator_t &_begin, iterator_t &_end)
       : m_begin(_begin), m_end(_end), m_iterator(it) {}
-  constexpr inline mjz_to_iterator_template_warper_t(iterator_t &&it,
-                                                     iterator_t &&_begin,
-                                                     iterator_t &&_end)
-      : m_begin(std::move(_begin)),
-        m_end(std::move(_end)),
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
+      iterator_t &&it, iterator_t &&_begin, iterator_t &&_end)
+      : m_begin(std::move(_begin)), m_end(std::move(_end)),
         m_iterator(std::move(it)) {}
-  constexpr inline mjz_to_iterator_template_warper_t(const iterator_t &_begin,
-                                                     const iterator_t &_end)
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
+      const iterator_t &_begin, const iterator_t &_end)
       : m_begin(_begin), m_end(_end), m_iterator(_begin) {}
-  constexpr inline mjz_to_iterator_template_warper_t(iterator_t &_begin,
-                                                     iterator_t &_end)
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
+      iterator_t &_begin, iterator_t &_end)
       : m_begin(_begin), m_end(_end), m_iterator(_begin) {}
-  constexpr inline mjz_to_iterator_template_warper_t(iterator_t &&_begin,
-                                                     iterator_t &&_end)
-      : m_begin(_begin),
-        m_end(std::move(_end)),
-        m_iterator(std::move(_begin)) {}
-  constexpr inline ~mjz_to_iterator_template_warper_t() {}
-  constexpr inline mjz_to_iterator_template_warper_t &operator=(
-      const mjz_to_iterator_template_warper_t &obj) {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t(
+      iterator_t &&_begin, iterator_t &&_end)
+      : m_begin(_begin), m_end(std::move(_end)), m_iterator(std::move(_begin)) {
+  }
+  _compiler_can_use_ inline ~mjz_to_iterator_template_warper_t() {}
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator=(const mjz_to_iterator_template_warper_t &obj) {
     m_begin = obj.m_begin;
     m_end = obj.m_end;
     m_iterator = obj.m_iterator;
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t &operator=(
-      mjz_to_iterator_template_warper_t &obj) {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator=(mjz_to_iterator_template_warper_t &obj) {
     m_begin = obj.m_begin;
     m_end = obj.m_end;
     m_iterator = obj.m_iterator;
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t &operator=(
-      mjz_to_iterator_template_warper_t &&obj) {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator=(mjz_to_iterator_template_warper_t &&obj) {
     m_begin = std::move(obj.m_begin);
     m_end = std::move(obj.m_end);
     m_iterator = std::move(obj.m_iterator);
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t begin() {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t begin() {
     return {m_begin, m_begin, m_end};
   }
-  constexpr inline mjz_to_iterator_template_warper_t end() {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t end() {
     return {m_end, m_begin, m_end};
   }
-  constexpr inline const mjz_to_iterator_template_warper_t begin() const {
+  _compiler_can_use_ inline const mjz_to_iterator_template_warper_t
+  begin() const {
     return {m_begin, m_begin, m_end};
   }
-  constexpr inline const mjz_to_iterator_template_warper_t end() const {
+  _compiler_can_use_ inline const mjz_to_iterator_template_warper_t
+  end() const {
     return {m_end, m_begin, m_end};
   }
-  constexpr inline const mjz_to_iterator_template_warper_t cbegin() const {
+  _compiler_can_use_ inline const mjz_to_iterator_template_warper_t
+  cbegin() const {
     return begin();
   }
-  constexpr inline const mjz_to_iterator_template_warper_t cend() const {
+  _compiler_can_use_ inline const mjz_to_iterator_template_warper_t
+  cend() const {
     return end();
   }
-  constexpr inline r_iterator_t_wr_t rbegin() { return end(); }
-  constexpr inline r_iterator_t_wr_t rend() { return begin(); }
-  constexpr inline const r_iterator_t_wr_t rbegin() const { return end(); }
-  constexpr inline const r_iterator_t_wr_t rend() const { return begin(); }
-  constexpr inline const r_iterator_t_wr_t crbegin() const { return end(); }
-  constexpr inline const r_iterator_t_wr_t crend() const { return begin(); }
+  _compiler_can_use_ inline r_iterator_t_wr_t rbegin() { return end(); }
+  _compiler_can_use_ inline r_iterator_t_wr_t rend() { return begin(); }
+  _compiler_can_use_ inline const r_iterator_t_wr_t rbegin() const {
+    return end();
+  }
+  _compiler_can_use_ inline const r_iterator_t_wr_t rend() const {
+    return begin();
+  }
+  _compiler_can_use_ inline const r_iterator_t_wr_t crbegin() const {
+    return end();
+  }
+  _compiler_can_use_ inline const r_iterator_t_wr_t crend() const {
+    return begin();
+  }
 
- public:
+public:
   using value_type = Type;
   using reference = Type &;
   using pointer = Type *;
@@ -905,98 +935,106 @@ class mjz_to_iterator_template_warper_t {
   using difference_type = std::ptrdiff_t;
   using const_reference = const Type &;
   using size_type = size_t;
-  constexpr inline bool operator==(
-      const mjz_to_iterator_template_warper_t &other) const noexcept {
+  _compiler_can_use_ inline bool
+  operator==(const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator == other.m_iterator;
   }
-  constexpr inline bool operator!=(
-      const mjz_to_iterator_template_warper_t &other) const noexcept {
+  _compiler_can_use_ inline bool
+  operator!=(const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator != other.m_iterator;
   }
-  constexpr inline reference operator*() const { return *m_iterator; }
-  constexpr inline pointer operator->() const { return &operator*(); }
+  _compiler_can_use_ inline reference operator*() const { return *m_iterator; }
+  _compiler_can_use_ inline pointer operator->() const { return &operator*(); }
   template <typename my_type, typename iterator_t = value_type>
-  constexpr inline auto operator->*(my_type my_var) {
+  _compiler_can_use_ inline auto operator->*(my_type my_var) {
     return operator->()->*my_var;
   }
-  inline constexpr iterator_t base() { return m_iterator; }
-  constexpr inline size_t size() const noexcept { return m_iterator.size(); }
-  constexpr inline mjz_to_iterator_template_warper_t &operator++() noexcept {
+  _compiler_can_use_ inline iterator_t base() { return m_iterator; }
+  _compiler_can_use_ inline size_t size() const noexcept {
+    return m_iterator.size();
+  }
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator++() noexcept {
     ++m_iterator;
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t operator++(int) noexcept {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t
+  operator++(int) noexcept {
     mjz_to_iterator_template_warper_t tmp(*this);
     ++(*this);
     return tmp;
   }
-  constexpr inline mjz_to_iterator_template_warper_t &operator--() noexcept {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator--() noexcept {
     --m_iterator;
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t operator--(int) noexcept {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t
+  operator--(int) noexcept {
     mjz_to_iterator_template_warper_t tmp(*this);
     --(*this);
     return tmp;
   }
-  constexpr inline mjz_to_iterator_template_warper_t &operator+=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator+=(const difference_type other) noexcept {
     m_iterator += other;
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t &operator-=(
-      const difference_type other) noexcept {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator-=(const difference_type other) noexcept {
     m_iterator -= other;
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t &operator+=(
-      const mjz_to_iterator_template_warper_t &other) noexcept {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator+=(const mjz_to_iterator_template_warper_t &other) noexcept {
     m_iterator += other.m_iterator;
     return *this;
   }
-  constexpr inline mjz_to_iterator_template_warper_t &operator-=(
-      const mjz_to_iterator_template_warper_t &other) noexcept {
+  _compiler_can_use_ inline mjz_to_iterator_template_warper_t &
+  operator-=(const mjz_to_iterator_template_warper_t &other) noexcept {
     m_iterator -= other.m_iterator;
     return *this;
   }
-  constexpr inline reference operator[](std::size_t index) const {
+  _compiler_can_use_ inline reference operator[](std::size_t index) const {
     return m_iterator[index];
   }
-  constexpr inline bool operator<(
-      const mjz_to_iterator_template_warper_t &other) const noexcept {
+  _compiler_can_use_ inline bool
+  operator<(const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator < other.m_iterator;
   }
-  constexpr inline bool operator>(
-      const mjz_to_iterator_template_warper_t &other) const noexcept {
+  _compiler_can_use_ inline bool
+  operator>(const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator > other.m_iterator;
   }
-  constexpr inline bool operator<=(
-      const mjz_to_iterator_template_warper_t &other) const noexcept {
+  _compiler_can_use_ inline bool
+  operator<=(const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator <= other.m_iterator;
   }
-  constexpr inline bool operator>=(
-      const mjz_to_iterator_template_warper_t &other) const noexcept {
+  _compiler_can_use_ inline bool
+  operator>=(const mjz_to_iterator_template_warper_t &other) const noexcept {
     return m_iterator >= other.m_iterator;
   }
-  constexpr inline operator pointer() { return &operator*(); }
-  constexpr inline explicit operator pointer &() { return &operator*(); }
-  constexpr inline pointer get_pointer() const { return &operator*(); }
-  constexpr inline pointer &get_pointer() { return &operator*(); }
-  constexpr inline friend mjz_to_iterator_template_warper_t operator+(
-      const mjz_to_iterator_template_warper_t &me,
-      const difference_type other) noexcept {
+  _compiler_can_use_ inline operator pointer() { return &operator*(); }
+  _compiler_can_use_ inline explicit operator pointer &() {
+    return &operator*();
+  }
+  _compiler_can_use_ inline pointer get_pointer() const { return &operator*(); }
+  _compiler_can_use_ inline pointer &get_pointer() { return &operator*(); }
+  _compiler_can_use_ inline friend mjz_to_iterator_template_warper_t
+  operator+(const mjz_to_iterator_template_warper_t &me,
+            const difference_type other) noexcept {
     return mjz_to_iterator_template_warper_t(me.m_iterator + other, m_begin,
                                              m_end);
   }
-  constexpr inline friend mjz_to_iterator_template_warper_t operator-(
-      const mjz_to_iterator_template_warper_t &me,
-      const difference_type other) noexcept {
+  _compiler_can_use_ inline friend mjz_to_iterator_template_warper_t
+  operator-(const mjz_to_iterator_template_warper_t &me,
+            const difference_type other) noexcept {
     return mjz_to_iterator_template_warper_t(me.m_iterator - other, m_begin,
                                              m_end);
   }
-  constexpr inline friend mjz_to_iterator_template_warper_t operator+(
-      const difference_type other,
-      const mjz_to_iterator_template_warper_t &me) noexcept {
+  _compiler_can_use_ inline friend mjz_to_iterator_template_warper_t
+  operator+(const difference_type other,
+            const mjz_to_iterator_template_warper_t &me) noexcept {
     return mjz_to_iterator_template_warper_t(other + me.m_iterator, m_begin,
                                              m_end);
   }
@@ -1005,44 +1043,42 @@ class mjz_to_iterator_template_warper_t {
   // function dont use return mjz_to_iterator_template_warper_t(me.m_iterator -
   // (pointer)other);
   // }
-  constexpr inline friend mjz_to_iterator_template_warper_t operator+(
-      const mjz_to_iterator_template_warper_t &other,
-      const mjz_to_iterator_template_warper_t &me) noexcept {
+  _compiler_can_use_ inline friend mjz_to_iterator_template_warper_t
+  operator+(const mjz_to_iterator_template_warper_t &other,
+            const mjz_to_iterator_template_warper_t &me) noexcept {
     return mjz_to_iterator_template_warper_t(other.m_iterator + me, m_begin,
                                              m_end);
   }
-  constexpr inline friend difference_type operator-(
-      const mjz_to_iterator_template_warper_t &other,
-      const mjz_to_iterator_template_warper_t &me) noexcept {
+  _compiler_can_use_ inline friend difference_type
+  operator-(const mjz_to_iterator_template_warper_t &other,
+            const mjz_to_iterator_template_warper_t &me) noexcept {
     return operator-(other.m_iterator, me.m_iterator);
   }
-  constexpr inline friend void swap(
-      mjz_to_iterator_template_warper_t &lhs,
-      mjz_to_iterator_template_warper_t &rhs) noexcept {
+  _compiler_can_use_ inline friend void
+  swap(mjz_to_iterator_template_warper_t &lhs,
+       mjz_to_iterator_template_warper_t &rhs) noexcept {
     mjz_to_iterator_template_warper_t lhsm_iterator = lhs;
     lhs = rhs;
     rhs = lhsm_iterator;
   }
 };
 template <class iterator_T>
-constexpr inline mjz_to_iterator_template_warper_t<
+_compiler_can_use_ inline mjz_to_iterator_template_warper_t<
     mjz_get_value_Type<iterator_T>, iterator_T>
 to_mjz_it(iterator_T begin, iterator_T end) {
   return {std::move(begin), std::move(end)};
 }
 template <class T>
-constexpr inline mjz_to_iterator_template_warper_t<T, T *> to_mjz_it(T *begin,
-                                                                     T *end) {
+_compiler_can_use_ inline mjz_to_iterator_template_warper_t<T, T *>
+to_mjz_it(T *begin, T *end) {
   return {std::move(begin), std::move(end)};
 }
-template <class T>
-constexpr inline auto to_mjz_it(T &obj) {
+template <class T> _compiler_can_use_ inline auto to_mjz_it(T &obj) {
   return mjz_to_iterator_template_warper_t<mjz_get_value_Type<T>,
                                            decltype(obj.begin())>{obj.begin(),
                                                                   obj.end()};
 }
-template <class T>
-constexpr inline auto to_mjz_it(const T &obj) {
+template <class T> _compiler_can_use_ inline auto to_mjz_it(const T &obj) {
   return mjz_to_iterator_template_warper_t<mjz_get_value_Type<const T>,
                                            decltype(obj.begin())>{obj.begin(),
                                                                   obj.end()};
@@ -1053,42 +1089,43 @@ template <size_t number_of_blocks =
           size_t block_length = size_of_global_mjz_areana_allocator_blocks,
           bool KEEP_the_heap_clean = false>
 class mjz_arena_allocator_t {
-  template <typename T, size_t m_size>
-  struct data_buffer {
+  template <typename T, size_t m_size> struct data_buffer {
     T m_data[m_size];
-    inline constexpr inline size_t size() { return m_size; }
-    inline constexpr inline T *begin() { return data(); }
-    inline constexpr inline T *end() { return data() + m_size; }
-    inline constexpr inline T *data() { return m_data; }
-    inline constexpr inline const T &operator[](int64_t i) const {
+    _compiler_can_use_ inline size_t size() { return m_size; }
+    _compiler_can_use_ inline T *begin() { return data(); }
+    _compiler_can_use_ inline T *end() { return data() + m_size; }
+    _compiler_can_use_ inline T *data() { return m_data; }
+    _compiler_can_use_ inline const T &operator[](int64_t i) const {
       return m_data[i];
     }
-    inline constexpr inline T &operator[](int64_t i) { return m_data[i]; }
+    _compiler_can_use_ inline T &operator[](int64_t i) { return m_data[i]; }
   };
 
- public:
-  constexpr static size_t not_valid = (((size_t)-1 >> 1) - 1);
-  constexpr static char EMPTY_char = 'A';
+public:
+  _compiler_can_use_ static size_t not_valid = (((size_t)-1 >> 1) - 1);
+  _compiler_can_use_ static char EMPTY_char = 'A';
   struct block_data {
     size_t index_of_begin = not_valid;
     size_t index_of_end = not_valid;
   };
 
- protected:
+protected:
   data_buffer<data_buffer<uint8_t, block_length>, number_of_blocks> m_blocks;
   data_buffer<block_data, number_of_blocks> m_block_data;
-  constexpr inline void clean_all_data() & {
-    if constexpr (KEEP_the_heap_clean)
+  _compiler_can_use_ inline void clean_all_data() & {
+    if _compiler_can_use_ (KEEP_the_heap_clean)
       memset((char *)m_blocks.begin(), EMPTY_char,
              ((char *)m_blocks.end()) - ((char *)m_blocks.begin()));
   }
-  constexpr inline size_t get_index_of_pointer(void *ptr) & {
-    if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return not_valid;
+  _compiler_can_use_ inline size_t get_index_of_pointer(void *ptr) & {
+    if (m_blocks.end() <= ptr || ptr < m_blocks.begin())
+      return not_valid;
     size_t ptr_diff = (size_t)((size_t)ptr - (size_t)m_blocks.begin());
-    if ((ptr_diff % block_length) && ptr_diff) return not_valid;
+    if ((ptr_diff % block_length) && ptr_diff)
+      return not_valid;
     return (ptr_diff / block_length);
   }
-  constexpr inline size_t get_index_of_pointer_that_is_not_allocated(
+  _compiler_can_use_ inline size_t get_index_of_pointer_that_is_not_allocated(
       size_t number_of_blocks_in_a_row = 1,
       size_t begin_search_at_index = 0) & {
     block_data *begin_it = m_block_data.begin() + begin_search_at_index;
@@ -1097,7 +1134,8 @@ class mjz_arena_allocator_t {
       while ((begin_it < end_it) && (begin_it->index_of_end != not_valid))
         begin_it += begin_it->index_of_end - begin_it->index_of_begin;
       auto end_of_row_it = begin_it + number_of_blocks_in_a_row;
-      if (end_it < end_of_row_it) return not_valid;
+      if (end_it < end_of_row_it)
+        return not_valid;
       auto begin_it_buf = begin_it;
       while ((begin_it < end_of_row_it) &&
              (begin_it->index_of_begin == not_valid))
@@ -1106,8 +1144,8 @@ class mjz_arena_allocator_t {
         return (size_t)(begin_it_buf - m_block_data.begin());
     }
   }
-  constexpr inline size_t allocate_block(size_t size,
-                                         size_t realloc_index = not_valid) & {
+  _compiler_can_use_ inline size_t
+  allocate_block(size_t size, size_t realloc_index = not_valid) & {
     bool reallocatating = (realloc_index != not_valid);
     size_t index = get_index_of_pointer_that_is_not_allocated(
         reallocatating ? (size - get_size_in_blocks(realloc_index)) : size,
@@ -1119,12 +1157,13 @@ class mjz_arena_allocator_t {
         index = get_index_of_pointer_that_is_not_allocated(size, 0);
       }
     }
-    if (index == not_valid) return not_valid;
+    if (index == not_valid)
+      return not_valid;
     set_range_to(index, {index + size});
     return index;
   }
-  constexpr inline void set_range_to(size_t ren_beg, size_t ren_end, size_t beg,
-                                     size_t end) & {
+  _compiler_can_use_ inline void set_range_to(size_t ren_beg, size_t ren_end,
+                                              size_t beg, size_t end) & {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + beg;
     auto index_end_it = the_begin_data_ptr + end;
@@ -1133,10 +1172,11 @@ class mjz_arena_allocator_t {
       (*index_beg_it++).index_of_end = end;
     }
   }
-  constexpr inline void set_range_to(size_t ren_beg, size_t ren_end) {
+  _compiler_can_use_ inline void set_range_to(size_t ren_beg, size_t ren_end) {
     set_range_to(ren_beg, ren_end, ren_beg, ren_end);
   }
-  constexpr inline void deallocate_rage(size_t index_begin, size_t index_end) {
+  _compiler_can_use_ inline void deallocate_rage(size_t index_begin,
+                                                 size_t index_end) {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + index_begin;
     auto index_end_it = the_begin_data_ptr + index_end;
@@ -1145,10 +1185,10 @@ class mjz_arena_allocator_t {
       (*index_beg_it++).index_of_end = not_valid;
     }
   }
-  constexpr inline void deallocate_block(size_t index) & {
+  _compiler_can_use_ inline void deallocate_block(size_t index) & {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return;
-    if constexpr (KEEP_the_heap_clean) {
+    if _compiler_can_use_ (KEEP_the_heap_clean) {
       size_t end_i = m_block_data[index].index_of_end;
       size_t beg_i = index;
       deallocate_rage(beg_i, end_i);
@@ -1159,32 +1199,33 @@ class mjz_arena_allocator_t {
       deallocate_rage(index, m_block_data[index].index_of_end);
     }
   }
-  constexpr inline void *get_ptr(size_t index) & {
+  _compiler_can_use_ inline void *get_ptr(size_t index) & {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_blocks[index]).data();
   }
-  constexpr inline size_t get_size_in_blocks(size_t index) & {
+  _compiler_can_use_ inline size_t get_size_in_blocks(size_t index) & {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_block_data[index].index_of_end - index);
   }
-  constexpr inline size_t get_real_size(size_t index) & {
+  _compiler_can_use_ inline size_t get_real_size(size_t index) & {
     return get_size_in_blocks(index) * block_length;
   }
-  constexpr inline size_t size_to_number_of_blocks(size_t size) & {
+  _compiler_can_use_ inline size_t size_to_number_of_blocks(size_t size) & {
     return (size % block_length) ? ((size / block_length) + 1)
                                  : (size / block_length);
   }
 
- public:
-  constexpr inline void *malloc(size_t size) & {
+public:
+  _compiler_can_use_ inline void *malloc(size_t size) & {
     size = size_to_number_of_blocks(size);
     return get_ptr(allocate_block(size));
   }
-  constexpr inline void *realloc(void *ptr, size_t size) & {
+  _compiler_can_use_ inline void *realloc(void *ptr, size_t size) & {
     size_t index_of_ptr = get_index_of_pointer(ptr);
-    if (index_of_ptr == not_valid) return malloc(size);
+    if (index_of_ptr == not_valid)
+      return malloc(size);
     size = size_to_number_of_blocks(size);
     size_t size_of_current_ptr = get_size_in_blocks(index_of_ptr);
     if (size < size_of_current_ptr) {
@@ -1209,29 +1250,32 @@ class mjz_arena_allocator_t {
     if (index != not_valid)
       std::memmove(get_ptr(index), ptr, get_real_size(index_of_ptr));
     deallocate_block(index_of_ptr);
-    if (index != not_valid) return get_ptr(index);
+    if (index != not_valid)
+      return get_ptr(index);
     return 0;
   }
-  constexpr inline void free(void *ptr) & {
+  _compiler_can_use_ inline void free(void *ptr) & {
     deallocate_block(get_index_of_pointer(ptr));
   }
-  constexpr inline size_t get_size(void *ptr) & {
+  _compiler_can_use_ inline size_t get_size(void *ptr) & {
     return get_real_size(get_index_of_pointer(ptr));
   }
-  constexpr inline bool is_valid(void *ptr) & {
-    if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return 0;
+  _compiler_can_use_ inline bool is_valid(void *ptr) & {
+    if (m_blocks.end() <= ptr || ptr < m_blocks.begin())
+      return 0;
     return !(((size_t)((size_t)ptr - (size_t)m_blocks.begin())) % block_length);
   }
-  constexpr inline mjz_arena_allocator_t() { clean_all_data(); }
-  constexpr inline ~mjz_arena_allocator_t() { clean_all_data(); }
-  constexpr inline mjz_arena_allocator_t(mjz_arena_allocator_t &&)
+  _compiler_can_use_ inline mjz_arena_allocator_t() { clean_all_data(); }
+  _compiler_can_use_ inline ~mjz_arena_allocator_t() { clean_all_data(); }
+  _compiler_can_use_ inline mjz_arena_allocator_t(mjz_arena_allocator_t &&)
       : mjz_arena_allocator_t(){};
-  constexpr inline mjz_arena_allocator_t(const mjz_arena_allocator_t &)
+  _compiler_can_use_ inline mjz_arena_allocator_t(const mjz_arena_allocator_t &)
       : mjz_arena_allocator_t(){};
-  constexpr inline mjz_arena_allocator_t &operator=(mjz_arena_allocator_t &&) &
+  _compiler_can_use_ inline mjz_arena_allocator_t &
+      operator=(mjz_arena_allocator_t &&) &
       {};
-  constexpr inline mjz_arena_allocator_t &operator=(
-      const mjz_arena_allocator_t &) &
+  _compiler_can_use_ inline mjz_arena_allocator_t &
+      operator=(const mjz_arena_allocator_t &) &
       {};
 };
 
@@ -1240,53 +1284,55 @@ struct arena_allocator : public mjz_arena_allocator_t<1024, 32> {};
 template <size_t block_length = size_of_global_mjz_areana_allocator_blocks,
           bool KEEP_the_heap_clean = false, typename size_type = size_t>
 class dynamic_mjz_arena_allocator_t {
- private:
-  template <typename T, size_type m_size>
-  struct data_buffer {
+private:
+  template <typename T, size_type m_size> struct data_buffer {
     T m_data[m_size];
-    inline constexpr inline size_type size() { return m_size; }
-    inline constexpr inline T *begin() { return data(); }
-    inline constexpr inline T *end() { return data() + m_size; }
-    inline constexpr inline T *data() { return m_data; }
-    inline constexpr inline const T &operator[](size_type i) const {
+    _compiler_can_use_ inline size_type size() { return m_size; }
+    _compiler_can_use_ inline T *begin() { return data(); }
+    _compiler_can_use_ inline T *end() { return data() + m_size; }
+    _compiler_can_use_ inline T *data() { return m_data; }
+    _compiler_can_use_ inline const T &operator[](size_type i) const {
       return m_data[i];
     }
-    inline constexpr inline T &operator[](size_type i) { return m_data[i]; }
+    _compiler_can_use_ inline T &operator[](size_type i) { return m_data[i]; }
   };
 
- public:
-  constexpr static size_type not_valid = (((size_type)-1 >> 1) - 1);
-  constexpr static char EMPTY_char = 'A';
+public:
+  _compiler_can_use_ static size_type not_valid = (((size_type)-1 >> 1) - 1);
+  _compiler_can_use_ static char EMPTY_char = 'A';
   struct block_data {
-    constexpr inline block_data()
+    _compiler_can_use_ inline block_data()
         : index_of_begin(not_valid), index_of_end(not_valid) {}
-    constexpr inline void init() {
+    _compiler_can_use_ inline void init() {
       index_of_begin = not_valid;
       index_of_end = not_valid;
     }
     size_type index_of_begin = not_valid;
     size_type index_of_end = not_valid;
   };
-  static constexpr inline size_type block_required_size =
+  static _compiler_can_use_ inline size_type block_required_size =
       block_length + sizeof(block_data);
 
- protected:
+protected:
   size_type number_of_blocks{};
   iterator_template_t<data_buffer<uint8_t, block_length>> m_blocks;
   iterator_template_t<block_data> m_block_data;
-  constexpr inline void clean_all_data() {
-    if constexpr (KEEP_the_heap_clean)
+  _compiler_can_use_ inline void clean_all_data() {
+    if _compiler_can_use_ (KEEP_the_heap_clean)
       memset((char *)m_blocks.begin(), EMPTY_char,
              ((char *)m_blocks.end()) - ((char *)m_blocks.begin()));
   }
-  constexpr inline size_type get_index_of_pointer(void *ptr) {
-    if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return not_valid;
+  _compiler_can_use_ inline size_type get_index_of_pointer(void *ptr) {
+    if (m_blocks.end() <= ptr || ptr < m_blocks.begin())
+      return not_valid;
     size_type ptr_diff =
         (size_type)((size_type)ptr - (size_type)m_blocks.begin());
-    if ((ptr_diff % block_length) && ptr_diff) return not_valid;
+    if ((ptr_diff % block_length) && ptr_diff)
+      return not_valid;
     return (ptr_diff / block_length);
   }
-  constexpr inline size_type get_index_of_pointer_that_is_not_allocated(
+  _compiler_can_use_ inline size_type
+  get_index_of_pointer_that_is_not_allocated(
       size_type number_of_blocks_in_a_row = 1,
       size_type begin_search_at_index = 0) {
     block_data *begin_it = m_block_data.begin() + begin_search_at_index;
@@ -1295,7 +1341,8 @@ class dynamic_mjz_arena_allocator_t {
       while ((begin_it < end_it) && (begin_it->index_of_end != not_valid))
         begin_it += begin_it->index_of_end - begin_it->index_of_begin;
       auto end_of_row_it = begin_it + number_of_blocks_in_a_row;
-      if (end_it < end_of_row_it) return not_valid;
+      if (end_it < end_of_row_it)
+        return not_valid;
       auto begin_it_buf = begin_it;
       while ((begin_it < end_of_row_it) &&
              (begin_it->index_of_begin == not_valid))
@@ -1304,8 +1351,8 @@ class dynamic_mjz_arena_allocator_t {
         return (size_type)(begin_it_buf - m_block_data.begin());
     }
   }
-  constexpr inline size_type allocate_block(
-      size_type size, size_type realloc_index = not_valid) {
+  _compiler_can_use_ inline size_type
+  allocate_block(size_type size, size_type realloc_index = not_valid) {
     bool reallocatating = (realloc_index != not_valid);
     size_type index = get_index_of_pointer_that_is_not_allocated(
         reallocatating ? (size - get_size_in_blocks(realloc_index)) : size,
@@ -1317,12 +1364,14 @@ class dynamic_mjz_arena_allocator_t {
         index = get_index_of_pointer_that_is_not_allocated(size, 0);
       }
     }
-    if (index == not_valid) return not_valid;
+    if (index == not_valid)
+      return not_valid;
     set_range_to((size_type)index, (size_type)index + (size_type)size);
     return index;
   }
-  constexpr inline void set_range_to(size_type ren_beg, size_type ren_end,
-                                     size_type beg, size_type end) {
+  _compiler_can_use_ inline void set_range_to(size_type ren_beg,
+                                              size_type ren_end, size_type beg,
+                                              size_type end) {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + beg;
     auto index_end_it = the_begin_data_ptr + end;
@@ -1331,11 +1380,12 @@ class dynamic_mjz_arena_allocator_t {
       (*index_beg_it++).index_of_end = end;
     }
   }
-  constexpr inline void set_range_to(size_type ren_beg, size_type ren_end) {
+  _compiler_can_use_ inline void set_range_to(size_type ren_beg,
+                                              size_type ren_end) {
     set_range_to(ren_beg, ren_end, ren_beg, ren_end);
   }
-  constexpr inline void deallocate_rage(size_type index_begin,
-                                        size_type index_end) {
+  _compiler_can_use_ inline void deallocate_rage(size_type index_begin,
+                                                 size_type index_end) {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + index_begin;
     auto index_end_it = the_begin_data_ptr + index_end;
@@ -1344,10 +1394,10 @@ class dynamic_mjz_arena_allocator_t {
       (*index_beg_it++).index_of_end = not_valid;
     }
   }
-  constexpr inline void deallocate_block(size_type index) {
+  _compiler_can_use_ inline void deallocate_block(size_type index) {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return;
-    if constexpr (KEEP_the_heap_clean) {
+    if _compiler_can_use_ (KEEP_the_heap_clean) {
       size_type end_i = m_block_data[index].index_of_end;
       size_type beg_i = index;
       deallocate_rage(beg_i, end_i);
@@ -1358,24 +1408,24 @@ class dynamic_mjz_arena_allocator_t {
       deallocate_rage(index, m_block_data[index].index_of_end);
     }
   }
-  constexpr inline void *get_ptr(size_type index) {
+  _compiler_can_use_ inline void *get_ptr(size_type index) {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_blocks[index]).data();
   }
-  constexpr inline size_type get_size_in_blocks(size_type index) {
+  _compiler_can_use_ inline size_type get_size_in_blocks(size_type index) {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_block_data[index].index_of_end - index);
   }
-  constexpr inline size_type get_real_size(size_type index) {
+  _compiler_can_use_ inline size_type get_real_size(size_type index) {
     return get_size_in_blocks(index) * block_length;
   }
-  constexpr inline size_type size_to_number_of_blocks(size_type size) {
+  _compiler_can_use_ inline size_type size_to_number_of_blocks(size_type size) {
     return (size % block_length) ? ((size / block_length) + 1)
                                  : (size / block_length);
   }
-  constexpr inline void initilize_data() {
+  _compiler_can_use_ inline void initilize_data() {
     for (auto p = m_blocks.get_pointer(), e = p + m_blocks.size(); p < e; p++) {
       new (p) data_buffer<uint8_t, block_length>();
     }
@@ -1385,14 +1435,15 @@ class dynamic_mjz_arena_allocator_t {
     }
   }
 
- public:
-  constexpr inline void *malloc(size_type size) & {
+public:
+  _compiler_can_use_ inline void *malloc(size_type size) & {
     size = size_to_number_of_blocks(size);
     return get_ptr(allocate_block(size));
   }
-  constexpr inline void *realloc(void *ptr, size_type size) & {
+  _compiler_can_use_ inline void *realloc(void *ptr, size_type size) & {
     size_type index_of_ptr = get_index_of_pointer(ptr);
-    if (index_of_ptr == not_valid) return malloc(size);
+    if (index_of_ptr == not_valid)
+      return malloc(size);
     size = size_to_number_of_blocks(size);
     size_type size_of_current_ptr = get_size_in_blocks(index_of_ptr);
     if (size < size_of_current_ptr) {
@@ -1417,22 +1468,24 @@ class dynamic_mjz_arena_allocator_t {
     if (index != not_valid)
       std::memmove(get_ptr(index), ptr, get_real_size(index_of_ptr));
     deallocate_block(index_of_ptr);
-    if (index != not_valid) return get_ptr(index);
+    if (index != not_valid)
+      return get_ptr(index);
     return 0;
   }
-  constexpr inline void free(void *ptr) & {
+  _compiler_can_use_ inline void free(void *ptr) & {
     deallocate_block(get_index_of_pointer(ptr));
   }
-  constexpr inline size_type get_size(void *ptr) & {
+  _compiler_can_use_ inline size_type get_size(void *ptr) & {
     return get_real_size(get_index_of_pointer(ptr));
   }
-  constexpr inline bool is_valid(void *ptr) & {
-    if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return 0;
+  _compiler_can_use_ inline bool is_valid(void *ptr) & {
+    if (m_blocks.end() <= ptr || ptr < m_blocks.begin())
+      return 0;
     return !(((size_type)((size_type)ptr - (size_type)m_blocks.begin())) %
              block_length);
   }
-  constexpr inline dynamic_mjz_arena_allocator_t(void *data_mem,
-                                                 size_type tatal_size)
+  _compiler_can_use_ inline dynamic_mjz_arena_allocator_t(void *data_mem,
+                                                          size_type tatal_size)
       : number_of_blocks(tatal_size / block_required_size),
         m_blocks(((data_buffer<uint8_t, block_length> *)data_mem),
                  number_of_blocks),
@@ -1443,17 +1496,21 @@ class dynamic_mjz_arena_allocator_t {
     initilize_data();
     clean_all_data();
   }
-  constexpr inline ~dynamic_mjz_arena_allocator_t() { clean_all_data(); }
-  constexpr inline void *unsafe_data() & { return m_blocks.get_pointer(); }
-  constexpr inline size_t unsafe_size() & {
+  _compiler_can_use_ inline ~dynamic_mjz_arena_allocator_t() {
+    clean_all_data();
+  }
+  _compiler_can_use_ inline void *unsafe_data() & {
+    return m_blocks.get_pointer();
+  }
+  _compiler_can_use_ inline size_t unsafe_size() & {
     return ((char *)m_blocks.end()) - ((char *)m_blocks.begin());
   }
 };
 
 struct dynamic_arena_allocator : public dynamic_mjz_arena_allocator_t<64> {
-  constexpr inline dynamic_arena_allocator(void *p, size_t cap)
+  _compiler_can_use_ inline dynamic_arena_allocator(void *p, size_t cap)
       : dynamic_mjz_arena_allocator_t(p, cap) {}
-  constexpr inline ~dynamic_arena_allocator() {}
+  _compiler_can_use_ inline ~dynamic_arena_allocator() {}
 };
 template <size_t block_length = 64, bool KEEP_the_heap_clean = false,
           typename size_type = uint32_t>
@@ -1461,38 +1518,36 @@ struct small_dynamic_arena_allocator_t
     : public dynamic_mjz_arena_allocator_t<block_length, KEEP_the_heap_clean,
                                            size_type> {
   using me = small_dynamic_arena_allocator_t;
-  constexpr inline small_dynamic_arena_allocator_t(void *p, size_t cap)
+  _compiler_can_use_ inline small_dynamic_arena_allocator_t(void *p, size_t cap)
       : dynamic_mjz_arena_allocator_t<block_length, KEEP_the_heap_clean,
                                       size_type>(p, cap) {}
-  constexpr inline ~small_dynamic_arena_allocator_t() {}
+  _compiler_can_use_ inline ~small_dynamic_arena_allocator_t() {}
 };
 struct small_dynamic_arena_allocator
     : public small_dynamic_arena_allocator_t<64, false, uint32_t> {
-  constexpr inline small_dynamic_arena_allocator(void *p, size_t cap)
+  _compiler_can_use_ inline small_dynamic_arena_allocator(void *p, size_t cap)
       : small_dynamic_arena_allocator_t<64, false, uint32_t>(p, cap) {}
-  constexpr inline ~small_dynamic_arena_allocator() {}
+  _compiler_can_use_ inline ~small_dynamic_arena_allocator() {}
 };
 struct tiny_dynamic_arena_allocator
     : public small_dynamic_arena_allocator_t<64, false, uint16_t> {
-  constexpr inline tiny_dynamic_arena_allocator(void *p, size_t cap)
+  _compiler_can_use_ inline tiny_dynamic_arena_allocator(void *p, size_t cap)
       : small_dynamic_arena_allocator_t<64, false, uint16_t>(p, cap) {}
-  constexpr inline ~tiny_dynamic_arena_allocator() {}
+  _compiler_can_use_ inline ~tiny_dynamic_arena_allocator() {}
 };
 struct vary_tiny_dynamic_arena_allocator
     : public small_dynamic_arena_allocator_t<16, false, uint8_t> {
-  constexpr inline vary_tiny_dynamic_arena_allocator(void *p, size_t cap)
+  _compiler_can_use_ inline vary_tiny_dynamic_arena_allocator(void *p,
+                                                              size_t cap)
       : small_dynamic_arena_allocator_t<16, false, uint8_t>(p, cap) {}
-  constexpr inline ~vary_tiny_dynamic_arena_allocator() {}
+  _compiler_can_use_ inline ~vary_tiny_dynamic_arena_allocator() {}
 };
-template<bool gsjgskhl >
-struct dummy_struct______T {
+template <bool gsjgskhl> struct dummy_struct______T {
   static size_t dummy;
- constexpr inline size_t &get() { return dummy;
-  }
+  _compiler_can_use_ inline size_t &get() { return dummy; }
 };
 
-template <bool B>
-size_t dummy_struct______T<B>::dummy{};
+template <bool B> size_t dummy_struct______T<B>::dummy{};
 
 template <class my_free_realloc_wrpr_t, typename Type>
 struct mjz_reallocator_template_t {
@@ -1506,76 +1561,81 @@ struct mjz_reallocator_template_t {
   using const_reference = const my_value_Type_t &;
   using size_type = size_t;
   using propagate_on_container_move_assignment = std::true_type;
-  constexpr inline mjz_reallocator_template_t(){};
-  constexpr inline ~mjz_reallocator_template_t(){};
-  constexpr inline mjz_reallocator_template_t(void *p, size_t n)
+  _compiler_can_use_ inline mjz_reallocator_template_t(){};
+  _compiler_can_use_ inline ~mjz_reallocator_template_t(){};
+  _compiler_can_use_ inline mjz_reallocator_template_t(void *p, size_t n)
       : my_free_realloc_wrpr_obj(p, n) {}
   template <class T>
-  constexpr inline mjz_reallocator_template_t(
+  _compiler_can_use_ inline mjz_reallocator_template_t(
       const mjz_reallocator_template_t<my_free_realloc_wrpr_t, T> &) noexcept {}
-  constexpr inline [[nodiscard]] my_value_Type_t *allocate(size_t n) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline my_value_Type_t *
+  allocate(size_t n) {
     return reallocate((my_value_Type_t *)0, n);
   }
-  constexpr inline [[nodiscard]] my_value_Type_t *allocate(size_t n,
-                                                           const void *hint) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline my_value_Type_t *
+  allocate(size_t n, const void *hint) {
     return reallocate((my_value_Type_t *)hint, n);
   }
-  constexpr inline void deallocate(my_value_Type_t *p, size_t n) noexcept {
+  _compiler_can_use_ inline void deallocate(my_value_Type_t *p,
+                                            size_t n) noexcept {
     free(p);
   }
 
- protected:
-  constexpr inline [[nodiscard]] void *allocate_raw(size_t number_of_bytes) {
+protected:
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline void *
+  allocate_raw(size_t number_of_bytes) {
     return reallocate_raw((void *)0, number_of_bytes);
   }
-  constexpr inline [[nodiscard]] void *allocate_raw(size_t n,
-                                                    const void *hint) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline void *
+  allocate_raw(size_t n, const void *hint) {
     return reallocate_raw((void *)hint, n);
   }
-  constexpr inline void deallocate_raw(void *p,
-                                       size_t number_of_bytes) noexcept {
+  _compiler_can_use_ inline void
+  deallocate_raw(void *p, size_t number_of_bytes) noexcept {
     free(p);
   }
 
- private:
-  constexpr inline [[nodiscard]] my_value_Type_t *reallocate(
-      my_value_Type_t *ptr, size_t n) {
+private:
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline my_value_Type_t *
+  reallocate(my_value_Type_t *ptr, size_t n) {
     return static_cast<my_value_Type_t *>(
         realloc(ptr, n * sizeof(my_value_Type_t)));
   }
-  constexpr inline [[nodiscard]] void *reallocate_raw(void *ptr,
-                                                      size_t number_of_bytes) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline void *
+  reallocate_raw(void *ptr, size_t number_of_bytes) {
     return realloc(ptr, number_of_bytes);
   }
-    constexpr size_t &get_size_of_mem(void *ptr) {
+  _compiler_can_use_ size_t &get_size_of_mem(void *ptr) {
     if (ptr == 0) {
       dummy_struct______T<1>().get() = 0;
-      return dummy_struct______T<1>() .get();
+      return dummy_struct______T<1>().get();
     }
     return *(size_t *)get_real_mem(ptr);
   }
-  inline constexpr size_t get_needed_size_of_mem(size_t size) {
+  _compiler_can_use_ inline size_t get_needed_size_of_mem(size_t size) {
     return sizeof(size_t) + size;
   }
-  inline constexpr void *get_fake_mem(void *ptr) {
-    if (ptr == 0) return ptr;
+  _compiler_can_use_ inline void *get_fake_mem(void *ptr) {
+    if (ptr == 0)
+      return ptr;
     return (void *)((size_t *)ptr + 1);
   }
-  inline constexpr void *get_real_mem(void *ptr) {
-    if (ptr == 0) return ptr;
+  _compiler_can_use_ inline void *get_real_mem(void *ptr) {
+    if (ptr == 0)
+      return ptr;
     return (void *)((size_t *)ptr - 1);
   }
   my_free_realloc_wrpr_t my_free_realloc_wrpr_obj;
-  constexpr inline void *realloc(void *ptr, size_t size) {
+  _compiler_can_use_ inline void *realloc(void *ptr, size_t size) {
     void *ptr2{};
     ptr2 = realloc_mem(ptr, size);
     get_size_of_mem(ptr2) = get_needed_size_of_mem(size);
     return ptr2;
   }
-  constexpr inline void free(void *ptr) {
+  _compiler_can_use_ inline void free(void *ptr) {
     my_free_realloc_wrpr_obj.free(get_real_mem(ptr), get_size_of_mem(ptr));
   }
-  constexpr inline void *realloc_mem(void *ptr, size_t len) {
+  _compiler_can_use_ inline void *realloc_mem(void *ptr, size_t len) {
     void *real_ptr = get_real_mem(ptr);
     void *real_reallocated_ptr = my_free_realloc_wrpr_obj.realloc(
         real_ptr, get_size_of_mem(ptr), get_needed_size_of_mem(len));
@@ -1583,88 +1643,98 @@ struct mjz_reallocator_template_t {
   }
 };
 template <class T1, class T2, class U>
-inline constexpr bool operator==(const mjz_reallocator_template_t<U, T1> &,
-                                 const mjz_reallocator_template_t<U, T2> &) {
+_compiler_can_use_ inline bool
+operator==(const mjz_reallocator_template_t<U, T1> &,
+           const mjz_reallocator_template_t<U, T2> &) {
   return true;
 }
 
 template <class T1, class T2, class U>
-inline constexpr bool operator!=(const mjz_reallocator_template_t<U, T1> &,
-                                 const mjz_reallocator_template_t<U, T2> &) {
+_compiler_can_use_ inline bool
+operator!=(const mjz_reallocator_template_t<U, T1> &,
+           const mjz_reallocator_template_t<U, T2> &) {
   return false;
 }
 template <class T1, class T2, class U1, class U2>
-inline constexpr bool operator==(const mjz_reallocator_template_t<U1, T1> &,
-                                 const mjz_reallocator_template_t<U2, T2> &) {
+_compiler_can_use_ inline bool
+operator==(const mjz_reallocator_template_t<U1, T1> &,
+           const mjz_reallocator_template_t<U2, T2> &) {
   return U1() == U2();
 }
 
 template <class T1, class T2, class U1, class U2>
-inline constexpr bool operator!=(const mjz_reallocator_template_t<U1, T1> &,
-                                 const mjz_reallocator_template_t<U2, T2> &) {
+_compiler_can_use_ inline bool
+operator!=(const mjz_reallocator_template_t<U1, T1> &,
+           const mjz_reallocator_template_t<U2, T2> &) {
   return U1() != U2();
 }
 using mjz_global_arena_allocator_type =
     mjz_arena_allocator_t<number_of_global_mjz_areana_allocator_blocks,
                           size_of_global_mjz_areana_allocator_blocks,
                           global_mjz_areana_allocator_on>;
-template <bool jfgskgkla>
-struct mjz_global_arena_allocator_type_static_holder {
+template <bool jfgskgkla> struct mjz_global_arena_allocator_type_static_holder {
   static mjz_global_arena_allocator_type obj;
-  constexpr inline mjz_global_arena_allocator_type &get() { return obj; }
+  _compiler_can_use_ inline mjz_global_arena_allocator_type &get() {
+    return obj;
+  }
 };
 template <bool jfgskgkla>
 mjz_global_arena_allocator_type
     mjz_global_arena_allocator_type_static_holder<jfgskgkla>::obj{};
 
-constexpr inline mjz_global_arena_allocator_type &my_global_allocator() {
+_compiler_can_use_ inline mjz_global_arena_allocator_type &
+my_global_allocator() {
   return mjz_global_arena_allocator_type_static_holder<1>().get();
 }
 namespace private_dont_use_it {
 #if global_mjz_areana_allocator_on
-constexpr inline void *realloc(void *p, size_t s) {
+_compiler_can_use_ inline void *realloc(void *p, size_t s) {
   void *p2 = my_global_allocator().realloc(p, s);
   return p2;
 }
-constexpr inline void free(void *p) { return my_global_allocator().free(p); }
+_compiler_can_use_ inline void free(void *p) {
+  return my_global_allocator().free(p);
+}
 #else
-constexpr inline void *realloc(void *p, size_t s) {
+_compiler_can_use_ inline void *realloc(void *p, size_t s) {
   void *p2 = ::realloc(p, s);
   return p2;
 }
-constexpr inline void free(void *p) { return ::free(p); }
+_compiler_can_use_ inline void free(void *p) { return ::free(p); }
 #endif
 
-constexpr bool log_it = global_mjz_areana_allocator_log;
+_compiler_can_use_ bool log_it = global_mjz_areana_allocator_log;
 namespace log_functions {
 inline void log(const char *const str, size_t n, const void *const in) {
 #if global_mjz_areana_allocator_log
   std::cout << '\n' << str << " " << n << " bytes in:" << in << ".\n";
 #endif
 }
-inline constexpr void *get_fake_mem(void *ptr) {
-  if (ptr == 0) return ptr;
+_compiler_can_use_ inline void *get_fake_mem(void *ptr) {
+  if (ptr == 0)
+    return ptr;
   return (void *)((size_t *)ptr + 1);
 }
-inline constexpr void *get_real_mem(void *ptr) {
-  if (ptr == 0) return ptr;
+_compiler_can_use_ inline void *get_real_mem(void *ptr) {
+  if (ptr == 0)
+    return ptr;
   return (void *)((size_t *)ptr - 1);
 }
 namespace why_are_you_using_me {
 static size_t dummy{};
 }
-constexpr inline size_t &get_size_of_mem(void *ptr) {
+_compiler_can_use_ inline size_t &get_size_of_mem(void *ptr) {
   if (ptr == 0) {
     why_are_you_using_me::dummy = 0;
     return why_are_you_using_me::dummy;
   }
   return *(size_t *)get_real_mem(ptr);
 }
-inline constexpr size_t get_needed_size_of_mem(size_t size) {
+_compiler_can_use_ inline size_t get_needed_size_of_mem(size_t size) {
   return sizeof(size_t) + size;
 }
 
-constexpr inline void *realloc_pv(void *p, size_t s) {
+_compiler_can_use_ inline void *realloc_pv(void *p, size_t s) {
   void *p2 = get_fake_mem(realloc(get_real_mem(p), get_needed_size_of_mem(s)));
   get_size_of_mem(p2) = s;
   if (p) {
@@ -1675,7 +1745,7 @@ constexpr inline void *realloc_pv(void *p, size_t s) {
   }
   return p2;
 }
-constexpr inline void free_pv(void *p) {
+_compiler_can_use_ inline void free_pv(void *p) {
   namespace pv = private_dont_use_it;
   if (p) {
     log("freed", get_size_of_mem(p), p);
@@ -1684,73 +1754,78 @@ constexpr inline void free_pv(void *p) {
     log("freed !(BUG)! ", 0, nullptr);
   }
 }
-}  // namespace log_functions
+} // namespace log_functions
 namespace no_log_functions {
-constexpr inline void free_pv(void *p) { return free(p); }
+_compiler_can_use_ inline void free_pv(void *p) { return free(p); }
 
-constexpr inline void *realloc_pv(void *p, size_t s) { return realloc(p, s); }
-}  // namespace no_log_functions
+_compiler_can_use_ inline void *realloc_pv(void *p, size_t s) {
+  return realloc(p, s);
+}
+} // namespace no_log_functions
 
-constexpr inline void free_pv(void *p) {
-  if constexpr (log_it) {
+_compiler_can_use_ inline void free_pv(void *p) {
+  if _compiler_can_use_ (log_it) {
     return log_functions::free_pv(p);
   }
   return no_log_functions::free_pv(p);
 }
 
-constexpr inline void *realloc_pv(void *p, size_t s) {
-  if constexpr (log_it) {
+_compiler_can_use_ inline void *realloc_pv(void *p, size_t s) {
+  if _compiler_can_use_ (log_it) {
     return log_functions::realloc_pv(p, s);
   }
   return no_log_functions::realloc_pv(p, s);
 }
-}  // namespace private_dont_use_it
-constexpr void free(void *p) {
+} // namespace private_dont_use_it
+_compiler_can_use_ void free(void *p) {
   namespace pv = private_dont_use_it;
   pv::free_pv(p);
 }
-constexpr void *realloc(void *p, size_t n) {
+_compiler_can_use_ void *realloc(void *p, size_t n) {
   namespace pv = private_dont_use_it;
   return pv::realloc_pv(p, n);
 }
 class C_realloc_free_package_example {
- public:
-  constexpr inline void free(void *ptr) { mjz_ard::free(ptr); }
-  constexpr inline void *realloc(void *ptr, size_t needed_len) {
+public:
+  _compiler_can_use_ inline void free(void *ptr) { mjz_ard::free(ptr); }
+  _compiler_can_use_ inline void *realloc(void *ptr, size_t needed_len) {
     return mjz_ard::realloc(ptr, needed_len);
   }
 };
 template <class C_realloc_free_package_t = C_realloc_free_package_example>
 struct C_allocate_free_warpper {
- public:
-  constexpr inline C_allocate_free_warpper() {}
-  constexpr inline ~C_allocate_free_warpper() {}
-  constexpr inline C_allocate_free_warpper(void *p, size_t n)
+public:
+  _compiler_can_use_ inline C_allocate_free_warpper() {}
+  _compiler_can_use_ inline ~C_allocate_free_warpper() {}
+  _compiler_can_use_ inline C_allocate_free_warpper(void *p, size_t n)
       : my_c_allocator(p, n) {}
-  constexpr inline void free(void *ptr, size_t len) {
+  _compiler_can_use_ inline void free(void *ptr, size_t len) {
     my_c_allocator.free(ptr);
   }
-  constexpr inline void *realloc(void *ptr, size_t, size_t needed_len) {
+  _compiler_can_use_ inline void *realloc(void *ptr, size_t,
+                                          size_t needed_len) {
     return my_c_allocator.realloc(ptr, needed_len);
   }
 
- private:
+private:
   C_realloc_free_package_t my_c_allocator;
 };
 
 template <class std_allocator_for_char>
 struct std_reallocator_free_realloc_warper {
   using char_type = mjz_get_value_Type<std_allocator_for_char>;
-  constexpr inline std_reallocator_free_realloc_warper(void *p, size_t n)
+  _compiler_can_use_ inline std_reallocator_free_realloc_warper(void *p,
+                                                                size_t n)
       : my_std_allocator_(p, n) {}
-  constexpr inline std_reallocator_free_realloc_warper() {}
-  constexpr inline ~std_reallocator_free_realloc_warper() {}
+  _compiler_can_use_ inline std_reallocator_free_realloc_warper() {}
+  _compiler_can_use_ inline ~std_reallocator_free_realloc_warper() {}
 
- public:
-  constexpr inline void free(void *ptr, size_t len) {
+public:
+  _compiler_can_use_ inline void free(void *ptr, size_t len) {
     my_std_allocator_.deallocate((char_type *)ptr, len);
   }
-  constexpr inline void *realloc(void *ptr, size_t len, size_t needed_len) {
+  _compiler_can_use_ inline void *realloc(void *ptr, size_t len,
+                                          size_t needed_len) {
     void *ptr2 = my_std_allocator_.allocate(needed_len);
     bool was_not_null = ptr && len;
     if (ptr2 && was_not_null) {
@@ -1762,7 +1837,7 @@ struct std_reallocator_free_realloc_warper {
     return ptr2;
   }
 
- private:
+private:
   std_allocator_for_char my_std_allocator_;
 };
 
@@ -1770,32 +1845,32 @@ template <class std_allocator_for_char, typename Type>
 struct std_reallocator_warper
     : public mjz_reallocator_template_t<
           std_reallocator_free_realloc_warper<std_allocator_for_char>, Type> {
-  constexpr inline std_reallocator_warper(void *p, size_t n)
+  _compiler_can_use_ inline std_reallocator_warper(void *p, size_t n)
       : mjz_reallocator_template_t<
             std_reallocator_free_realloc_warper<std_allocator_for_char>, Type>(
             p, n) {}
-  constexpr inline std_reallocator_warper() {}
-  constexpr inline ~std_reallocator_warper() {}
+  _compiler_can_use_ inline std_reallocator_warper() {}
+  _compiler_can_use_ inline ~std_reallocator_warper() {}
 };
 
 template <class C_realloc_free_package_t, typename Type>
 struct C_reallocator_warper_t
     : public mjz_reallocator_template_t<
           C_allocate_free_warpper<C_realloc_free_package_t>, Type> {
-  constexpr inline C_reallocator_warper_t() {}
-  constexpr inline C_reallocator_warper_t(void *p, size_t n)
+  _compiler_can_use_ inline C_reallocator_warper_t() {}
+  _compiler_can_use_ inline C_reallocator_warper_t(void *p, size_t n)
       : mjz_reallocator_template_t<
             C_allocate_free_warpper<C_realloc_free_package_t>, Type>(p, n) {}
-  constexpr inline ~C_reallocator_warper_t() {}
+  _compiler_can_use_ inline ~C_reallocator_warper_t() {}
 };
 
 template <typename Type>
 struct C_reallocator_warper
     : public mjz_reallocator_template_t<
           C_allocate_free_warpper<C_realloc_free_package_example>, Type> {
-  constexpr inline C_reallocator_warper() {}
-  constexpr inline ~C_reallocator_warper() {}
-  constexpr inline C_reallocator_warper(void *p, size_t n)
+  _compiler_can_use_ inline C_reallocator_warper() {}
+  _compiler_can_use_ inline ~C_reallocator_warper() {}
+  _compiler_can_use_ inline C_reallocator_warper(void *p, size_t n)
       : mjz_reallocator_template_t<
             C_allocate_free_warpper<C_realloc_free_package_example>, Type>(p,
                                                                            n) {}
@@ -1811,7 +1886,7 @@ struct mjz_arena_allocator_warper
           mjz_arena_allocator_t<number_of_blocks, block_length,
                                 KEEP_the_heap_clean>,
           Type> {
-  constexpr mjz_arena_allocator_warper() {}
+  _compiler_can_use_ mjz_arena_allocator_warper() {}
   mjz_arena_allocator_warper(void *p, size_t n)
       : C_reallocator_warper_t<
             mjz_arena_allocator_t<number_of_blocks, block_length,
@@ -1823,35 +1898,34 @@ struct mjz_arena_allocator_warper
 template <class Type>
 struct basic_mjz_allocator
     : std_reallocator_warper<std::allocator<uint8_t>, Type> {
-  constexpr inline basic_mjz_allocator(){};
-  constexpr inline basic_mjz_allocator(void *p, size_t n)
+  _compiler_can_use_ inline basic_mjz_allocator(){};
+  _compiler_can_use_ inline basic_mjz_allocator(void *p, size_t n)
       : std_reallocator_warper<std::allocator<uint8_t>, Type>(p, n){};
-  constexpr inline ~basic_mjz_allocator(){};
+  _compiler_can_use_ inline ~basic_mjz_allocator(){};
   template <class T>
-  constexpr inline basic_mjz_allocator(
+  _compiler_can_use_ inline basic_mjz_allocator(
       const basic_mjz_allocator<T> &) noexcept {}
 };
 
 template <class Type, class U>
-inline constexpr bool operator==(const basic_mjz_allocator<Type> &,
-                                 const basic_mjz_allocator<U> &) {
+_compiler_can_use_ inline bool operator==(const basic_mjz_allocator<Type> &,
+                                          const basic_mjz_allocator<U> &) {
   return true;
 }
 
 template <class Type, class U>
-inline constexpr bool operator!=(const basic_mjz_allocator<Type> &,
-                                 const basic_mjz_allocator<U> &) {
+_compiler_can_use_ inline bool operator!=(const basic_mjz_allocator<Type> &,
+                                          const basic_mjz_allocator<U> &) {
   return false;
 }
 
-template <typename Type>
-struct mjz_obj_manager_template_t {
+template <typename Type> struct mjz_obj_manager_template_t {
   using me = mjz_obj_manager_template_t;
 
- public:
+public:
   template <typename... args_t>
-  static constexpr inline Type *construct_at(Type *dest,
-                                             args_t &&...args) noexcept {
+  static _compiler_can_use_ inline Type *
+  construct_at(Type *dest, args_t &&...args) noexcept {
     Type *ptr{};
     try {
       ptr = (new (dest) Type(std::forward<args_t>(args)...));
@@ -1860,28 +1934,31 @@ struct mjz_obj_manager_template_t {
     return ptr;
   }
   template <typename... args_t>
-  static constexpr inline Type *construct_array_at(Type *dest, size_t n,
-                                                   args_t &&...args) noexcept {
+  static _compiler_can_use_ inline Type *
+  construct_array_at(Type *dest, size_t n, args_t &&...args) noexcept {
     Type *ptr{dest};
     Type *end{dest + n - 1};
     try {
-      while (ptr < end) construct_at(ptr++, args...);
+      while (ptr < end)
+        construct_at(ptr++, args...);
       end++;
-      if (ptr < end) construct_at(ptr, std::forward<args_t>(args)...);
+      if (ptr < end)
+        construct_at(ptr, std::forward<args_t>(args)...);
     } catch (...) {
       return nullptr;
     }
     return dest;
   }
   template <typename... args_t>
-  static constexpr inline bool destruct_array_at(Type *dest, size_t n,
-                                                 args_t &&...args) noexcept {
+  static _compiler_can_use_ inline bool
+  destruct_array_at(Type *dest, size_t n, args_t &&...args) noexcept {
     Type *r_end = dest;
     Type *ptr = dest + n;
     bool success = true;
     while (r_end < ptr) {
       try {
-        while (r_end < ptr) destroy_at(--ptr);
+        while (r_end < ptr)
+          destroy_at(--ptr);
       } catch (...) {
         success = false;
       }
@@ -1889,35 +1966,36 @@ struct mjz_obj_manager_template_t {
     return success;
   }
   template <typename... args_t>
-  static constexpr inline [[nodiscard]] Type obj_constructor(args_t &&...args) {
+  _THIS_IS_YOURS_NOW_ static _compiler_can_use_ inline Type
+  obj_constructor(args_t &&...args) {
     return Type(std::forward<args_t>(args)...);
   }
   template <typename... args_t>
-  static constexpr inline [[nodiscard]] Type &&obj_constructor_on(
-      Type &&uninitilized_object, args_t &&...args) {
+  _THIS_IS_YOURS_NOW_ static _compiler_can_use_ inline Type &&
+  obj_constructor_on(Type &&uninitilized_object, args_t &&...args) {
     return std::move(
         *construct_at(&uninitilized_object, std::forward<args_t>(args)...));
   }
   template <typename... args_t>
-  static constexpr inline [[nodiscard]] Type &obj_constructor_on(
-      Type &uninitilized_object, args_t &&...args) {
+  _THIS_IS_YOURS_NOW_ static _compiler_can_use_ inline Type &
+  obj_constructor_on(Type &uninitilized_object, args_t &&...args) {
     return *construct_at(&uninitilized_object, std::forward<args_t>(args)...);
   }
   template <typename... args_t>
-  static constexpr inline [[nodiscard]] Type *obj_constructor_on(
-      Type *uninitilized_object, args_t &&...args) {
+  _THIS_IS_YOURS_NOW_ static _compiler_can_use_ inline Type *
+  obj_constructor_on(Type *uninitilized_object, args_t &&...args) {
     return construct_at(uninitilized_object, std::forward<args_t>(args)...);
   }
-  static constexpr inline void obj_destructor_on(
-      Type &&obj_that_will_be_destroyed) {
+  static _compiler_can_use_ inline void
+  obj_destructor_on(Type &&obj_that_will_be_destroyed) {
     destroy_at(obj_that_will_be_destroyed);
   }
-  static constexpr inline void obj_destructor_on(
-      Type &obj_that_will_be_destroyed) {
+  static _compiler_can_use_ inline void
+  obj_destructor_on(Type &obj_that_will_be_destroyed) {
     destroy_at(obj_that_will_be_destroyed);
   }
-  static constexpr inline void obj_destructor_on(
-      Type *obj_that_will_be_destroyed) {
+  static _compiler_can_use_ inline void
+  obj_destructor_on(Type *obj_that_will_be_destroyed) {
     destroy_at(obj_that_will_be_destroyed);
   }
   union simple_init_obj_wrpr {
@@ -1929,65 +2007,81 @@ struct mjz_obj_manager_template_t {
     }
     ~simple_init_obj_wrpr() { obj_destructor_on(address_()); }
     Type obj;
-    Type *address_() { return (Type *)&NO_USE_; }  // union
-   private:
+    Type *address_() { return (Type *)&NO_USE_; } // union
+  private:
     char NO_USE_;
   };
   template <class T, class... Args>
-  static constexpr inline void construct(mjz_obj_manager_template_t &a, T *p,
-                                         Args &&...args) {
+  static _compiler_can_use_ inline void construct(mjz_obj_manager_template_t &a,
+                                                  T *p, Args &&...args) {
     a.construct_at(p, std::forward<Args>(args)...);
   }
-  static constexpr inline Type &obj_move_to_obj(Type &dest, Type &&src) {
+  static _compiler_can_use_ inline Type &obj_move_to_obj(Type &dest,
+                                                         Type &&src) {
     return dest = (std::move(src));
   }
-  static constexpr inline Type &obj_copy_to_obj(Type &dest, Type &src) {
+  static _compiler_can_use_ inline Type &obj_copy_to_obj(Type &dest,
+                                                         Type &src) {
     return dest = (src);
   }
-  static constexpr inline Type &obj_copy_to_obj(Type &dest, const Type &src) {
+  static _compiler_can_use_ inline Type &obj_copy_to_obj(Type &dest,
+                                                         const Type &src) {
     return dest = (src);
   }
-  static constexpr inline Type &obj_move_to_obj(Type *dest,
-                                                Type *src) {  // src is &&
+  static _compiler_can_use_ inline Type &
+  obj_move_to_obj(Type *dest,
+                  Type *src) { // src is &&
     return obj_move_to_obj(*dest, std::move(*src));
   }
-  static constexpr inline Type &obj_copy_to_obj(Type *dest, Type *src) {
+  static _compiler_can_use_ inline Type &obj_copy_to_obj(Type *dest,
+                                                         Type *src) {
     return obj_copy_to_obj(*dest, *src);
   }
-  static constexpr inline Type &obj_copy_to_obj(Type *dest, const Type *src) {
+  static _compiler_can_use_ inline Type &obj_copy_to_obj(Type *dest,
+                                                         const Type *src) {
     return obj_copy_to_obj(*dest, *src);
   }
-  static constexpr inline Type &obj_go_to_obj(Type &dest, const Type &src) {
+  static _compiler_can_use_ inline Type &obj_go_to_obj(Type &dest,
+                                                       const Type &src) {
     return obj_copy_to_obj(dest, src);
   }
-  static constexpr inline Type &obj_go_to_obj(Type &dest, Type &src) {
+  static _compiler_can_use_ inline Type &obj_go_to_obj(Type &dest, Type &src) {
     return obj_copy_to_obj(dest, src);
   }
-  static constexpr inline Type &obj_go_to_obj(Type &dest, Type &&src) {
+  static _compiler_can_use_ inline Type &obj_go_to_obj(Type &dest, Type &&src) {
     return obj_move_to_obj(dest, std::move(src));
   }
   template <typename... Args>
-  static constexpr inline Type &obj_equals(Type &dest, Args &&...args) {
+  static _compiler_can_use_ inline Type &obj_equals(Type &dest,
+                                                    Args &&...args) {
     return dest.operator=(std::forward<Args>(args)...);
   }
-  friend constexpr inline Type *addressof(Type &obj) { return &obj; }
-  friend constexpr inline const Type *addressof(const Type &obj) {
+  friend _compiler_can_use_ inline Type *addressof(Type &obj) { return &obj; }
+  friend _compiler_can_use_ inline const Type *addressof(const Type &obj) {
     return &obj;
   }
-  static constexpr inline Type *addressof(Type &obj) { return &obj; }
-  static constexpr inline const Type *addressof(const Type &obj) {
+  static _compiler_can_use_ inline Type *addressof(Type &obj) { return &obj; }
+  static _compiler_can_use_ inline const Type *addressof(const Type &obj) {
     return &obj;
   }
-  friend constexpr inline Type *to_address(Type *p) noexcept { return p; }
-  friend constexpr inline const Type *to_address(const Type &obj) noexcept {
-    return &obj;
-  }
-  friend constexpr inline const Type *to_address(const Type *p) noexcept {
+  friend _compiler_can_use_ inline Type *to_address(Type *p) noexcept {
     return p;
   }
-  friend constexpr inline Type *to_address(Type &obj) noexcept { return &obj; }
-  friend constexpr inline Type *pointer_to(Type &r) noexcept { return &r; }
-  static constexpr inline bool destroy_at(Type *ptr) noexcept {
+  friend _compiler_can_use_ inline const Type *
+  to_address(const Type &obj) noexcept {
+    return &obj;
+  }
+  friend _compiler_can_use_ inline const Type *
+  to_address(const Type *p) noexcept {
+    return p;
+  }
+  friend _compiler_can_use_ inline Type *to_address(Type &obj) noexcept {
+    return &obj;
+  }
+  friend _compiler_can_use_ inline Type *pointer_to(Type &r) noexcept {
+    return &r;
+  }
+  static _compiler_can_use_ inline bool destroy_at(Type *ptr) noexcept {
     try {
       ptr->~Type();
     } catch (...) {
@@ -1995,7 +2089,7 @@ struct mjz_obj_manager_template_t {
     }
     return true;
   }
-  static constexpr inline bool destroy_at(Type &ptr) noexcept {
+  static _compiler_can_use_ inline bool destroy_at(Type &ptr) noexcept {
     try {
       ptr.~Type();
     } catch (...) {
@@ -2003,18 +2097,23 @@ struct mjz_obj_manager_template_t {
     }
     return true;
   }
-  static constexpr inline void destroy(mjz_obj_manager_template_t &a, Type *p) {
+  static _compiler_can_use_ inline void destroy(mjz_obj_manager_template_t &a,
+                                                Type *p) {
     a.destroy_at(p);
   }
-  static constexpr inline void destroy(Type *p) { me::destroy_at(p); }
+  static _compiler_can_use_ inline void destroy(Type *p) { me::destroy_at(p); }
   template <class ForwardIt, class Size>
-  static constexpr inline ForwardIt destroy_n(ForwardIt first, Size n) {
-    for (; n > 0; (void)++first, --n) me::destroy_at(&(*first));
+  static _compiler_can_use_ inline ForwardIt destroy_n(ForwardIt first,
+                                                       Size n) {
+    for (; n > 0; (void)++first, --n)
+      me::destroy_at(&(*first));
     return first;
   }
   template <class ForwardIt>
-  static constexpr inline void destroy(ForwardIt first, ForwardIt last) {
-    for (; first != last; ++first) me::destroy_at(&(*first));
+  static _compiler_can_use_ inline void destroy(ForwardIt first,
+                                                ForwardIt last) {
+    for (; first != last; ++first)
+      me::destroy_at(&(*first));
   }
 };
 
@@ -2023,8 +2122,10 @@ template <typename Type,
 
 struct mjz_temp_type_obj_creator_warpper_t : public my_constructor {
   using me = mjz_temp_type_obj_creator_warpper_t;
-  constexpr static inline size_t size_of_type() { return sizeof(Type); }
-  static constexpr inline void swap(Type &a, Type &b) {
+  _compiler_can_use_ static inline size_t size_of_type() {
+    return sizeof(Type);
+  }
+  static _compiler_can_use_ inline void swap(Type &a, Type &b) {
     uint8_t buf[size_of_type()];
     Type *temp_p = (Type *)buf;
     me::construct_at(temp_p, std::move(a));
@@ -2032,8 +2133,8 @@ struct mjz_temp_type_obj_creator_warpper_t : public my_constructor {
     me::obj_move_to_obj(b, std::move(*temp_p));
     me::destroy_at(temp_p);
   }
-  static constexpr inline bool obj_destructor_arr(Type *arr, size_t n,
-                                                  bool in_reveres = 1) {
+  static _compiler_can_use_ inline bool
+  obj_destructor_arr(Type *arr, size_t n, bool in_reveres = 1) {
     bool was_successful{1};
     if (in_reveres) {
       Type *ptr = arr + n;
@@ -2051,9 +2152,8 @@ struct mjz_temp_type_obj_creator_warpper_t : public my_constructor {
     return was_successful;
   }
   template <typename... args_t>
-  static constexpr inline Type *construct_arr_at(Type *dest, size_t n,
-                                                 bool in_reveres,
-                                                 args_t &&...args) {
+  static _compiler_can_use_ inline Type *
+  construct_arr_at(Type *dest, size_t n, bool in_reveres, args_t &&...args) {
     if (in_reveres) {
       Type *ptr_end = dest - 1;
       Type *ptr = dest + n;
@@ -2066,8 +2166,8 @@ struct mjz_temp_type_obj_creator_warpper_t : public my_constructor {
                                                 std::forward<args_t>(args)...);
     }
   }
-  static constexpr inline Type *construct_arr_at(Type *dest, size_t n,
-                                                 bool in_reveres = 0) {
+  static _compiler_can_use_ inline Type *construct_arr_at(Type *dest, size_t n,
+                                                          bool in_reveres = 0) {
     if (in_reveres) {
       Type *ptr_end = dest - 1;
       Type *ptr = dest + n;
@@ -2087,47 +2187,47 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     : public mjz_temp_type_obj_creator_warpper_t<Type, my_constructor> {
   using me = mjz_temp_type_obj_algorithims_warpper_t;
   template <typename TTT>
-  static constexpr inline auto addressof(const TTT &obj) {
+  static _compiler_can_use_ inline auto addressof(const TTT &obj) {
     return &obj;
   }
   template <typename TTT>
-  static constexpr inline auto addressof(const TTT &&obj) = delete;
+  static _compiler_can_use_ inline auto addressof(const TTT &&obj) = delete;
   template <typename TTT>
-  static constexpr inline auto addressof(TTT &obj) {
+  static _compiler_can_use_ inline auto addressof(TTT &obj) {
     return &obj;
   }
   template <class InputIt, class Size, class NoThrowForwardIt>
-  static constexpr inline NoThrowForwardIt uninitialized_copy_n(
-      InputIt first, Size count, NoThrowForwardIt d_first) {
+  static _compiler_can_use_ inline NoThrowForwardIt
+  uninitialized_copy_n(InputIt first, Size count, NoThrowForwardIt d_first) {
     using T = typename std::iterator_traits<NoThrowForwardIt>::value_type;
     NoThrowForwardIt current = d_first;
     try {
       for (; count > 0; ++first, (void)++current, --count)
         construct_at(addressof(*current), *first);
     } catch (...) {
-      for (; d_first != current; ++d_first) d_first->~T();
+      for (; d_first != current; ++d_first)
+        d_first->~T();
       throw;
     }
     return current;
   }
   template <class ForwardIt, class T>
-  static constexpr inline void uninitialized_fill(ForwardIt first,
-                                                  ForwardIt last,
-                                                  const T &value) {
+  static _compiler_can_use_ inline void
+  uninitialized_fill(ForwardIt first, ForwardIt last, const T &value) {
     using V = typename std::iterator_traits<ForwardIt>::value_type;
     ForwardIt current = first;
     try {
       for (; current != last; ++current)
         me::construct_at(addressof(*current), value);
     } catch (...) {
-      for (; first != current; ++first) first->~V();
+      for (; first != current; ++first)
+        first->~V();
       throw;
     }
   }
   template <class ForwardIt, class Size, class T>
-  static constexpr inline ForwardIt uninitialized_fill_n(ForwardIt first,
-                                                         Size count,
-                                                         const T &value) {
+  static _compiler_can_use_ inline ForwardIt
+  uninitialized_fill_n(ForwardIt first, Size count, const T &value) {
     using V = typename std::iterator_traits<ForwardIt>::value_type;
     ForwardIt current = first;
     try {
@@ -2135,13 +2235,14 @@ struct mjz_temp_type_obj_algorithims_warpper_t
         me::construct_at(addressof(*current), value);
       return current;
     } catch (...) {
-      for (; first != current; ++first) first->~V();
+      for (; first != current; ++first)
+        first->~V();
       throw;
     }
   }
   template <class ForwardIt, class T>
-  static constexpr inline void uninitialized_fill(ForwardIt first,
-                                                  ForwardIt last, T &&value) {
+  static _compiler_can_use_ inline void
+  uninitialized_fill(ForwardIt first, ForwardIt last, T &&value) {
     using V = typename std::iterator_traits<ForwardIt>::value_type;
     ForwardIt current = first;
     try {
@@ -2152,14 +2253,14 @@ struct mjz_temp_type_obj_algorithims_warpper_t
           construct_at(addressof(*current), *first);
       }
     } catch (...) {
-      for (; first != current; ++first) first->~V();
+      for (; first != current; ++first)
+        first->~V();
       throw;
     }
   }
   template <class ForwardIt, class Size, class T>
-  static constexpr inline ForwardIt uninitialized_fill_n(ForwardIt first,
-                                                         Size count,
-                                                         T &&value) {
+  static _compiler_can_use_ inline ForwardIt
+  uninitialized_fill_n(ForwardIt first, Size count, T &&value) {
     using V = typename std::iterator_traits<ForwardIt>::value_type;
     ForwardIt current = first;
     try {
@@ -2172,13 +2273,14 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       }
       return current;
     } catch (...) {
-      for (; first != current; ++first) first->~V();
+      for (; first != current; ++first)
+        first->~V();
       throw;
     }
   }
   template <class InputIt, class NoThrowForwardIt>
-  static constexpr inline NoThrowForwardIt uninitialized_move(
-      InputIt first, InputIt last, NoThrowForwardIt d_first) {
+  static _compiler_can_use_ inline NoThrowForwardIt
+  uninitialized_move(InputIt first, InputIt last, NoThrowForwardIt d_first) {
     NoThrowForwardIt current = d_first;
     try {
       for (; first != last; ++first, (void)++current)
@@ -2190,7 +2292,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     }
   }
   template <class InputIt, class Size, class NoThrowForwardIt>
-  static constexpr inline std::pair<InputIt, NoThrowForwardIt>
+  static _compiler_can_use_ inline std::pair<InputIt, NoThrowForwardIt>
   uninitialized_move_n(InputIt first, Size count, NoThrowForwardIt d_first) {
     NoThrowForwardIt current = d_first;
     try {
@@ -2203,21 +2305,22 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     return {first, current};
   }
   template <class InputIt, class NoThrowForwardIt>
-  static constexpr inline NoThrowForwardIt uninitialized_copy(
-      InputIt first, InputIt last, NoThrowForwardIt d_first) {
+  static _compiler_can_use_ inline NoThrowForwardIt
+  uninitialized_copy(InputIt first, InputIt last, NoThrowForwardIt d_first) {
     NoThrowForwardIt current = d_first;
     try {
       for (; first != last; ++first, (void)++current)
         construct_at(addressof(*current), *first);
       return current;
     } catch (...) {
-      for (; d_first != current; ++d_first) d_first->~T();
+      for (; d_first != current; ++d_first)
+        d_first->~T();
       throw;
     }
   }
   template <class ForwardIt>
-  static constexpr inline void uninitialized_default_construct(ForwardIt first,
-                                                               ForwardIt last) {
+  static _compiler_can_use_ inline void
+  uninitialized_default_construct(ForwardIt first, ForwardIt last) {
     ForwardIt current = first;
     try {
       for (; current != last; ++current) {
@@ -2229,22 +2332,24 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     }
   }
   template <class ForwardIt>
-  static constexpr inline void uninitialized_value_construct(ForwardIt first,
-                                                             ForwardIt last) {
+  static _compiler_can_use_ inline void
+  uninitialized_value_construct(ForwardIt first, ForwardIt last) {
     ForwardIt current = first;
     try {
-      for (; current != last; ++current) construct_at(addressof(*current));
+      for (; current != last; ++current)
+        construct_at(addressof(*current));
     } catch (...) {
       destroy(first, current);
       throw;
     }
   }
   template <class ForwardIt, class Size>
-  static constexpr inline ForwardIt uninitialized_default_construct_n(
-      ForwardIt first, Size n) {
+  static _compiler_can_use_ inline ForwardIt
+  uninitialized_default_construct_n(ForwardIt first, Size n) {
     ForwardIt current = first;
     try {
-      for (; n > 0; (void)++current, --n) construct_at(addressof(*current));
+      for (; n > 0; (void)++current, --n)
+        construct_at(addressof(*current));
       return current;
     } catch (...) {
       destroy(first, current);
@@ -2252,11 +2357,12 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     }
   }
   template <class ForwardIt, class Size>
-  static constexpr inline ForwardIt uninitialized_value_construct_n(
-      ForwardIt first, Size n) {
+  static _compiler_can_use_ inline ForwardIt
+  uninitialized_value_construct_n(ForwardIt first, Size n) {
     ForwardIt current = first;
     try {
-      for (; n > 0; (void)++current, --n) construct_at(addressof(*current));
+      for (; n > 0; (void)++current, --n)
+        construct_at(addressof(*current));
       return current;
     } catch (...) {
       destroy(first, current);
@@ -2264,29 +2370,29 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     }
   }
   template <class BidirIt1, class BidirIt2, class BidirIt3>
-  static constexpr inline BidirIt3 move_backward(BidirIt1 first, BidirIt2 last,
-                                                 BidirIt3 d_last) {
+  static _compiler_can_use_ inline BidirIt3
+  move_backward(BidirIt1 first, BidirIt2 last, BidirIt3 d_last) {
     while (first != last)
       me::obj_move_to_obj(*(--d_last), std::move(*(--last)));
     return d_last;
   }
   template <class BidirIt1, class BidirIt2>
-  static constexpr inline BidirIt2 copy_backward(BidirIt1 first, BidirIt1 last,
-                                                 BidirIt2 d_last) {
-    while (first != last) obj_copy_to_obj(*(--d_last), std::forward(*(--last)));
+  static _compiler_can_use_ inline BidirIt2
+  copy_backward(BidirIt1 first, BidirIt1 last, BidirIt2 d_last) {
+    while (first != last)
+      obj_copy_to_obj(*(--d_last), std::forward(*(--last)));
     return d_last;
   }
   template <class InputIt, class OutputIt>
-  static constexpr inline OutputIt copy(InputIt first, InputIt last,
-                                        OutputIt d_first) {
+  static _compiler_can_use_ inline OutputIt copy(InputIt first, InputIt last,
+                                                 OutputIt d_first) {
     for (; first != last; (void)++first, (void)++d_first)
       obj_copy_to_obj(*d_first, *first);
     return d_first;
   }
   template <class InputIt, class OutputIt, class UnaryPredicate>
-  static constexpr inline OutputIt copy_if(InputIt first, InputIt last,
-                                           OutputIt d_first,
-                                           UnaryPredicate pred) {
+  static _compiler_can_use_ inline OutputIt
+  copy_if(InputIt first, InputIt last, OutputIt d_first, UnaryPredicate pred) {
     for (; first != last; ++first)
       if (pred(*first)) {
         obj_copy_to_obj(*d_first, *first);
@@ -2305,7 +2411,7 @@ struct mjz_temp_type_allocator_warpper_t
       protected my_reallocator {
   using me = mjz_temp_type_allocator_warpper_t;
 
- public:
+public:
   using my_value_Type_t = Type;
   using value_type = my_value_Type_t;
   using reference = value_type &;
@@ -2316,73 +2422,80 @@ struct mjz_temp_type_allocator_warpper_t
   using const_reference = const my_value_Type_t &;
   using size_type = size_t;
   using propagate_on_container_move_assignment = std::true_type;
-  constexpr inline mjz_temp_type_allocator_warpper_t(){};
-  constexpr inline mjz_temp_type_allocator_warpper_t(void *p, size_t n)
+  _compiler_can_use_ inline mjz_temp_type_allocator_warpper_t(){};
+  _compiler_can_use_ inline mjz_temp_type_allocator_warpper_t(void *p, size_t n)
       : my_reallocator(p, n){};
-  constexpr inline ~mjz_temp_type_allocator_warpper_t(){};
+  _compiler_can_use_ inline ~mjz_temp_type_allocator_warpper_t(){};
   template <class U>
-  constexpr inline mjz_temp_type_allocator_warpper_t(
+  _compiler_can_use_ inline mjz_temp_type_allocator_warpper_t(
       const mjz_temp_type_allocator_warpper_t<U> &) noexcept {}
-  [[nodiscard]] Type *allocate(size_t n) { return allocate(n, (Type *)0); }
-  static constexpr inline [[nodiscard]] Type *allocate(
-      mjz_temp_type_allocator_warpper_t &a, size_t n, const void *hint) {
+  _THIS_IS_YOURS_NOW_ Type *allocate(size_t n) {
+    return allocate(n, (Type *)0);
+  }
+  _THIS_IS_YOURS_NOW_ static _compiler_can_use_ inline Type *
+  allocate(mjz_temp_type_allocator_warpper_t &a, size_t n, const void *hint) {
     return (Type *)a.allocate(n, hint);
   }
-  static constexpr inline [[nodiscard]] Type *allocate(
-      mjz_temp_type_allocator_warpper_t &a, size_t n) {
+  _THIS_IS_YOURS_NOW_ static _compiler_can_use_ inline Type *
+  allocate(mjz_temp_type_allocator_warpper_t &a, size_t n) {
     return (Type *)a.allocate(n);
   }
-  static constexpr inline void deallocate(mjz_temp_type_allocator_warpper_t &a,
-                                          Type *p, size_t n) noexcept {
+  static _compiler_can_use_ inline void
+  deallocate(mjz_temp_type_allocator_warpper_t &a, Type *p, size_t n) noexcept {
     a.deallocate(p, n);
   }
-  constexpr inline void deallocate(Type *p, size_t n) noexcept {
+  _compiler_can_use_ inline void deallocate(Type *p, size_t n) noexcept {
     deallocate_pv(p, n);
   }
-  constexpr inline [[nodiscard]] Type *allocate(size_t n, const void *hint) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *
+  allocate(size_t n, const void *hint) {
     return allocate_pv(n, hint);
   }
   template <typename... args_t>
-  constexpr inline [[nodiscard]] Type *allocate_obj(args_t &&...args) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *
+  allocate_obj(args_t &&...args) {
     // new Type(std::forward<args_t>(args)...);
     Type *ptr = allocate_pv(1, 0);
-    if (!ptr) return nullptr;
+    if (!ptr)
+      return nullptr;
     *get_real_array_ptr<size_t>(ptr) = 1;
     return my_constructor::construct_at(ptr, std::forward<args_t>(args)...);
   }
   template <typename... args_t>
-  constexpr inline [[nodiscard]] Type *allocate_obj_array(size_t len,
-                                                          bool in_reveres,
-                                                          args_t &&...args) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *
+  allocate_obj_array(size_t len, bool in_reveres, args_t &&...args) {
     // new Type(std::forward<args_t>(args)...)[len];
     Type *ptr = allocate_pv(len, 0);
-    if (!ptr) return nullptr;
+    if (!ptr)
+      return nullptr;
     *get_real_array_ptr<size_t>(ptr) = len;
     return me::construct_arr_at(ptr, len, in_reveres,
                                 std::forward<args_t>(args)...);
   }
   template <typename... args_t>
-  constexpr inline [[nodiscard]] Type *allocate_obj_array(size_t len,
-                                                          bool in_reveres = 0) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *
+  allocate_obj_array(size_t len, bool in_reveres = 0) {
     Type *ptr = allocate_pv(len, 0);
-    if (!ptr) return nullptr;
+    if (!ptr)
+      return nullptr;
     *get_real_array_ptr<size_t>(ptr) = len;
     return me::construct_arr_at(ptr, len, in_reveres);
   }
-  constexpr inline size_t get_number_of_obj_in_array(Type *ptr) {
+  _compiler_can_use_ inline size_t get_number_of_obj_in_array(Type *ptr) {
     return *get_real_array_ptr<size_t>(ptr);
   }
-  constexpr inline size_t size_of_array_with(size_t len) {
+  _compiler_can_use_ inline size_t size_of_array_with(size_t len) {
     return sizeof(size_t) + this->size_of_type() * len;
   }
-  constexpr inline size_t size_of_array_with(Type *ptr) {
+  _compiler_can_use_ inline size_t size_of_array_with(Type *ptr) {
     return sizeof(size_t) +
            this->size_of_type() * get_number_of_obj_in_array(ptr);
   }
-  constexpr inline bool deallocate_obj(Type *ptr) {
+  _compiler_can_use_ inline bool deallocate_obj(Type *ptr) {
     return deallocate_obj_array(ptr);
   }
-  constexpr inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
+  _compiler_can_use_ inline bool deallocate_obj_array(Type *ptr,
+                                                      bool in_reveres = 1) {
     // delete[] dest;
     bool was_successful = this->obj_destructor_arr(
         ptr, get_number_of_obj_in_array(ptr), in_reveres);
@@ -2390,47 +2503,49 @@ struct mjz_temp_type_allocator_warpper_t
     return was_successful;
   }
 
- private:
+private:
   template <typename T_as, typename T_from>
-  constexpr constexpr inline T_as *get_real_array_ptr(T_from *fake) {
-    if (fake == 0) return 0;
+  _compiler_can_use_ inline T_as *get_real_array_ptr(T_from *fake) {
+    if (fake == 0)
+      return 0;
     return (T_as *)(((size_t *)fake) - 1);
   }
   template <typename T_as, typename T_from>
-  constexpr constexpr inline T_as *get_fake_array_ptr(T_from *real) {
-    if (real == 0 || (void *)real == (void *)sizeof(size_t)) return 0;
+  _compiler_can_use_ inline T_as *get_fake_array_ptr(T_from *real) {
+    if (real == 0 || (void *)real == (void *)sizeof(size_t))
+      return 0;
     return (T_as *)(((size_t *)real) + 1);
   }
-  constexpr inline [[nodiscard]] Type *allocate_pv(size_t n, const void *hint,
-                                                   bool raw = 0) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *
+  allocate_pv(size_t n, const void *hint, bool raw = 0) {
     return get_fake_array_ptr<Type>(my_reallocator::allocate_raw(
         raw ? n : size_of_array_with(n), get_real_array_ptr<Type>(hint)));
   }
-  constexpr inline void deallocate_pv(Type *p, size_t n,
-                                      bool raw = 0) noexcept {
+  _compiler_can_use_ inline void deallocate_pv(Type *p, size_t n,
+                                               bool raw = 0) noexcept {
     my_reallocator::deallocate_raw(get_real_array_ptr<Type>(p),
                                    raw ? n : size_of_array_with(n));
   }
   template <typename _Type, class _constructor, class _reallocator>
-  constexpr inline friend bool operator==(
+  _compiler_can_use_ inline friend bool operator==(
       mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
       mjz_temp_type_allocator_warpper_t<_Type, _constructor, _reallocator>) {
     return false;
   }
   template <typename _Type, class _constructor, class _reallocator>
-  constexpr inline friend bool operator!=(
+  _compiler_can_use_ inline friend bool operator!=(
       mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
       mjz_temp_type_allocator_warpper_t<_Type, _constructor, _reallocator>) {
     return true;
   }
   template <typename _Type, class _constructor>
-  constexpr inline friend bool operator==(
+  _compiler_can_use_ inline friend bool operator==(
       mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
       mjz_temp_type_allocator_warpper_t<_Type, _constructor, my_reallocator>) {
     return true;
   }
   template <typename _Type, class _constructor>
-  constexpr inline friend bool operator!=(
+  _compiler_can_use_ inline friend bool operator!=(
       mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
       mjz_temp_type_allocator_warpper_t<_Type, _constructor, my_reallocator>) {
     return false;
@@ -2443,9 +2558,10 @@ template <typename Type,
 struct C_mjz_temp_type_allocator_warpper_t
     : public mjz_temp_type_allocator_warpper_t<
           Type, my_constructor, C_reallocator_warper_t<C_free_realloc, Type>> {
-  constexpr inline C_mjz_temp_type_allocator_warpper_t() {}
-  constexpr inline ~C_mjz_temp_type_allocator_warpper_t() {}
-  constexpr inline C_mjz_temp_type_allocator_warpper_t(void *p, size_t n)
+  _compiler_can_use_ inline C_mjz_temp_type_allocator_warpper_t() {}
+  _compiler_can_use_ inline ~C_mjz_temp_type_allocator_warpper_t() {}
+  _compiler_can_use_ inline C_mjz_temp_type_allocator_warpper_t(void *p,
+                                                                size_t n)
       : mjz_temp_type_allocator_warpper_t<
             Type, my_constructor, C_reallocator_warper_t<C_free_realloc, Type>>(
             p, n) {}
@@ -2457,42 +2573,47 @@ using mjz_allocator_warpper_r_t =
                                       my_reallocator>;
 template <class Type>
 struct mjz_allocator_warpper : mjz_allocator_warpper_r_t<Type> {
-  constexpr mjz_allocator_warpper(){};
-  constexpr inline mjz_allocator_warpper(void *p, size_t n)
+  _compiler_can_use_ mjz_allocator_warpper(){};
+  _compiler_can_use_ inline mjz_allocator_warpper(void *p, size_t n)
       : mjz_allocator_warpper_r_t<Type>(p, n){};
-  constexpr inline ~mjz_allocator_warpper(){};
+  _compiler_can_use_ inline ~mjz_allocator_warpper(){};
   template <class T>
-  constexpr mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
+  _compiler_can_use_
+  mjz_allocator_warpper(const mjz_allocator_warpper<T> &) noexcept {}
 };
 struct mjz_normal_allocator : public C_mjz_temp_type_allocator_warpper_t<char> {
-  constexpr inline mjz_normal_allocator() {}
-  constexpr inline ~mjz_normal_allocator() {}
-  constexpr inline mjz_normal_allocator(const mjz_normal_allocator &) {}
-  constexpr inline mjz_normal_allocator &operator=(
-      const mjz_normal_allocator &) {
+  _compiler_can_use_ inline mjz_normal_allocator() {}
+  _compiler_can_use_ inline ~mjz_normal_allocator() {}
+  _compiler_can_use_ inline mjz_normal_allocator(const mjz_normal_allocator &) {
+  }
+  _compiler_can_use_ inline mjz_normal_allocator &
+  operator=(const mjz_normal_allocator &) {
     return *this;
   }
-  constexpr inline mjz_normal_allocator(mjz_normal_allocator &&) {}
-  constexpr inline mjz_normal_allocator &operator=(mjz_normal_allocator &&) {
+  _compiler_can_use_ inline mjz_normal_allocator(mjz_normal_allocator &&) {}
+  _compiler_can_use_ inline mjz_normal_allocator &
+  operator=(mjz_normal_allocator &&) {
     return *this;
   }
 };
 #if global_mjz_areana_allocator_on
 }
-constexpr inline mjz_ard::C_realloc_free_package_example &&
+_compiler_can_use_ inline mjz_ard::C_realloc_free_package_example &&
 get_CPP_local_global_allocator() {
   return mjz_ard::C_realloc_free_package_example();
 }
-
-inline [[nodiscard]] void *operator new(size_t m_size) {
+_THIS_IS_YOURS_NOW_
+inline void *operator new(size_t m_size) {
   void *p = get_CPP_local_global_allocator().realloc(0, m_size);
-  if (p) return p;
+  if (p)
+    return p;
   throw std::exception{"no memory left "};
 }
-
-inline [[nodiscard]] void *operator new[](size_t m_size) {
+_THIS_IS_YOURS_NOW_
+inline void *operator new[](size_t m_size) {
   void *p = get_CPP_local_global_allocator().realloc(0, m_size);
-  if (p) return p;
+  if (p)
+    return p;
   throw std::exception{"no memory left "};
 }
 inline void operator delete(void *p) {
@@ -2508,11 +2629,11 @@ inline void operator delete[](void *p, size_t) {
   get_CPP_local_global_allocator().free(p);
 }
 namespace mjz_ard {
-#endif  // global_mjz_areana_allocator_on
+#endif // global_mjz_areana_allocator_on
 
 template <class Type, size_t m_Size, bool error_check = 1>
-struct mjz_Array {  // fixed size mjz_Array of values
- public:
+struct mjz_Array { // fixed size mjz_Array of values
+public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
@@ -2524,98 +2645,105 @@ struct mjz_Array {  // fixed size mjz_Array of values
   using const_iterator = iterator_template_t<const Type, error_check>;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  constexpr inline void assign(const Type &_Value) { fill(_Value); }
-  constexpr inline void fill(const Type &value) {
+  _compiler_can_use_ inline void assign(const Type &_Value) { fill(_Value); }
+  _compiler_can_use_ inline void fill(const Type &value) {
     iterator fst = begin();
     iterator lst = end();
-    while (fst < lst) *fst++ = value;
+    while (fst < lst)
+      *fst++ = value;
   }
-  constexpr inline void swap(mjz_Array &other) {
+  _compiler_can_use_ inline void swap(mjz_Array &other) {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
     while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
       std::swap(*fst[0]++, *fst[1]++);
   }
-  constexpr inline [[nodiscard]] iterator begin() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline iterator begin() noexcept {
     return iterator(m_elements, m_elements, m_elements + m_Size);
   }
-  [[nodiscard]] constexpr inline const_iterator begin() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  begin() const noexcept {
     return const_iterator(m_elements, m_elements, m_elements + m_Size);
   }
-  [[nodiscard]] constexpr inline iterator end() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline iterator end() noexcept {
     return iterator(m_elements + m_Size, m_elements, m_elements + m_Size);
   }
-  [[nodiscard]] constexpr inline const_iterator end() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  end() const noexcept {
     return const_iterator(m_elements + m_Size, m_elements, m_elements + m_Size);
   }
-  [[nodiscard]] constexpr inline reverse_iterator rbegin() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reverse_iterator
+  rbegin() noexcept {
     return reverse_iterator(end());
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator rbegin()
-      const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  rbegin() const noexcept {
     return const_reverse_iterator(end());
   }
-  [[nodiscard]] constexpr inline reverse_iterator rend() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reverse_iterator
+  rend() noexcept {
     return reverse_iterator(begin());
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator rend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  rend() const noexcept {
     return const_reverse_iterator(begin());
   }
-  [[nodiscard]] constexpr inline const_iterator cbegin() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  cbegin() const noexcept {
     return begin();
   }
-  [[nodiscard]] constexpr inline const_iterator cend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  cend() const noexcept {
     return end();
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator crbegin()
-      const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  crbegin() const noexcept {
     return rbegin();
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator crend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  crend() const noexcept {
     return rend();
   }
-  [[nodiscard]] constexpr inline constexpr size_type size() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline size_type
+  size() const noexcept {
     return m_Size;
   }
-  [[nodiscard]] constexpr inline constexpr size_type max_size() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline size_type
+  max_size() const noexcept {
     return m_Size;
   }
-  constexpr inline
-
-      constexpr bool
-      empty() const noexcept {
-    return !!m_Size;
-  }
-  [[nodiscard]] constexpr inline reference at(size_type _Pos) {
-    if constexpr (error_check) {
+  _compiler_can_use_ inline bool empty() const noexcept { return !!m_Size; }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference at(size_type _Pos) {
+    if _compiler_can_use_ (error_check) {
       if (m_Size <= _Pos) {
         invld_throw();
       }
     }
     return m_elements[_Pos];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference at(
-      size_type _Pos) const {
-    if constexpr (error_check) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  at(size_type _Pos) const {
+    if _compiler_can_use_ (error_check) {
       if (m_Size <= _Pos) {
         invld_throw();
       }
     }
     return m_elements[_Pos];
   }
-  [[nodiscard]] constexpr inline reference operator[](size_type _Pos) noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference
+  operator[](size_type _Pos) noexcept
   /* strengthened */ {
-    if constexpr (error_check) {
+    if _compiler_can_use_ (error_check) {
       if (_Pos >= m_Size) {
         throw std::exception{"mjz_Array subscript out of range"};
       }
     }
     return m_elements[_Pos];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference operator[](
-      size_type _Pos) const noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  operator[](size_type _Pos) const noexcept
   /* strengthened */ {
-    if constexpr (error_check) {
+    if _compiler_can_use_ (error_check) {
       {
         if (_Pos >= m_Size)
           throw std::exception{"mjz_Array subscript out of range"};
@@ -2623,77 +2751,85 @@ struct mjz_Array {  // fixed size mjz_Array of values
     }
     return m_elements[_Pos];
   }
-  [[nodiscard]] constexpr inline reference front() noexcept /* strengthened */ {
-    return m_elements[0];
-  }
-  [[nodiscard]] constexpr inline constexpr const_reference front()
-      const noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference front() noexcept
   /* strengthened */ {
     return m_elements[0];
   }
-  [[nodiscard]] constexpr inline reference back() noexcept /* strengthened */ {
-    return m_elements[m_Size - 1];
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  front() const noexcept
+  /* strengthened */ {
+    return m_elements[0];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference back() const noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference back() noexcept
   /* strengthened */ {
     return m_elements[m_Size - 1];
   }
-  [[nodiscard]] constexpr inline Type *data() noexcept { return m_elements; }
-  [[nodiscard]] constexpr inline const Type *data() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  back() const noexcept
+  /* strengthened */ {
+    return m_elements[m_Size - 1];
+  }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *data() noexcept {
+    return m_elements;
+  }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const Type *
+  data() const noexcept {
     return m_elements;
   }
   [[noreturn]] void invld_throw() const {
     throw std::exception("invalid mjz_Array<T, N> subscript");
   }
   static mjz_temp_type_obj_algorithims_warpper_t<Type> mjz_obj_algorithims;
-  constexpr inline mjz_Array() {}
-  constexpr inline ~mjz_Array() {}
+  _compiler_can_use_ inline mjz_Array() {}
+  _compiler_can_use_ inline ~mjz_Array() {}
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_Array(mjz_Array<Type, O_size, O_err> &&other) {
+  _compiler_can_use_ inline mjz_Array(mjz_Array<Type, O_size, O_err> &&other) {
     size_t len = min(other.size(), this->max_size());
     mjz_obj_algorithims.uninitialized_move_n(other.begin(), len, this->begin());
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_Array(const mjz_Array<Type, O_size, O_err> &other) {
+  _compiler_can_use_ inline mjz_Array(
+      const mjz_Array<Type, O_size, O_err> &other) {
     size_t len = min(other.size(), this->max_size());
     mjz_obj_algorithims.uninitialized_copy_n(other.begin(), len, this->begin());
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_Array<Type, m_Size, error_check> &operator=(
-      mjz_Array<Type, O_size, O_err> &&other) {
+  _compiler_can_use_ inline mjz_Array<Type, m_Size, error_check> &
+  operator=(mjz_Array<Type, O_size, O_err> &&other) {
     size_t len = min(other.size(), this->max_size());
     mjz_obj_algorithims.move_backward(other.begin(), other.begin() + len,
                                       this->end());
     return *this;
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_Array<Type, m_Size, error_check> &operator=(
-      const mjz_Array<Type, O_size, O_err> &other) {
+  _compiler_can_use_ inline mjz_Array<Type, m_Size, error_check> &
+  operator=(const mjz_Array<Type, O_size, O_err> &other) {
     size_t len = min(other.size(), this->max_size());
     mjz_obj_algorithims.copy_backward(other.begin(), other.begin() + len,
                                       this->end());
     return *this;
   }
   template <bool O_err>
-  constexpr inline mjz_Array(mjz_Array<Type, m_Size, O_err> &&other) {
+  _compiler_can_use_ inline mjz_Array(mjz_Array<Type, m_Size, O_err> &&other) {
     mjz_obj_algorithims.uninitialized_move_n(other.begin(), other.size(),
                                              this->begin());
   }
   template <bool O_err>
-  constexpr inline mjz_Array(const mjz_Array<Type, m_Size, O_err> &other) {
+  _compiler_can_use_ inline mjz_Array(
+      const mjz_Array<Type, m_Size, O_err> &other) {
     mjz_obj_algorithims.uninitialized_copy_n(other.begin(), other.size(),
                                              this->begin());
   }
   template <bool O_err>
-  constexpr inline mjz_Array<Type, m_Size, error_check> &operator=(
-      mjz_Array<Type, m_Size, O_err> &&other) {
+  _compiler_can_use_ inline mjz_Array<Type, m_Size, error_check> &
+  operator=(mjz_Array<Type, m_Size, O_err> &&other) {
     mjz_obj_algorithims.move_backward(
         other.begin(), other.begin() + this->size(), this->end());
     return *this;
   }
   template <bool O_err>
-  constexpr inline mjz_Array<Type, m_Size, error_check> &operator=(
-      const mjz_Array<Type, m_Size, O_err> &other) {
+  _compiler_can_use_ inline mjz_Array<Type, m_Size, error_check> &
+  operator=(const mjz_Array<Type, m_Size, O_err> &other) {
     mjz_obj_algorithims.copy_backward(
         other.begin(), other.begin() + this->size(), this->end());
     return *this;
@@ -2709,10 +2845,10 @@ template <class Type, size_t m_Size,
           class my_obj_constructor =
               mjz_temp_type_obj_algorithims_warpper_t<Type>,
           bool error_check = 1>
-struct mjz_obj_Array {  // fixed size mjz_obj_Array of values
+struct mjz_obj_Array { // fixed size mjz_obj_Array of values
   my_obj_constructor my_obj_cntr;
 
- public:
+public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
@@ -2725,101 +2861,105 @@ struct mjz_obj_Array {  // fixed size mjz_obj_Array of values
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
   void assign(const Type &_Value) { fill(_Value); }
-  constexpr inline
-
-      void
-      fill(const Type &value) {
+  _compiler_can_use_ inline void fill(const Type &value) {
     iterator fst = begin();
     iterator lst = end();
-    while (fst < lst) my_obj_cntr.obj_copy_to_obj(*fst++, value);
+    while (fst < lst)
+      my_obj_cntr.obj_copy_to_obj(*fst++, value);
   }
-  constexpr inline void swap(mjz_obj_Array &other) {
+  _compiler_can_use_ inline void swap(mjz_obj_Array &other) {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
     while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
       my_obj_cntr.swap(*fst[0]++, *fst[1]++);
   }
-  [[nodiscard]] constexpr inline iterator begin() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline iterator begin() noexcept {
     return iterator(m_elements(), m_elements(), m_elements() + m_Size);
   }
-  [[nodiscard]] constexpr inline const_iterator begin() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  begin() const noexcept {
     return const_iterator(m_elements(), m_elements(), m_elements() + m_Size);
   }
-  [[nodiscard]] constexpr inline iterator end() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline iterator end() noexcept {
     return iterator(m_elements() + m_Size, m_elements(), m_elements() + m_Size);
   }
-  [[nodiscard]] constexpr inline const_iterator end() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  end() const noexcept {
     return const_iterator(m_elements() + m_Size, m_elements(),
                           m_elements() + m_Size);
   }
-  [[nodiscard]] constexpr inline reverse_iterator rbegin() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reverse_iterator
+  rbegin() noexcept {
     return reverse_iterator(end());
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator rbegin()
-      const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  rbegin() const noexcept {
     return const_reverse_iterator(end());
   }
-  [[nodiscard]] constexpr inline reverse_iterator rend() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reverse_iterator
+  rend() noexcept {
     return reverse_iterator(begin());
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator rend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  rend() const noexcept {
     return const_reverse_iterator(begin());
   }
-  [[nodiscard]] constexpr inline const_iterator cbegin() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  cbegin() const noexcept {
     return begin();
   }
-  [[nodiscard]] constexpr inline const_iterator cend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  cend() const noexcept {
     return end();
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator crbegin()
-      const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  crbegin() const noexcept {
     return rbegin();
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator crend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  crend() const noexcept {
     return rend();
   }
-  [[nodiscard]] constexpr inline constexpr size_type size() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline size_type
+  size() const noexcept {
     return m_Size;
   }
-  [[nodiscard]] constexpr inline constexpr size_type max_size() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline size_type
+  max_size() const noexcept {
     return m_Size;
   }
-  constexpr inline
-
-      constexpr bool
-      empty() const noexcept {
-    return !!m_Size;
-  }
-  [[nodiscard]] constexpr inline reference at(size_type _Pos) {
-    if constexpr (error_check) {
+  _compiler_can_use_ inline bool empty() const noexcept { return !!m_Size; }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference at(size_type _Pos) {
+    if _compiler_can_use_ (error_check) {
       if (m_Size <= _Pos) {
         invld_throw();
       }
     }
     return m_elements()[_Pos];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference at(
-      size_type _Pos) const {
-    if constexpr (error_check) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  at(size_type _Pos) const {
+    if _compiler_can_use_ (error_check) {
       if (m_Size <= _Pos) {
         invld_throw();
       }
     }
     return m_elements()[_Pos];
   }
-  [[nodiscard]] constexpr inline reference operator[](size_type _Pos)
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference
+  operator[](size_type _Pos)
   /* strengthened */ {
-    if constexpr (error_check) {
+    if _compiler_can_use_ (error_check) {
       if (_Pos >= m_Size) {
         throw std::exception{"mjz_obj_Array subscript out of range"};
       }
     }
     return m_elements()[_Pos];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference operator[](
-      size_type _Pos) const
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  operator[](size_type _Pos) const
   /* strengthened */ {
-    if constexpr (error_check) {
+    if _compiler_can_use_ (error_check) {
       {
         if (_Pos >= m_Size)
           throw std::exception{"mjz_obj_Array subscript out of range"};
@@ -2827,96 +2967,104 @@ struct mjz_obj_Array {  // fixed size mjz_obj_Array of values
     }
     return m_elements()[_Pos];
   }
-  [[nodiscard]] constexpr inline reference front() noexcept /* strengthened */ {
-    return m_elements()[0];
-  }
-  [[nodiscard]] constexpr inline constexpr const_reference front()
-      const noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference front() noexcept
   /* strengthened */ {
     return m_elements()[0];
   }
-  [[nodiscard]] constexpr inline reference back() noexcept /* strengthened */ {
-    return m_elements()[m_Size - 1];
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  front() const noexcept
+  /* strengthened */ {
+    return m_elements()[0];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference back() const noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference back() noexcept
   /* strengthened */ {
     return m_elements()[m_Size - 1];
   }
-  [[nodiscard]] constexpr inline Type *data() noexcept { return m_elements(); }
-  [[nodiscard]] constexpr inline const Type *data() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  back() const noexcept
+  /* strengthened */ {
+    return m_elements()[m_Size - 1];
+  }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *data() noexcept {
+    return m_elements();
+  }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const Type *
+  data() const noexcept {
     return m_elements();
   }
   [[noreturn]] void invld_throw() const {
     throw std::exception("invalid mjz_obj_Array<T, N> subscript");
   }
-  constexpr inline mjz_obj_Array() { init_data(); }
+  _compiler_can_use_ inline mjz_obj_Array() { init_data(); }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_obj_Array(
+  _compiler_can_use_ inline mjz_obj_Array(
       mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &&other) {
     size_t len = min(other.size(), this->max_size());
     my_obj_cntr.uninitialized_move_n(other.begin(), len, this->begin());
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_obj_Array(
+  _compiler_can_use_ inline mjz_obj_Array(
       const mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &other) {
     size_t len = min(other.size(), this->max_size());
     my_obj_cntr.uninitialized_copy_n(other.begin(), len, this->begin());
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_obj_Array &operator=(
-      mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &&other) {
+  _compiler_can_use_ inline mjz_obj_Array &
+  operator=(mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &&other) {
     size_t len = min(other.size(), this->max_size());
     my_obj_cntr.move_backward(other.begin(), other.begin() + len, this->end());
     return *this;
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_obj_Array &operator=(
+  _compiler_can_use_ inline mjz_obj_Array &operator=(
       const mjz_obj_Array<Type, O_size, my_obj_constructor, O_err> &other) {
     size_t len = min(other.size(), this->max_size());
     my_obj_cntr.copy_backward(other.begin(), other.begin() + len, this->end());
     return *this;
   }
   template <bool O_err>
-  constexpr inline mjz_obj_Array(
+  _compiler_can_use_ inline mjz_obj_Array(
       mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &&other) {
     my_obj_cntr.uninitialized_move_n(other.begin(), other.size(),
                                      this->begin());
   }
   template <bool O_err>
-  constexpr inline mjz_obj_Array(
+  _compiler_can_use_ inline mjz_obj_Array(
       const mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &other) {
     my_obj_cntr.uninitialized_copy_n(other.begin(), other.size(),
                                      this->begin());
   }
   template <bool O_err>
-  constexpr inline mjz_obj_Array &operator=(
-      mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &&other) {
+  _compiler_can_use_ inline mjz_obj_Array &
+  operator=(mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &&other) {
     my_obj_cntr.move_backward(other.begin(), other.begin() + this->size(),
                               this->end());
     return *this;
   }
   template <bool O_err>
-  constexpr inline mjz_obj_Array &operator=(
+  _compiler_can_use_ inline mjz_obj_Array &operator=(
       const mjz_obj_Array<Type, m_Size, my_obj_constructor, O_err> &other) {
     my_obj_cntr.copy_backward(other.begin(), other.begin() + this->size(),
                               this->end());
     return *this;
   }
-  constexpr inline ~mjz_obj_Array() { deinit_data(); }
+  _compiler_can_use_ inline ~mjz_obj_Array() { deinit_data(); }
 
- protected:
-  constexpr inline void init_data() {
+protected:
+  _compiler_can_use_ inline void init_data() {
     my_obj_cntr.construct_arr_at(m_elements(), m_Size);
   }
-  constexpr inline void deinit_data() {
+  _compiler_can_use_ inline void deinit_data() {
     my_obj_cntr.obj_destructor_arr(m_elements(), m_Size);
   }
-  constexpr inline Type *m_elements() { return (Type *)m_elements_data; }
+  _compiler_can_use_ inline Type *m_elements() {
+    return (Type *)m_elements_data;
+  }
   uint8_t m_elements_data[my_obj_constructor::size_of_type() * m_Size];
 };
 
 template <typename T, typename U = T>
-constexpr inline T exchange(T &obj, U &&new_value) {
+_compiler_can_use_ inline T exchange(T &obj, U &&new_value) {
   T old_value = std::move(obj);
   obj = std::forward<U>(new_value);
   return old_value;
@@ -2924,7 +3072,7 @@ constexpr inline T exchange(T &obj, U &&new_value) {
 
 template <typename T, typename Allocator = mjz_allocator_warpper<T>>
 struct mjz_Vector {
- public:
+public:
   using value_type = T;
   using allocator_type = Allocator;
   using size_type = size_t;
@@ -2938,59 +3086,54 @@ struct mjz_Vector {
   using const_iterator = const T *;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  constexpr inline mjz_Vector() : mjz_Vector(Allocator{}) {}
-  constexpr inline explicit mjz_Vector(const Allocator &a)
+  _compiler_can_use_ inline mjz_Vector() : mjz_Vector(Allocator{}) {}
+  _compiler_can_use_ inline explicit mjz_Vector(const Allocator &a)
       : m_allocator{a}, m_size{0}, m_capacity{0}, m_data{nullptr} {}
-  constexpr inline explicit mjz_Vector(size_type n, const T &val,
-                                       const Allocator &a = Allocator{})
-      : m_allocator{a},
-        m_size{n},
-        m_capacity{n},
+  _compiler_can_use_ inline explicit mjz_Vector(
+      size_type n, const T &val, const Allocator &a = Allocator{})
+      : m_allocator{a}, m_size{n}, m_capacity{n},
         m_data{m_allocator.allocate(n)} {
     m_allocator.uninitialized_fill_n(m_data, n, val);
   }
-  constexpr inline explicit mjz_Vector(size_type n,
-                                       const Allocator &a = Allocator{})
-      : m_allocator{a},
-        m_size{n},
-        m_capacity{n},
+  _compiler_can_use_ inline explicit mjz_Vector(
+      size_type n, const Allocator &a = Allocator{})
+      : m_allocator{a}, m_size{n}, m_capacity{n},
         m_data{m_allocator.allocate_obj_array(n)} {}
   template <typename InputIt>
-  constexpr inline mjz_Vector(InputIt first, InputIt last,
-                              const Allocator &a = Allocator{})
+  _compiler_can_use_ inline mjz_Vector(InputIt first, InputIt last,
+                                       const Allocator &a = Allocator{})
       : mjz_Vector(std::distance(first, last), a) {
     m_allocator.copy(first, last, begin());
   }
-  constexpr inline mjz_Vector(const mjz_Vector &other)
-      : m_allocator{other.m_allocator},
-        m_size{other.m_size},
+  _compiler_can_use_ inline mjz_Vector(const mjz_Vector &other)
+      : m_allocator{other.m_allocator}, m_size{other.m_size},
         m_capacity{other.m_capacity} {
     m_data = m_allocator.allocate(m_capacity);
     m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
   }
-  constexpr inline mjz_Vector(const mjz_Vector &other, const Allocator &a)
+  _compiler_can_use_ inline mjz_Vector(const mjz_Vector &other,
+                                       const Allocator &a)
       : m_allocator{a}, m_size{other.m_size}, m_capacity{other.m_capacity} {
     m_data = m_allocator.allocate(m_capacity);
     m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
   }
-  constexpr inline mjz_Vector(mjz_Vector &&other) noexcept
+  _compiler_can_use_ inline mjz_Vector(mjz_Vector &&other) noexcept
       : m_allocator{std::move(other.m_allocator)},
         m_size{std::exchange(other.m_size, 0)},
         m_capacity{std::exchange(other.m_capacity, 0)},
         m_data{std::exchange(other.m_data, nullptr)} {}
-  constexpr inline mjz_Vector(mjz_Vector &&other, const Allocator &a)
-      : m_allocator{a},
-        m_size{std::exchange(other.m_size, 0)},
+  _compiler_can_use_ inline mjz_Vector(mjz_Vector &&other, const Allocator &a)
+      : m_allocator{a}, m_size{std::exchange(other.m_size, 0)},
         m_capacity{std::exchange(other.m_capacity, 0)},
         m_data{std::exchange(other.m_data, nullptr)} {}
-  constexpr inline mjz_Vector(std::initializer_list<T> il,
-                              const Allocator &a = Allocator{})
+  _compiler_can_use_ inline mjz_Vector(std::initializer_list<T> il,
+                                       const Allocator &a = Allocator{})
       : mjz_Vector(il.begin(), il.end(), a) {}
-  constexpr inline ~mjz_Vector() {
+  _compiler_can_use_ inline ~mjz_Vector() {
     clear();
     deallocate();
   }
-  constexpr inline mjz_Vector &operator=(const mjz_Vector &other) {
+  _compiler_can_use_ inline mjz_Vector &operator=(const mjz_Vector &other) {
     if (this != &other) {
       clear();
       deallocate();
@@ -3002,7 +3145,7 @@ struct mjz_Vector {
     }
     return *this;
   }
-  constexpr inline mjz_Vector &operator=(mjz_Vector &&other) noexcept {
+  _compiler_can_use_ inline mjz_Vector &operator=(mjz_Vector &&other) noexcept {
     if (this != &other) {
       clear();
       deallocate();
@@ -3013,80 +3156,94 @@ struct mjz_Vector {
     }
     return *this;
   }
-  constexpr inline mjz_Vector &operator=(std::initializer_list<T> il) {
+  _compiler_can_use_ inline mjz_Vector &operator=(std::initializer_list<T> il) {
     *this = mjz_Vector(il);
     return *this;
   }
-  constexpr inline reference operator[](size_type pos) { return m_data[pos]; }
-  constexpr inline const_reference operator[](size_type pos) const {
+  _compiler_can_use_ inline reference operator[](size_type pos) {
     return m_data[pos];
   }
-  constexpr inline reference at(size_type pos) {
+  _compiler_can_use_ inline const_reference operator[](size_type pos) const {
+    return m_data[pos];
+  }
+  _compiler_can_use_ inline reference at(size_type pos) {
     check_range(pos);
     return m_data[pos];
   }
-  constexpr inline const_reference at(size_type pos) const {
+  _compiler_can_use_ inline const_reference at(size_type pos) const {
     check_range(pos);
     return m_data[pos];
   }
-  constexpr inline reference front() { return *begin(); }
-  constexpr inline const_reference front() const { return *begin(); }
-  constexpr inline reference back() { return *(end() - 1); }
-  constexpr inline const_reference back() const { return *(end() - 1); }
-  constexpr inline T *data() noexcept { return m_data; }
-  constexpr inline const T *data() const noexcept { return m_data; }
-  constexpr inline iterator begin() noexcept { return m_data; }
-  constexpr inline const_iterator begin() const noexcept { return m_data; }
-  constexpr inline iterator end() noexcept { return m_data + m_size; }
-  constexpr inline const_iterator end() const noexcept {
+  _compiler_can_use_ inline reference front() { return *begin(); }
+  _compiler_can_use_ inline const_reference front() const { return *begin(); }
+  _compiler_can_use_ inline reference back() { return *(end() - 1); }
+  _compiler_can_use_ inline const_reference back() const {
+    return *(end() - 1);
+  }
+  _compiler_can_use_ inline T *data() noexcept { return m_data; }
+  _compiler_can_use_ inline const T *data() const noexcept { return m_data; }
+  _compiler_can_use_ inline iterator begin() noexcept { return m_data; }
+  _compiler_can_use_ inline const_iterator begin() const noexcept {
+    return m_data;
+  }
+  _compiler_can_use_ inline iterator end() noexcept { return m_data + m_size; }
+  _compiler_can_use_ inline const_iterator end() const noexcept {
     return m_data + m_size;
   }
-  constexpr inline reverse_iterator rbegin() noexcept {
+  _compiler_can_use_ inline reverse_iterator rbegin() noexcept {
     return reverse_iterator(end());
   }
-  constexpr inline const_reverse_iterator rbegin() const noexcept {
+  _compiler_can_use_ inline const_reverse_iterator rbegin() const noexcept {
     return const_reverse_iterator(end());
   }
-  constexpr inline reverse_iterator rend() noexcept {
+  _compiler_can_use_ inline reverse_iterator rend() noexcept {
     return reverse_iterator(begin());
   }
-  constexpr inline const_reverse_iterator rend() const noexcept {
+  _compiler_can_use_ inline const_reverse_iterator rend() const noexcept {
     return const_reverse_iterator(begin());
   }
-  constexpr inline const_iterator cbegin() const noexcept { return begin(); }
-  constexpr inline const_iterator cend() const noexcept { return end(); }
-  constexpr inline const_reverse_iterator crbegin() const noexcept {
+  _compiler_can_use_ inline const_iterator cbegin() const noexcept {
+    return begin();
+  }
+  _compiler_can_use_ inline const_iterator cend() const noexcept {
+    return end();
+  }
+  _compiler_can_use_ inline const_reverse_iterator crbegin() const noexcept {
     return rbegin();
   }
-  constexpr inline const_reverse_iterator crend() const noexcept {
+  _compiler_can_use_ inline const_reverse_iterator crend() const noexcept {
     return rend();
   }
-  constexpr inline bool empty() const noexcept { return m_size == 0; }
-  constexpr inline size_type size() const noexcept { return m_size; }
-  constexpr inline size_type max_size() const noexcept {
+  _compiler_can_use_ inline bool empty() const noexcept { return m_size == 0; }
+  _compiler_can_use_ inline size_type size() const noexcept { return m_size; }
+  _compiler_can_use_ inline size_type max_size() const noexcept {
     return ((((size_type)-1) >> 1) -
-            1);  // std::allocator_traits<Allocator>::max_size(m_allocator);
+            1); // std::allocator_traits<Allocator>::max_size(m_allocator);
   }
-  constexpr inline void reserve(size_type n) {
-    if (n > m_capacity) reallocate(n);
+  _compiler_can_use_ inline void reserve(size_type n) {
+    if (n > m_capacity)
+      reallocate(n);
   }
-  constexpr inline size_type capacity() const noexcept { return m_capacity; }
-  constexpr inline void shrink_to_fit() {
-    if (m_size < m_capacity) reallocate(m_size);
+  _compiler_can_use_ inline size_type capacity() const noexcept {
+    return m_capacity;
   }
-  constexpr inline void clear() noexcept {
+  _compiler_can_use_ inline void shrink_to_fit() {
+    if (m_size < m_capacity)
+      reallocate(m_size);
+  }
+  _compiler_can_use_ inline void clear() noexcept {
     destroy(begin(), end());
     m_size = 0;
   }
-  constexpr inline iterator insert(const_iterator pos, const T &val) {
+  _compiler_can_use_ inline iterator insert(const_iterator pos, const T &val) {
     return insert(pos, 1, val);
   }
-  constexpr inline iterator insert(const_iterator pos, T &&val) {
+  _compiler_can_use_ inline iterator insert(const_iterator pos, T &&val) {
     emplace(pos, std::move(val));
     return pos;
   }
-  constexpr inline iterator insert(const_iterator pos, size_type count,
-                                   const T &val) {
+  _compiler_can_use_ inline iterator insert(const_iterator pos, size_type count,
+                                            const T &val) {
     auto offset = pos - cbegin();
     reallocate(m_size + count);
     m_allocator.move_backward(begin() + offset, end() - count, end());
@@ -3095,8 +3252,8 @@ struct mjz_Vector {
     return begin() + offset;
   }
   template <typename InputIt>
-  constexpr inline iterator insert(const_iterator pos, InputIt first,
-                                   InputIt last) {
+  _compiler_can_use_ inline iterator insert(const_iterator pos, InputIt first,
+                                            InputIt last) {
     auto offset = pos - cbegin();
     auto count = std::distance(first, last);
     reallocate(m_size + count);
@@ -3105,12 +3262,13 @@ struct mjz_Vector {
     m_size += count;
     return begin() + offset;
   }
-  constexpr inline iterator insert(const_iterator pos,
-                                   std::initializer_list<T> ilist) {
+  _compiler_can_use_ inline iterator insert(const_iterator pos,
+                                            std::initializer_list<T> ilist) {
     return insert(pos, ilist.begin(), ilist.end());
   }
   template <typename... Args>
-  constexpr inline iterator emplace(const_iterator pos, Args &&...args) {
+  _compiler_can_use_ inline iterator emplace(const_iterator pos,
+                                             Args &&...args) {
     auto offset = pos - cbegin();
     reallocate(m_size + 1);
     m_allocator.move_backward(begin() + offset, end() - 1, end());
@@ -3119,10 +3277,11 @@ struct mjz_Vector {
     ++m_size;
     return begin() + offset;
   }
-  constexpr inline iterator erase(const_iterator pos) {
+  _compiler_can_use_ inline iterator erase(const_iterator pos) {
     return erase(pos, pos + 1);
   }
-  constexpr inline iterator erase(const_iterator first, const_iterator last) {
+  _compiler_can_use_ inline iterator erase(const_iterator first,
+                                           const_iterator last) {
     auto offset = first - cbegin();
     auto count = last - first;
     destroy(begin() + offset, end());
@@ -3131,7 +3290,7 @@ struct mjz_Vector {
     return begin() + offset;
   }
   template <typename... Args>
-  constexpr inline reference emplace_back(Args &&...args) {
+  _compiler_can_use_ inline reference emplace_back(Args &&...args) {
     if (m_size == m_capacity) {
       reserve(m_capacity == 0 ? 1 : m_capacity * 2);
     }
@@ -3139,16 +3298,18 @@ struct mjz_Vector {
     ++m_size;
     return back();
   }
-  constexpr inline void pop_back() {
+  _compiler_can_use_ inline void pop_back() {
     if (m_size > 0) {
       --m_size;
       m_allocator.destroy(m_data + m_size);
     }
   }
-  constexpr inline bool add_size(size_type n) {
-    if (n == m_size) return 1;
+  _compiler_can_use_ inline bool add_size(size_type n) {
+    if (n == m_size)
+      return 1;
     reserve(size() + n);
-    if ((size() + n) > m_capacity) return 0;
+    if ((size() + n) > m_capacity)
+      return 0;
     auto it = begin() + size();
     auto it_e = it + n;
     while (it < it_e) {
@@ -3158,18 +3319,23 @@ struct mjz_Vector {
     m_size += n;
     return 1;
   }
-  constexpr inline bool add_size(size_type n, const value_type &value) {
-    if (n == m_size) return 1;
+  _compiler_can_use_ inline bool add_size(size_type n,
+                                          const value_type &value) {
+    if (n == m_size)
+      return 1;
     reserve(size() + n);
-    if ((size() + n) > m_capacity) return 0;
+    if ((size() + n) > m_capacity)
+      return 0;
     m_allocator.uninitialized_fill_n(begin() + size(), n, value);
     m_size += n;
     return 1;
   }
-  constexpr inline bool add_size(size_type n, value_type &&value) {
-    if (n == m_size) return 1;
+  _compiler_can_use_ inline bool add_size(size_type n, value_type &&value) {
+    if (n == m_size)
+      return 1;
     reserve(size() + n);
-    if ((size() + n) > m_capacity) return 0;
+    if ((size() + n) > m_capacity)
+      return 0;
     if ((n - 1) > 0)
       m_allocator.uninitialized_fill_n(begin() + size(), n - 1, value);
     m_allocator.construct(m_allocator, begin() + size() + n - 1,
@@ -3177,8 +3343,9 @@ struct mjz_Vector {
     m_size += n;
     return 1;
   }
-  constexpr inline bool resize(size_type n) {
-    if (m_size < n) return add_size(n - m_size);
+  _compiler_can_use_ inline bool resize(size_type n) {
+    if (m_size < n)
+      return add_size(n - m_size);
     if (m_size > n) {
       destroy(begin() + n, end());
       m_size = n;
@@ -3186,8 +3353,9 @@ struct mjz_Vector {
     }
     return 1;
   }
-  constexpr inline bool resize(size_type n, const value_type &value) {
-    if (m_size < n) return add_size(n - m_size, std::move(value));
+  _compiler_can_use_ inline bool resize(size_type n, const value_type &value) {
+    if (m_size < n)
+      return add_size(n - m_size, std::move(value));
     if (m_size > n) {
       destroy(begin() + n, end());
       m_size = n;
@@ -3195,8 +3363,9 @@ struct mjz_Vector {
     }
     return 1;
   }
-  constexpr inline bool resize(size_type n, value_type &&value) {
-    if (m_size < n) return add_size(n - m_size, std::move(value));
+  _compiler_can_use_ inline bool resize(size_type n, value_type &&value) {
+    if (m_size < n)
+      return add_size(n - m_size, std::move(value));
     if (m_size > n) {
       destroy(begin() + n, end());
       m_size = n;
@@ -3204,21 +3373,21 @@ struct mjz_Vector {
     }
     return 1;
   }
-  constexpr inline reference push_back(const T &value) {
+  _compiler_can_use_ inline reference push_back(const T &value) {
     return emplace_back(value);
   }
-  constexpr inline reference push_back(T &&value) {
+  _compiler_can_use_ inline reference push_back(T &&value) {
     return emplace_back(std::move(value));
   }
 
- private:
+private:
   allocator_type m_allocator;
   size_type m_size;
   size_type m_capacity;
   pointer m_data;
   // Helper functions
 
-  constexpr inline void deallocate() {
+  _compiler_can_use_ inline void deallocate() {
     if (m_data) {
       for (size_type i = 0; i < m_size; ++i) {
         m_allocator.destroy(m_data + i);
@@ -3229,20 +3398,21 @@ struct mjz_Vector {
       m_capacity = 0;
     }
   }
-  constexpr inline void destroy(iterator first, iterator last) {
+  _compiler_can_use_ inline void destroy(iterator first, iterator last) {
     while (first < last) {
       m_allocator.destroy(first++);
     }
   }
-  constexpr inline void reallocate(size_type newCapacity) {
+  _compiler_can_use_ inline void reallocate(size_type newCapacity) {
     pointer newData = m_allocator.allocate(newCapacity);
     m_allocator.uninitialized_move_n(m_data, m_size, newData);
     deallocate();
     m_data = newData;
     m_capacity = newCapacity;
   }
-  constexpr inline void check_range(size_type size) {
-    if (m_size < size) throw std::exception(" bad accesses");
+  _compiler_can_use_ inline void check_range(size_type size) {
+    if (m_size < size)
+      throw std::exception(" bad accesses");
   }
 };
 
@@ -3251,7 +3421,7 @@ template <class Type, size_t m_capacity,
               mjz_temp_type_obj_algorithims_warpper_t<Type>,
           bool do_error_check = 1>
 struct mjz_static_vector_template_t {
- public:
+public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
@@ -3264,153 +3434,176 @@ struct mjz_static_vector_template_t {
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
- protected:
+protected:
   size_type m_length{};
   my_obj_constructor my_obj_cntr;
-  constexpr inline bool init_data(size_type n) { return resize(n); }
-  constexpr inline void deinit_data() {
+  _compiler_can_use_ inline bool init_data(size_type n) { return resize(n); }
+  _compiler_can_use_ inline void deinit_data() {
     my_obj_cntr.obj_destructor_arr(m_elements(), size());
     m_length = 0;
   }
-  constexpr inline Type *m_elements() { return (Type *)m_elements_data; }
-  constexpr inline const Type *m_elements() const {
+  _compiler_can_use_ inline Type *m_elements() {
+    return (Type *)m_elements_data;
+  }
+  _compiler_can_use_ inline const Type *m_elements() const {
     return (Type *)m_elements_data;
   }
   uint8_t m_elements_data[my_obj_constructor::size_of_type() * m_capacity];
-  constexpr inline bool is_full() { return size() >= max_size(); }
-  constexpr inline bool is_full(size_type n) {
+  _compiler_can_use_ inline bool is_full() { return size() >= max_size(); }
+  _compiler_can_use_ inline bool is_full(size_type n) {
     return (size() + n) > max_size();
   }
-  constexpr inline bool valid_itrator(const_iterator first,
-                                      const_iterator last) {
-    if (first >= last) return 1;
-    if (first < begin() || end() < last) return 1;
+  _compiler_can_use_ inline bool valid_itrator(const_iterator first,
+                                               const_iterator last) {
+    if (first >= last)
+      return 1;
+    if (first < begin() || end() < last)
+      return 1;
     return 0;
   }
-  constexpr inline bool error_check() {
-    if constexpr (do_error_check) return is_full();
+  _compiler_can_use_ inline bool error_check() {
+    if _compiler_can_use_ (do_error_check)
+      return is_full();
     return 0;
   }
-  constexpr inline bool error_check(size_type n) {
-    if constexpr (do_error_check) return is_full(n);
+  _compiler_can_use_ inline bool error_check(size_type n) {
+    if _compiler_can_use_ (do_error_check)
+      return is_full(n);
     return 0;
   }
-  constexpr inline bool error_check(size_type n, const_iterator first,
-                                    const_iterator last, bool do_n = true) {
-    if constexpr (do_error_check)
+  _compiler_can_use_ inline bool error_check(size_type n, const_iterator first,
+                                             const_iterator last,
+                                             bool do_n = true) {
+    if _compiler_can_use_ (do_error_check)
       return (do_n && is_full(n)) || valid_itrator(first, last);
     return 0;
   }
-  constexpr inline bool error_check(size_type n, const_iterator first,
-                                    bool do_n = true) {
-    if constexpr (do_error_check)
+  _compiler_can_use_ inline bool error_check(size_type n, const_iterator first,
+                                             bool do_n = true) {
+    if _compiler_can_use_ (do_error_check)
       return (do_n && is_full(n)) || (first < begin() || end() < first);
     return 0;
   }
-  constexpr inline bool error_check(const_iterator first, const_iterator last,
-                                    bool do_n = true) {
-    if constexpr (do_error_check)
+  _compiler_can_use_ inline bool
+  error_check(const_iterator first, const_iterator last, bool do_n = true) {
+    if _compiler_can_use_ (do_error_check)
       return (do_n && is_full(std::distance(first, last))) ||
              valid_itrator(first, last);
     return 0;
   }
-  constexpr inline bool error_check(const_iterator first, bool do_n = true) {
-    if constexpr (do_error_check)
+  _compiler_can_use_ inline bool error_check(const_iterator first,
+                                             bool do_n = true) {
+    if _compiler_can_use_ (do_error_check)
       return (do_n && is_full()) || (first < begin() || end() < first);
     return 0;
   }
-  constexpr inline void swap_elms(Type &a, Type &b) { my_obj_cntr.swap(a, b); }
+  _compiler_can_use_ inline void swap_elms(Type &a, Type &b) {
+    my_obj_cntr.swap(a, b);
+  }
 
- public:
-  constexpr inline void assign(const Type &_Value) { fill(_Value); }
-  constexpr inline bool add_to_length(size_type n) {
+public:
+  _compiler_can_use_ inline void assign(const Type &_Value) { fill(_Value); }
+  _compiler_can_use_ inline bool add_to_length(size_type n) {
     return init_data(m_length + n);
   }
-  constexpr inline bool remove_from_length(size_type n) {
-    if (m_length < n) return 0;
+  _compiler_can_use_ inline bool remove_from_length(size_type n) {
+    if (m_length < n)
+      return 0;
     if (m_length == n) {
       deinit_data();
       return 1;
     }
     return init_data(m_length - n);
   }
-  constexpr inline void fill(const Type &value) {
+  _compiler_can_use_ inline void fill(const Type &value) {
     iterator fst = begin();
     iterator lst = end();
-    while (fst < lst) my_obj_cntr.obj_copy_to_obj(*fst++, value);
+    while (fst < lst)
+      my_obj_cntr.obj_copy_to_obj(*fst++, value);
   }
-  constexpr inline void swap(mjz_static_vector_template_t &other) {
+  _compiler_can_use_ inline void swap(mjz_static_vector_template_t &other) {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
     while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
       swap_elms(*fst[0]++, *fst[1]++);
   }
-  [[nodiscard]] constexpr inline iterator begin() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline iterator begin() noexcept {
     return iterator(m_elements(), m_elements(), m_elements() + size());
   }
-  constexpr inline [[nodiscard]] const_iterator begin() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  begin() const noexcept {
     return const_iterator(m_elements(), m_elements(), m_elements() + size());
   }
-  [[nodiscard]] constexpr inline iterator end() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline iterator end() noexcept {
     return iterator(m_elements() + size(), m_elements(), m_elements() + size());
   }
-  [[nodiscard]] constexpr inline const_iterator end() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  end() const noexcept {
     return const_iterator(m_elements() + size(), m_elements(),
                           m_elements() + size());
   }
-  [[nodiscard]] constexpr inline reverse_iterator rbegin() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reverse_iterator
+  rbegin() noexcept {
     return reverse_iterator(end());
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator rbegin()
-      const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  rbegin() const noexcept {
     return const_reverse_iterator(end());
   }
-  constexpr inline [[nodiscard]] reverse_iterator rend() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reverse_iterator
+  rend() noexcept {
     return reverse_iterator(begin());
   }
-  constexpr inline [[nodiscard]] const_reverse_iterator rend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  rend() const noexcept {
     return const_reverse_iterator(begin());
   }
-  [[nodiscard]] constexpr inline const_iterator cbegin() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  cbegin() const noexcept {
     return begin();
   }
-  constexpr inline [[nodiscard]] const_iterator cend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_iterator
+  cend() const noexcept {
     return end();
   }
-  constexpr inline [[nodiscard]] const_reverse_iterator crbegin()
-      const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  crbegin() const noexcept {
     return rbegin();
   }
-  [[nodiscard]] constexpr inline const_reverse_iterator crend() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reverse_iterator
+  crend() const noexcept {
     return rend();
   }
-  [[nodiscard]] constexpr inline size_type size() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline size_type
+  size() const noexcept {
     return m_length;
   }
-  [[nodiscard]] constexpr inline size_type max_size() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline size_type
+  max_size() const noexcept {
     return capacity();
   }
-  constexpr inline bool empty() const noexcept { return !!size(); }
-  constexpr inline [[nodiscard]] reference at(size_type _Pos) {
-    if constexpr (do_error_check) {
+  _compiler_can_use_ inline bool empty() const noexcept { return !!size(); }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference at(size_type _Pos) {
+    if _compiler_can_use_ (do_error_check) {
       if (size() <= _Pos) {
         invld_throw();
       }
     }
     return m_elements()[_Pos];
   }
-  constexpr inline [[nodiscard]] constexpr const_reference at(
-      size_type _Pos) const {
-    if constexpr (do_error_check) {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  at(size_type _Pos) const {
+    if _compiler_can_use_ (do_error_check) {
       if (size() <= _Pos) {
         invld_throw();
       }
     }
     return m_elements()[_Pos];
   }
-  constexpr inline [[nodiscard]] reference operator[](size_type _Pos)
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference
+  operator[](size_type _Pos)
   /* strengthened */ {
-    if constexpr (do_error_check) {
+    if _compiler_can_use_ (do_error_check) {
       if (_Pos >= size()) {
         throw std::exception{
             "mjz_static_vector_template_t subscript out of range"};
@@ -3418,10 +3611,10 @@ struct mjz_static_vector_template_t {
     }
     return m_elements()[_Pos];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference operator[](
-      size_type _Pos) const
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  operator[](size_type _Pos) const
   /* strengthened */ {
-    if constexpr (do_error_check) {
+    if _compiler_can_use_ (do_error_check) {
       {
         if (_Pos >= size())
           throw std::exception{
@@ -3430,23 +3623,29 @@ struct mjz_static_vector_template_t {
     }
     return m_elements()[_Pos];
   }
-  constexpr inline [[nodiscard]] reference front() noexcept /* strengthened */ {
-    return m_elements()[0];
-  }
-  constexpr inline [[nodiscard]] constexpr const_reference front()
-      const noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference front() noexcept
   /* strengthened */ {
     return m_elements()[0];
   }
-  constexpr inline [[nodiscard]] reference back() noexcept /* strengthened */ {
-    return m_elements()[size() - 1];
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  front() const noexcept
+  /* strengthened */ {
+    return m_elements()[0];
   }
-  [[nodiscard]] constexpr inline constexpr const_reference back() const noexcept
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline reference back() noexcept
   /* strengthened */ {
     return m_elements()[size() - 1];
   }
-  [[nodiscard]] constexpr inline Type *data() noexcept { return m_elements(); }
-  [[nodiscard]] constexpr inline const Type *data() const noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  back() const noexcept
+  /* strengthened */ {
+    return m_elements()[size() - 1];
+  }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline Type *data() noexcept {
+    return m_elements();
+  }
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const Type *
+  data() const noexcept {
     return m_elements();
   }
   [[noreturn]] void invld_throw() const {
@@ -3454,7 +3653,7 @@ struct mjz_static_vector_template_t {
         "invalid mjz_static_vector_template_t<T, N> subscript");
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_static_vector_template_t(
+  _compiler_can_use_ inline mjz_static_vector_template_t(
       mjz_static_vector_template_t<Type, O_size, my_obj_constructor, O_err>
           &&other) {
     size_t len = min(other.size(), this->max_size());
@@ -3462,7 +3661,7 @@ struct mjz_static_vector_template_t {
     m_length = len;
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_static_vector_template_t(
+  _compiler_can_use_ inline mjz_static_vector_template_t(
       const mjz_static_vector_template_t<Type, O_size, my_obj_constructor,
                                          O_err> &other) {
     size_t len = min(other.size(), this->max_size());
@@ -3470,9 +3669,9 @@ struct mjz_static_vector_template_t {
     m_length = len;
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_static_vector_template_t &operator=(
-      mjz_static_vector_template_t<Type, O_size, my_obj_constructor, O_err>
-          &&other) {
+  _compiler_can_use_ inline mjz_static_vector_template_t &
+  operator=(mjz_static_vector_template_t<Type, O_size, my_obj_constructor,
+                                         O_err> &&other) {
     size_t fill_len = min(other.size(), this->max_size());
     auto o_it_b = other.begin();
     if (fill_len < this->size()) {
@@ -3492,9 +3691,9 @@ struct mjz_static_vector_template_t {
     return *this;
   }
   template <size_t O_size, bool O_err>
-  constexpr inline mjz_static_vector_template_t &operator=(
-      const mjz_static_vector_template_t<Type, O_size, my_obj_constructor,
-                                         O_err> &other) {
+  _compiler_can_use_ inline mjz_static_vector_template_t &
+  operator=(const mjz_static_vector_template_t<Type, O_size, my_obj_constructor,
+                                               O_err> &other) {
     size_t fill_len = min(other.size(), this->max_size());
     auto o_it_b = other.begin();
     if (fill_len < this->size()) {
@@ -3513,8 +3712,8 @@ struct mjz_static_vector_template_t {
     m_length = fill_len;
     return *this;
   }
-  constexpr inline mjz_static_vector_template_t &operator=(
-      std::initializer_list<Type> li) {
+  _compiler_can_use_ inline mjz_static_vector_template_t &
+  operator=(std::initializer_list<Type> li) {
     size_t fill_len = min(li.size(), this->max_size());
     auto o_it_b = li.begin();
     if (fill_len < this->size()) {
@@ -3534,37 +3733,44 @@ struct mjz_static_vector_template_t {
     return *this;
   }
   // Constructors
-  constexpr inline mjz_static_vector_template_t() noexcept {}
-  constexpr inline explicit mjz_static_vector_template_t(size_type count) {
+  _compiler_can_use_ inline mjz_static_vector_template_t() noexcept {}
+  _compiler_can_use_ inline explicit mjz_static_vector_template_t(
+      size_type count) {
     init_data(count);
   }
-  constexpr inline explicit mjz_static_vector_template_t(size_type count,
-                                                         const Type &value) {
+  _compiler_can_use_ inline explicit mjz_static_vector_template_t(
+      size_type count, const Type &value) {
     my_obj_cntr.uninitialized_fill_n(m_elements(), count, value);
     m_length = count;
   }
   template <typename InputIt>
-  constexpr inline mjz_static_vector_template_t(InputIt first, InputIt last) {
+  _compiler_can_use_ inline mjz_static_vector_template_t(InputIt first,
+                                                         InputIt last) {
     if (init_data(std::distance(first, last)))
       my_obj_cntr.copy(first, last, begin());
   }
-  constexpr inline mjz_static_vector_template_t(std::initializer_list<Type> il)
+  _compiler_can_use_ inline mjz_static_vector_template_t(
+      std::initializer_list<Type> il)
       : mjz_static_vector_template_t(il.begin(), il.end()) {}
-  constexpr inline ~mjz_static_vector_template_t() { deinit_data(); }
-  constexpr inline void reserve(size_type) {}
-  constexpr inline size_type capacity() const noexcept { return m_capacity; }
-  constexpr inline void shrink_to_fit() {}
-  constexpr inline void clear() noexcept { deinit_data(); }
-  constexpr inline iterator insert(const_iterator pos, const Type &val) {
+  _compiler_can_use_ inline ~mjz_static_vector_template_t() { deinit_data(); }
+  _compiler_can_use_ inline void reserve(size_type) {}
+  _compiler_can_use_ inline size_type capacity() const noexcept {
+    return m_capacity;
+  }
+  _compiler_can_use_ inline void shrink_to_fit() {}
+  _compiler_can_use_ inline void clear() noexcept { deinit_data(); }
+  _compiler_can_use_ inline iterator insert(const_iterator pos,
+                                            const Type &val) {
     return insert(pos, 1, val);
   }
-  constexpr inline iterator insert(const_iterator pos, Type &&val) {
+  _compiler_can_use_ inline iterator insert(const_iterator pos, Type &&val) {
     emplace(pos, std::move(val));
     return pos;
   }
-  constexpr inline iterator insert(const_iterator pos, size_type count,
-                                   const Type &val) {
-    if (error_check(count, pos)) return {};
+  _compiler_can_use_ inline iterator insert(const_iterator pos, size_type count,
+                                            const Type &val) {
+    if (error_check(count, pos))
+      return {};
     auto offset = pos - cbegin();
     my_obj_cntr.move_backward(begin() + offset, end() - count, end());
     my_obj_cntr.uninitialized_fill_n(begin() + offset, count, val);
@@ -3572,24 +3778,28 @@ struct mjz_static_vector_template_t {
     return begin() + offset;
   }
   template <typename InputIt>
-  constexpr inline iterator insert(const_iterator pos, InputIt first,
-                                   InputIt last) {
-    if (first >= last) return {};
+  _compiler_can_use_ inline iterator insert(const_iterator pos, InputIt first,
+                                            InputIt last) {
+    if (first >= last)
+      return {};
     auto count = std::distance(first, last);
-    if (error_check(count)) return {};
+    if (error_check(count))
+      return {};
     auto offset = pos - cbegin();
     my_obj_cntr.move_backward(begin() + offset, end() - count, end());
     my_obj_cntr.uninitialized_copy(first, last, begin() + offset);
     m_length += count;
     return begin() + offset;
   }
-  constexpr inline iterator insert(const_iterator pos,
-                                   std::initializer_list<Type> ilist) {
+  _compiler_can_use_ inline iterator insert(const_iterator pos,
+                                            std::initializer_list<Type> ilist) {
     return insert(pos, ilist.begin(), ilist.end());
   }
   template <typename... Args>
-  constexpr inline iterator emplace(const_iterator pos, Args &&...args) {
-    if (error_check(pos)) return {};
+  _compiler_can_use_ inline iterator emplace(const_iterator pos,
+                                             Args &&...args) {
+    if (error_check(pos))
+      return {};
     auto offset = pos - cbegin();
     my_obj_cntr.move_backward(begin() + offset, end() - 1, end());
     my_obj_cntr.construct(my_obj_cntr, m_elements() + offset,
@@ -3597,11 +3807,13 @@ struct mjz_static_vector_template_t {
     ++m_length;
     return begin() + offset;
   }
-  constexpr inline iterator erase(const_iterator pos) {
+  _compiler_can_use_ inline iterator erase(const_iterator pos) {
     return erase(pos, pos + 1);
   }
-  constexpr inline iterator erase(const_iterator first, const_iterator last) {
-    if (error_check(first, last, false)) return {};
+  _compiler_can_use_ inline iterator erase(const_iterator first,
+                                           const_iterator last) {
+    if (error_check(first, last, false))
+      return {};
     auto offset = first - cbegin();
     auto count = last - first;
     destroy(begin() + offset, end());
@@ -3610,15 +3822,17 @@ struct mjz_static_vector_template_t {
     return begin() + offset;
   }
   template <typename... Args>
-  constexpr inline reference emplace_back(Args &&...args) {
-    if (error_check()) return *((pointer) nullptr);
+  _compiler_can_use_ inline reference emplace_back(Args &&...args) {
+    if (error_check())
+      return *((pointer) nullptr);
     my_obj_cntr.construct(my_obj_cntr, m_elements() + size(),
                           std::forward<Args>(args)...);
     ++m_length;
     return back();
   }
-  constexpr inline bool resize(size_type n) {
-    if (m_capacity < n) return 0;
+  _compiler_can_use_ inline bool resize(size_type n) {
+    if (m_capacity < n)
+      return 0;
     if (m_length < n) {
       my_obj_cntr.construct_arr_at(m_elements() + m_length, n - m_length);
       m_length = n;
@@ -3629,8 +3843,9 @@ struct mjz_static_vector_template_t {
     }
     return 1;
   }
-  constexpr inline bool resize(size_type n, const value_type &value) {
-    if (m_capacity < n) return 0;
+  _compiler_can_use_ inline bool resize(size_type n, const value_type &value) {
+    if (m_capacity < n)
+      return 0;
     if (m_length < n) {
       my_obj_cntr.construct_arr_at(m_elements() + m_length, n - m_length, 0,
                                    value);
@@ -3642,8 +3857,9 @@ struct mjz_static_vector_template_t {
     }
     return 1;
   }
-  constexpr inline bool resize(size_type n, value_type &&value) {
-    if (m_capacity < n) return 0;
+  _compiler_can_use_ inline bool resize(size_type n, value_type &&value) {
+    if (m_capacity < n)
+      return 0;
     if (m_length < n) {
       if ((n - 1) > 0)
         my_obj_cntr.construct_arr_at(m_elements() + m_length, n - m_length - 1,
@@ -3657,22 +3873,19 @@ struct mjz_static_vector_template_t {
     }
     return 1;
   }
-  constexpr inline reference push_back(const Type &value) {
+  _compiler_can_use_ inline reference push_back(const Type &value) {
     return emplace_back(value);
   }
-  constexpr inline reference push_back(Type &&value) {
+  _compiler_can_use_ inline reference push_back(Type &&value) {
     return emplace_back(std::move(value));
   }
-  constexpr inline void pop_back() {
+  _compiler_can_use_ inline void pop_back() {
     if (size() > 0) {
       --m_length;
       my_obj_cntr.destroy(m_elements() + size());
     }
   }
-  constexpr inline
-
-      void
-      destroy(iterator first, iterator last) {
+  _compiler_can_use_ inline void destroy(iterator first, iterator last) {
     my_obj_cntr.destroy(first, last);
   }
 };
@@ -3699,18 +3912,19 @@ enum uint8_t_error_level : uint8_t {
 struct memcmp_data {
   int64_t first_delta_index{-1};
   int first_delta{};
-  inline constexpr memcmp_data(int64_t i, int in)
+  _compiler_can_use_ inline memcmp_data(int64_t i, int in)
       : first_delta_index(i), first_delta(in) {}
-  inline constexpr memcmp_data() : memcmp_data(-1, 0) {}
+  _compiler_can_use_ inline memcmp_data() : memcmp_data(-1, 0) {}
 };
 struct MJZ_memcmp_data : public memcmp_data {
   size_t num_delta{};
-  inline constexpr MJZ_memcmp_data(int64_t i, int in, size_t n)
+  _compiler_can_use_ inline MJZ_memcmp_data(int64_t i, int in, size_t n)
       : memcmp_data(i, in), num_delta(n) {}
-  inline constexpr MJZ_memcmp_data() : memcmp_data(-1, 0), num_delta(0) {}
+  _compiler_can_use_ inline MJZ_memcmp_data()
+      : memcmp_data(-1, 0), num_delta(0) {}
 };
 
-constexpr inline bool is_blank_characteres_default(char x_char_) {
+_compiler_can_use_ inline bool is_blank_characteres_default(char x_char_) {
   char in_CHAR_ = x_char_;
   int num{127};
   if (in_CHAR_ >= '0' && in_CHAR_ <= '9') {
@@ -3733,16 +3947,13 @@ constexpr inline bool is_blank_characteres_default(char x_char_) {
 // An inherited class for holding the result of a concatenation. These
 // result objects are assumed to be writable by subsequent concatenations.
 
-template <typename T>
-class StringSumHelper_t;
+template <typename T> class StringSumHelper_t;
 
-template <typename T>
-class mjz_str_t;
+template <typename T> class mjz_str_t;
 using mjz_Str = typename mjz_str_t<mjz_normal_allocator>;
 using StringSumHelper = typename StringSumHelper_t<mjz_normal_allocator>;
 
-template <typename T = mjz_normal_allocator>
-class extended_mjz_str_t;
+template <typename T = mjz_normal_allocator> class extended_mjz_str_t;
 using extended_mjz_Str = typename extended_mjz_str_t<mjz_normal_allocator>;
 // Define constants and variables for buffering incoming serial data. We're
 // using a ring buffer (I think), in which head is the index of the location
@@ -3753,63 +3964,63 @@ using extended_mjz_Str = typename extended_mjz_str_t<mjz_normal_allocator>;
 #define HEX 16
 #define OCT 8
 #define BIN 2
-#define NO_IGNORE_CHAR '\4'  // a char not found in a valid ASCII numeric field
+#define NO_IGNORE_CHAR '\4' // a char not found in a valid ASCII numeric field
 
 class static_str_algo {
- public:
-  static constexpr int64_t expected_mjz_str_size =
-      64;  // set the wanted size in range of [(expected_basic_mjz_str_size +
+public:
+  static _compiler_can_use_ int64_t expected_mjz_str_size =
+      64; // set the wanted size in range of [(expected_basic_mjz_str_size +
   // expected_min_stack_obj_buffer_size),+inf]
-  static constexpr int64_t expected_basic_mjz_str_size =
+  static _compiler_can_use_ int64_t expected_basic_mjz_str_size =
       (sizeof(size_t) * 2 + sizeof(void *));
-  static constexpr int64_t expected_min_stack_obj_buffer_size =
+  static _compiler_can_use_ int64_t expected_min_stack_obj_buffer_size =
       sizeof(uint8_t) + sizeof(char);
-  static constexpr int64_t stack_buffer_size =
+  static _compiler_can_use_ int64_t stack_buffer_size =
       expected_mjz_str_size -
       (expected_basic_mjz_str_size + expected_min_stack_obj_buffer_size);
-  static constexpr int64_t the_reinterpreted_char_cca_size = 17;
-  static constexpr int64_t forbiden_chars_cnt_size = 3;
-  static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
-  static size_t constexpr DBL_MAX_DECIMAL_PLACES = FLT_MAX_DECIMAL_PLACES;
-  static constexpr const char *empty_STRING_C_STR = "";
-  constexpr static const char forbiden_chars_cnt[forbiden_chars_cnt_size] = {
-      '\r', '\n', 0};
-  constexpr static const char
+  static _compiler_can_use_ int64_t the_reinterpreted_char_cca_size = 17;
+  static _compiler_can_use_ int64_t forbiden_chars_cnt_size = 3;
+  static size_t _compiler_can_use_ FLT_MAX_DECIMAL_PLACES = 10;
+  static size_t _compiler_can_use_ DBL_MAX_DECIMAL_PLACES =
+      FLT_MAX_DECIMAL_PLACES;
+  static _compiler_can_use_ const char *empty_STRING_C_STR = "";
+  _compiler_can_use_ static const char
+      forbiden_chars_cnt[forbiden_chars_cnt_size] = {'\r', '\n', 0};
+  _compiler_can_use_ static const char
       the_in_reinterpreted_char_cca[the_reinterpreted_char_cca_size] = {
           'n', 'r', 'a',  'b',  't',  'v', 'f', 'e',
           's', '@', '\\', '\"', '\'', 'p', 'c', '\0'};
-  constexpr static const char
+  _compiler_can_use_ static const char
       the_out_reinterpreted_char_cca[the_reinterpreted_char_cca_size] = {
           '\n', '\r', '\a', '\b', '\t', '\v', '\f', 'e',
           ' ',  '@',  '\\', '\"', '\'', '"',  '\\', '\0'};
 
- public:
+public:
   // this will crash the program
   [[noreturn]] static inline void trap_crash(void) {
-    *(volatile char *)0 = (volatile char)0;  // address 0 is invalid
+    *(volatile char *)0 = (volatile char)0; // address 0 is invalid
     // this will crash the program
   }
 
- public:
+public:
   template <class Type>
-  static inline constexpr Type BL_min(Type a, Type b) {
+  static _compiler_can_use_ inline Type BL_min(Type a, Type b) {
     uint64_t BL = MJZ_logic_BL_bit_to_64_bits(b < a);
     return (BL & b) + ((~BL) & a);
   }
   template <class Type>
-  static inline constexpr Type BL_max(Type a, Type b) {
+  static _compiler_can_use_ inline Type BL_max(Type a, Type b) {
     uint64_t BL = MJZ_logic_BL_bit_to_64_bits(a < b);
     return (BL & b) + ((~BL) & a);
   }
-  template <class Type>
-  static inline constexpr Type BL_abs(Type x) {
+  template <class Type> static _compiler_can_use_ inline Type BL_abs(Type x) {
     uint64_t BL = MJZ_logic_BL_bit_to_64_bits(0 < x);
     return (BL & x) + ((~BL) & (-x));
   }
 
- public:
-  static constexpr inline int MJZ_STRnCMP(const char *p1, const char *p2,
-                                          size_t length_) {
+public:
+  static _compiler_can_use_ inline int
+  MJZ_STRnCMP(const char *p1, const char *p2, size_t length_) {
     const unsigned char *s1 = (const unsigned char *)p1;
     const unsigned char *s2 = (const unsigned char *)p2;
     bool b{1};
@@ -3821,42 +4032,47 @@ class static_str_algo {
       state = b;
       b &= (0 < length--);
     }
-    if (!state) return s1[-1] - s2[-1];
+    if (!state)
+      return s1[-1] - s2[-1];
     return 0;
   }
-  constexpr inline static int memcmp(const void *str1, const void *str2,
-                                     size_t count) {
+  _compiler_can_use_ inline static int memcmp(const void *str1,
+                                              const void *str2, size_t count) {
     const unsigned char *s1 = (const unsigned char *)str1;
     const unsigned char *s2 = (const unsigned char *)str2;
     while ((0 < count--) && *s1++ != *s2++)
       ;
-    if (*--s1 != *--s2) return *s1 < *s2 ? -1 : 1;
+    if (*--s1 != *--s2)
+      return *s1 < *s2 ? -1 : 1;
     return 0;
   }
-  constexpr inline static int memcmp_rev(const void *str1, const void *str2,
-                                         size_t count) {
+  _compiler_can_use_ inline static int
+  memcmp_rev(const void *str1, const void *str2, size_t count) {
     const unsigned char *s1 = (const unsigned char *)str1;
     const unsigned char *s2 = (const unsigned char *)str2 + count - 1;
     while ((0 < count--) && *s1++ != *s2--)
       ;
-    if (*--s1 != *++s2) return *s1 < *s2 ? -1 : 1;
+    if (*--s1 != *++s2)
+      return *s1 < *s2 ? -1 : 1;
     return 0;
   }
-  constexpr inline static memcmp_data memcmp_d(const void *str1,
-                                               const void *str2, size_t count) {
+  _compiler_can_use_ inline static memcmp_data
+  memcmp_d(const void *str1, const void *str2, size_t count) {
     const unsigned char *s1 = (const unsigned char *)str1;
     const unsigned char *s1beg = (const unsigned char *)str1;
     const unsigned char *s2 = (const unsigned char *)str2;
     while ((0 < count--) && *s1++ != *s2++)
       ;
-    if (*--s1 != *--s2) return {s1 - s1beg, *s1 < *s2 ? -1 : 1};
+    if (*--s1 != *--s2)
+      return {s1 - s1beg, *s1 < *s2 ? -1 : 1};
     return {};
   }
-  constexpr inline static int memcmp(const void *str1, size_t count1,
-                                     const void *str2, size_t count2) {
+  _compiler_can_use_ inline static int memcmp(const void *str1, size_t count1,
+                                              const void *str2, size_t count2) {
     if (count1 != count2) {
       int cmp = memcmp(str1, str2, min(count1, count2));
-      if (cmp == 0) return count1 < count2 ? -1 : 1;
+      if (cmp == 0)
+        return count1 < count2 ? -1 : 1;
       return cmp;
     }
     if (str1 == str2) {
@@ -3864,9 +4080,8 @@ class static_str_algo {
     }
     return memcmp(str1, str2, count2);
   }
-  constexpr inline static memcmp_data memcmp_d(const void *str1, size_t count1,
-                                               const void *str2,
-                                               size_t count2) {
+  _compiler_can_use_ inline static memcmp_data
+  memcmp_d(const void *str1, size_t count1, const void *str2, size_t count2) {
     if (count1 != count2) {
       size_t min_len = min(count1, count2);
       memcmp_data cmp = memcmp_d(str1, str2, min_len);
@@ -3879,8 +4094,10 @@ class static_str_algo {
     }
     return memcmp_d(str1, str2, count2);
   }
-  constexpr inline static void *memset(void *_Dst, int _Val, size_t _Size) {
-    if (!(_Dst && _Size)) return _Dst;
+  _compiler_can_use_ inline static void *memset(void *_Dst, int _Val,
+                                                size_t _Size) {
+    if (!(_Dst && _Size))
+      return _Dst;
     uint8_t *Dst{static_cast<uint8_t *>(_Dst)};
     uint8_t *Dst_end{Dst + _Size};
     while (Dst < Dst_end) {
@@ -3888,8 +4105,8 @@ class static_str_algo {
     }
     return _Dst;
   }
-  constexpr inline static void *memmove(void *dest, const void *src,
-                                        size_t len) {
+  _compiler_can_use_ inline static void *memmove(void *dest, const void *src,
+                                                 size_t len) {
     char *d = (char *)dest;
     const char *s = (const char *)src;
     if (d < s) {
@@ -3905,48 +4122,56 @@ class static_str_algo {
     }
     return dest;
   }
-  constexpr inline static void *memcpy(void *dest, const void *src,
-                                       size_t len) {
+  _compiler_can_use_ inline static void *memcpy(void *dest, const void *src,
+                                                size_t len) {
     return memmove(dest, src, len);
   }
-  constexpr inline static inline size_t strlen(const char *str) {
+  _compiler_can_use_ inline static size_t strlen(const char *str) {
     if (!(str && *str)) {
       return 0;
     }
     const char *str_i = str;
-    while (*str_i) ++str_i;
+    while (*str_i)
+      ++str_i;
     ;
     return str_i - str;
   }
-  constexpr inline static void *strncpy(void *dest, const char *src,
-                                        size_t len) {
+  _compiler_can_use_ inline static void *strncpy(void *dest, const char *src,
+                                                 size_t len) {
     return memcpy(dest, src, min(strlen(src) + 1, len));
   }
-  constexpr inline static void *strcpy(void *dest, const char *src) {
+  _compiler_can_use_ inline static void *strcpy(void *dest, const char *src) {
     return memcpy(dest, src, strlen(src) + 1);
   }
-  constexpr inline static inline const char *strchr(const char *str,
-                                                    size_t len_, char ch) {
+  _compiler_can_use_ inline static const char *strchr(const char *str,
+                                                      size_t len_, char ch) {
     const char *str_end = str + len_;
     const char *ptr{str};
-    while (ptr < str_end && (*ptr != ch)) ++ptr;
-    if (ptr != str) return ptr;
+    while (ptr < str_end && (*ptr != ch))
+      ++ptr;
+    if (ptr != str)
+      return ptr;
     return NULL;
   }
-  constexpr inline static inline const char *strrchr(const char *str,
-                                                     size_t len_, char ch) {
+  _compiler_can_use_ inline static const char *strrchr(const char *str,
+                                                       size_t len_, char ch) {
     const char *str_end{str - 1};
     const char *ptr = str + len_ - 1;
-    while (ptr < str_end && (*ptr != ch)) --ptr;
-    if (ptr != str) return ptr;
+    while (ptr < str_end && (*ptr != ch))
+      --ptr;
+    if (ptr != str)
+      return ptr;
     return NULL;
   }
-  static inline constexpr bool mem_equals(const uint8_t *p1, const uint8_t *p2,
-                                          size_t count) {
-    if (!count) return 1;
-    if (p1 == p2) return 1;
-    if (*p1 != *p2) return 0;
-    constexpr size_t size_of_s_t = sizeof(size_t);
+  static _compiler_can_use_ inline bool
+  mem_equals(const uint8_t *p1, const uint8_t *p2, size_t count) {
+    if (!count)
+      return 1;
+    if (p1 == p2)
+      return 1;
+    if (*p1 != *p2)
+      return 0;
+    _compiler_can_use_ size_t size_of_s_t = sizeof(size_t);
     size_t len_of_big = count / size_of_s_t;
     size_t len_of_small = count % size_of_s_t;
     if (len_of_big) {
@@ -3954,7 +4179,8 @@ class static_str_algo {
       const size_t *P2 = (size_t *)p2;
       while (len_of_big-- && *P2++ == *P1++)
         ;
-      if (P2[-1] != P1[-1]) return 0;
+      if (P2[-1] != P1[-1])
+        return 0;
     }
     if (len_of_small) {
       size_t shift = count - len_of_small;
@@ -3962,29 +4188,33 @@ class static_str_algo {
       p2 += shift;
       while (len_of_small-- && *p2++ == *p1++)
         ;
-      if (p2[-1] != p1[-1]) return 0;
+      if (p2[-1] != p1[-1])
+        return 0;
     }
     return 1;
   }
-  constexpr inline static inline bool mem_equals(const void *p1, const void *p2,
-                                                 size_t count) {
+  _compiler_can_use_ inline static bool
+  mem_equals(const void *p1, const void *p2, size_t count) {
     return mem_equals((const uint8_t *)p1, (const uint8_t *)p2, count);
   }
-  constexpr inline static inline const char *r_strstr(
-      const char *const haystack_, const size_t haystack_len,
-      const char *const needle_, const size_t needle_len) {
-    if (needle_len > haystack_len) return NULL;
+  _compiler_can_use_ inline static const char *
+  r_strstr(const char *const haystack_, const size_t haystack_len,
+           const char *const needle_, const size_t needle_len) {
+    if (needle_len > haystack_len)
+      return NULL;
     if (needle_len == haystack_len)
       return mem_equals(haystack_, needle_, haystack_len) ? haystack_ : nullptr;
-    if (!(haystack_len && needle_len && needle_ && haystack_)) return NULL;
-    if (!(*needle_ && *haystack_)) return NULL;
+    if (!(haystack_len && needle_len && needle_ && haystack_))
+      return NULL;
+    if (!(*needle_ && *haystack_))
+      return NULL;
     const char *const R_haystack_end = haystack_ - 1;
     const char *const haystack_end_protection =
         haystack_ + (haystack_len - needle_len);
     const char *haystack_ptr =
         haystack_ +
         (haystack_len -
-         needle_len);  // skipping to first of last potential nedle start
+         needle_len); // skipping to first of last potential nedle start
     const char *const needle_end = needle_ + needle_len;
     const char *const needle_at_i_1_ptr = needle_ + 1;
     char first_needle_char = *needle_;
@@ -3993,7 +4223,8 @@ class static_str_algo {
         --haystack_ptr;
         continue;
       }
-      if (haystack_end_protection < haystack_ptr) return NULL;
+      if (haystack_end_protection < haystack_ptr)
+        return NULL;
       const char *haystack_ptr_buf = haystack_ptr + 1;
       const char *needle_ptr_buf = needle_at_i_1_ptr;
       while ((*haystack_ptr_buf == *needle_ptr_buf) &&
@@ -4008,15 +4239,17 @@ class static_str_algo {
     }
     return NULL;
   }
-  constexpr inline static inline const char *strstr(const char *const haystack_,
-                                                    const size_t haystack_len,
-                                                    const char *const needle_,
-                                                    const size_t needle_len) {
-    if (needle_len > haystack_len) return NULL;
+  _compiler_can_use_ inline static const char *
+  strstr(const char *const haystack_, const size_t haystack_len,
+         const char *const needle_, const size_t needle_len) {
+    if (needle_len > haystack_len)
+      return NULL;
     if (needle_len == haystack_len)
       return mem_equals(haystack_, needle_, haystack_len) ? haystack_ : nullptr;
-    if (!(haystack_len && needle_len && needle_ && haystack_)) return NULL;
-    if (!(*needle_ && *haystack_)) return NULL;
+    if (!(haystack_len && needle_len && needle_ && haystack_))
+      return NULL;
+    if (!(*needle_ && *haystack_))
+      return NULL;
     const char *const haystack_end = haystack_ + haystack_len;
     const char *haystack_ptr = haystack_;
     const char *const needle_end = needle_ + needle_len;
@@ -4029,7 +4262,8 @@ class static_str_algo {
         ++haystack_ptr;
         continue;
       }
-      if (haystack_end_protection < haystack_ptr) return NULL;
+      if (haystack_end_protection < haystack_ptr)
+        return NULL;
       const char *haystack_ptr_buf = haystack_ptr + 1;
       const char *needle_ptr_buf = needle_at_i_1_ptr;
       while ((*haystack_ptr_buf == *needle_ptr_buf) &&
@@ -4037,24 +4271,26 @@ class static_str_algo {
         haystack_ptr_buf++;
         needle_ptr_buf++;
       }
-      if (needle_ptr_buf >= needle_end) return haystack_ptr;
+      if (needle_ptr_buf >= needle_end)
+        return haystack_ptr;
       haystack_ptr = haystack_ptr_buf;
     }
     return NULL;
   }
-  constexpr inline static void *mem_reverse_move(void *dest, const void *src,
-                                                 size_t len, void *buffer = 0) {
+  _compiler_can_use_ inline static void *
+  mem_reverse_move(void *dest, const void *src, size_t len, void *buffer = 0) {
     char *d = (char *)dest;
     const char *s = ((const char *)src) + len;
     if (dest == src) {
       return mem_reverse_it(dest, len);
     }
     if ((size_t)abs((int64_t)dest - (int64_t)src) <= len) {
-      if (!buffer) return 0;
+      if (!buffer)
+        return 0;
       mem_reverse_move(buffer, src, len);
       return memmove(dest, buffer, len);
     }
-    if (d < s)  // for memmove to properly work
+    if (d < s) // for memmove to properly work
       while (len--) {
         *d++ = *--s;
       }
@@ -4067,7 +4303,8 @@ class static_str_algo {
     }
     return dest;
   }
-  constexpr inline static void *mem_reverse_it(void *data, size_t len) {
+  _compiler_can_use_ inline static void *mem_reverse_it(void *data,
+                                                        size_t len) {
     char *end_p = ((char *)data) + (len - 1);
     char *beg_p = (char *)data;
     while (beg_p < end_p) {
@@ -4078,8 +4315,9 @@ class static_str_algo {
     return data;
   }
   template <typename cmpr_type>
-  static constexpr inline inline MJZ_memcmp_data MJZ_memcmp(
-      const void *ptr_1_, const void *ptr_2_, size_t size_of_data_in_byte) {
+  static _compiler_can_use_ inline MJZ_memcmp_data
+  MJZ_memcmp(const void *ptr_1_, const void *ptr_2_,
+             size_t size_of_data_in_byte) {
     const uint8_t *ptr_1 = (const uint8_t *)ptr_1_;
     const uint8_t *ptr_2 = (const uint8_t *)ptr_2_;
     size_t size_of_data = size_of_data_in_byte / sizeof(cmpr_type);
@@ -4134,8 +4372,8 @@ class static_str_algo {
             diff_of_data};
   }
   template <typename cmpr_type>
-  constexpr inline inline MJZ_memcmp_data MJZ_strcmp(const void *ptr_1,
-                                                     const void *ptr_2) {
+  _compiler_can_use_ inline MJZ_memcmp_data MJZ_strcmp(const void *ptr_1,
+                                                       const void *ptr_2) {
     size_t len_1_ = strlen((const char *)ptr_1);
     size_t len_2_ = strlen((const char *)ptr_2);
     if (len_2_ != len_1_) {
@@ -4153,12 +4391,12 @@ class static_str_algo {
     ret.num_delta += (((uint8_t *)ptr_1)[len_1_] != ((uint8_t *)ptr_2)[len_2_]);
     return ret;
   }
-  constexpr inline const char static *const alphabett_table_lower =
+  _compiler_can_use_ inline const char static *const alphabett_table_lower =
       "0123456789abcdefghijklmnopqrstuvwxyz";
-  constexpr inline const char static *const alphabett_table_upper =
+  _compiler_can_use_ inline const char static *const alphabett_table_upper =
       "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  static constexpr inline inline char GET_CHAR_from_int(uint8_t intager_in,
-                                                        bool is_upper_case) {
+  static _compiler_can_use_ inline char GET_CHAR_from_int(uint8_t intager_in,
+                                                          bool is_upper_case) {
     const char *const alphabett_table =
         (is_upper_case ? alphabett_table_upper : alphabett_table_lower);
     if (intager_in == 255) {
@@ -4168,8 +4406,8 @@ class static_str_algo {
     }
     return (char)alphabett_table[intager_in];
   }
-  static constexpr inline inline uint8_t get_num_from_char(uint8_t in_CHAR_,
-                                                           bool *to_neg) {
+  static _compiler_can_use_ inline uint8_t get_num_from_char(uint8_t in_CHAR_,
+                                                             bool *to_neg) {
     if (in_CHAR_ >= '0' && in_CHAR_ <= '9') {
       return (uint8_t)(in_CHAR_ - '0');
     } else if (in_CHAR_ >= 'A' && in_CHAR_ <= 'Z') {
@@ -4180,12 +4418,11 @@ class static_str_algo {
       *to_neg = 1;
       return (uint8_t)127;
     } else {
-      return (uint8_t)127;  // note : 127 is delete in ascii
+      return (uint8_t)127; // note : 127 is delete in ascii
     }
   }
-  static constexpr inline inline char *double_to_char_array(double num_double,
-                                                            int decimal_place,
-                                                            char buf) {
+  static _compiler_can_use_ inline char *
+  double_to_char_array(double num_double, int decimal_place, char buf) {
     int num_int = round(num_double * mjz_pow_UINT(10, decimal_place));
     int sign = num_int < 0 ? 1 : 0;
     num_int = abs(num_int);
@@ -4193,7 +4430,8 @@ class static_str_algo {
       char *s = (char *)buf;
       s[0] = '0';
       s[1] = '.';
-      for (int i = 2; i < decimal_place + 2; i++) s[i] = '0';
+      for (int i = 2; i < decimal_place + 2; i++)
+        s[i] = '0';
       s[decimal_place + 2] = '\0';
       return s;
     }
@@ -4218,16 +4456,16 @@ class static_str_algo {
     char *s = (char *)buf;
     for (int i = 0, integer = num_int; integer != 0; integer /= 10) {
       s[size - 2 - i++] = integer % 10 + 48;
-      if (decimal_place > 0 && i == decimal_place) s[size - 2 - i++] = '.';
+      if (decimal_place > 0 && i == decimal_place)
+        s[size - 2 - i++] = '.';
     }
     s[size - 1] = '\0';
-    if (sign) s[0] = '-';
+    if (sign)
+      s[0] = '-';
     return s;
   }
-  static constexpr inline inline char *dtostrf(double __val,
-                                               signed char __width,
-                                               unsigned char __prec,
-                                               char *__s) {
+  static _compiler_can_use_ inline char *
+  dtostrf(double __val, signed char __width, unsigned char __prec, char *__s) {
     char buffer_for_not_overflowing[65]{};
     char string_format[227]{};
     char *ptr{string_format};
@@ -4242,19 +4480,17 @@ class static_str_algo {
     memmove(__s, buffer_for_not_overflowing, __width);
     return __s;
   }
-  static constexpr inline inline int64_t mjz_pow_UINT(uint32_t base,
-                                                      uint32_t power_Of_base) {
+  static _compiler_can_use_ inline int64_t
+  mjz_pow_UINT(uint32_t base, uint32_t power_Of_base) {
     int64_t ret_val = 1;
     for (uint32_t i{}; i < power_Of_base; i++) {
       ret_val *= base;
     }
     return ret_val;
   }
-  static constexpr inline inline long long C_STR_to_LL(const char *buffer,
-                                                       uint8_t buffer_len,
-                                                       int radix,
-                                                       bool *had_error,
-                                                       uint8_t error_level) {
+  static _compiler_can_use_ inline long long
+  C_STR_to_LL(const char *buffer, uint8_t buffer_len, int radix,
+              bool *had_error, uint8_t error_level) {
     bool dummy;
     if (!had_error) {
       had_error = &dummy;
@@ -4295,8 +4531,8 @@ class static_str_algo {
       } else if (buffer_for_number[WHILE_Index_for_int_buf] == 127) {
         volatile uint16_t HOLDER_does_not_do_any_thing = 0;
         HOLDER_does_not_do_any_thing +=
-            HOLDER_does_not_do_any_thing;  // TODO: V2007
-        // https://pvs-studio.com/en/docs/warnings/V2007/
+            HOLDER_does_not_do_any_thing; // TODO: V2007
+                                          // https://pvs-studio.com/en/docs/warnings/V2007/
         // This expression can be simplified.
         // One of the operands in the '+='
         // operation equals 0x0. Probably it is
@@ -4344,8 +4580,8 @@ class static_str_algo {
     }
     return my_ret_value_;
   }
-  static constexpr inline inline int MJZ_STRCMP(const char *p1,
-                                                const char *p2) {
+  static _compiler_can_use_ inline int MJZ_STRCMP(const char *p1,
+                                                  const char *p2) {
     const unsigned char *s1 = (const unsigned char *)p1;
     const unsigned char *s2 = (const unsigned char *)p2;
     unsigned char c1, c2;
@@ -4360,19 +4596,17 @@ class static_str_algo {
     } while (c1 == c2);
     return c1 - c2;
   }
-  static constexpr inline inline char *b_U_lltoa(uint64_t value,
-                                                 char *BFR_buffer, int radix,
-                                                 bool is_signed,
-                                                 bool force_neg = 0,
-                                                 bool is_upper_case = 0) {
-    constexpr char end_of_transmission_char = 4;
-    constexpr char null_char = 0;
+  static _compiler_can_use_ inline char *
+  b_U_lltoa(uint64_t value, char *BFR_buffer, int radix, bool is_signed,
+            bool force_neg = 0, bool is_upper_case = 0) {
+    _compiler_can_use_ char end_of_transmission_char = 4;
+    _compiler_can_use_ char null_char = 0;
     bool IS_NEGITIVE__ = (is_signed && (*((int64_t *)&value) < 0) &&
                           ((radix == 10) || force_neg));
     if (IS_NEGITIVE__) {
       *((int64_t *)&value) =
           ((-1) *
-           (*((int64_t *)&value)));  // use a positive insted of the - sign
+           (*((int64_t *)&value))); // use a positive insted of the - sign
     }
     char buffer[200]{};
     if ((radix < 2) || (36 < radix)) {
@@ -4394,7 +4628,7 @@ class static_str_algo {
       if (value == null_char) {
         for (int64_t j = 0, k = 0; j < 129; j++) {
           if (buffer_[j] != end_of_transmission_char) {
-            buffer[k] = buffer_[j];  // when its done we reverse the string
+            buffer[k] = buffer_[j]; // when its done we reverse the string
             k++;
           }
         }
@@ -4405,36 +4639,40 @@ class static_str_algo {
     if (IS_NEGITIVE__) {
       BFR_buffer[0] = '-';
       static_str_algo::memmove(BFR_buffer + 1, buffer,
-                               number_of_numbers + 1);  //+null
+                               number_of_numbers + 1); //+null
     } else {
       static_str_algo::memmove(BFR_buffer, buffer,
-                               number_of_numbers + 1);  //+null
+                               number_of_numbers + 1); //+null
     }
     return BFR_buffer;
   }
-  static constexpr inline char *ulltoa(uint64_t value, char *buffer,
-                                       int radix) {
+  static _compiler_can_use_ inline char *ulltoa(uint64_t value, char *buffer,
+                                                int radix) {
     return b_U_lltoa((uint64_t)value, buffer, radix, 0);
   }
-  static constexpr inline char *ultoa(uint32_t value, char *buffer, int radix) {
+  static _compiler_can_use_ inline char *ultoa(uint32_t value, char *buffer,
+                                               int radix) {
     return ulltoa((uint64_t)value, buffer, radix);
   }
-  static constexpr inline char *utoa(uint32_t value, char *buffer, int radix) {
+  static _compiler_can_use_ inline char *utoa(uint32_t value, char *buffer,
+                                              int radix) {
     return ultoa(value, buffer, radix);
   }
-  static constexpr inline char *lltoa(long long value, char *buffer,
-                                      int radix) {
+  static _compiler_can_use_ inline char *lltoa(long long value, char *buffer,
+                                               int radix) {
     return b_U_lltoa((uint64_t)value, buffer, radix, 1);
   }
-  static constexpr inline char *ltoa(long value, char *buffer, int radix) {
+  static _compiler_can_use_ inline char *ltoa(long value, char *buffer,
+                                              int radix) {
     return lltoa((long long)value, buffer, radix);
   }
-  static constexpr inline char *itoa(int value, char *buffer, int radix) {
+  static _compiler_can_use_ inline char *itoa(int value, char *buffer,
+                                              int radix) {
     return lltoa((long long)value, buffer, radix);
   }
-  static constexpr inline void Set_nth_bit_andret32(
-      void *data, uint64_t nthbt,
-      bool set_to) {  // set_to is a bool
+  static _compiler_can_use_ inline void
+  Set_nth_bit_andret32(void *data, uint64_t nthbt,
+                       bool set_to) { // set_to is a bool
     uint64_t &data_in_array = ((uint64_t *)data)[nthbt / 32];
     const uint8_t ofset = nthbt % 32;
     data_in_array &= static_cast<uint64_t>(0) << ofset;
@@ -4442,9 +4680,9 @@ class static_str_algo {
       data_in_array |= (static_cast<uint64_t>(1) << ofset);
     }
   }
-  static constexpr inline bool Get_nth_bit_andret32(
-      const void *data,
-      uint64_t nthbt) {  // set_to is a bool
+  static _compiler_can_use_ inline bool
+  Get_nth_bit_andret32(const void *data,
+                       uint64_t nthbt) { // set_to is a bool
     uint64_t data_in_array = ((uint64_t *)data)[nthbt / 32];
     const uint8_t ofset = nthbt % 32;
     data_in_array &= static_cast<uint64_t>(1) << ofset;
@@ -4453,32 +4691,32 @@ class static_str_algo {
     }
     return 0;
   }
-  static constexpr inline void tgl_nth_bit_andret32(
-      void *data, uint64_t nthbt) {  // set_to is a bool
+  static _compiler_can_use_ inline void
+  tgl_nth_bit_andret32(void *data, uint64_t nthbt) { // set_to is a bool
     uint64_t *data_in_array = ((uint64_t *)data) + (nthbt / 32);
     const uint8_t ofset = nthbt % 32;
     *data_in_array ^= (static_cast<uint64_t>(1) << ofset);
   }
-  static constexpr inline void Set_nth_bit_andret8(
-      void *data, uint64_t nthbt,
-      bool set_to) {  // set_to is a bool
+  static _compiler_can_use_ inline void
+  Set_nth_bit_andret8(void *data, uint64_t nthbt,
+                      bool set_to) { // set_to is a bool
     uint8_t *data_in_array = ((uint8_t *)data) + (nthbt / 8);
     const uint8_t ofset = nthbt % 8;
-    *data_in_array &= (1 << ofset) ^ (-1);  // number &= ~(1UL << ofset);
+    *data_in_array &= (1 << ofset) ^ (-1); // number &= ~(1UL << ofset);
     if (set_to) {
       *data_in_array = static_cast<uint8_t>(*data_in_array | (1 << ofset));
     }
   }
-  static constexpr inline void tgl_nth_bit_andret8(
-      void *data,
-      uint64_t nthbt) {  // set_to is a bool
+  static _compiler_can_use_ inline void
+  tgl_nth_bit_andret8(void *data,
+                      uint64_t nthbt) { // set_to is a bool
     uint8_t *data_in_array = ((uint8_t *)data) + (nthbt / 8);
     const uint8_t ofset = nthbt % 8;
     *data_in_array ^= (1 << ofset);
   }
-  static constexpr inline bool Get_nth_bit_andret8(
-      const void *data,
-      uint64_t nthbt) {  // set_to is a bool
+  static _compiler_can_use_ inline bool
+  Get_nth_bit_andret8(const void *data,
+                      uint64_t nthbt) { // set_to is a bool
     uint64_t data_in_array = *((uint8_t *)data) + (nthbt / 8);
     const uint8_t ofset = nthbt % 8;
     data_in_array &= (uint64_t)1 << ofset;
@@ -4488,37 +4726,30 @@ class static_str_algo {
     return 0;
   }
 
- private:
-  template <class Type>
-  struct remove_reference {
+private:
+  template <class Type> struct remove_reference {
     using type = Type;
   };
-  template <class Type>
-  struct remove_reference<Type &> {
+  template <class Type> struct remove_reference<Type &> {
     using type = Type;
   };
-  template <class Type>
-  struct remove_reference<Type &&> {
+  template <class Type> struct remove_reference<Type &&> {
     using type = Type;
   };
-  template <class Type>
-  struct add_reference {
+  template <class Type> struct add_reference {
     using type = Type &;
   };
-  template <class Type>
-  struct add_const {
+  template <class Type> struct add_const {
     using type = const Type;
   };
-  template <class Type>
-  struct add_temp {
+  template <class Type> struct add_temp {
     using type = Type &&;
   };
-  template <class Type>
-  struct add_ptr {
+  template <class Type> struct add_ptr {
     using type = Type *;
   };
 
- public:
+public:
   template <class Type>
   using remove_reference_t = typename remove_reference<Type>::type;
   template <class Type>
@@ -4541,19 +4772,20 @@ class static_str_algo {
   using to_const_pointer_const_t =
       typename add_const<add_ptr<add_const<remove_reference_t<Type>>>>::type;
   template <typename Type>
-  constexpr static void swap(Type &Left, Type &Right) {
+  _compiler_can_use_ static void swap(Type &Left, Type &Right) {
     Type _Tmp = std::move(Left);
     Left = std::move(Right);
     Right = std::move(_Tmp);
   }
-  template <class T, class U = T>
-  static T exchange(T &obj, U &&new_value) {
+  template <class T, class U = T> static T exchange(T &obj, U &&new_value) {
     T old_value = std::move(obj);
     obj = std::forward<U>(new_value);
     return old_value;
   }
-  constexpr static int64_t compare_two_str(const char *rhs, size_t rhs_l,
-                                           const char *lhs, size_t lhs_l) {
+  _compiler_can_use_ static int64_t compare_two_str(const char *rhs,
+                                                    size_t rhs_l,
+                                                    const char *lhs,
+                                                    size_t lhs_l) {
     if (!rhs || !lhs) {
       if (lhs && lhs_l > 0) {
         return static_cast<int64_t>(0) - *(unsigned char *)lhs;
@@ -4565,8 +4797,10 @@ class static_str_algo {
     }
     return MJZ_STRnCMP(rhs, lhs, rhs_l);
   }
-  constexpr static bool are_two_str_equale(const char *rhs, size_t rhs_l,
-                                           const char *lhs, size_t lhs_l) {
+  _compiler_can_use_ static bool are_two_str_equale(const char *rhs,
+                                                    size_t rhs_l,
+                                                    const char *lhs,
+                                                    size_t lhs_l) {
     if (rhs_l == 0) {
       //
       return (lhs == NULL || *lhs == 0);
@@ -4586,10 +4820,11 @@ class static_str_algo {
       char data_c[8];
       uint8_t data_u[8];
     };
-    inline constexpr _char_8_a() = default;
-    inline constexpr bool &operator[](uint8_t i) { return data_b[i]; }
+    _compiler_can_use_ inline _char_8_a() = default;
+    _compiler_can_use_ inline bool &operator[](uint8_t i) { return data_b[i]; }
   };
-  inline constexpr static _char_8_a char_get_bits(uint8_t val, bool to_char) {
+  _compiler_can_use_ inline static _char_8_a char_get_bits(uint8_t val,
+                                                           bool to_char) {
     _char_8_a ret_val{};
     uint8_t i{};
     for (; i < 8; i++) {
@@ -4603,7 +4838,7 @@ class static_str_algo {
     return ret_val;
   }
   enum class cpu_endian : uint8_t { little = 0, big = 1 };
-  inline constexpr static cpu_endian get_cpu_endian() {
+  _compiler_can_use_ inline static cpu_endian get_cpu_endian() {
     union {
       int x = 1;
       uint8_t a[4];
@@ -4611,10 +4846,12 @@ class static_str_algo {
     return a[0] ? cpu_endian::little : cpu_endian::big;
   }
   static cpu_endian my_endian;
-  inline constexpr static char *get_bit_representation(
-      char *buffer, size_t buffer_len, const void *data_ptr, size_t len,
-      bool in_reverse = (my_endian == cpu_endian::little)) {
-    if (buffer_len < len * 8) return 0;
+  _compiler_can_use_ inline static char *
+  get_bit_representation(char *buffer, size_t buffer_len, const void *data_ptr,
+                         size_t len,
+                         bool in_reverse = (my_endian == cpu_endian::little)) {
+    if (buffer_len < len * 8)
+      return 0;
     const char *data = (const char *)data_ptr;
     const char *data_end = data + len;
     uint64_t *buffer_ptr = (uint64_t *)buffer;
@@ -4633,40 +4870,42 @@ class static_str_algo {
     return buffer;
   }
   template <typename Type>
-  inline constexpr static char *get_bit_representation(char *buffer,
-                                                       const Type &data) {
+  _compiler_can_use_ inline static char *
+  get_bit_representation(char *buffer, const Type &data) {
     return get_bit_representation(buffer, sizeof(Type) * 8, &data,
                                   sizeof(Type));
   }
 
- public:
+public:
   class stack_str_buf {
     uint8_t STR_is_in_stack{};
 
-   public:
-    char stack_buffer[stack_buffer_size + 1]{};  // ptr you're searching for
-    constexpr inline stack_str_buf() : STR_is_in_stack(0) {
+  public:
+    char stack_buffer[stack_buffer_size + 1]{}; // ptr you're searching for
+    _compiler_can_use_ inline stack_str_buf() : STR_is_in_stack(0) {
       stack_buffer[stack_buffer_size] = 0;
     }
-    constexpr inline stack_str_buf(const stack_str_buf &) = default;
-    constexpr inline stack_str_buf(stack_str_buf &&) = default;
-    constexpr inline stack_str_buf &operator=(stack_str_buf &&) = default;
-    constexpr inline stack_str_buf &operator=(const stack_str_buf &) = default;
-    constexpr inline bool set(bool STR_is_in_stack_) {
+    _compiler_can_use_ inline stack_str_buf(const stack_str_buf &) = default;
+    _compiler_can_use_ inline stack_str_buf(stack_str_buf &&) = default;
+    _compiler_can_use_ inline stack_str_buf &
+    operator=(stack_str_buf &&) = default;
+    _compiler_can_use_ inline stack_str_buf &
+    operator=(const stack_str_buf &) = default;
+    _compiler_can_use_ inline bool set(bool STR_is_in_stack_) {
       STR_is_in_stack = STR_is_in_stack_;
       if (!STR_is_in_stack_) {
         // static_str_algo::memset(stack_buffer, 0, stack_buffer_size);//
         // SLOOOOW
         stack_buffer[stack_buffer_size] = 0;
       }
-      return STR_is_in_stack;
+      return STR_is_in_stack_;
     }
-    constexpr inline bool get() { return STR_is_in_stack; }
+    _compiler_can_use_ inline bool get() { return !!STR_is_in_stack; }
     // virtual //i don't need it
-    constexpr inline ~stack_str_buf() { STR_is_in_stack = 0; }
+    _compiler_can_use_ inline ~stack_str_buf() { STR_is_in_stack = 0; }
   };
   template <typename T2, typename T1>
-  inline static constexpr T2 bit_cast(const T1 &data) {
+  inline static _compiler_can_use_ T2 bit_cast(const T1 &data) {
     union MyUnion {
       MyUnion() {}
       ~MyUnion() {}
@@ -4676,10 +4915,9 @@ class static_str_algo {
     memmove(&val, &data, min_macro_(sizeof(val), sizeof(data)));
     return val.val;
   }
-  static constexpr inline size_t find_first_of_in_str(const char *hay_stack,
-                                                      size_t hay_len,
-                                                      const char *needle,
-                                                      size_t needle_len) {
+  static _compiler_can_use_ inline size_t
+  find_first_of_in_str(const char *hay_stack, size_t hay_len,
+                       const char *needle, size_t needle_len) {
     for (const char *ptr_i{hay_stack}, *ptr_i_end{ptr_i + hay_len};
          ptr_i < ptr_i_end; ptr_i++) {
       for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
@@ -4691,10 +4929,9 @@ class static_str_algo {
     }
     return -1;
   }
-  static constexpr inline size_t find_last_of_in_str(const char *hay_stack,
-                                                     size_t hay_len,
-                                                     const char *needle,
-                                                     size_t needle_len) {
+  static _compiler_can_use_ inline size_t
+  find_last_of_in_str(const char *hay_stack, size_t hay_len, const char *needle,
+                      size_t needle_len) {
     for (const char *ptr_i_end{hay_stack - 1}, *ptr_i{ptr_i_end + hay_len};
          ptr_i_end < ptr_i; ptr_i--) {
       for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
@@ -4706,10 +4943,9 @@ class static_str_algo {
     }
     return -1;
   }
-  static constexpr inline size_t find_first_of_not_in_str(const char *hay_stack,
-                                                          size_t hay_len,
-                                                          const char *needle,
-                                                          size_t needle_len) {
+  static _compiler_can_use_ inline size_t
+  find_first_of_not_in_str(const char *hay_stack, size_t hay_len,
+                           const char *needle, size_t needle_len) {
     for (const char *ptr_i{hay_stack}, *ptr_i_end{ptr_i + hay_len};
          ptr_i < ptr_i_end; ptr_i++) {
       for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
@@ -4721,10 +4957,9 @@ class static_str_algo {
     }
     return -1;
   }
-  static constexpr inline size_t find_last_of_not_in_str(const char *hay_stack,
-                                                         size_t hay_len,
-                                                         const char *needle,
-                                                         size_t needle_len) {
+  static _compiler_can_use_ inline size_t
+  find_last_of_not_in_str(const char *hay_stack, size_t hay_len,
+                          const char *needle, size_t needle_len) {
     for (const char *ptr_i_end{hay_stack - 1}, *ptr_i{ptr_i_end + hay_len};
          ptr_i_end < ptr_i; ptr_i--) {
       for (const char *ptr_j{needle}, *ptr_j_end{ptr_j + needle_len};
@@ -4737,10 +4972,9 @@ class static_str_algo {
     return -1;
   }
   template <typename Type, typename function_type>
-  static inline constexpr Type *do_operation(Type *buffer_,
-                                             function_type function,
-                                             const Type *a_arr,
-                                             const Type *b_arr, size_t len) {
+  static _compiler_can_use_ inline Type *
+  do_operation(Type *buffer_, function_type function, const Type *a_arr,
+               const Type *b_arr, size_t len) {
     const Type *buffer_end = buffer_ + len;
     Type *buffer{buffer_};
     while (buffer < buffer_end) {
@@ -4749,24 +4983,25 @@ class static_str_algo {
     return buffer_;
   }
 
- public:
-  constexpr static uint8_t number_of_terms = 100;
-  static constexpr inline long divide_by_2(long x) { return (x >> 1); }
+public:
+  _compiler_can_use_ static uint8_t number_of_terms = 100;
+  static _compiler_can_use_ inline long divide_by_2(long x) { return (x >> 1); }
 
- private:
-  constexpr static float three_halfs = 1.5F;
-  inline static constexpr float Q_rsqrt_unsafe_logic(float &y, float x2) {
-    constexpr uint32_t magic_constant = 0x5f3759df;
+private:
+  _compiler_can_use_ static float three_halfs = 1.5F;
+  inline static _compiler_can_use_ float Q_rsqrt_unsafe_logic(float &y,
+                                                              float x2) {
+    _compiler_can_use_ uint32_t magic_constant = 0x5f3759df;
     // long &i = *(long *)&y; // log base 2
     // long i = *(long *)&y;
     long i = bit_cast<long>(y);
-    i = magic_constant - divide_by_2(i);  // some magic
-    // y = *(float *)&i;
+    i = magic_constant - divide_by_2(i); // some magic
+                                         // y = *(float *)&i;
     y = bit_cast<float>(i);
-    y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method
+    y = y * (three_halfs - (x2 * y * y)); // 1st iteration of newtons method
     return y;
   }
-  static constexpr inline bool check_number_for_r_sqrt(float &number) {
+  static _compiler_can_use_ inline bool check_number_for_r_sqrt(float &number) {
     if (number == 0) {
       number = INFINITY;
       return 1;
@@ -4782,14 +5017,14 @@ class static_str_algo {
     return 0;
   }
 
- public:
-  static constexpr float accurate_Q_rsqrt_unsafe(float number) {
+public:
+  static _compiler_can_use_ float accurate_Q_rsqrt_unsafe(float number) {
     float x2 = number * 0.5F;
     Q_rsqrt_unsafe_logic(number, x2);
     // 2nd iteration, this can be removed
     return number * (three_halfs - (x2 * number * number));
   }
-  static constexpr float super_accurate_Q_rsqrt_unsafe(float number_) {
+  static _compiler_can_use_ float super_accurate_Q_rsqrt_unsafe(float number_) {
     float x2_ = number_ * 0.5F;
     Q_rsqrt_unsafe_logic(number_, x2_);
     double x2 = x2_;
@@ -4797,11 +5032,12 @@ class static_str_algo {
     number *= (1.5 - (x2 * number * number));
     number *= (1.5 - (x2 * number * number));
     long flr = floor(number);
-    if (abs(number - (double)flr) < 0.0001) return flr;
+    if (abs(number - (double)flr) < 0.0001)
+      return flr;
     return number;
   }
-  static constexpr double scientifically_accurate_Q_rsqrt_unsafe(
-      double number) {
+  static _compiler_can_use_ double
+  scientifically_accurate_Q_rsqrt_unsafe(double number) {
     float x2_ = number * 0.5F;
     float number_ = number;
     Q_rsqrt_unsafe_logic(number_, x2_);
@@ -4814,26 +5050,31 @@ class static_str_algo {
     number *= (1.5 - (x2 * number * number));
     number *= (1.5 - (x2 * number * number));
     long flr = floor(number);
-    if (abs(number - (double)flr) < 0.0001) return flr;
+    if (abs(number - (double)flr) < 0.0001)
+      return flr;
     return number;
   }
-  static constexpr float Q_rsqrt_unsafe(float number) {
+  static _compiler_can_use_ float Q_rsqrt_unsafe(float number) {
     float x2 = number * 0.5F;
     return Q_rsqrt_unsafe_logic(number, x2);
   }
-  static constexpr float Q_rsqrt(float number) {
-    if (check_number_for_r_sqrt(number)) return number;
+  static _compiler_can_use_ float Q_rsqrt(float number) {
+    if (check_number_for_r_sqrt(number))
+      return number;
     return Q_rsqrt_unsafe(number);
   }
-  static constexpr float accurate_Q_rsqrt(float number) {
-    if (check_number_for_r_sqrt(number)) return number;
+  static _compiler_can_use_ float accurate_Q_rsqrt(float number) {
+    if (check_number_for_r_sqrt(number))
+      return number;
     return accurate_Q_rsqrt_unsafe(number);
   }
-  static constexpr float super_accurate_Q_rsqrt(float number) {
-    if (check_number_for_r_sqrt(number)) return number;
+  static _compiler_can_use_ float super_accurate_Q_rsqrt(float number) {
+    if (check_number_for_r_sqrt(number))
+      return number;
     return super_accurate_Q_rsqrt_unsafe(number);
   }
-  static constexpr double scientifically_accurate_Q_rsqrt(double number) {
+  static _compiler_can_use_ double
+  scientifically_accurate_Q_rsqrt(double number) {
     if (number == 0.0) {
       return INFINITY;
     }
@@ -4845,15 +5086,17 @@ class static_str_algo {
     }
     return scientifically_accurate_Q_rsqrt_unsafe(number);
   }
-  constexpr static inline uint64_t floor(double x) { return (uint64_t)x; }
-  constexpr static inline double expUL(uint32_t number) {
+  _compiler_can_use_ static inline uint64_t floor(double x) {
+    return (uint64_t)x;
+  }
+  _compiler_can_use_ static inline double expUL(uint32_t number) {
     double retval{1};
     for (uint32_t i{}; i < number; i++) {
       retval *= EULER;
     }
     return retval;
   }
-  constexpr static inline double expUD(double x) {
+  _compiler_can_use_ static inline double expUD(double x) {
     uint32_t floor_x = (uint32_t)floor(x);
     double retval_fast_component = expUL(floor_x);
     x -= floor_x;
@@ -4868,15 +5111,17 @@ class static_str_algo {
     retval *= retval_fast_component;
     return retval;
   }
-  constexpr static inline double exp(int32_t number) {
+  _compiler_can_use_ static inline double exp(int32_t number) {
     return ((0 < number) ? expUL(number) : (double)1 / expUL(-(number)));
   }
-  constexpr static inline double exp(double number) {
+  _compiler_can_use_ static inline double exp(double number) {
     return ((0 < number) ? expUD(number) : (double)1 / expUD(-(number)));
   }
-  constexpr static inline double log(double x) {
-    if (x == 1) return 0;
-    if (x == 0) return NAN;
+  _compiler_can_use_ static inline double log(double x) {
+    if (x == 1)
+      return 0;
+    if (x == 0)
+      return NAN;
     uint64_t integer_component{0};
     for (; EULER < x; x /= EULER) {
       integer_component++;
@@ -4890,48 +5135,51 @@ class static_str_algo {
     }
     return (float)integer_component + retval;
   }
-  constexpr static inline double powUD(double base, double exponent) {
-    if (base == 0) return 0;
+  _compiler_can_use_ static inline double powUD(double base, double exponent) {
+    if (base == 0)
+      return 0;
     uint32_t exponent_int_component = (uint32_t)floor(exponent);
     exponent -= exponent_int_component;
     return exp(exponent * log(base)) * powUL(base, exponent_int_component);
   }
-  constexpr static inline double powUL(double base, uint32_t exponent) {
+  _compiler_can_use_ static inline double powUL(double base,
+                                                uint32_t exponent) {
     double result{1};
-    for (uint64_t i{}; i < exponent; i++) result *= base;
+    for (uint64_t i{}; i < exponent; i++)
+      result *= base;
     return result;
   }
-  constexpr static inline double pow(double base, double exponent) {
+  _compiler_can_use_ static inline double pow(double base, double exponent) {
     return ((0 < exponent) ? (powUD(base, exponent))
                            : (1 / powUD(base, -exponent)));
   }
-  constexpr static inline double sqrt(double x) {
+  _compiler_can_use_ static inline double sqrt(double x) {
     return 1 / scientifically_accurate_Q_rsqrt(x);
   }
-  template <typename Type>
-  constexpr static inline Type sqrtt(Type x) {
-    if (!x) return 0;
+  template <typename Type> _compiler_can_use_ static inline Type sqrtt(Type x) {
+    if (!x)
+      return 0;
     return expUt(logt(x) * (Type)0.5);
   }
-  constexpr static inline uint64_t ceiling(double x) {
+  _compiler_can_use_ static inline uint64_t ceiling(double x) {
     uint64_t fx = floor(x);
-    if ((double)fx == x) return fx;
+    if ((double)fx == x)
+      return fx;
     return fx + 1;
   }
-  constexpr static inline uint64_t round(double x) {
+  _compiler_can_use_ static inline uint64_t round(double x) {
     uint64_t fx = floor(x);
     return ((0.5 < (x - (double)fx)) ? (fx + 1) : (fx));
   }
   template <typename Type>
-  constexpr static inline Type expULt(uint32_t number) {
+  _compiler_can_use_ static inline Type expULt(uint32_t number) {
     Type retval{1};
     for (uint32_t i{}; i < number; i++) {
       retval *= (Type)EULER;
     }
     return retval;
   }
-  template <typename Type>
-  constexpr static inline Type expUt(Type x) {
+  template <typename Type> _compiler_can_use_ static inline Type expUt(Type x) {
     Type retval{1};
     for (int64_t i = 1; i <= number_of_terms; i++) {
       Type term{1};
@@ -4943,19 +5191,20 @@ class static_str_algo {
     return retval;
   }
   template <typename Type>
-  constexpr static inline Type expt(int32_t number) {
+  _compiler_can_use_ static inline Type expt(int32_t number) {
     return ((number > Type{0}) ? expULt<Type>(number)
                                : (Type)1 / expULt<Type>(-(number)));
   }
   template <typename Type>
-  constexpr static inline Type expt(Type number) {
+  _compiler_can_use_ static inline Type expt(Type number) {
     return ((number > Type{0}) ? expUt<Type>(number)
                                : (Type)1 / expUt<Type>(-(number)));
   }
-  template <typename Type>
-  constexpr static inline Type logt(Type x) {
-    if (x == (Type)1) return 0;
-    if (x == (Type)0) return NAN;
+  template <typename Type> _compiler_can_use_ static inline Type logt(Type x) {
+    if (x == (Type)1)
+      return 0;
+    if (x == (Type)0)
+      return NAN;
     Type integer_component{0};
     Type EULER_T = EULER;
     for (; EULER_T < x; x /= EULER_T) {
@@ -4971,31 +5220,33 @@ class static_str_algo {
     return integer_component + retval;
   }
   template <typename Type>
-  constexpr static inline Type powUt(Type base, Type exponent) {
-    if (base == 0) return 0;
+  _compiler_can_use_ static inline Type powUt(Type base, Type exponent) {
+    if (base == 0)
+      return 0;
     uint32_t exponent_int_component = (uint32_t)floor(exponent);
     exponent -= exponent_int_component;
     return expt(exponent * logt(base)) * powULt(base, exponent_int_component);
   }
   template <typename Type>
-  constexpr static inline Type powULt(Type base, uint32_t exponent) {
+  _compiler_can_use_ static inline Type powULt(Type base, uint32_t exponent) {
     Type result{1};
-    for (uint64_t i{}; i < exponent; i++) result *= base;
+    for (uint64_t i{}; i < exponent; i++)
+      result *= base;
     return result;
   }
   template <typename Type>
-  constexpr static inline Type powt(Type base, Type exponent) {
+  _compiler_can_use_ static inline Type powt(Type base, Type exponent) {
     return ((0 < exponent) ? (powUt(base, exponent))
                            : (1 / powUt(base, -exponent)));
   }
-  constexpr static inline float expULf(uint32_t number) {
+  _compiler_can_use_ static inline float expULf(uint32_t number) {
     float retval{1};
     for (uint32_t i{}; i < number; i++) {
       retval *= (float)EULER;
     }
     return retval;
   }
-  constexpr static inline float expUF(float x) {
+  _compiler_can_use_ static inline float expUF(float x) {
     uint32_t floor_x = (uint32_t)floor(x);
     float retval_fast_component = expULf(floor_x);
     x -= floor_x;
@@ -5010,15 +5261,17 @@ class static_str_algo {
     retval *= retval_fast_component;
     return retval;
   }
-  constexpr static inline float expf(int32_t number) {
+  _compiler_can_use_ static inline float expf(int32_t number) {
     return ((0 < number) ? expULf(number) : (float)1 / expULf(-(number)));
   }
-  constexpr static inline float expf(float number) {
+  _compiler_can_use_ static inline float expf(float number) {
     return ((0 < number) ? expUF(number) : (float)1 / expUF(-(number)));
   }
-  constexpr static inline float logf(float x) {
-    if (x == 1) return 0;
-    if (x == 0) return NAN;
+  _compiler_can_use_ static inline float logf(float x) {
+    if (x == 1)
+      return 0;
+    if (x == 0)
+      return NAN;
     uint64_t integer_component{0};
     for (; EULER < x; x /= (float)EULER) {
       integer_component++;
@@ -5032,53 +5285,62 @@ class static_str_algo {
     }
     return (float)integer_component + retval;
   }
-  constexpr static inline float powUF(float base, float exponent) {
-    if (base == 0) return 0;
+  _compiler_can_use_ static inline float powUF(float base, float exponent) {
+    if (base == 0)
+      return 0;
     uint32_t exponent_int_component = (uint32_t)floor(exponent);
     exponent -= exponent_int_component;
     return expf(exponent * logf(base)) * powULf(base, exponent_int_component);
   }
-  constexpr static inline float powULf(float base, uint32_t exponent) {
+  _compiler_can_use_ static inline float powULf(float base, uint32_t exponent) {
     float result{1};
-    for (uint64_t i{}; i < exponent; i++) result *= base;
+    for (uint64_t i{}; i < exponent; i++)
+      result *= base;
     return result;
   }
-  constexpr static inline float powf(float base, float exponent) {
+  _compiler_can_use_ static inline float powf(float base, float exponent) {
     return ((0 < exponent) ? (powUF(base, exponent))
                            : (1 / powUF(base, -exponent)));
   }
-  constexpr static inline float sqrtf(float x) {
-    if (!x) return 0;
+  _compiler_can_use_ static inline float sqrtf(float x) {
+    if (!x)
+      return 0;
     return expf(logf(x) * 0.5f);
   }
-  constexpr static float AlphaLeaky = 0.01f;
-  constexpr static float AlphaSELU = 1.6733f;
-  constexpr static float LamdaSELU = 1.0507f;
-  constexpr static float AlphaELU = 1.0f;
-  constexpr static inline float Sigmoid(float x) {
+  _compiler_can_use_ static float AlphaLeaky = 0.01f;
+  _compiler_can_use_ static float AlphaSELU = 1.6733f;
+  _compiler_can_use_ static float LamdaSELU = 1.0507f;
+  _compiler_can_use_ static float AlphaELU = 1.0f;
+  _compiler_can_use_ static inline float Sigmoid(float x) {
     return 1.0f / (1 + expf(-x));
   }
-  constexpr static inline float Tanh(float x) {
+  _compiler_can_use_ static inline float Tanh(float x) {
     return (expf(2 * x) - 1) / (expf(2 * x) + 1);
   }
-  constexpr static inline float ReLU(float x) { return (x > 0) ? x : 0; }
-  constexpr static inline float LeakyReLU(float x) { return LeakyELU(x); }
-  constexpr static inline float LeakyReLUDer(const float fx) {
+  _compiler_can_use_ static inline float ReLU(float x) {
+    return (x > 0) ? x : 0;
+  }
+  _compiler_can_use_ static inline float LeakyReLU(float x) {
+    return LeakyELU(x);
+  }
+  _compiler_can_use_ static inline float LeakyReLUDer(const float fx) {
     return (fx > 0) ? 1 : AlphaLeaky;
   }
-  constexpr static inline float LeakyELU(float x) {
+  _compiler_can_use_ static inline float LeakyELU(float x) {
     return (x > 0) ? x : AlphaLeaky * x;
   }
-  constexpr static inline float ELU(float x) {
+  _compiler_can_use_ static inline float ELU(float x) {
     return (x > 0) ? x : AlphaELU * (expf(x) - 1);
   }
-  constexpr static inline float SELU(float x) {
+  _compiler_can_use_ static inline float SELU(float x) {
     return (x > 0) ? x : AlphaSELU * (expf(x) - 1);
   }
-  constexpr static inline double erf(double x) {
-    if (x <= 0) return 0.0;
-    if (4 < x) return 1.0;
-    const constexpr double _2_ovr_sqrt_pi =
+  _compiler_can_use_ static inline double erf(double x) {
+    if (x <= 0)
+      return 0.0;
+    if (4 < x)
+      return 1.0;
+    const _compiler_can_use_ double _2_ovr_sqrt_pi =
         2.0 / 1.7724538509055160272981674833411;
     double retval{0};
     double nag_x_sqr = -(x * x);
@@ -5092,7 +5354,7 @@ class static_str_algo {
     }
     return retval * _2_ovr_sqrt_pi;
   }
-  constexpr static inline uint32_t factorial(uint32_t x) {
+  _compiler_can_use_ static inline uint32_t factorial(uint32_t x) {
     uint32_t ret_val{1};
     while (x != 1) {
       ret_val *= x--;
@@ -5100,15 +5362,16 @@ class static_str_algo {
     return ret_val;
   }
 
- private:
- public:
-  constexpr static inline double cos_rad_until_pi_over_2(double x) {
-    constexpr double neg_1ovr_fact2 = -1.0 / factorial(2);
-    constexpr double _1ovr_fact4 = 1.0 / factorial(4);
-    constexpr double neg_1ovr_fact6 = -1.0 / factorial(6);
-    constexpr double _1ovr_fact8 = 1.0 / factorial(8);
-    constexpr double neg_1ovr_fact10 = -1.0 / factorial(10);
-    if (abs(x - HALF_PI) < 0.001) return 0;
+private:
+public:
+  _compiler_can_use_ static inline double cos_rad_until_pi_over_2(double x) {
+    _compiler_can_use_ double neg_1ovr_fact2 = -1.0 / factorial(2);
+    _compiler_can_use_ double _1ovr_fact4 = 1.0 / factorial(4);
+    _compiler_can_use_ double neg_1ovr_fact6 = -1.0 / factorial(6);
+    _compiler_can_use_ double _1ovr_fact8 = 1.0 / factorial(8);
+    _compiler_can_use_ double neg_1ovr_fact10 = -1.0 / factorial(10);
+    if (abs(x - HALF_PI) < 0.001)
+      return 0;
     double retval{};
     double x_2 = (x * x);
     retval =
@@ -5118,107 +5381,128 @@ class static_str_algo {
              x_2 *
                  (_1ovr_fact4 +
                   x_2 *
-                      neg_1ovr_fact6));  // we dont do all the polonomial just 4
+                      neg_1ovr_fact6)); // we dont do all the polonomial just 4
     if (HALF_PI - abs(x) < 0.01) {
       double x_8 = powUL(x_2, 4);
       retval += x_8 * _1ovr_fact8;
       retval += x_8 * x_2 * neg_1ovr_fact10;
     }
-    if (1 < retval) return 1;
-    if (retval < -1) return -1;
+    if (1 < retval)
+      return 1;
+    if (retval < -1)
+      return -1;
     return retval;
   }
 
- private:
- public:
-  constexpr static inline double sin_rad_until_pi_over_2(double x) {
-    constexpr double _1ovr_fact1 = 1.0 / factorial(1);
-    constexpr double neg_1ovr_fact3 = -1.0 / factorial(3);
-    constexpr double _1ovr_fact5 = 1.0 / factorial(5);
-    constexpr double neg_1ovr_fact7 = -1.0 / factorial(7);
-    constexpr double _1ovr_fact9 = 1.0 / factorial(9);
-    constexpr double neg_1ovr_fact11 = -1.0 / factorial(11);
-    if (abs(x - HALF_PI) < 0.001) return 1;
-
+private:
+public:
+  _compiler_can_use_ static inline double sin_rad_until_pi_over_2(double x) {
+    _compiler_can_use_ double _1ovr_fact1 = 1.0 / factorial(1);
+    _compiler_can_use_ double neg_1ovr_fact3 = -1.0 / factorial(3);
+    _compiler_can_use_ double _1ovr_fact5 = 1.0 / factorial(5);
+    _compiler_can_use_ double neg_1ovr_fact7 = -1.0 / factorial(7);
+    _compiler_can_use_ double _1ovr_fact9 = 1.0 / factorial(9);
+    _compiler_can_use_ double neg_1ovr_fact11 = -1.0 / factorial(11);
+    if (abs(x - HALF_PI) < 0.001)
+      return 1;
     double retval{};
     double x_2 = (x * x);
     retval = x * (_1ovr_fact1 +
                   x_2 * (neg_1ovr_fact3 +
                          x_2 * (_1ovr_fact5 +
-                                x_2 * neg_1ovr_fact7)));  // we dont do all the
-    // polonomial just 4
+                                x_2 * neg_1ovr_fact7))); // we dont do all the
+                                                         // polonomial just 4
 
     if (HALF_PI - abs(x) < 0.01) {
       double x_9 = powUL(x_2, 4) * x;
       retval += x_9 * _1ovr_fact9;
       retval += x_9 * x_2 * neg_1ovr_fact11;
     }
-    if (1 < retval) return 1;
-    if (retval < -1) return -1;
+    if (1 < retval)
+      return 1;
+    if (retval < -1)
+      return -1;
     return retval;
   }
-  constexpr static inline double cos_rad_until_pi(double x) {
+  _compiler_can_use_ static inline double cos_rad_until_pi(double x) {
     return HALF_PI < x ? -cos_rad_until_pi_over_2(PI - x)
                        : cos_rad_until_pi_over_2(x);
   }
-  constexpr static inline double sin_rad_until_pi(double x) {
+  _compiler_can_use_ static inline double sin_rad_until_pi(double x) {
     return HALF_PI < x ? sin_rad_until_pi_over_2(PI - x)
                        : sin_rad_until_pi_over_2(x);
   }
-  constexpr static inline double cos_rad_until_2_pi(double x) {
-    if (x < PI) return cos_rad_until_pi(x);
+  _compiler_can_use_ static inline double cos_rad_until_2_pi(double x) {
+    if (x < PI)
+      return cos_rad_until_pi(x);
     if (PI <= x && x < (PI + HALF_PI)) {
       return -cos_rad_until_pi_over_2(PI - x);
     }
     return cos_rad_until_pi_over_2(TWO_PI - x);
   }
-  constexpr static inline double sin_rad_until_2_pi(double x) {
-    if (x <= PI) return sin_rad_until_pi(x);
+  _compiler_can_use_ static inline double sin_rad_until_2_pi(double x) {
+    if (x <= PI)
+      return sin_rad_until_pi(x);
     if (PI < x && x < (PI + HALF_PI)) {
       return -sin_rad_until_pi(x - PI);
     }
     return -sin_rad_until_pi_over_2(TWO_PI - x);
   }
-  constexpr static inline double radians_adjust_cos(double x) {
-    if (x == NAN) return 0;
-    if (x == INFINITY) return 0;
-    if (x == -INFINITY) return 0;
-    if (x < 0) x = -x;
-    while (TWO_PI < x) x -= TWO_PI;
+  _compiler_can_use_ static inline double radians_adjust_cos(double x) {
+    if (x == NAN)
+      return 0;
+    if (x == INFINITY)
+      return 0;
+    if (x == -INFINITY)
+      return 0;
+    if (x < 0)
+      x = -x;
+    while (TWO_PI < x)
+      x -= TWO_PI;
     return x;
   }
-  constexpr static inline double radians_adjust_sin(double x) {
-    if (x == NAN) return 0;
-    if (x == INFINITY) return 0;
-    if (x == -INFINITY) return 0;
+  _compiler_can_use_ static inline double radians_adjust_sin(double x) {
+    if (x == NAN)
+      return 0;
+    if (x == INFINITY)
+      return 0;
+    if (x == -INFINITY)
+      return 0;
     bool was_neg{};
     if (x < 0) {
       was_neg = 1;
       x = -x;
     }
-    while (TWO_PI < x) x -= TWO_PI;
+    while (TWO_PI < x)
+      x -= TWO_PI;
     return was_neg ? x + PI : x;
   }
-  constexpr static inline double cos_rad(double x) {
+  _compiler_can_use_ static inline double cos_rad(double x) {
     return cos_rad_until_2_pi(radians_adjust_cos(x));
   }
-  constexpr static inline double sin_rad(double x) {
+  _compiler_can_use_ static inline double sin_rad(double x) {
     return sin_rad_until_2_pi(radians_adjust_sin(x));
   }
-  constexpr static inline double tan_rad(double x) {
+  _compiler_can_use_ static inline double tan_rad(double x) {
     return sin_rad(x) / cos_rad(x);
   }
-  constexpr static inline double cot_rad(double x) {
+  _compiler_can_use_ static inline double cot_rad(double x) {
     return cos_rad(x) / sin_rad(x);
   }
-  constexpr static inline float log(float x) { return (float)log((double)x); }
-  constexpr static inline float erf(float x) { return (float)erf((double)x); }
-  constexpr static inline double acos(double x) { return fastest_acos(x); }
+  _compiler_can_use_ static inline float log(float x) {
+    return (float)log((double)x);
+  }
+  _compiler_can_use_ static inline float erf(float x) {
+    return (float)erf((double)x);
+  }
+  _compiler_can_use_ static inline double acos(double x) {
+    return fastest_acos(x);
+  }
   template <typename Type>
-  constexpr static inline auto abs(const Type &x) {
+  _compiler_can_use_ static inline auto abs(const Type &x) {
     return x < 0 ? -x : x;
   }
-  constexpr static inline double fastest_normal_acos(double x) {
+  _compiler_can_use_ static inline double fastest_normal_acos(double x) {
     x = ((-0.69813170079773212 * x * x - 0.87266462599716477) * x +
          1.5707963267948966);
     x -= 0.0156668 * (0 < x && x < 0.5);
@@ -5227,12 +5511,12 @@ class static_str_algo {
     x -= 0.0958027 * (-1 < x && x < -0.5);
     return x;
   }
-  constexpr static inline double fastest_acos(double x) {
+  _compiler_can_use_ static inline double fastest_acos(double x) {
     x = ((-0.69813170079773212 * x * x - 0.87266462599716477) * x +
          1.5707963267948966);
     return x;
   }
-  constexpr static inline double sl_acos(double x) {
+  _compiler_can_use_ static inline double sl_acos(double x) {
     double negate = double(x < 0);
     x = abs(x);
     double ret = -0.0187293;
@@ -5246,7 +5530,7 @@ class static_str_algo {
     ret = ret - 2 * negate * ret;
     return negate * 3.14159265358979 + ret;
   }
-  constexpr static inline double meh_acos(double x) {
+  _compiler_can_use_ static inline double meh_acos(double x) {
     double a = 1.43 + 0.59 * x;
     a = (a + (2 + 2 * x) / a) / 2;
     double b = 1.65 - 1.41 * x;
@@ -5255,20 +5539,21 @@ class static_str_algo {
     c = (c + (2 - a) / c) / 2;
     return (8 * (c + (2 - a) / c) - (b + (2 - 2 * x) / b)) / 6;
   }
-  constexpr static inline double slow_acos(double a) {
+  _compiler_can_use_ static inline double slow_acos(double a) {
     const double C = 0.10501094f;
     double r{}, s{}, t{}, u{};
-    t = (a < 0) ? (-a) : a;  // handle negative arguments
+    t = (a < 0) ? (-a) : a; // handle negative arguments
     u = 1.0f - t;
     s = sqrt(u + u);
-    r = C * u * s + s;      // or fmaf (C * u, s, s) if FMA support in hardware
-    if (a < 0) r = PI - r;  // handle negative arguments
+    r = C * u * s + s; // or fmaf (C * u, s, s) if FMA support in hardware
+    if (a < 0)
+      r = PI - r; // handle negative arguments
     return r;
   }
 };
 
-constexpr inline char char_to_char_for_reinterpret_fnc_ptr_default(
-    char x_char_) {
+_compiler_can_use_ inline char
+char_to_char_for_reinterpret_fnc_ptr_default(char x_char_) {
   for (int64_t i{};
        i < mjz_ard::static_str_algo::the_reinterpreted_char_cca_size; i++) {
     if (x_char_ == mjz_ard::static_str_algo::the_in_reinterpreted_char_cca[i]) {
@@ -5277,7 +5562,7 @@ constexpr inline char char_to_char_for_reinterpret_fnc_ptr_default(
   }
   return x_char_;
 }
-constexpr inline bool is_forbiden_character_default(char x_char_) {
+_compiler_can_use_ inline bool is_forbiden_character_default(char x_char_) {
   for (int64_t i{}; i < mjz_ard::static_str_algo ::forbiden_chars_cnt_size;
        i++) {
     if (x_char_ == mjz_ard::static_str_algo::forbiden_chars_cnt[i]) {
@@ -5286,15 +5571,14 @@ constexpr inline bool is_forbiden_character_default(char x_char_) {
   }
   return 0;
 }
-template <int N>
-class mjz_RingBufferN {
- public:
+template <int N> class mjz_RingBufferN {
+public:
   uint8_t _aucBuffer[N];
   volatile int _iHead;
   volatile int _iTail;
   volatile int _numElems;
 
- public:
+public:
   mjz_RingBufferN(void) if_override_then_override;
   void store_char(uint8_t c) if_override_then_override;
   void clear() if_override_then_override;
@@ -5304,7 +5588,7 @@ class mjz_RingBufferN {
   int peek() if_override_then_override;
   bool isFull() if_override_then_override;
 
- protected:
+protected:
   int nextIndex(int index);
   inline bool isEmpty() const { return (_numElems == 0); }
 };
@@ -5313,29 +5597,29 @@ class mjz_RingBufferN {
 class mjz_Str_DATA_storage_cls;
 class mjz_Str_DATA_storage_cls
     : public std::enable_shared_from_this<mjz_Str_DATA_storage_cls> {
- public:
+public:
   std::function<bool(char)> is_blank_character = is_blank_characteres_default;
   std::function<char(char)> char_to_char_for_reinterpret_fnc_ptr =
       char_to_char_for_reinterpret_fnc_ptr_default;
   std::function<bool(char)> is_forbiden_character =
-      is_forbiden_character_default;  // like bool
+      is_forbiden_character_default; // like bool
   // (*is_forbiden_character)(char)
   // but better
   char reinterpret_char_char = '\\';
-  template <typename T>
-  friend class mjz_str_t;
+  template <typename T> friend class mjz_str_t;
   std::shared_ptr<mjz_Str_DATA_storage_cls> getptr() {
     return shared_from_this();
   }
   // No public constructor, only a factory function, // so there's no way to
   // have getptr return nullptr.
-  [[nodiscard]] static std::shared_ptr<mjz_Str_DATA_storage_cls> create() {
+  _THIS_IS_YOURS_NOW_ static std::shared_ptr<mjz_Str_DATA_storage_cls>
+  create() {
     // Not using std::make_shared<mjz_Str_DATA_storage_cls> because the c'tor is
     // private.
     return std::make_shared<mjz_Str_DATA_storage_cls>();
   }
 
- private:
+private:
   // mjz_Str_DATA_storage_cls() = default;
 };
 enum Dealocation_state : uint8_t {
@@ -5344,12 +5628,12 @@ enum Dealocation_state : uint8_t {
 };
 
 template <class T>
-inline constexpr const T *begin(iterator_template_t<T> it) noexcept {
+_compiler_can_use_ inline const T *begin(iterator_template_t<T> it) noexcept {
   return it.begin();
 }
 
 template <class T>
-inline constexpr const T *end(iterator_template_t<T> it) noexcept {
+_compiler_can_use_ inline const T *end(iterator_template_t<T> it) noexcept {
   return it.end();
 }
 
@@ -5358,29 +5642,32 @@ template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
               static_str_algo::remove_reference_t<my_iner_Type_>>,
           bool do_error_check = 1>
 struct mjz_stack_obj_warper_template_t
-    : private my_obj_creator_t  // for that 1 exetera (compiler added ) memory
+    : private my_obj_creator_t // for that 1 exetera (compiler added ) memory
 {
   using Type = static_str_algo::remove_reference_t<my_iner_Type_>;
 
- public:
-  static constexpr size_t sizeof_Type =
+public:
+  static _compiler_can_use_ size_t sizeof_Type =
       max_macro_(sizeof(Type), my_obj_creator_t::size_of_type());
-
-  constexpr inline inline my_obj_creator_t get_obj_creator() {
+  _compiler_can_use_ inline my_obj_creator_t get_obj_creator() {
     return my_obj_creator_t(*((const my_obj_creator_t *)this));
   }
 
- protected:
-  constexpr inline const my_obj_creator_t &m_obj_creator() const & {
+protected:
+  _compiler_can_use_ inline const my_obj_creator_t &m_obj_creator() const & {
     return *this;
   }
-  constexpr inline my_obj_creator_t &m_obj_creator() & { return *this; }
-  constexpr inline const my_obj_creator_t &&m_obj_creator() const && {
+  _compiler_can_use_ inline my_obj_creator_t &m_obj_creator() & {
+    return *this;
+  }
+  _compiler_can_use_ inline const my_obj_creator_t &&m_obj_creator() const && {
     return temp_me();
   }
-  constexpr inline my_obj_creator_t &&m_obj_creator() && { return temp_me(); }
+  _compiler_can_use_ inline my_obj_creator_t &&m_obj_creator() && {
+    return temp_me();
+  }
 
- private:
+private:
   struct {
     union {
       bool m_Has_data{false};
@@ -5391,32 +5678,36 @@ struct mjz_stack_obj_warper_template_t
       uint8_t m_data[sizeof_Type];
     };
   };
-  constexpr inline Type *OP() & { return (Type *)&m_data[0]; }
-  constexpr inline Type &O() & { return *OP(); }
-  constexpr inline const Type *OP() const & { return (const Type *)&m_data[0]; }
-  constexpr inline const Type &O() const & { return *OP(); }
-  constexpr inline Type &&O() && { return std::move(*((Type *)&m_data[0])); }
-  constexpr inline const Type &&O() const && {
+  _compiler_can_use_ inline Type *OP() & { return (Type *)&m_data[0]; }
+  _compiler_can_use_ inline Type &O() & { return *OP(); }
+  _compiler_can_use_ inline const Type *OP() const & {
+    return (const Type *)&m_data[0];
+  }
+  _compiler_can_use_ inline const Type &O() const & { return *OP(); }
+  _compiler_can_use_ inline Type &&O() && {
+    return std::move(*((Type *)&m_data[0]));
+  }
+  _compiler_can_use_ inline const Type &&O() const && {
     return std::move(*((const Type *)&m_data[0]));
   }
-  constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
-                                            Type &&src) {
+  _compiler_can_use_ inline Type *
+  construct_in_place(Type *place, bool plc_has_obj, Type &&src) {
     if (plc_has_obj) {
       m_obj_creator().obj_go_to_obj(*place, std::move(src));
       return place;
     }
     return m_obj_creator().construct_at(place, std::move(src));
   }
-  constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
-                                            Type &src) {
+  _compiler_can_use_ inline Type *
+  construct_in_place(Type *place, bool plc_has_obj, Type &src) {
     if (plc_has_obj) {
       m_obj_creator().obj_go_to_obj(*place, src);
       return place;
     }
     return m_obj_creator().construct_at(place, src);
   }
-  constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
-                                            const Type &src) {
+  _compiler_can_use_ inline Type *
+  construct_in_place(Type *place, bool plc_has_obj, const Type &src) {
     if (plc_has_obj) {
       m_obj_creator().obj_go_to_obj(*place, src);
       return place;
@@ -5424,8 +5715,8 @@ struct mjz_stack_obj_warper_template_t
     return m_obj_creator().construct_at(place, src);
   }
   template <typename... args_t>
-  constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
-                                            args_t &&...args) {
+  _compiler_can_use_ inline Type *
+  construct_in_place(Type *place, bool plc_has_obj, args_t &&...args) {
     if (plc_has_obj) {
       uint8_t buf[sizeof_Type];
       Type *that = (Type *)buf;
@@ -5436,7 +5727,8 @@ struct mjz_stack_obj_warper_template_t
     }
     return m_obj_creator().construct_at(place, std::forward<args_t>(args)...);
   }
-  constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj) {
+  _compiler_can_use_ inline Type *construct_in_place(Type *place,
+                                                     bool plc_has_obj) {
     if (plc_has_obj) {
       m_obj_creator().destroy_at(place);
       m_obj_creator().construct_at(place);
@@ -5444,19 +5736,19 @@ struct mjz_stack_obj_warper_template_t
     }
     return m_obj_creator().construct_at(place);
   }
-  constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
-                                            Type *src) {
+  _compiler_can_use_ inline Type *
+  construct_in_place(Type *place, bool plc_has_obj, Type *src) {
     return construct_in_place(place, *src);
   }
-  constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
-                                            const Type *src) {
+  _compiler_can_use_ inline Type *
+  construct_in_place(Type *place, bool plc_has_obj, const Type *src) {
     return construct_in_place(place, *src);
   }
-  constexpr inline void destroy_at_place(Type *place) {
+  _compiler_can_use_ inline void destroy_at_place(Type *place) {
     m_obj_creator().destroy_at(place);
   }
   template <typename... args_t>
-  constexpr inline void construct(args_t &&...args) {
+  _compiler_can_use_ inline void construct(args_t &&...args) {
     if (pointer_to_unsafe_data() ==
         construct_in_place(pointer_to_unsafe_data(), m_Has_data,
                            std::forward<args_t>(args)...)) {
@@ -5465,154 +5757,179 @@ struct mjz_stack_obj_warper_template_t
       m_Has_data = 0;
     }
   }
-  constexpr inline void destroy() {
-    if (m_Has_data) destroy_at_place(pointer_to_unsafe_data());
+  _compiler_can_use_ inline void destroy() {
+    if (m_Has_data)
+      destroy_at_place(pointer_to_unsafe_data());
     m_Has_data = 0;
   }
-  constexpr constexpr inline Type *init_with_unsafe_data(bool initialized) {
+  _compiler_can_use_ inline Type *init_with_unsafe_data(bool initialized) {
     m_Has_data = initialized;
     return OP();
   }
-  constexpr inline Type *move_to_place(Type *dest, bool dest_has_obj) {
+  _compiler_can_use_ inline Type *move_to_place(Type *dest, bool dest_has_obj) {
     if (has_data())
       return construct_in_place(dest, dest_has_obj,
                                 std::move(*pointer_to_unsafe_data()));
     destroy();
     return 0;
   }
-  constexpr inline Type *copy_to_place(Type *dest, bool dest_has_obj) {
+  _compiler_can_use_ inline Type *copy_to_place(Type *dest, bool dest_has_obj) {
     if (has_data())
       return construct_in_place(dest, dest_has_obj, *pointer_to_unsafe_data());
     return 0;
   }
 
- public:
-  constexpr inline Type &o() & { return **this; }
-  constexpr inline Type *op() & { return this->operator->(); }
-  constexpr inline const Type &o() const & { return **this; }
-  constexpr inline const Type *op() const & { return this->operator->(); }
-  constexpr inline const Type &&o() && { return std::move(*temp_me()); }
-  constexpr inline const Type *op() && = delete;
-  constexpr inline const Type &&o() const && { return std::move(*temp_me()); }
-  constexpr inline const Type *op() const && = delete;
+public:
+  _compiler_can_use_ inline Type &o() & { return **this; }
+  _compiler_can_use_ inline Type *op() & { return this->operator->(); }
+  _compiler_can_use_ inline const Type &o() const & { return **this; }
+  _compiler_can_use_ inline const Type *op() const & {
+    return this->operator->();
+  }
+  _compiler_can_use_ inline const Type &&o() && {
+    return std::move(*temp_me());
+  }
+  _compiler_can_use_ inline const Type *op() && = delete;
+  _compiler_can_use_ inline const Type &&o() const && {
+    return std::move(*temp_me());
+  }
+  _compiler_can_use_ inline const Type *op() const && = delete;
   // unsafe object functions begin
-  constexpr inline Type &uo() &noexcept { return *uop(); }
-  constexpr inline Type *uop() &noexcept {
-    if (m_Has_data) return OP();
+  _compiler_can_use_ inline Type &uo() & noexcept { return *uop(); }
+  _compiler_can_use_ inline Type *uop() & noexcept {
+    if (m_Has_data)
+      return OP();
     return nullptr;
   }
-  constexpr inline const Type &uo() const &noexcept { return *uop(); }
-  constexpr inline const Type *uop() const &noexcept {
-    if (m_Has_data) return OP();
+  _compiler_can_use_ inline const Type &uo() const & noexcept { return *uop(); }
+  _compiler_can_use_ inline const Type *uop() const & noexcept {
+    if (m_Has_data)
+      return OP();
     return nullptr;
   }
-  constexpr inline const Type &&uo() &&noexcept { return std::move(O()); }
-  constexpr inline const Type *uop() && = delete;
-  constexpr inline const Type &&uo() const &&noexcept { return std::move(O()); }
-  constexpr inline const Type *uop() const && = delete;
+  _compiler_can_use_ inline const Type &&uo() && noexcept {
+    return std::move(O());
+  }
+  _compiler_can_use_ inline const Type *uop() && = delete;
+  _compiler_can_use_ inline const Type &&uo() const && noexcept {
+    return std::move(O());
+  }
+  _compiler_can_use_ inline const Type *uop() const && = delete;
   // unsafe object functions end
 
-  constexpr inline mjz_stack_obj_warper_template_t() {
-    if constexpr (construct_obj_on_constructor) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t() {
+    if _compiler_can_use_ (construct_obj_on_constructor) {
       construct();
     }
   };
   template <typename T0, typename... T_s>
-  constexpr inline mjz_stack_obj_warper_template_t(T0 &&arg0, T_s &&...args) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(T0 &&arg0,
+                                                            T_s &&...args) {
     construct(std::move(arg0), std::forward<T_s>(args)...);
   };
   template <typename T0, typename... T_s>
-  constexpr inline mjz_stack_obj_warper_template_t(const T0 &arg0,
-                                                   T_s &&...args) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(const T0 &arg0,
+                                                            T_s &&...args) {
     construct(arg0, std::forward<T_s>(args)...);
   };
   template <typename T0, typename... T_s>
-  constexpr inline mjz_stack_obj_warper_template_t(T0 &arg0, T_s &&...args) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(T0 &arg0,
+                                                            T_s &&...args) {
     construct(arg0, std::forward<T_s>(args)...);
   };
-  constexpr inline ~mjz_stack_obj_warper_template_t() { de_init(); }
-  constexpr inline mjz_stack_obj_warper_template_t(
+  _compiler_can_use_ inline ~mjz_stack_obj_warper_template_t() { de_init(); }
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(
       mjz_stack_obj_warper_template_t &&s_obj_w) {
-    if (s_obj_w.has_data()) construct(std::move(s_obj_w.operator*()));
+    if (s_obj_w.has_data())
+      construct(std::move(s_obj_w.operator*()));
   }
-  constexpr inline mjz_stack_obj_warper_template_t(
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(
       const mjz_stack_obj_warper_template_t &s_obj_w) {
-    if (s_obj_w.has_data()) construct(s_obj_w.operator*());
+    if (s_obj_w.has_data())
+      construct(s_obj_w.operator*());
   }
-  constexpr inline mjz_stack_obj_warper_template_t(
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(
       mjz_stack_obj_warper_template_t &s_obj_w) {
-    if (s_obj_w.has_data()) construct(s_obj_w.operator*());
+    if (s_obj_w.has_data())
+      construct(s_obj_w.operator*());
   }
-  constexpr inline mjz_stack_obj_warper_template_t(const Type &obj) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(const Type &obj) {
     construct(obj);
   }
-  constexpr inline mjz_stack_obj_warper_template_t(Type &obj) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(Type &obj) {
     construct(obj);
   }
-  constexpr inline mjz_stack_obj_warper_template_t(Type &&obj) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t(Type &&obj) {
     construct(std::move(obj));
   }
 
- public:
-  constexpr inline mjz_stack_obj_warper_template_t &operator=(Type &&obj) {
+public:
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  operator=(Type &&obj) {
     construct(std::move(obj));
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &operator=(Type &obj) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  operator=(Type &obj) {
     construct(obj);
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &operator=(const Type &obj) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  operator=(const Type &obj) {
     construct(obj);
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &operator=(
-      mjz_stack_obj_warper_template_t &&s_obj_w) {
-    if (!!s_obj_w) operator=(std::move(s_obj_w.operator*()));
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  operator=(mjz_stack_obj_warper_template_t &&s_obj_w) {
+    if (!!s_obj_w)
+      operator=(std::move(s_obj_w.operator*()));
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &operator=(
-      const mjz_stack_obj_warper_template_t &s_obj_w) {
-    if (!!s_obj_w) operator=(s_obj_w.operator*());
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  operator=(const mjz_stack_obj_warper_template_t &s_obj_w) {
+    if (!!s_obj_w)
+      operator=(s_obj_w.operator*());
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &operator=(
-      mjz_stack_obj_warper_template_t &s_obj_w) {
-    if (!!s_obj_w) operator=(s_obj_w.operator*());
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  operator=(mjz_stack_obj_warper_template_t &s_obj_w) {
+    if (!!s_obj_w)
+      operator=(s_obj_w.operator*());
     return *this;
   }
 
- public:
-  constexpr inline void init(const mjz_stack_obj_warper_template_t &obj) & {
+public:
+  _compiler_can_use_ inline void
+  init(const mjz_stack_obj_warper_template_t &obj) & {
     operator=(obj);
   }
-  constexpr inline void init(mjz_stack_obj_warper_template_t &obj) & {
+  _compiler_can_use_ inline void init(mjz_stack_obj_warper_template_t &obj) & {
     operator=(obj);
   }
-  constexpr inline void init(mjz_stack_obj_warper_template_t &&obj) & {
+  _compiler_can_use_ inline void init(mjz_stack_obj_warper_template_t &&obj) & {
     operator=(std::move(obj));
   }
   template <typename arg_T, typename Type>
-  constexpr inline void init(std::initializer_list<arg_T> list) & {
+  _compiler_can_use_ inline void init(std::initializer_list<arg_T> list) & {
     construct(list);
   }
   template <typename arg_T>
-  constexpr inline void init(iterator_template_t<arg_T> list) & {
+  _compiler_can_use_ inline void init(iterator_template_t<arg_T> list) & {
     construct(list);
   }
   template <typename... arguments_types>
-  constexpr inline void init(arguments_types &&...args) & {
+  _compiler_can_use_ inline void init(arguments_types &&...args) & {
     construct(std::forward<arguments_types>(args)...);
   }
 
- public:
-  constexpr inline void de_init() { destroy(); }
-  constexpr inline void de_init(int fill_VAL) {
+public:
+  _compiler_can_use_ inline void de_init() { destroy(); }
+  _compiler_can_use_ inline void de_init(int fill_VAL) {
     destroy();
     static_str_algo::memset(m_data, fill_VAL, sizeof_Type);
   }
 
- public:
+public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
@@ -5621,155 +5938,171 @@ struct mjz_stack_obj_warper_template_t
   using T = Type;
   using type = Type;
 
- public:
-  constexpr inline Type *pointer_to_unsafe_data_for_unsafe_placement_new(
-      Type *ptr) & {
+public:
+  _compiler_can_use_ inline Type *
+  pointer_to_unsafe_data_for_unsafe_placement_new(Type *ptr) & {
     destroy();
     return pointer_to_unsafe_data();
   }
-  constexpr constexpr inline Type *init_with_unsafe_placement_new(
-      Type *ptr) & {  // placement new "new (ptr) Type();"
+  _compiler_can_use_ inline Type *init_with_unsafe_placement_new(
+      Type *ptr) & { // placement new "new (ptr) Type();"
     return init_with_unsafe_data(ptr == pointer_to_unsafe_data());
   }
 
- public:
-  constexpr inline Type &if_no_obj_then_create() & {
-    if (!m_Has_data) construct();
+public:
+  _compiler_can_use_ inline Type &if_no_obj_then_create() & {
+    if (!m_Has_data)
+      construct();
     return *pointer_to_unsafe_data();
   }
   Type &&if_no_obj_then_create() && {
-    if (!m_Has_data) construct();
+    if (!m_Has_data)
+      construct();
     return std::move(temp_me().O());
   }
   Type &&if_no_obj_then_create() const && {
-    if (!m_Has_data) construct();
+    if (!m_Has_data)
+      construct();
     return std::move(temp_me().O());
   }
 
- public:
-  constexpr inline uint8_t *pointer_to_unsafe_data_buffer() & {
+public:
+  _compiler_can_use_ inline uint8_t *pointer_to_unsafe_data_buffer() & {
     return (uint8_t *)(m_data);
   }
-  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const & {
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data_buffer() const & {
     return (uint8_t *)(m_data);
   }
-  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() && = delete;
-  constexpr inline const uint8_t *pointer_to_unsafe_data() && = delete;
-  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const && =
-      delete;
-  constexpr inline const uint8_t *pointer_to_unsafe_data() const && = delete;
-  constexpr inline Type *pointer_to_unsafe_data() & { return OP(); }
-  constexpr inline const Type *pointer_to_unsafe_data() const & { return OP(); }
-  constexpr inline const Type *throw_if_no_data_or_give_data() && = delete;
-  constexpr inline const Type *throw_if_no_data_or_give_data() const && =
-      delete;
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data_buffer() && = delete;
+  _compiler_can_use_ inline const uint8_t *pointer_to_unsafe_data() && = delete;
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data_buffer() const && = delete;
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data() const && = delete;
+  _compiler_can_use_ inline Type *pointer_to_unsafe_data() & { return OP(); }
+  _compiler_can_use_ inline const Type *pointer_to_unsafe_data() const & {
+    return OP();
+  }
+  _compiler_can_use_ inline const Type *
+  throw_if_no_data_or_give_data() && = delete;
+  _compiler_can_use_ inline const Type *
+  throw_if_no_data_or_give_data() const && = delete;
 
- public:
-  constexpr inline const Type *throw_if_no_data_or_give_data() const & {
+public:
+  _compiler_can_use_ inline const Type *
+  throw_if_no_data_or_give_data() const & {
     if (!m_Has_data) {
-      if constexpr (do_error_check) {
+      if _compiler_can_use_ (do_error_check) {
         throw std::exception(
             "mjz_ard::mjz_stack_obj_warper_template_t::pointer_to_data bad "
             "access");
       } else {
-        return (const Type *)nullptr;  // :(
+        return (const Type *)nullptr; // :(
       }
     }
     return pointer_to_unsafe_data();
   }
-  constexpr inline const Type *pointer_to_data() && = delete;
-  constexpr inline const Type *pointer_to_data() const && = delete;
-  constexpr inline const Type *pointer_to_data() const & {
+  _compiler_can_use_ inline const Type *pointer_to_data() && = delete;
+  _compiler_can_use_ inline const Type *pointer_to_data() const && = delete;
+  _compiler_can_use_ inline const Type *pointer_to_data() const & {
     return throw_if_no_data_or_give_data();
   }
-  constexpr inline Type *pointer_to_data() & {
+  _compiler_can_use_ inline Type *pointer_to_data() & {
     return mjz_ard::remove_const(throw_if_no_data_or_give_data());
   }
 
- public:
-  constexpr inline Type *operator->() & { return pointer_to_data(); }
-  constexpr inline Type &&operator->() && {
-    if (has_data()) return std::move(temp_me().O());
+public:
+  _compiler_can_use_ inline Type *operator->() & { return pointer_to_data(); }
+  _compiler_can_use_ inline Type &&operator->() && {
+    if (has_data())
+      return std::move(temp_me().O());
     throw std::exception{
         "mjz_ard::mjz_stack_obj_warper_template_t::pointer_to_data bad "
         "access"};
-  }  // overload dosnt give ptr
-  constexpr inline const Type &&operator->() const && {
-    if (has_data()) return std::move(temp_me().O());
+  } // overload dosnt give ptr
+  _compiler_can_use_ inline const Type &&operator->() const && {
+    if (has_data())
+      return std::move(temp_me().O());
     throw std::exception{
         "mjz_ard::mjz_stack_obj_warper_template_t::pointer_to_data bad "
         "access"};
   }
   template <typename my_type>
-  constexpr inline auto operator->*(my_type my_var) & {
+  _compiler_can_use_ inline auto operator->*(my_type my_var) & {
     return pointer_to_data()->*my_var;
   }
   template <typename my_type>
-  constexpr inline auto operator->*(my_type my_var) const & {
+  _compiler_can_use_ inline auto operator->*(my_type my_var) const & {
     return pointer_to_data()->*my_var;
   }
   template <typename my_type>
-  constexpr inline void operator->*(my_type my_var) && = delete;
+  _compiler_can_use_ inline void operator->*(my_type my_var) && = delete;
   template <typename my_type>
-  constexpr inline void operator->*(my_type my_var) const && = delete;
-  constexpr constexpr inline Type &&operator*() && {
+  _compiler_can_use_ inline void operator->*(my_type my_var) const && = delete;
+  _compiler_can_use_ inline Type &&operator*() && {
     return std::move(temp_me().operator->());
   }
-  constexpr constexpr inline const Type &&operator*() const && {
+  _compiler_can_use_ inline const Type &&operator*() const && {
     return std::move(temp_me().operator->());
   }
-  constexpr constexpr inline Type &operator*() & { return *operator->(); }
-  constexpr inline mjz_stack_obj_warper_template_t *operator&() & {
+  _compiler_can_use_ inline Type &operator*() & { return *operator->(); }
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t *operator&() & {
     return this;
-  }  // &obj
-  constexpr inline mjz_stack_obj_warper_template_t *operator&() const & {
+  } // &obj
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t *
+  operator&() const & {
     return this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t *operator&() && = delete;
-  constexpr inline mjz_stack_obj_warper_template_t *operator&() const && =
-      delete;
-  constexpr inline Type *operator&(int) & {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t *
+  operator&() && = delete;
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t *
+  operator&() const && = delete;
+  _compiler_can_use_ inline Type *operator&(int) & {
     return pointer_to_data();
-  }  // obj&0
-  constexpr inline Type *operator&(int) && = delete;
-  constexpr inline Type *operator&(int) const && = delete;
-  constexpr inline const Type *operator&(int) const & {
+  } // obj&0
+  _compiler_can_use_ inline Type *operator&(int) && = delete;
+  _compiler_can_use_ inline Type *operator&(int) const && = delete;
+  _compiler_can_use_ inline const Type *operator&(int) const & {
     return pointer_to_data();
-  }  // obj&0
-  constexpr constexpr inline const Type *operator->() const & {
+  } // obj&0
+  _compiler_can_use_ inline const Type *operator->() const & {
     return pointer_to_data();
   }
-  constexpr constexpr inline mjz_stack_obj_warper_template_t &&temp_me() {
+
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &&temp_me() {
     return std::move(*this);
   }
-  constexpr constexpr inline const mjz_stack_obj_warper_template_t &&temp_me()
-      const {
+
+  _compiler_can_use_ inline const mjz_stack_obj_warper_template_t &&
+  temp_me() const {
     return std::move(*this);
   }
-  constexpr constexpr inline const Type &operator*() const & {
+  _compiler_can_use_ inline const Type &operator*() const & {
     return *operator->();
   }
-  constexpr constexpr inline const Type &operator()() const & { return **this; }
-  constexpr constexpr inline Type &&operator()() && {
+  _compiler_can_use_ inline const Type &operator()() const & { return **this; }
+  _compiler_can_use_ inline Type &&operator()() && {
     return std::move(*temp_me());
   }
-  constexpr constexpr inline const Type &&operator()() const && {
+  _compiler_can_use_ inline const Type &&operator()() const && {
     return std::move(*temp_me());
   }
-  constexpr constexpr inline Type &operator()() & { return **this; }
+  _compiler_can_use_ inline Type &operator()() & { return **this; }
   using my_Type_t = mjz_stack_obj_warper_template_t;
-  constexpr inline my_Type_t &operator~() & {
+  _compiler_can_use_ inline my_Type_t &operator~() & {
     de_init();
     return *this;
   }
-  constexpr inline my_Type_t &operator+() & {
+  _compiler_can_use_ inline my_Type_t &operator+() & {
     if (has_data()) {
       return *this;
     }
     construct();
     return *this;
   }
-  constexpr inline my_Type_t &operator-() & {
+  _compiler_can_use_ inline my_Type_t &operator-() & {
     if (has_data()) {
       de_init();
       return *this;
@@ -5777,18 +6110,18 @@ struct mjz_stack_obj_warper_template_t
     construct();
     return *this;
   }
-  constexpr inline my_Type_t &&operator~() && {
+  _compiler_can_use_ inline my_Type_t &&operator~() && {
     de_init();
     return temp_me();
   }
-  constexpr inline my_Type_t &&operator+() && {
+  _compiler_can_use_ inline my_Type_t &&operator+() && {
     if (has_data()) {
       return temp_me();
     }
     construct();
     return temp_me();
   }
-  constexpr inline my_Type_t &&operator-() && {
+  _compiler_can_use_ inline my_Type_t &&operator-() && {
     if (has_data()) {
       de_init();
       return temp_me();
@@ -5796,34 +6129,34 @@ struct mjz_stack_obj_warper_template_t
     construct();
     return temp_me();
   }
-  constexpr inline mjz_stack_obj_warper_template_t &operator--() & {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &operator--() & {
     de_init();
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &&operator--() && {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &&operator--() && {
     de_init();
     return temp_me();
   }
-  constexpr inline mjz_stack_obj_warper_template_t &&operator--() const && =
-      delete;
-  constexpr inline mjz_stack_obj_warper_template_t operator--(int) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &&
+  operator--() const && = delete;
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t operator--(int) {
     my_Type_t temp(std::move(**this));
     de_init();
     return temp;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &operator++() & {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &operator++() & {
     // de_init();
     construct();
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &&operator++() && {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &&operator++() && {
     // de_init();
     construct();
     return temp_me();
   }
-  constexpr inline mjz_stack_obj_warper_template_t &&operator++() const && =
-      delete;
-  constexpr inline mjz_stack_obj_warper_template_t operator++(int) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &&
+  operator++() const && = delete;
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t operator++(int) {
     my_Type_t temp(std::move(**this));
     // you may want to reuse data soo
     // de_init();
@@ -5844,101 +6177,116 @@ struct mjz_stack_obj_warper_template_t
   const Type *end() const && = delete;
   const Type *cbegin() const && = delete;
   const Type *cend() const && = delete;
-  constexpr inline constexpr static size_t size() { return 1; }  // for iterator
-  constexpr inline constexpr static size_t my_size() { return sizeof_Type; }
-  constexpr inline constexpr static size_t size_T() { return my_size(); }
-  constexpr inline Type &operator()(Type &&moved) & {
+  _compiler_can_use_ inline static size_t size() { return 1; } // for iterator
+  _compiler_can_use_ inline static size_t my_size() { return sizeof_Type; }
+  _compiler_can_use_ inline static size_t size_T() { return my_size(); }
+  _compiler_can_use_ inline Type &operator()(Type &&moved) & {
     return *this = std::move(moved);
   }
-  constexpr inline Type &operator()(Type &moved) & { return *this = moved; }
-  constexpr inline Type &operator()(const Type &moved) & {
+  _compiler_can_use_ inline Type &operator()(Type &moved) & {
     return *this = moved;
   }
-  constexpr inline Type &operator()(Type &&moved) const && = delete;
-  constexpr inline Type &operator()(Type &moved) const && = delete;
-  constexpr inline Type &operator()(const Type &moved) const && = delete;
-  constexpr inline Type &operator()(Type &&moved) && = delete;
-  constexpr inline Type &operator()(Type &moved) && = delete;
-  constexpr inline Type &operator()(const Type &moved) && = delete;
+  _compiler_can_use_ inline Type &operator()(const Type &moved) & {
+    return *this = moved;
+  }
+  _compiler_can_use_ inline Type &operator()(Type &&moved) const && = delete;
+  _compiler_can_use_ inline Type &operator()(Type &moved) const && = delete;
+  _compiler_can_use_ inline Type &
+  operator()(const Type &moved) const && = delete;
+  _compiler_can_use_ inline Type &operator()(Type &&moved) && = delete;
+  _compiler_can_use_ inline Type &operator()(Type &moved) && = delete;
+  _compiler_can_use_ inline Type &operator()(const Type &moved) && = delete;
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) const & {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) const & {
     return f(**this, std::forward<args_t>(args)...);
   }
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) & {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) & {
     return f(**this, std::forward<args_t>(args)...);
   }
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) && {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) && {
     return f(std::move(*temp_me()), std::forward<args_t>(args)...);
   }
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) const && {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) const && {
     return f(std::move(*temp_me()), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) & {
-    if (has_data()) f(O(), std::forward<args_t>(args)...);
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) & {
+    if (has_data())
+      f(O(), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) && {
-    if (has_data()) f(std::move(temp_me().O()), std::forward<args_t>(args)...);
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) && {
+    if (has_data())
+      f(std::move(temp_me().O()), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) const && {
-    if (has_data()) f(std::move(temp_me().O()), std::forward<args_t>(args)...);
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) const && {
+    if (has_data())
+      f(std::move(temp_me().O()), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) const & {
-    if (has_data()) f(O(), std::forward<args_t>(args)...);
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) const & {
+    if (has_data())
+      f(O(), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) const & {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) const & {
     if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
     }
-    if (has_data()) f(O(), std::forward<args_t>(args)...);
+    if (has_data())
+      f(O(), std::forward<args_t>(args)...);
     return;
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) & {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) & {
     if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
     }
-    if (has_data()) f(O(), std::forward<args_t>(args)...);
+    if (has_data())
+      f(O(), std::forward<args_t>(args)...);
     return;
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) && {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) && {
     if (do_throw) {
       f(std::move(*temp_me()), std::forward<args_t>(args)...);
       return;
     }
-    if (has_data()) f(std::move(temp_me().O()), std::forward<args_t>(args)...);
+    if (has_data())
+      f(std::move(temp_me().O()), std::forward<args_t>(args)...);
     return;
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) const && {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) const && {
     if (do_throw) {
       f(std::move(*temp_me()), std::forward<args_t>(args)...);
       return;
     }
-    if (has_data()) f(std::move(temp_me().O()), std::forward<args_t>(args)...);
+    if (has_data())
+      f(std::move(temp_me().O()), std::forward<args_t>(args)...);
     return;
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) const & {
     if (has_data()) {
@@ -5948,7 +6296,7 @@ struct mjz_stack_obj_warper_template_t
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) && {
     if (has_data()) {
@@ -5959,7 +6307,7 @@ struct mjz_stack_obj_warper_template_t
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) const && {
     if (has_data()) {
@@ -5970,7 +6318,7 @@ struct mjz_stack_obj_warper_template_t
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) & {
     if (has_data()) {
@@ -5980,9 +6328,10 @@ struct mjz_stack_obj_warper_template_t
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) const & {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) const & {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return;
@@ -5992,9 +6341,10 @@ struct mjz_stack_obj_warper_template_t
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) & {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) & {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return;
@@ -6004,9 +6354,10 @@ struct mjz_stack_obj_warper_template_t
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) && {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) && {
     if (has_data()) {
       has_data_function(std::move(temp_me().O()),
                         std::forward<args_t>(args)...);
@@ -6017,9 +6368,10 @@ struct mjz_stack_obj_warper_template_t
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) const && {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) const && {
     if (has_data()) {
       has_data_function(std::move(temp_me().O()),
                         std::forward<args_t>(args)...);
@@ -6029,153 +6381,169 @@ struct mjz_stack_obj_warper_template_t
     return;
   }
 
- public:
-  constexpr inline bool operator==(
-      const mjz_stack_obj_warper_template_t &other) const {
+public:
+  _compiler_can_use_ inline bool
+  operator==(const mjz_stack_obj_warper_template_t &other) const {
     return **this == *other;
   }
-  constexpr inline bool operator!=(
-      const mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator!=(const mjz_stack_obj_warper_template_t &other) const {
     return **this != *other;
   }
-  constexpr inline bool operator<(
-      const mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<(const mjz_stack_obj_warper_template_t &other) const {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(
-      const mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<=(const mjz_stack_obj_warper_template_t &other) const {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(
-      const mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>(const mjz_stack_obj_warper_template_t &other) const {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(
-      const mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>=(const mjz_stack_obj_warper_template_t &other) const {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>(const mjz_stack_obj_warper_template_t &other) const { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
+ _compiler_can_use_ inline bool operator<=>(const mjz_stack_obj_warper_template_t &other) const {
+return **this<=> (*other);
+}
+#endif // ! Arduino
 
-  constexpr inline bool operator==(
-      mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator==(mjz_stack_obj_warper_template_t &other) const {
     return **this == *other;
   }
-  constexpr inline bool operator!=(
-      mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator!=(mjz_stack_obj_warper_template_t &other) const {
     return **this != *other;
   }
-  constexpr inline bool operator<(
-      mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<(mjz_stack_obj_warper_template_t &other) const {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(
-      mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<=(mjz_stack_obj_warper_template_t &other) const {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(
-      mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>(mjz_stack_obj_warper_template_t &other) const {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(
-      mjz_stack_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>=(mjz_stack_obj_warper_template_t &other) const {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>( mjz_stack_obj_warper_template_t &other) const { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
+ _compiler_can_use_ inline bool operator<=>( mjz_stack_obj_warper_template_t &other) const {
+return **this<=> (*other);
+}
+#endif // ! Arduino
 
-  constexpr inline bool operator==(
-      const mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator==(const mjz_stack_obj_warper_template_t &other) {
     return **this == *other;
   }
-  constexpr inline bool operator!=(
-      const mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator!=(const mjz_stack_obj_warper_template_t &other) {
     return **this != *other;
   }
-  constexpr inline bool operator<(
-      const mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<(const mjz_stack_obj_warper_template_t &other) {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(
-      const mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<=(const mjz_stack_obj_warper_template_t &other) {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(
-      const mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>(const mjz_stack_obj_warper_template_t &other) {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(
-      const mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>=(const mjz_stack_obj_warper_template_t &other) {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>(const mjz_stack_obj_warper_template_t &other) { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
-  constexpr inline bool operator==(mjz_stack_obj_warper_template_t &other) {
+ _compiler_can_use_ inline bool operator<=>(const mjz_stack_obj_warper_template_t &other) {
+return **this<=> (*other);
+}
+#endif // ! Arduino
+  _compiler_can_use_ inline bool
+  operator==(mjz_stack_obj_warper_template_t &other) {
     return **this == *other;
   }
-  constexpr inline bool operator!=(mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator!=(mjz_stack_obj_warper_template_t &other) {
     return **this != *other;
   }
-  constexpr inline bool operator<(mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<(mjz_stack_obj_warper_template_t &other) {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<=(mjz_stack_obj_warper_template_t &other) {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>(mjz_stack_obj_warper_template_t &other) {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(mjz_stack_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>=(mjz_stack_obj_warper_template_t &other) {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>( mjz_stack_obj_warper_template_t &other) { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
-  constexpr constexpr inline bool has_data() const { return m_Has_data; }
-  constexpr constexpr inline bool operator!() const noexcept {
+ _compiler_can_use_ inline bool operator<=>( mjz_stack_obj_warper_template_t &other) {
+return **this<=> (*other);
+}
+#endif // ! Arduino
+  _compiler_can_use_ inline bool has_data() const { return m_Has_data; }
+  _compiler_can_use_ inline bool operator!() const noexcept {
     return !m_Has_data;
   }
-  constexpr inline operator Type *() & { return pointer_to_data(); }
-  constexpr inline operator const Type *() & { return pointer_to_data(); }
-  constexpr inline operator const Type *() const & { return pointer_to_data(); }
-  constexpr inline operator Type &() & { return *pointer_to_data(); }
-  constexpr inline operator const Type &() & { return *pointer_to_data(); }
-  constexpr inline operator const Type &() const & {
+  _compiler_can_use_ inline operator Type *() & { return pointer_to_data(); }
+  _compiler_can_use_ inline operator const Type *() & {
+    return pointer_to_data();
+  }
+  _compiler_can_use_ inline operator const Type *() const & {
+    return pointer_to_data();
+  }
+  _compiler_can_use_ inline operator Type &() & { return *pointer_to_data(); }
+  _compiler_can_use_ inline operator const Type &() & {
     return *pointer_to_data();
   }
-  constexpr inline operator Type &&() && { return std::move(*temp_me()); }
-  constexpr inline operator const Type &&() && { return std::move(*temp_me()); }
-  constexpr inline operator const Type &&() const && {
+  _compiler_can_use_ inline operator const Type &() const & {
+    return *pointer_to_data();
+  }
+  _compiler_can_use_ inline operator Type &&() && {
     return std::move(*temp_me());
   }
-  constexpr inline operator Type() & {
+  _compiler_can_use_ inline operator const Type &&() && {
+    return std::move(*temp_me());
+  }
+  _compiler_can_use_ inline operator const Type &&() const && {
+    return std::move(*temp_me());
+  }
+  _compiler_can_use_ inline operator Type() & {
     return get_obj_creator().obj_constructor(*pointer_to_data());
   }
-  constexpr inline operator Type() const & {
+  _compiler_can_use_ inline operator Type() const & {
     return get_obj_creator().obj_constructor(*pointer_to_data());
   }
-  constexpr inline operator Type() && {
+  _compiler_can_use_ inline operator Type() && {
     return get_obj_creator().obj_constructor(std::move(*temp_me()));
   }
-  constexpr inline operator Type() const && {
+  _compiler_can_use_ inline operator Type() const && {
     return get_obj_creator().obj_constructor(std::move(*temp_me()));
   }
-
-  constexpr explicit operator bool() const noexcept { return has_data(); }
-  constexpr bool has_value() const noexcept { return has_data(); }
-  template <class... Args>
-  T &emplace(Args &&...args) & {
+  _compiler_can_use_ explicit operator bool() const noexcept {
+    return has_data();
+  }
+  _compiler_can_use_ bool has_value() const noexcept { return has_data(); }
+  template <class... Args> T &emplace(Args &&...args) & {
     construct(std::forward<Args>(args)...);
   }
   template <class U, class... Args>
@@ -6188,48 +6556,41 @@ struct mjz_stack_obj_warper_template_t
     } catch (...) {
     }
   }
-  template <class F>
-  mjz_stack_obj_warper_template_t or_else(F &&f) const & {
+  template <class F> mjz_stack_obj_warper_template_t or_else(F &&f) const & {
     return has_data() ? *this : std::forward<F>(f)();
   }
-  template <class F>
-  mjz_stack_obj_warper_template_t or_else(F &&f) && {
+  template <class F> mjz_stack_obj_warper_template_t or_else(F &&f) && {
     return has_data() ? temp_me() : std::forward<F>(f)();
   }
-  constexpr Type &&value() && { return *temp_me(); }
-  constexpr const Type &value() const & { return **this; }
-  constexpr Type &value() & { return **this; }
+  _compiler_can_use_ Type &&value() && { return *temp_me(); }
+  _compiler_can_use_ const Type &value() const & { return **this; }
+  _compiler_can_use_ Type &value() & { return **this; }
   template <class U>
-  constexpr Type value_or(U &&default_value) const & {
+  _compiler_can_use_ Type value_or(U &&default_value) const & {
     return has_data() ? **this : static_cast<T>(std::forward<U>(default_value));
   }
-  template <class U>
-  constexpr Type value_or(U &&default_value) & {
+  template <class U> _compiler_can_use_ Type value_or(U &&default_value) & {
     return has_data() ? **this : static_cast<T>(std::forward<U>(default_value));
   }
-  template <class U>
-  constexpr Type value_or(U &&default_value) && {
+  template <class U> _compiler_can_use_ Type value_or(U &&default_value) && {
     return has_data() ? std::move(*temp_me())
                       : static_cast<T>(std::forward<U>(default_value));
   }
-  template <class F>
-  constexpr auto transform(F &&f) & {
+  template <class F> _compiler_can_use_ auto transform(F &&f) & {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(O()))>(
           std::forward<F>(f)(O()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto transform(F &&f) const & {
+  template <class F> _compiler_can_use_ auto transform(F &&f) const & {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(O()))>(
           std::forward<F>(f)(O()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto transform(F &&f) && {
+  template <class F> _compiler_can_use_ auto transform(F &&f) && {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().O())))>(
@@ -6237,8 +6598,7 @@ struct mjz_stack_obj_warper_template_t
     }
     return {};
   }
-  template <class F>
-  constexpr auto transform(F &&f) const && {
+  template <class F> _compiler_can_use_ auto transform(F &&f) const && {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().O())))>(
@@ -6246,24 +6606,21 @@ struct mjz_stack_obj_warper_template_t
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) & {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) & {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(O()))>(
           std::forward<F>(f)(O()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) const & {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) const & {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(O()))>(
           std::forward<F>(f)(O()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) && {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) && {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().O())))>(
@@ -6271,8 +6628,7 @@ struct mjz_stack_obj_warper_template_t
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) const && {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) const && {
     if (has_data()) {
       return mjz_stack_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().O())))>(
@@ -6281,43 +6637,43 @@ struct mjz_stack_obj_warper_template_t
     return {};
   }
 
- public:
-  constexpr inline Type *copy_to(Type *dest, bool dest_has_obj) & {
+public:
+  _compiler_can_use_ inline Type *copy_to(Type *dest, bool dest_has_obj) & {
     return copy_to_place(dest, dest_has_obj);
   }
-  constexpr inline Type *move_to(Type *dest, bool dest_has_obj) {
+  _compiler_can_use_ inline Type *move_to(Type *dest, bool dest_has_obj) {
     return move_to_place(dest, dest_has_obj);
   }
-  constexpr inline Type &copy_to(Type &dest, bool dest_has_obj) & {
+  _compiler_can_use_ inline Type &copy_to(Type &dest, bool dest_has_obj) & {
     return *copy_to(&dest, dest_has_obj);
   }
-  constexpr inline Type &move_to(Type &dest, bool dest_has_obj) {
+  _compiler_can_use_ inline Type &move_to(Type &dest, bool dest_has_obj) {
     return *move_to(&dest, dest_has_obj);
   }
-  constexpr inline mjz_stack_obj_warper_template_t &copy_to(
-      mjz_stack_obj_warper_template_t &dest) & {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  copy_to(mjz_stack_obj_warper_template_t &dest) & {
     if (this != &dest)
       dest.init_with_unsafe_placement_new(
           copy_to(dest.pointer_to_unsafe_data(), dest.has_data()));
     return dest;
   }
-  constexpr inline mjz_stack_obj_warper_template_t &move_to(
-      mjz_stack_obj_warper_template_t &dest) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t &
+  move_to(mjz_stack_obj_warper_template_t &dest) {
     if (this != &dest)
       dest.init_with_unsafe_placement_new(
           move_to(dest.pointer_to_unsafe_data(), dest.has_data()));
     return dest;
   }
-  constexpr inline mjz_stack_obj_warper_template_t *copy_to(
-      mjz_stack_obj_warper_template_t *dest) & {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t *
+  copy_to(mjz_stack_obj_warper_template_t *dest) & {
     return &copy_to(*dest);
   }
-  constexpr inline mjz_stack_obj_warper_template_t *move_to(
-      mjz_stack_obj_warper_template_t *dest) {
+  _compiler_can_use_ inline mjz_stack_obj_warper_template_t *
+  move_to(mjz_stack_obj_warper_template_t *dest) {
     return &move_to(*dest);
   }
 
- public:  // unsafe may cuse undefined behavior
+public: // unsafe may cuse undefined behavior
   mjz_stack_obj_warper_template_t &remove_const() const & {
     return *mjz_ard::remove_const(this);
   }
@@ -6341,9 +6697,9 @@ struct mjz_stack_obj_warper_template_t
 template <class Type, const size_t m_Size, bool error_check = 1,
           bool construct_obj_on_constructor = 1,
           class my_obj_creator = mjz_temp_type_obj_algorithims_warpper_t<
-              Type>>        // i promise that their is no allocation
-class extended_mjz_Array {  // fixed size extended_mjz_Array of values
- public:
+              Type>>       // i promise that their is no allocation
+class extended_mjz_Array { // fixed size extended_mjz_Array of values
+public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
@@ -6361,143 +6717,103 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
   using const_iterator = iterator_template_ptr_warper<const_iterator_r, Type>;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  constexpr inline void assign(const Type &_Value) { fill(_Value); }
-  constexpr inline void fill(const Type &value) {
+  _compiler_can_use_ inline void assign(const Type &_Value) { fill(_Value); }
+  _compiler_can_use_ inline void fill(const Type &value) {
     iterator fst = begin();
     iterator lst = end();
-    while (fst < lst) *fst++ = value;
+    while (fst < lst)
+      *fst++ = value;
   }
-  constexpr inline void swap(extended_mjz_Array &other) {
+  _compiler_can_use_ inline void swap(extended_mjz_Array &other) {
     iterator fst[2] = {begin(), other.begin()};
     iterator lst[2] = {end(), other.end()};
     while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
       std::swap(*fst[0]++, *fst[1]++);
   }
-  [[nodiscard]] iterator begin() noexcept { return base(); }
-  constexpr inline
-
-      [[nodiscard]] const_iterator
-      begin() const noexcept {
+  _THIS_IS_YOURS_NOW_ iterator begin() noexcept { return base(); }
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_iterator
+  begin() const noexcept {
     return base();
   }
-  constexpr inline
-
-      [[nodiscard]] iterator
-      end() noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ iterator end() noexcept {
     return base() + m_Size;
   }
-  constexpr inline
-
-      [[nodiscard]] const_iterator
-      end() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_iterator
+  end() const noexcept {
     return base() + m_Size;
   }
-  constexpr inline
-
-      [[nodiscard]] reverse_iterator
-      rbegin() noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ reverse_iterator
+  rbegin() noexcept {
     return reverse_iterator(end());
   }
-  constexpr inline
-
-      [[nodiscard]] const_reverse_iterator
-      rbegin() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_reverse_iterator
+  rbegin() const noexcept {
     return const_reverse_iterator(end());
   }
-  constexpr inline
-
-      [[nodiscard]] reverse_iterator
-      rend() noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ reverse_iterator
+  rend() noexcept {
     return reverse_iterator(begin());
   }
-  constexpr inline
-
-      [[nodiscard]] const_reverse_iterator
-      rend() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_reverse_iterator
+  rend() const noexcept {
     return const_reverse_iterator(begin());
   }
-  constexpr inline
-
-      [[nodiscard]] const_iterator
-      cbegin() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_iterator
+  cbegin() const noexcept {
     return begin();
   }
-  constexpr inline
-
-      [[nodiscard]] const_iterator
-      cend() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_iterator
+  cend() const noexcept {
     return end();
   }
-  constexpr inline
-
-      [[nodiscard]] const_reverse_iterator
-      crbegin() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_reverse_iterator
+  crbegin() const noexcept {
     return rbegin();
   }
-  constexpr inline
-
-      [[nodiscard]] const_reverse_iterator
-      crend() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_reverse_iterator
+  crend() const noexcept {
     return rend();
   }
-  constexpr inline
-
-      [[nodiscard]] constexpr size_type
-      size() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ size_type
+  size() const noexcept {
     return m_Size;
   }
-  constexpr inline
-
-      [[nodiscard]] constexpr size_type
-      max_size() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ size_type
+  max_size() const noexcept {
     return m_Size;
   }
-  constexpr inline
-
-      constexpr bool
-      empty() const noexcept {
-    return !!m_Size;
-  }
-  constexpr inline
-
-      [[nodiscard]] reference
-      at(size_type _Pos) {
-    if constexpr (error_check) {
+  _compiler_can_use_ inline bool empty() const noexcept { return !!m_Size; }
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ reference at(size_type _Pos) {
+    if _compiler_can_use_ (error_check) {
       if (m_Size <= _Pos) {
         invld_throw();
       }
     }
     return *m_elements[_Pos];
   }
-  constexpr inline
-
-      [[nodiscard]] constexpr const_reference
-      at(size_type _Pos) const {
-    if constexpr (error_check) {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_reference
+  at(size_type _Pos) const {
+    if _compiler_can_use_ (error_check) {
       if (m_Size <= _Pos) {
         invld_throw();
       }
     }
     return *m_elements[_Pos];
   }
-  constexpr inline
-
-      [[nodiscard]] reference
-      operator[](size_type _Pos)
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ reference
+  operator[](size_type _Pos)
   /* strengthened */ {
-    if constexpr (error_check) {
+    if _compiler_can_use_ (error_check) {
       if (_Pos >= m_Size) {
         throw std::exception{"extended_mjz_Array subscript out of range"};
       }
     }
     return *m_elements[_Pos];
   }
-  constexpr inline
-
-      [[nodiscard]] constexpr const_reference
-      operator[](size_type _Pos) const noexcept
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_reference
+  operator[](size_type _Pos) const noexcept
   /* strengthened */ {
-    if constexpr (error_check) {
+    if _compiler_can_use_ (error_check) {
       {
         if (_Pos >= m_Size)
           throw std::exception{"extended_mjz_Array subscript out of range"};
@@ -6505,58 +6821,47 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     }
     return *m_elements[_Pos];
   }
-  constexpr inline
-
-      [[nodiscard]] reference
-      front() noexcept /* strengthened */ {
-    return *m_elements[0];
-  }
-  constexpr inline
-
-      [[nodiscard]] constexpr const_reference
-      front() const noexcept
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ reference front() noexcept
   /* strengthened */ {
     return *m_elements[0];
   }
-  constexpr inline
-
-      [[nodiscard]] reference
-      back() noexcept /* strengthened */ {
-    return *m_elements[m_Size - 1];
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_reference
+  front() const noexcept
+  /* strengthened */ {
+    return *m_elements[0];
   }
-  constexpr inline
-
-      [[nodiscard]] constexpr const_reference
-      back() const noexcept
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ reference back() noexcept
   /* strengthened */ {
     return *m_elements[m_Size - 1];
   }
-  constexpr inline
-
-      [[nodiscard]] my_stack_obj_buffer_t *
-      data() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline const_reference
+  back() const noexcept
+  /* strengthened */ {
+    return *m_elements[m_Size - 1];
+  }
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ my_stack_obj_buffer_t *
+  data() noexcept {
     return m_elements;
   }
-  constexpr inline
-
-      [[nodiscard]] const my_stack_obj_buffer_t *
-      data() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const my_stack_obj_buffer_t *
+  data() const noexcept {
     return m_elements;
   }
-  constexpr inline [[nodiscard]] iterator_r get_wrapper_it() noexcept {
+  _compiler_can_use_ _THIS_IS_YOURS_NOW_ inline iterator_r
+  get_wrapper_it() noexcept {
     return {m_elements, m_Size};
   }
-  constexpr inline
-
-      [[nodiscard]] const_iterator_r
-      get_wrapper_it() const noexcept {
+  _compiler_can_use_ inline _THIS_IS_YOURS_NOW_ const_iterator_r
+  get_wrapper_it() const noexcept {
     return {m_elements, m_Size};
   }
   [[noreturn]] void invld_throw() const {
     throw std::exception("invalid extended_mjz_Array<T, N> subscript");
   }
-  constexpr inline iterator_r base() { return iterator_r(m_elements, m_Size); }
-  constexpr inline const_iterator_r base() const {
+  _compiler_can_use_ inline iterator_r base() {
+    return iterator_r(m_elements, m_Size);
+  }
+  _compiler_can_use_ inline const_iterator_r base() const {
     return const_iterator_r(m_elements, m_Size);
   }
   my_stack_obj_buffer_t m_elements[m_Size];
@@ -6565,154 +6870,176 @@ template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
           class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
               static_str_algo::remove_reference_t<my_iner_Type_>>>
 class mjz_heap_obj_warper_template_t {
- private:
+private:
   using Type = static_str_algo::remove_reference_t<my_iner_Type_>;
   using container_Type =
       mjz_stack_obj_warper_template_t<Type, construct_obj_on_constructor,
                                       my_obj_creator_t>;
   using container_Type_ptr = std::unique_ptr<container_Type>;
   container_Type_ptr m_ptr;
-  static constexpr size_t sizeof_Type = container_Type::sizeof_Type;
+  static _compiler_can_use_ size_t sizeof_Type = container_Type::sizeof_Type;
 
- public:
-  constexpr inline ~mjz_heap_obj_warper_template_t() {}
-  constexpr inline mjz_heap_obj_warper_template_t()
+public:
+  _compiler_can_use_ inline ~mjz_heap_obj_warper_template_t() {}
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t()
       : m_ptr(std::make_unique<container_Type>()) {}
-  constexpr inline mjz_heap_obj_warper_template_t(
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t(
       mjz_heap_obj_warper_template_t &&temp)
       : m_ptr(std::move(temp.m_ptr)) {}
-  constexpr inline mjz_heap_obj_warper_template_t(
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t(
       const mjz_heap_obj_warper_template_t &&temp)
       : m_ptr(std::move(temp.m_ptr)) {}
-  constexpr inline mjz_heap_obj_warper_template_t(
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t(
       mjz_heap_obj_warper_template_t &temp)
       : m_ptr(std::make_unique<container_Type>(*temp.m_ptr)) {}
-  constexpr inline mjz_heap_obj_warper_template_t(
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t(
       const mjz_heap_obj_warper_template_t &temp)
       : m_ptr(std::make_unique<container_Type>(*temp.m_ptr)) {}
   template <typename T0, typename... Ts>
-  constexpr inline mjz_heap_obj_warper_template_t(T0 &&arg0, Ts &&...args)
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t(T0 &&arg0,
+                                                           Ts &&...args)
       : m_ptr(std::make_unique<container_Type>(std::forward<T0>(arg0),
                                                std::forward<Ts>(args)...)) {}
-#define GET_RVR_BASE_MHOWTT(fn, ...)                \
-  do {                                              \
-    return std::move(*this).base().fn(__VA_ARGS__); \
+#define GET_RVR_BASE_MHOWTT(fn, ...)                                           \
+  do {                                                                         \
+    return std::move(*this).base().fn(__VA_ARGS__);                            \
   } while (0)
-#define GET_LVR_BASE_MHOWTT(fn, ...)       \
-  do {                                     \
-    return (*this).base().fn(__VA_ARGS__); \
+#define GET_LVR_BASE_MHOWTT(fn, ...)                                           \
+  do {                                                                         \
+    return (*this).base().fn(__VA_ARGS__);                                     \
   } while (0)
-#define Ret_me_RVR_BASE_MHOWTT(fn, ...)      \
-  do {                                       \
-    std::move(*this).base().fn(__VA_ARGS__); \
-    return *this;                            \
+#define Ret_me_RVR_BASE_MHOWTT(fn, ...)                                        \
+  do {                                                                         \
+    std::move(*this).base().fn(__VA_ARGS__);                                   \
+    return *this;                                                              \
   } while (0)
-#define Ret_me_LVR_BASE_MHOWTT(fn, ...) \
-  do {                                  \
-    (*this).base().fn(__VA_ARGS__);     \
-    return *this;                       \
+#define Ret_me_LVR_BASE_MHOWTT(fn, ...)                                        \
+  do {                                                                         \
+    (*this).base().fn(__VA_ARGS__);                                            \
+    return *this;                                                              \
   } while (0)
-  constexpr inline container_Type &base() & { return *m_ptr; }
-  constexpr inline const container_Type &base() const & { return *m_ptr; }
-  constexpr inline container_Type &&base() && { return std::move(*m_ptr); }
-  constexpr inline const container_Type &&base() const && {
+  _compiler_can_use_ inline container_Type &base() & { return *m_ptr; }
+  _compiler_can_use_ inline const container_Type &base() const & {
+    return *m_ptr;
+  }
+  _compiler_can_use_ inline container_Type &&base() && {
     return std::move(*m_ptr);
   }
-  constexpr inline container_Type_ptr &ptr() & { return m_ptr; }
-  constexpr inline const container_Type_ptr &ptr() const & { return m_ptr; }
-  constexpr inline container_Type_ptr &&ptr() && { return std::move(m_ptr); }
-  constexpr inline const container_Type_ptr &&ptr() const && {
+  _compiler_can_use_ inline const container_Type &&base() const && {
+    return std::move(*m_ptr);
+  }
+  _compiler_can_use_ inline container_Type_ptr &ptr() & { return m_ptr; }
+  _compiler_can_use_ inline const container_Type_ptr &ptr() const & {
+    return m_ptr;
+  }
+  _compiler_can_use_ inline container_Type_ptr &&ptr() && {
     return std::move(m_ptr);
   }
-  constexpr inline mjz_heap_obj_warper_template_t &operator=(
-      mjz_heap_obj_warper_template_t &&obj) {
+  _compiler_can_use_ inline const container_Type_ptr &&ptr() const && {
+    return std::move(m_ptr);
+  }
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  operator=(mjz_heap_obj_warper_template_t &&obj) {
     base() = std::move(obj.base());
     return *this;
   }
-  constexpr inline mjz_heap_obj_warper_template_t &operator=(
-      mjz_heap_obj_warper_template_t &obj) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  operator=(mjz_heap_obj_warper_template_t &obj) {
     base() = obj.base();
     return *this;
   }
-  constexpr inline mjz_heap_obj_warper_template_t &operator=(
-      const mjz_heap_obj_warper_template_t &&obj) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  operator=(const mjz_heap_obj_warper_template_t &&obj) {
     base() = std::move(obj.base());
     return *this;
   }
   template <typename T0>
-  constexpr inline mjz_heap_obj_warper_template_t &operator=(T0 &&arg0) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  operator=(T0 &&arg0) {
     base().operator=(std::forward<T0>(arg0));
     return *this;
   }
-  constexpr inline my_obj_creator_t get_obj_creator() {
+  _compiler_can_use_ inline my_obj_creator_t get_obj_creator() {
     return base().get_obj_creator();
   }
 
- public:
-  constexpr inline Type &o() & { GET_LVR_BASE_MHOWTT(o); }
-  constexpr inline Type *op() & { GET_LVR_BASE_MHOWTT(o); }
-  constexpr inline const Type &o() const & { GET_LVR_BASE_MHOWTT(o); }
-  constexpr inline const Type *op() const & { GET_LVR_BASE_MHOWTT(op); }
-  constexpr inline const Type &&o() && { GET_RVR_BASE_MHOWTT(o); }
-  constexpr inline const Type *op() && = delete;
-  constexpr inline const Type &&o() const && { GET_RVR_BASE_MHOWTT(o); }
-  constexpr inline const Type *op() const && = delete;
+public:
+  _compiler_can_use_ inline Type &o() & { GET_LVR_BASE_MHOWTT(o); }
+  _compiler_can_use_ inline Type *op() & { GET_LVR_BASE_MHOWTT(o); }
+  _compiler_can_use_ inline const Type &o() const & { GET_LVR_BASE_MHOWTT(o); }
+  _compiler_can_use_ inline const Type *op() const & {
+    GET_LVR_BASE_MHOWTT(op);
+  }
+  _compiler_can_use_ inline const Type &&o() && { GET_RVR_BASE_MHOWTT(o); }
+  _compiler_can_use_ inline const Type *op() && = delete;
+  _compiler_can_use_ inline const Type &&o() const && {
+    GET_RVR_BASE_MHOWTT(o);
+  }
+  _compiler_can_use_ inline const Type *op() const && = delete;
   // unsafe object functions begin
-  constexpr inline Type &uo() &noexcept { GET_LVR_BASE_MHOWTT(uo); }
-  constexpr inline Type *uop() &noexcept { GET_LVR_BASE_MHOWTT(uop); }
-  constexpr inline const Type &uo() const &noexcept { GET_LVR_BASE_MHOWTT(uo); }
-  constexpr inline const Type *uop() const &noexcept {
+  _compiler_can_use_ inline Type &uo() & noexcept { GET_LVR_BASE_MHOWTT(uo); }
+  _compiler_can_use_ inline Type *uop() & noexcept { GET_LVR_BASE_MHOWTT(uop); }
+  _compiler_can_use_ inline const Type &uo() const & noexcept {
+    GET_LVR_BASE_MHOWTT(uo);
+  }
+  _compiler_can_use_ inline const Type *uop() const & noexcept {
     GET_LVR_BASE_MHOWTT(uop);
   }
-  constexpr inline const Type &&uo() &&noexcept { GET_RVR_BASE_MHOWTT(uo); }
-  constexpr inline const Type *uop() && = delete;
-  constexpr inline const Type &&uo() const &&noexcept {
+  _compiler_can_use_ inline const Type &&uo() && noexcept {
     GET_RVR_BASE_MHOWTT(uo);
   }
-  constexpr inline const Type *uop() const && = delete;
+  _compiler_can_use_ inline const Type *uop() && = delete;
+  _compiler_can_use_ inline const Type &&uo() const && noexcept {
+    GET_RVR_BASE_MHOWTT(uo);
+  }
+  _compiler_can_use_ inline const Type *uop() const && = delete;
   // unsafe object functions end
 
- public:
-  constexpr inline mjz_heap_obj_warper_template_t &operator=(Type &&obj) {
+public:
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  operator=(Type &&obj) {
     Ret_me_LVR_BASE_MHOWTT(operator=, std::move(obj));
   }
-  constexpr inline mjz_heap_obj_warper_template_t &operator=(Type &obj) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  operator=(Type &obj) {
     Ret_me_LVR_BASE_MHOWTT(operator=, obj);
   }
-  constexpr inline mjz_heap_obj_warper_template_t &operator=(const Type &obj) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  operator=(const Type &obj) {
     Ret_me_LVR_BASE_MHOWTT(operator=, obj);
   }
 
- public:
-  constexpr inline void init(const mjz_heap_obj_warper_template_t &obj) & {
+public:
+  _compiler_can_use_ inline void
+  init(const mjz_heap_obj_warper_template_t &obj) & {
     GET_LVR_BASE_MHOWTT(init, obj);
   }
-  constexpr inline void init(mjz_heap_obj_warper_template_t &obj) & {
+  _compiler_can_use_ inline void init(mjz_heap_obj_warper_template_t &obj) & {
     GET_LVR_BASE_MHOWTT(init, obj);
   }
-  constexpr inline void init(mjz_heap_obj_warper_template_t &&obj) & {
+  _compiler_can_use_ inline void init(mjz_heap_obj_warper_template_t &&obj) & {
     GET_LVR_BASE_MHOWTT(init, obj);
   }
   template <typename arg_T, typename Type>
-  constexpr inline void init(std::initializer_list<arg_T> list) & {
+  _compiler_can_use_ inline void init(std::initializer_list<arg_T> list) & {
     GET_LVR_BASE_MHOWTT(init, list);
   }
   template <typename arg_T>
-  constexpr inline void init(iterator_template_t<arg_T> list) & {
+  _compiler_can_use_ inline void init(iterator_template_t<arg_T> list) & {
     GET_LVR_BASE_MHOWTT(init, list);
   }
   template <typename... arguments_types>
-  constexpr inline void init(arguments_types &&...args) & {
+  _compiler_can_use_ inline void init(arguments_types &&...args) & {
     GET_LVR_BASE_MHOWTT(init, std::forward<arguments_types>(args)...);
   }
 
- public:
-  constexpr inline void de_init() { GET_LVR_BASE_MHOWTT(de_init); }
-  constexpr inline void de_init(int fill_VAL) {
+public:
+  _compiler_can_use_ inline void de_init() { GET_LVR_BASE_MHOWTT(de_init); }
+  _compiler_can_use_ inline void de_init(int fill_VAL) {
     GET_LVR_BASE_MHOWTT(de_init, fill_VAL);
   }
 
- public:
+public:
   using value_type = Type;
   using reference = value_type &;
   using pointer = value_type *;
@@ -6721,183 +7048,198 @@ class mjz_heap_obj_warper_template_t {
   using T = Type;
   using type = Type;
 
- public:
-  constexpr inline Type *pointer_to_unsafe_data_for_unsafe_placement_new(
-      Type *ptr) & {
+public:
+  _compiler_can_use_ inline Type *
+  pointer_to_unsafe_data_for_unsafe_placement_new(Type *ptr) & {
     GET_LVR_BASE_MHOWTT(pointer_to_unsafe_data_for_unsafe_placement_new, ptr);
   }
-  constexpr constexpr inline Type *init_with_unsafe_placement_new(Type *ptr) & {
+  _compiler_can_use_ inline Type *init_with_unsafe_placement_new(Type *ptr) & {
     GET_LVR_BASE_MHOWTT(init_with_unsafe_placement_new, ptr);
   }
 
- public:
-  constexpr inline Type &if_no_obj_then_create() & {
+public:
+  _compiler_can_use_ inline Type &if_no_obj_then_create() & {
     GET_LVR_BASE_MHOWTT(if_no_obj_then_create);
   }
-  constexpr inline Type &&if_no_obj_then_create() && {
+  _compiler_can_use_ inline Type &&if_no_obj_then_create() && {
     GET_RVR_BASE_MHOWTT(if_no_obj_then_create);
   }
-  constexpr inline Type &&if_no_obj_then_create() const && {
+  _compiler_can_use_ inline Type &&if_no_obj_then_create() const && {
     GET_RVR_BASE_MHOWTT(if_no_obj_then_create);
   }
 
- public:
-  constexpr inline uint8_t *pointer_to_unsafe_data_buffer() & {
+public:
+  _compiler_can_use_ inline uint8_t *pointer_to_unsafe_data_buffer() & {
     GET_LVR_BASE_MHOWTT(pointer_to_unsafe_data_buffer);
   }
-  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const & {
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data_buffer() const & {
     GET_LVR_BASE_MHOWTT(pointer_to_unsafe_data_buffer);
   }
-  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() && = delete;
-  constexpr inline const uint8_t *pointer_to_unsafe_data() && = delete;
-  constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const && =
-      delete;
-  constexpr inline const uint8_t *pointer_to_unsafe_data() const && = delete;
-  constexpr inline Type *pointer_to_unsafe_data() & {
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data_buffer() && = delete;
+  _compiler_can_use_ inline const uint8_t *pointer_to_unsafe_data() && = delete;
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data_buffer() const && = delete;
+  _compiler_can_use_ inline const uint8_t *
+  pointer_to_unsafe_data() const && = delete;
+  _compiler_can_use_ inline Type *pointer_to_unsafe_data() & {
     GET_LVR_BASE_MHOWTT(pointer_to_unsafe_data);
   }
-  constexpr inline const Type *pointer_to_unsafe_data() const & {
+  _compiler_can_use_ inline const Type *pointer_to_unsafe_data() const & {
     GET_LVR_BASE_MHOWTT(pointer_to_unsafe_data);
   }
-  constexpr inline const Type *throw_if_no_data_or_give_data() && = delete;
-  constexpr inline const Type *throw_if_no_data_or_give_data() const && =
-      delete;
+  _compiler_can_use_ inline const Type *
+  throw_if_no_data_or_give_data() && = delete;
+  _compiler_can_use_ inline const Type *
+  throw_if_no_data_or_give_data() const && = delete;
 
- public:
-  constexpr inline const Type *throw_if_no_data_or_give_data() const & {
+public:
+  _compiler_can_use_ inline const Type *
+  throw_if_no_data_or_give_data() const & {
     GET_LVR_BASE_MHOWTT(throw_if_no_data_or_give_data);
   }
-  constexpr inline const Type *pointer_to_data() && = delete;
-  constexpr inline const Type *pointer_to_data() const && = delete;
-  constexpr inline const Type *pointer_to_data() const & {
+  _compiler_can_use_ inline const Type *pointer_to_data() && = delete;
+  _compiler_can_use_ inline const Type *pointer_to_data() const && = delete;
+  _compiler_can_use_ inline const Type *pointer_to_data() const & {
     GET_LVR_BASE_MHOWTT(pointer_to_data);
   }
-  constexpr inline Type *pointer_to_data() & {
+  _compiler_can_use_ inline Type *pointer_to_data() & {
     GET_LVR_BASE_MHOWTT(pointer_to_data);
   }
 
- public:
-  constexpr inline Type *operator->() & { GET_LVR_BASE_MHOWTT(operator->); }
-  constexpr inline Type &&operator->() && {
+public:
+  _compiler_can_use_ inline Type *operator->() & {
+    GET_LVR_BASE_MHOWTT(operator->);
+  }
+  _compiler_can_use_ inline Type &&operator->() && {
     GET_RVR_BASE_MHOWTT(operator->);
-  }  // overload dosnt give ptr
-  constexpr inline const Type &&operator->() const && {
+  } // overload dosnt give ptr
+  _compiler_can_use_ inline const Type &&operator->() const && {
     GET_RVR_BASE_MHOWTT(operator->);
   }
   template <typename my_type>
-  constexpr inline auto operator->*(my_type my_var) & {
+  _compiler_can_use_ inline auto operator->*(my_type my_var) & {
     return pointer_to_data()->*my_var;
   }
   template <typename my_type>
-  constexpr inline auto operator->*(my_type my_var) const & {
+  _compiler_can_use_ inline auto operator->*(my_type my_var) const & {
     return pointer_to_data()->*my_var;
   }
   template <typename my_type>
   inline void operator->*(my_type my_var) && = delete;
   template <typename my_type>
   inline void operator->*(my_type my_var) const && = delete;
-  constexpr inline Type &&operator*() && { GET_RVR_BASE_MHOWTT(operator*); }
-  constexpr inline const Type &&operator*() const && {
+  _compiler_can_use_ inline Type &&operator*() && {
     GET_RVR_BASE_MHOWTT(operator*);
   }
-  constexpr inline Type &operator*() & { GET_LVR_BASE_MHOWTT(operator*); }
-  constexpr inline mjz_heap_obj_warper_template_t *operator&() & {
+  _compiler_can_use_ inline const Type &&operator*() const && {
+    GET_RVR_BASE_MHOWTT(operator*);
+  }
+  _compiler_can_use_ inline Type &operator*() & {
+    GET_LVR_BASE_MHOWTT(operator*);
+  }
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t *operator&() & {
     return this;
-  }  // &obj
-  constexpr inline mjz_heap_obj_warper_template_t *operator&() const & {
+  } // &obj
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t *
+  operator&() const & {
     return this;
   }
-  constexpr inline mjz_heap_obj_warper_template_t *operator&() && = delete;
-  constexpr inline mjz_heap_obj_warper_template_t *operator&() const && =
-      delete;
-  constexpr inline Type *operator&(int) & {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t *
+  operator&() && = delete;
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t *
+  operator&() const && = delete;
+  _compiler_can_use_ inline Type *operator&(int) & {
     return pointer_to_data();
-  }  // obj&0
-  constexpr inline Type *operator&(int) && = delete;
-  constexpr inline Type *operator&(int) const && = delete;
-  constexpr inline const Type *operator&(int) const & {
+  } // obj&0
+  _compiler_can_use_ inline Type *operator&(int) && = delete;
+  _compiler_can_use_ inline Type *operator&(int) const && = delete;
+  _compiler_can_use_ inline const Type *operator&(int) const & {
     return pointer_to_data();
-  }  // obj&0
-  constexpr constexpr inline const Type *operator->() const & {
+  } // obj&0
+  _compiler_can_use_ inline const Type *operator->() const & {
     return pointer_to_data();
   }
-  constexpr constexpr inline mjz_heap_obj_warper_template_t &&temp_me() {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &&temp_me() {
     return std::move(*this);
   }
-  constexpr constexpr inline const mjz_heap_obj_warper_template_t &&temp_me()
-      const {
+  _compiler_can_use_ inline const mjz_heap_obj_warper_template_t &&
+  temp_me() const {
     return std::move(*this);
   }
-  constexpr constexpr inline const Type &operator*() const & {
+  _compiler_can_use_ inline const Type &operator*() const & {
     return *operator->();
   }
-  constexpr constexpr inline const Type &operator()() const & { return **this; }
-  constexpr constexpr inline Type &&operator()() && {
+  _compiler_can_use_ inline const Type &operator()() const & { return **this; }
+  _compiler_can_use_ inline Type &&operator()() && {
     return std::move(*temp_me());
   }
-  constexpr constexpr inline const Type &&operator()() const && {
+  _compiler_can_use_ inline const Type &&operator()() const && {
     return std::move(*temp_me());
   }
-  constexpr constexpr inline Type &operator()() & { return **this; }
+  _compiler_can_use_ inline Type &operator()() & { return **this; }
   using my_Type_t = mjz_heap_obj_warper_template_t;
-  constexpr inline my_Type_t &operator~() & {
+  _compiler_can_use_ inline my_Type_t &operator~() & {
     Ret_me_LVR_BASE_MHOWTT(operator~);
   }
-  constexpr inline my_Type_t &operator+() & {
+  _compiler_can_use_ inline my_Type_t &operator+() & {
     Ret_me_LVR_BASE_MHOWTT(operator+);
   }
-  constexpr inline my_Type_t &operator-() & {
+  _compiler_can_use_ inline my_Type_t &operator-() & {
     Ret_me_LVR_BASE_MHOWTT(operator-);
   }
-  constexpr inline my_Type_t &&operator~() && {
+  _compiler_can_use_ inline my_Type_t &&operator~() && {
     Ret_me_RVR_BASE_MHOWTT(operator~);
   }
-  constexpr inline my_Type_t &&operator+() && {
+  _compiler_can_use_ inline my_Type_t &&operator+() && {
     Ret_me_RVR_BASE_MHOWTT(operator+);
   }
-  constexpr inline my_Type_t &&operator-() && {
+  _compiler_can_use_ inline my_Type_t &&operator-() && {
     Ret_me_RVR_BASE_MHOWTT(operator~);
   }
-  constexpr inline mjz_heap_obj_warper_template_t &operator--() & {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &operator--() & {
     de_init();
     return *this;
   }
-  constexpr inline mjz_heap_obj_warper_template_t &&operator--() && {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &&operator--() && {
     de_init();
     return temp_me();
   }
-  constexpr inline mjz_heap_obj_warper_template_t &&operator--() const && =
-      delete;
-  constexpr inline mjz_heap_obj_warper_template_t operator--(int) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &&
+  operator--() const && = delete;
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t operator--(int) {
     my_Type_t temp(std::move(**this));
     de_init();
     return temp;
   }
-  constexpr inline mjz_heap_obj_warper_template_t &operator++() & {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &operator++() & {
     // de_init();
     init();
     return *this;
   }
-  constexpr inline mjz_heap_obj_warper_template_t &&operator++() && {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &&operator++() && {
     // de_init();
     init();
     return temp_me();
   }
-  constexpr inline mjz_heap_obj_warper_template_t &&operator++() const && =
-      delete;
-  constexpr inline mjz_heap_obj_warper_template_t operator++(int) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &&
+  operator++() const && = delete;
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t operator++(int) {
     my_Type_t temp(std::move(**this));
     // you may want to reuse data soo
     // de_init();
     init();
     return temp;
   }
-  constexpr inline Type *begin() & { return pointer_to_data(); }
-  constexpr inline Type *end() & { return begin() + 1; }
-  constexpr inline const Type *begin() const & { return pointer_to_data(); }
-  constexpr inline const Type *end() const & { return begin() + 1; }
-  constexpr inline const Type *cbegin() const & { return begin(); }
-  constexpr inline const Type *cend() const & { return end(); }
+  _compiler_can_use_ inline Type *begin() & { return pointer_to_data(); }
+  _compiler_can_use_ inline Type *end() & { return begin() + 1; }
+  _compiler_can_use_ inline const Type *begin() const & {
+    return pointer_to_data();
+  }
+  _compiler_can_use_ inline const Type *end() const & { return begin() + 1; }
+  _compiler_can_use_ inline const Type *cbegin() const & { return begin(); }
+  _compiler_can_use_ inline const Type *cend() const & { return end(); }
   const Type *begin() && = delete;
   const Type *end() && = delete;
   const Type *cbegin() && = delete;
@@ -6906,16 +7248,18 @@ class mjz_heap_obj_warper_template_t {
   const Type *end() const && = delete;
   const Type *cbegin() const && = delete;
   const Type *cend() const && = delete;
-  constexpr inline constexpr static size_t size() { return 1; }  // for iterator
-  constexpr inline constexpr static size_t my_size() {
+  _compiler_can_use_ inline static size_t size() { return 1; } // for iterator
+  _compiler_can_use_ inline static size_t my_size() {
     return sizeof_Type + sizeof(container_Type_ptr);
   }
-  constexpr inline constexpr static size_t size_T() { return my_size(); }
-  constexpr inline Type &operator()(Type &&moved) & {
+  _compiler_can_use_ inline static size_t size_T() { return my_size(); }
+  _compiler_can_use_ inline Type &operator()(Type &&moved) & {
     return *this = std::move(moved);
   }
-  constexpr inline Type &operator()(Type &moved) & { return *this = moved; }
-  constexpr inline Type &operator()(const Type &moved) & {
+  _compiler_can_use_ inline Type &operator()(Type &moved) & {
+    return *this = moved;
+  }
+  _compiler_can_use_ inline Type &operator()(const Type &moved) & {
     return *this = moved;
   }
   inline Type &operator()(Type &&moved) const && = delete;
@@ -6925,66 +7269,74 @@ class mjz_heap_obj_warper_template_t {
   inline Type &operator()(Type &moved) && = delete;
   inline Type &operator()(const Type &moved) && = delete;
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) const & {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) const & {
     return f(**this, std::forward<args_t>(args)...);
   }
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) & {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) & {
     return f(**this, std::forward<args_t>(args)...);
   }
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) && {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) && {
     return f(std::move(*temp_me()), std::forward<args_t>(args)...);
   }
   template <class return_type = auto, class function_type, typename... args_t>
-  constexpr inline return_type do_or_throw(function_type f,
-                                           args_t &&...args) const && {
+  _compiler_can_use_ inline return_type do_or_throw(function_type f,
+                                                    args_t &&...args) const && {
     return f(std::move(*temp_me()), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) & {
-    if (has_data()) f(base(), std::forward<args_t>(args)...);
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) & {
+    if (has_data())
+      f(base(), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) && {
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) && {
     if (has_data())
       f(std::move(temp_me().base()), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) const && {
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) const && {
     if (has_data())
       f(std::move(temp_me().base()), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void operator()(function_type f, args_t &&...args) const & {
-    if (has_data()) f(base(), std::forward<args_t>(args)...);
+  _compiler_can_use_ inline void operator()(function_type f,
+                                            args_t &&...args) const & {
+    if (has_data())
+      f(base(), std::forward<args_t>(args)...);
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) const & {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) const & {
     if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
     }
-    if (has_data()) f(base(), std::forward<args_t>(args)...);
+    if (has_data())
+      f(base(), std::forward<args_t>(args)...);
     return;
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) & {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) & {
     if (do_throw) {
       f(**this, std::forward<args_t>(args)...);
       return;
     }
-    if (has_data()) f(base(), std::forward<args_t>(args)...);
+    if (has_data())
+      f(base(), std::forward<args_t>(args)...);
     return;
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) && {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) && {
     if (do_throw) {
       f(std::move(*temp_me()), std::forward<args_t>(args)...);
       return;
@@ -6994,8 +7346,8 @@ class mjz_heap_obj_warper_template_t {
     return;
   }
   template <class function_type, typename... args_t>
-  constexpr inline void i_do_nt_know(bool do_throw, function_type f,
-                                     args_t &&...args) const && {
+  _compiler_can_use_ inline void i_do_nt_know(bool do_throw, function_type f,
+                                              args_t &&...args) const && {
     if (do_throw) {
       f(std::move(*temp_me()), std::forward<args_t>(args)...);
       return;
@@ -7006,7 +7358,7 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) const & {
     if (has_data()) {
@@ -7016,7 +7368,7 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) && {
     if (has_data()) {
@@ -7027,7 +7379,7 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) const && {
     if (has_data()) {
@@ -7038,7 +7390,7 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class return_type = auto, class has_data_function_type,
             class no_data_function_type, typename... args_t>
-  constexpr inline return_type do_first_if_true_or_second_if_false_ret(
+  _compiler_can_use_ inline return_type do_first_if_true_or_second_if_false_ret(
       has_data_function_type has_data_function,
       no_data_function_type no_data_function, args_t &&...args) & {
     if (has_data()) {
@@ -7048,9 +7400,10 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) const & {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) const & {
     if (has_data()) {
       has_data_function(base(), std::forward<args_t>(args)...);
       return;
@@ -7060,9 +7413,10 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) & {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) & {
     if (has_data()) {
       has_data_function(base(), std::forward<args_t>(args)...);
       return;
@@ -7072,9 +7426,10 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) && {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) && {
     if (has_data()) {
       has_data_function(std::move(temp_me().base()),
                         std::forward<args_t>(args)...);
@@ -7085,9 +7440,10 @@ class mjz_heap_obj_warper_template_t {
   }
   template <class has_data_function_type, class no_data_function_type,
             typename... args_t>
-  constexpr inline void do_first_if_true_or_second_if_false(
-      has_data_function_type has_data_function,
-      no_data_function_type no_data_function, args_t &&...args) const && {
+  _compiler_can_use_ inline void
+  do_first_if_true_or_second_if_false(has_data_function_type has_data_function,
+                                      no_data_function_type no_data_function,
+                                      args_t &&...args) const && {
     if (has_data()) {
       has_data_function(std::move(temp_me().base()),
                         std::forward<args_t>(args)...);
@@ -7097,147 +7453,169 @@ class mjz_heap_obj_warper_template_t {
     return;
   }
 
- public:
-  constexpr inline bool operator==(
-      const mjz_heap_obj_warper_template_t &other) const {
+public:
+  _compiler_can_use_ inline bool
+  operator==(const mjz_heap_obj_warper_template_t &other) const {
     return **this == *other;
   }
-  constexpr inline bool operator!=(
-      const mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator!=(const mjz_heap_obj_warper_template_t &other) const {
     return **this != *other;
   }
-  constexpr inline bool operator<(
-      const mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<(const mjz_heap_obj_warper_template_t &other) const {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(
-      const mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<=(const mjz_heap_obj_warper_template_t &other) const {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(
-      const mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>(const mjz_heap_obj_warper_template_t &other) const {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(
-      const mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>=(const mjz_heap_obj_warper_template_t &other) const {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>(const mjz_heap_obj_warper_template_t &other) const { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
+ _compiler_can_use_ inline bool operator<=>(const mjz_heap_obj_warper_template_t &other) const {
+return **this<=> (*other);
+}
+#endif // ! Arduino
 
-  constexpr inline bool operator==(
-      mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator==(mjz_heap_obj_warper_template_t &other) const {
     return **this == *other;
   }
-  constexpr inline bool operator!=(
-      mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator!=(mjz_heap_obj_warper_template_t &other) const {
     return **this != *other;
   }
-  constexpr inline bool operator<(mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<(mjz_heap_obj_warper_template_t &other) const {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(
-      mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator<=(mjz_heap_obj_warper_template_t &other) const {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>(mjz_heap_obj_warper_template_t &other) const {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(
-      mjz_heap_obj_warper_template_t &other) const {
+  _compiler_can_use_ inline bool
+  operator>=(mjz_heap_obj_warper_template_t &other) const {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>( mjz_heap_obj_warper_template_t &other) const { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
+ _compiler_can_use_ inline bool operator<=>( mjz_heap_obj_warper_template_t &other) const {
+return **this<=> (*other);
+}
+#endif // ! Arduino
 
-  constexpr inline bool operator==(
-      const mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator==(const mjz_heap_obj_warper_template_t &other) {
     return **this == *other;
   }
-  constexpr inline bool operator!=(
-      const mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator!=(const mjz_heap_obj_warper_template_t &other) {
     return **this != *other;
   }
-  constexpr inline bool operator<(const mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<(const mjz_heap_obj_warper_template_t &other) {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(
-      const mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<=(const mjz_heap_obj_warper_template_t &other) {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(const mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>(const mjz_heap_obj_warper_template_t &other) {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(
-      const mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>=(const mjz_heap_obj_warper_template_t &other) {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>(const mjz_heap_obj_warper_template_t &other) { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
-  constexpr inline bool operator==(mjz_heap_obj_warper_template_t &other) {
+ _compiler_can_use_ inline bool operator<=>(const mjz_heap_obj_warper_template_t &other) {
+return **this<=> (*other);
+}
+#endif // ! Arduino
+  _compiler_can_use_ inline bool
+  operator==(mjz_heap_obj_warper_template_t &other) {
     return **this == *other;
   }
-  constexpr inline bool operator!=(mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator!=(mjz_heap_obj_warper_template_t &other) {
     return **this != *other;
   }
-  constexpr inline bool operator<(mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<(mjz_heap_obj_warper_template_t &other) {
     return **this < (*other);
   }
-  constexpr inline bool operator<=(mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator<=(mjz_heap_obj_warper_template_t &other) {
     return **this <= (*other);
   }
-  constexpr inline bool operator>(mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>(mjz_heap_obj_warper_template_t &other) {
     return **this > (*other);
   }
-  constexpr inline bool operator>=(mjz_heap_obj_warper_template_t &other) {
+  _compiler_can_use_ inline bool
+  operator>=(mjz_heap_obj_warper_template_t &other) {
     return **this >= (*other);
   }
 #if 0
- constexpr inline bool operator<=>( mjz_heap_obj_warper_template_t &other) { 
- return **this<=> (*other);
- }
-#endif  // ! Arduino
-  constexpr inline bool has_data() const { return base().has_data(); }
-  constexpr inline bool operator!() const noexcept { return !has_data(); }
-  constexpr inline operator Type *() & { return pointer_to_data(); }
-  constexpr inline operator const Type *() & { return pointer_to_data(); }
-  constexpr inline operator const Type *() const & { return pointer_to_data(); }
-  constexpr inline operator Type &() & { return *pointer_to_data(); }
-  constexpr inline operator const Type &() & { return *pointer_to_data(); }
-  constexpr inline operator const Type &() const & {
+ _compiler_can_use_ inline bool operator<=>( mjz_heap_obj_warper_template_t &other) {
+return **this<=> (*other);
+}
+#endif // ! Arduino
+  _compiler_can_use_ inline bool has_data() const { return base().has_data(); }
+  _compiler_can_use_ inline bool operator!() const noexcept {
+    return !has_data();
+  }
+  _compiler_can_use_ inline operator Type *() & { return pointer_to_data(); }
+  _compiler_can_use_ inline operator const Type *() & {
+    return pointer_to_data();
+  }
+  _compiler_can_use_ inline operator const Type *() const & {
+    return pointer_to_data();
+  }
+  _compiler_can_use_ inline operator Type &() & { return *pointer_to_data(); }
+  _compiler_can_use_ inline operator const Type &() & {
     return *pointer_to_data();
   }
-  constexpr inline operator Type &&() && { return std::move(*temp_me()); }
-  constexpr inline operator const Type &&() && { return std::move(*temp_me()); }
-  constexpr inline operator const Type &&() const && {
+  _compiler_can_use_ inline operator const Type &() const & {
+    return *pointer_to_data();
+  }
+  _compiler_can_use_ inline operator Type &&() && {
     return std::move(*temp_me());
   }
-  constexpr inline operator Type() & {
+  _compiler_can_use_ inline operator const Type &&() && {
+    return std::move(*temp_me());
+  }
+  _compiler_can_use_ inline operator const Type &&() const && {
+    return std::move(*temp_me());
+  }
+  _compiler_can_use_ inline operator Type() & {
     return get_obj_creator().obj_constructor(*pointer_to_data());
   }
-  constexpr inline operator Type() const & {
+  _compiler_can_use_ inline operator Type() const & {
     return get_obj_creator().obj_constructor(*pointer_to_data());
   }
-  constexpr inline operator Type() && {
+  _compiler_can_use_ inline operator Type() && {
     return get_obj_creator().obj_constructor(std::move(*temp_me()));
   }
-  constexpr inline operator Type() const && {
+  _compiler_can_use_ inline operator Type() const && {
     return get_obj_creator().obj_constructor(std::move(*temp_me()));
   }
-
-  constexpr explicit operator bool() const noexcept { return has_data(); }
-  constexpr bool has_value() const noexcept { return has_data(); }
-  template <class... Args>
-  T &emplace(Args &&...args) & {
+  _compiler_can_use_ explicit operator bool() const noexcept {
+    return has_data();
+  }
+  _compiler_can_use_ bool has_value() const noexcept { return has_data(); }
+  template <class... Args> T &emplace(Args &&...args) & {
     construct(std::forward<Args>(args)...);
   }
   template <class U, class... Args>
@@ -7250,48 +7628,41 @@ class mjz_heap_obj_warper_template_t {
     } catch (...) {
     }
   }
-  template <class F>
-  mjz_heap_obj_warper_template_t or_else(F &&f) const & {
+  template <class F> mjz_heap_obj_warper_template_t or_else(F &&f) const & {
     return has_data() ? *this : std::forward<F>(f)();
   }
-  template <class F>
-  mjz_heap_obj_warper_template_t or_else(F &&f) && {
+  template <class F> mjz_heap_obj_warper_template_t or_else(F &&f) && {
     return has_data() ? temp_me() : std::forward<F>(f)();
   }
-  constexpr Type &&value() && { return *temp_me(); }
-  constexpr const Type &value() const & { return **this; }
-  constexpr Type &value() & { return **this; }
+  _compiler_can_use_ Type &&value() && { return *temp_me(); }
+  _compiler_can_use_ const Type &value() const & { return **this; }
+  _compiler_can_use_ Type &value() & { return **this; }
   template <class U>
-  constexpr Type value_or(U &&default_value) const & {
+  _compiler_can_use_ Type value_or(U &&default_value) const & {
     return has_data() ? **this : static_cast<T>(std::forward<U>(default_value));
   }
-  template <class U>
-  constexpr Type value_or(U &&default_value) & {
+  template <class U> _compiler_can_use_ Type value_or(U &&default_value) & {
     return has_data() ? **this : static_cast<T>(std::forward<U>(default_value));
   }
-  template <class U>
-  constexpr Type value_or(U &&default_value) && {
+  template <class U> _compiler_can_use_ Type value_or(U &&default_value) && {
     return has_data() ? std::move(*temp_me())
                       : static_cast<T>(std::forward<U>(default_value));
   }
-  template <class F>
-  constexpr auto transform(F &&f) & {
+  template <class F> _compiler_can_use_ auto transform(F &&f) & {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           base()))>(std::forward<F>(f)(base()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto transform(F &&f) const & {
+  template <class F> _compiler_can_use_ auto transform(F &&f) const & {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           base()))>(std::forward<F>(f)(base()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto transform(F &&f) && {
+  template <class F> _compiler_can_use_ auto transform(F &&f) && {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().base())))>(
@@ -7299,8 +7670,7 @@ class mjz_heap_obj_warper_template_t {
     }
     return {};
   }
-  template <class F>
-  constexpr auto transform(F &&f) const && {
+  template <class F> _compiler_can_use_ auto transform(F &&f) const && {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().base())))>(
@@ -7308,24 +7678,21 @@ class mjz_heap_obj_warper_template_t {
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) & {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) & {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           base()))>(std::forward<F>(f)(base()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) const & {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) const & {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           base()))>(std::forward<F>(f)(base()));
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) && {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) && {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().base())))>(
@@ -7333,8 +7700,7 @@ class mjz_heap_obj_warper_template_t {
     }
     return {};
   }
-  template <class F>
-  constexpr auto and_then(F &&f) const && {
+  template <class F> _compiler_can_use_ auto and_then(F &&f) const && {
     if (has_data()) {
       return mjz_heap_obj_warper_template_t<decltype(std::forward<F>(f)(
           std::move(temp_me().base())))>(
@@ -7343,80 +7709,85 @@ class mjz_heap_obj_warper_template_t {
     return {};
   }
 
- public:
-  constexpr inline Type *copy_to(Type *dest, bool dest_has_obj) & {
+public:
+  _compiler_can_use_ inline Type *copy_to(Type *dest, bool dest_has_obj) & {
     GET_LVR_BASE_MHOWTT(copy_to);
   }
-  constexpr inline Type *move_to(Type *dest, bool dest_has_obj) {
+  _compiler_can_use_ inline Type *move_to(Type *dest, bool dest_has_obj) {
     GET_LVR_BASE_MHOWTT(move_to);
   }
-  constexpr inline Type &copy_to(Type &dest, bool dest_has_obj) & {
+  _compiler_can_use_ inline Type &copy_to(Type &dest, bool dest_has_obj) & {
     return *copy_to(&dest, dest_has_obj);
   }
-  constexpr inline Type &move_to(Type &dest, bool dest_has_obj) {
+  _compiler_can_use_ inline Type &move_to(Type &dest, bool dest_has_obj) {
     return *move_to(&dest, dest_has_obj);
   }
-  constexpr inline mjz_heap_obj_warper_template_t &copy_to(
-      mjz_heap_obj_warper_template_t &dest) & {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  copy_to(mjz_heap_obj_warper_template_t &dest) & {
     if (this != &dest)
       dest.init_with_unsafe_placement_new(
           copy_to(dest.pointer_to_unsafe_data(), dest.has_data()));
     return dest;
   }
-  constexpr inline mjz_heap_obj_warper_template_t &move_to(
-      mjz_heap_obj_warper_template_t &dest) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  move_to(mjz_heap_obj_warper_template_t &dest) {
     if (this != &dest)
       dest.init_with_unsafe_placement_new(
           move_to(dest.pointer_to_unsafe_data(), dest.has_data()));
     return dest;
   }
-  constexpr inline mjz_heap_obj_warper_template_t *copy_to(
-      mjz_heap_obj_warper_template_t *dest) & {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t *
+  copy_to(mjz_heap_obj_warper_template_t *dest) & {
     return &copy_to(*dest);
   }
-  constexpr inline mjz_heap_obj_warper_template_t *move_to(
-      mjz_heap_obj_warper_template_t *dest) {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t *
+  move_to(mjz_heap_obj_warper_template_t *dest) {
     return &move_to(*dest);
   }
 
- public:  // unsafe may cuse undefined behavior
-  constexpr inline mjz_heap_obj_warper_template_t &remove_const() const & {
+public: // unsafe may cuse undefined behavior
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &
+  remove_const() const & {
     return *mjz_ard::remove_const(this);
   }
-  constexpr inline mjz_heap_obj_warper_template_t &&remove_const() const && {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &&
+  remove_const() const && {
     return std::move(*mjz_ard::remove_const(this));
   }
-  constexpr inline mjz_heap_obj_warper_template_t &remove_const() & {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &remove_const() & {
     return *this;
   }
-  constexpr inline mjz_heap_obj_warper_template_t &&remove_const() && {
+  _compiler_can_use_ inline mjz_heap_obj_warper_template_t &&remove_const() && {
     return std::move(*this);
   }
-  constexpr inline Type &remove_const_obj() const & {
+  _compiler_can_use_ inline Type &remove_const_obj() const & {
     GET_LVR_BASE_MHOWTT(remove_const_obj);
   }
-  constexpr inline Type &&remove_const_obj() const && {
+  _compiler_can_use_ inline Type &&remove_const_obj() const && {
     GET_LVR_BASE_MHOWTT(remove_const_obj);
   }
-  constexpr inline Type &remove_const_obj() & {
+  _compiler_can_use_ inline Type &remove_const_obj() & {
     GET_RVR_BASE_MHOWTT(remove_const_obj);
   }
-  constexpr inline Type &&remove_const_obj() && {
+  _compiler_can_use_ inline Type &&remove_const_obj() && {
     GET_RVR_BASE_MHOWTT(remove_const_obj);
   }
-  constexpr inline const Type &&move() const & { return std::move(o()); }
-  constexpr inline const Type &&move() const && { return std::move(o()); }
-  constexpr inline Type &&move() & { return std::move(o()); }
-  constexpr inline Type &&move() && { return std::move(o()); }
+  _compiler_can_use_ inline const Type &&move() const & {
+    return std::move(o());
+  }
+  _compiler_can_use_ inline const Type &&move() const && {
+    return std::move(o());
+  }
+  _compiler_can_use_ inline Type &&move() & { return std::move(o()); }
+  _compiler_can_use_ inline Type &&move() && { return std::move(o()); }
 #undef GET_RVR_BASE_MHOWTT
 #undef Ret_me_RVR_BASE_MHOWTT
 #undef GET_LVR_BASE_MHOWTT
 #undef Ret_me_LVR_BASE_MHOWTT
 };
-template <class my_reallocator>
-class mjz_temp_malloc_wrapper_t {
-  constexpr inline mjz_temp_malloc_wrapper_t &move(
-      mjz_temp_malloc_wrapper_t &otr) {
+template <class my_reallocator> class mjz_temp_malloc_wrapper_t {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t &
+  move(mjz_temp_malloc_wrapper_t &otr) {
     if (otr.is_moved_state()) {
       if (otr.m_data_ptr && otr.m_cap_size) {
         m_data_ptr = malloc(otr.m_cap_size);
@@ -7428,8 +7799,8 @@ class mjz_temp_malloc_wrapper_t {
     otr.obj_is_moved();
     return move(otr.m_data_ptr, otr.m_cap_size);
   };
-  constexpr inline mjz_temp_malloc_wrapper_t &move(void *data_ptr,
-                                                   size_t size_of_ptr) {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t &
+  move(void *data_ptr, size_t size_of_ptr) {
     free();
     if (size_of_ptr) {
       m_data_ptr = data_ptr;
@@ -7438,98 +7809,97 @@ class mjz_temp_malloc_wrapper_t {
     return *this;
   };
 
- protected:
+protected:
   void *m_data_ptr{};
   size_t m_cap_size{};
   uint8_t m_Deallocation_state{};
   static my_reallocator my_allocator;
-  constexpr constexpr inline void obj_is_moved() {
+  _compiler_can_use_ inline void obj_is_moved() {
     m_Deallocation_state |= Dealocation_state::is_moved |
                             Dealocation_state::dont_deallocate_on_free;
   }
 
- public:
-  constexpr constexpr inline bool do_deallocation_on_free_state() {
+public:
+  _compiler_can_use_ inline bool do_deallocation_on_free_state() {
     return !(m_Deallocation_state & Dealocation_state::dont_deallocate_on_free);
   }
-  constexpr inline bool is_moved_state() {
+  _compiler_can_use_ inline bool is_moved_state() {
     return !!(m_Deallocation_state & Dealocation_state::is_moved);
   }
-  constexpr inline void dont_do_deallocation_on_free() {
+  _compiler_can_use_ inline void dont_do_deallocation_on_free() {
     m_Deallocation_state |= Dealocation_state::dont_deallocate_on_free;
   }
-  constexpr inline void do_deallocation_on_free() {
+  _compiler_can_use_ inline void do_deallocation_on_free() {
     m_Deallocation_state &=
         ((!(m_Deallocation_state & Dealocation_state::is_moved))
              ? ~Dealocation_state::dont_deallocate_on_free
              : Dealocation_state::dont_deallocate_on_free);
   }
-  constexpr inline mjz_temp_malloc_wrapper_t(size_t size_of_ptr = 0) {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t(size_t size_of_ptr = 0) {
     m_data_ptr = malloc(size_of_ptr);
   };
-  constexpr inline mjz_temp_malloc_wrapper_t(size_t size_of_ptr, int VAl_) {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t(size_t size_of_ptr,
+                                                      int VAl_) {
     m_data_ptr = malloc(size_of_ptr);
     memset(VAl_);
   };
-  constexpr inline mjz_temp_malloc_wrapper_t(void *data_ptr,
-                                             size_t size_of_ptr) {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t(void *data_ptr,
+                                                      size_t size_of_ptr) {
     move(data_ptr, size_of_ptr);
   }
-  constexpr inline mjz_temp_malloc_wrapper_t(void *data_ptr, size_t size_of_ptr,
-                                             int VAl_) {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t(void *data_ptr,
+                                                      size_t size_of_ptr,
+                                                      int VAl_) {
     move(data_ptr, size_of_ptr).memset(VAl_);
   }
-  constexpr inline mjz_temp_malloc_wrapper_t &change_data_ptr(
-      void *data_ptr, size_t size_of_ptr) {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t &
+  change_data_ptr(void *data_ptr, size_t size_of_ptr) {
     return move(data_ptr, size_of_ptr);
   }
-  constexpr inline mjz_temp_malloc_wrapper_t &change_data_ptr(
-      mjz_temp_malloc_wrapper_t &&otr) {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t &
+  change_data_ptr(mjz_temp_malloc_wrapper_t &&otr) {
     return move(otr);
   }
-  constexpr inline ~mjz_temp_malloc_wrapper_t() { free(); }
+  _compiler_can_use_ inline ~mjz_temp_malloc_wrapper_t() { free(); }
   mjz_temp_malloc_wrapper_t(mjz_temp_malloc_wrapper_t &)
       : mjz_temp_malloc_wrapper_t() {}
-  constexpr inline mjz_temp_malloc_wrapper_t(
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t(
       mjz_temp_malloc_wrapper_t &&otr) noexcept {
     move(otr);
   }
   mjz_temp_malloc_wrapper_t(const mjz_temp_malloc_wrapper_t &)
       : mjz_temp_malloc_wrapper_t(){};
   mjz_temp_malloc_wrapper_t &operator=(mjz_temp_malloc_wrapper_t &){};
-  constexpr inline mjz_temp_malloc_wrapper_t &operator=(
-      mjz_temp_malloc_wrapper_t &&otr) noexcept {
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t &
+  operator=(mjz_temp_malloc_wrapper_t &&otr) noexcept {
     return move(otr);
   };
   mjz_temp_malloc_wrapper_t &operator=(const mjz_temp_malloc_wrapper_t &){};
-  template <typename Type = void>
-  constexpr constexpr inline Type *get_ptr_as() {
+  template <typename Type = void> _compiler_can_use_ inline Type *get_ptr_as() {
     return (Type *)m_data_ptr;
   }
-  template <typename Type = void>
-  constexpr constexpr inline Type *operator->() {
+  template <typename Type = void> _compiler_can_use_ inline Type *operator->() {
     return (Type *)m_data_ptr;
   }
-  template <typename Type>
-  constexpr inline Type &operator*() {
+  template <typename Type> _compiler_can_use_ inline Type &operator*() {
     return *((Type *)m_data_ptr);
   }
   template <typename Type = void>
-  constexpr inline const Type *get_ptr_as() const {
+  _compiler_can_use_ inline const Type *get_ptr_as() const {
     return (Type *)m_data_ptr;
   }
   template <typename Type = void>
-  constexpr inline const Type *operator->() const {
+  _compiler_can_use_ inline const Type *operator->() const {
     return (Type *)m_data_ptr;
   }
   template <typename Type>
-  constexpr inline const Type &operator*() const {
+  _compiler_can_use_ inline const Type &operator*() const {
     return *((Type *)m_data_ptr);
   }
-  constexpr inline void *get_ptr() { return m_data_ptr; }
-  constexpr inline size_t get_size() { return m_cap_size; }
-  constexpr inline const void *get_ptr() const { return m_data_ptr; }
-  constexpr inline const size_t get_size() const { return m_cap_size; }
+  _compiler_can_use_ inline void *get_ptr() { return m_data_ptr; }
+  _compiler_can_use_ inline size_t get_size() { return m_cap_size; }
+  _compiler_can_use_ inline const void *get_ptr() const { return m_data_ptr; }
+  _compiler_can_use_ inline const size_t get_size() const { return m_cap_size; }
   void free() {
     if (do_deallocation_on_free_state() && m_cap_size) {
       my_allocator.deallocate((mjz_get_value_Type<my_reallocator> *)m_data_ptr,
@@ -7548,7 +7918,7 @@ class mjz_temp_malloc_wrapper_t {
     }
     return get_ptr();
   }
-  constexpr inline void *realloc(size_t size_of_ptr) {
+  _compiler_can_use_ inline void *realloc(size_t size_of_ptr) {
     // free();
     if (size_of_ptr) {
       m_data_ptr = my_allocator.allocate(
@@ -7559,52 +7929,52 @@ class mjz_temp_malloc_wrapper_t {
     }
     return get_ptr();
   }
-  constexpr inline void *operator()(size_t size_of_ptr) {
+  _compiler_can_use_ inline void *operator()(size_t size_of_ptr) {
     return malloc(size_of_ptr);
   }
-  constexpr inline void *operator()() { return get_ptr(); }
-  constexpr inline void memset(int _Val) {
+  _compiler_can_use_ inline void *operator()() { return get_ptr(); }
+  _compiler_can_use_ inline void memset(int _Val) {
     if (m_cap_size) {
       static_str_algo::memset(get_ptr(), _Val, m_cap_size);
     }
   }
-  constexpr inline mjz_temp_malloc_wrapper_t(void *data_ptr, size_t cap_size,
-                                             uint8_t DO_deallocate)
-      : m_data_ptr(data_ptr),
-        m_cap_size(cap_size),
+  _compiler_can_use_ inline mjz_temp_malloc_wrapper_t(void *data_ptr,
+                                                      size_t cap_size,
+                                                      uint8_t DO_deallocate)
+      : m_data_ptr(data_ptr), m_cap_size(cap_size),
         m_Deallocation_state(DO_deallocate) {}
 };
 template <typename my_reallocator>
 my_reallocator mjz_temp_malloc_wrapper_t<my_reallocator>::my_allocator{};
 using malloc_wrapper = mjz_temp_malloc_wrapper_t<mjz_normal_allocator>;
 /*********************************************************************
- Filename: sha256.h
+Filename: sha256.h
  Author: Brad Conte (brad AT bradconte.com)
- Copyright:
- Disclaimer: This code is presented "as is" without any guarantees.
- Details: Defines the API for the corresponding SHA1 implementation.
- *********************************************************************/
+Copyright:
+Disclaimer: This code is presented "as is" without any guarantees.
+Details: Defines the API for the corresponding SHA1 implementation.
+*********************************************************************/
 #ifndef SHA256_H
 #define SHA256_H
 
 /*************************** HEADER FILES ***************************/
 /****************************** MACROS ******************************/
-#define SHA256_BLOCK_SIZE 32  // SHA256 outputs a 32 byte digest
+#define SHA256_BLOCK_SIZE 32 // SHA256 outputs a 32 byte digest
 
 /**************************** DATA TYPES ****************************/
-typedef char BYTE;          // 8-bit byte
-typedef unsigned int WORD;  // 32-bit word, change to "long" for 16-bit machines
+typedef char BYTE;         // 8-bit byte
+typedef unsigned int WORD; // 32-bit word, change to "long" for 16-bit machines
 
 struct SHA256_CTX {
- private:
-  static constexpr inline void paste_str(const char *str, char *&ptr) {
+private:
+  static _compiler_can_use_ inline void paste_str(const char *str, char *&ptr) {
     size_t l = static_str_algo::strlen(str);
     static_str_algo::memmove(ptr, str, l);
     ptr += l - 1;
   }
 
- protected:
-  constexpr inline char *to_c_string(char *buf_) const {
+protected:
+  _compiler_can_use_ inline char *to_c_string(char *buf_) const {
     char *buf = buf_;
     auto str_left = [&]() { return 1024 - (size_t)(buf - buf_); };
     paste_str("const char ", buf_);
@@ -7632,7 +8002,7 @@ struct SHA256_CTX {
     paste_str(" };\n", buf);
     return buf_;
   }
-  constexpr inline char *copy_to_c_str(char *buf, size_t len) const {
+  _compiler_can_use_ inline char *copy_to_c_str(char *buf, size_t len) const {
     if (len < 2 * 1024) {
       return 0;
     }
@@ -7640,7 +8010,7 @@ struct SHA256_CTX {
     return to_c_string(buf);
   }
 
- public:
+public:
   union {
     BYTE data[64]{};
     BYTE hashed_data[SHA256_BLOCK_SIZE];
@@ -7648,47 +8018,48 @@ struct SHA256_CTX {
   WORD datalen{};
   unsigned long long bitlen{};
   WORD state[8]{};
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> to_string() const;
+  template <typename T = mjz_normal_allocator> mjz_str_t<T> to_string() const;
   friend std::ostream &operator<<(std::ostream &CIN, const SHA256_CTX &obj);
-  constexpr inline static inline int compare_hash(const void *rhs,
+  _compiler_can_use_ inline static int compare_hash(const void *rhs,
+                                                    const SHA256_CTX &lhs) {
+    return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
+  }
+  static _compiler_can_use_ inline int compare_hash(const SHA256_CTX &rhs,
+                                                    const void *lhs) {
+    return SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
+  }
+  friend _compiler_can_use_ inline int operator!=(const void *rhs,
                                                   const SHA256_CTX &lhs) {
     return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
   }
-  static constexpr inline int compare_hash(const SHA256_CTX &rhs,
-                                           const void *lhs) {
+  friend _compiler_can_use_ inline bool operator!=(const SHA256_CTX &rhs,
+                                                   const void *lhs) {
+    if (lhs == 0)
+      return 1;
     return SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
   }
-  friend constexpr inline int operator!=(const void *rhs,
-                                         const SHA256_CTX &lhs) {
-    return SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
-  }
-  friend constexpr inline bool operator!=(const SHA256_CTX &rhs,
-                                          const void *lhs) {
-    if (lhs == 0) return 1;
-    return SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
-  }
-  friend constexpr inline bool operator==(const void *rhs,
-                                          const SHA256_CTX &lhs) {
+  friend _compiler_can_use_ inline bool operator==(const void *rhs,
+                                                   const SHA256_CTX &lhs) {
     return !SHA256_CTX::compare_hash(rhs, lhs.hashed_data);
   }
-  friend constexpr inline bool operator==(const SHA256_CTX &rhs,
-                                          const void *lhs) {
+  friend _compiler_can_use_ inline bool operator==(const SHA256_CTX &rhs,
+                                                   const void *lhs) {
     return !SHA256_CTX::compare_hash(rhs.hashed_data, lhs);
   }
-  friend constexpr inline bool operator!=(const SHA256_CTX &rhs,
-                                          const SHA256_CTX &lhs) {
+  friend _compiler_can_use_ inline bool operator!=(const SHA256_CTX &rhs,
+                                                   const SHA256_CTX &lhs) {
     return !!SHA256_CTX::compare_hash(rhs.hashed_data, lhs.hashed_data);
   }
-  friend constexpr inline bool operator==(const SHA256_CTX &rhs,
-                                          const SHA256_CTX &lhs) {
+  friend _compiler_can_use_ inline bool operator==(const SHA256_CTX &rhs,
+                                                   const SHA256_CTX &lhs) {
     return !SHA256_CTX::compare_hash(rhs.hashed_data, lhs.hashed_data);
   }
-  constexpr inline static int real_compare_hash(const void *rhs,
-                                                const void *lhs) {
+  _compiler_can_use_ inline static int real_compare_hash(const void *rhs,
+                                                         const void *lhs) {
     return !static_str_algo::mem_equals(rhs, lhs, SHA256_BLOCK_SIZE);
   }
-  static constexpr inline int compare_hash(const void *rhs, const void *lhs) {
+  static _compiler_can_use_ inline int compare_hash(const void *rhs,
+                                                    const void *lhs) {
     return real_compare_hash(rhs, lhs);
   }
 #define ROTLEFT(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
@@ -7699,9 +8070,9 @@ struct SHA256_CTX {
 #define EP1(x) (ROTRIGHT(x, 6) ^ ROTRIGHT(x, 11) ^ ROTRIGHT(x, 25))
 #define SIG0(x) (ROTRIGHT(x, 7) ^ ROTRIGHT(x, 18) ^ ((x) >> 3))
 #define SIG1(x) (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10))
- private:
+private:
   /**************************** VARIABLES *****************************/
-  static constexpr const WORD k_KEY_ENCRIPTER[64] = {
+  static _compiler_can_use_ const WORD k_KEY_ENCRIPTER[64] = {
       0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
       0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
       0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
@@ -7714,7 +8085,8 @@ struct SHA256_CTX {
       0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
       0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
   /*********************** FUNCTION DEFINITIONS ***********************/
-  static constexpr void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
+  static _compiler_can_use_ void sha256_transform(SHA256_CTX *ctx,
+                                                  const BYTE data[]) {
     WORD a{}, b{}, c{}, d{}, e{}, f{}, g{}, h{}, i{}, j{}, t1{}, t2{}, m[64]{};
     for (i = 0, j = 0; i < 16; ++i, j += 4)
       m[i] = (WORD)((data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) |
@@ -7751,7 +8123,7 @@ struct SHA256_CTX {
     ctx->state[6] += g;
     ctx->state[7] += h;
   }
-  static constexpr void sha256_init(SHA256_CTX *ctx) {
+  static _compiler_can_use_ void sha256_init(SHA256_CTX *ctx) {
     ctx->datalen = 0;
     ctx->bitlen = 0;
     ctx->state[0] = 0x6a09e667;
@@ -7763,8 +8135,8 @@ struct SHA256_CTX {
     ctx->state[6] = 0x1f83d9ab;
     ctx->state[7] = 0x5be0cd19;
   }
-  static constexpr void sha256_update(SHA256_CTX *ctx, const BYTE data[],
-                                      size_t len) {
+  static _compiler_can_use_ void sha256_update(SHA256_CTX *ctx,
+                                               const BYTE data[], size_t len) {
     WORD i{};
     for (i = 0; i < len; ++i) {
       ctx->data[ctx->datalen] = data[i];
@@ -7776,7 +8148,7 @@ struct SHA256_CTX {
       }
     }
   }
-  static constexpr void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
+  static _compiler_can_use_ void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
     WORD i{};
     i = ctx->datalen;
     // Pad whatever data is left in the buffer.
@@ -7819,38 +8191,38 @@ struct SHA256_CTX {
     }
   }
 
- public:
-  constexpr size_t get_as_64bit_hash() const {
+public:
+  _compiler_can_use_ size_t get_as_64bit_hash() const {
     return *((size_t *)hashed_data);
   }
-  static constexpr void sha256_the_string(SHA256_CTX *hash_out,
-                                          const char *c_str, size_t len) {
+  static _compiler_can_use_ void
+  sha256_the_string(SHA256_CTX *hash_out, const char *c_str, size_t len) {
     SHA256_CTX ctx;
     sha256_init(&ctx);
     sha256_update(&ctx, reinterpret_cast<const BYTE *>(c_str), len);
     sha256_final(&ctx, hash_out->data);
     return;
   }
-  constexpr void sha256_the_string(const char *c_str, size_t len) {
+  _compiler_can_use_ void sha256_the_string(const char *c_str, size_t len) {
     return sha256_the_string(this, c_str, len);
   }
-  static constexpr SHA256_CTX hash_msg_to_sha_512(
+  static _compiler_can_use_ SHA256_CTX hash_msg_to_sha_512(
       const char *dev_passwoed, const size_t dev_passwoedLength) {
     SHA256_CTX rtrn{};
     sha256_the_string(&rtrn, dev_passwoed, dev_passwoedLength);
     return rtrn;
   }
-  static constexpr SHA256_CTX hash_msg_to_sha_512_n(
+  static _compiler_can_use_ SHA256_CTX hash_msg_to_sha_512_n(
       const char *dev_passwoed, const size_t dev_passwoedLength,
-      uint8_t n) {  // intended copy
+      uint8_t n) { // intended copy
     SHA256_CTX ret = hash_msg_to_sha_512(dev_passwoed, dev_passwoedLength);
     for (int64_t i{}; i < n; i++) {
       ret = hash_msg_to_sha_512((char *)ret.hashed_data, SHA256_BLOCK_SIZE);
     }
     return ret;
   }
-  static constexpr constexpr inline size_t hash_c_str(const char *const p,
-                                                      size_t n) {
+  static _compiler_can_use_ inline size_t hash_c_str(const char *const p,
+                                                     size_t n) {
     size_t hash = 14695981039346656037ULL;
     for (size_t i = 0; i < n; ++i) {
       hash ^= static_cast<size_t>(p[i]);
@@ -7865,19 +8237,20 @@ typedef SHA256_CTX hash_sha256;
 void sha256_init(SHA256_CTX *ctx);
 void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
 void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
-#endif  // SHA256_H
+#endif // SHA256_H
 
 #ifndef SHA1_H
 #define SHA1_H
 
 /****************************** MACROS ******************************/
-#define SHA1_BLOCK_SIZE 20  // SHA1 outputs a 20 byte digest
+#define SHA1_BLOCK_SIZE 20 // SHA1 outputs a 20 byte digest
 
 struct SHA1_CTX : public SHA256_CTX {
   WORD k[4]{};
 
- protected:
-  static constexpr void sha1_transform(SHA1_CTX *ctx, const BYTE data[]) {
+protected:
+  static _compiler_can_use_ void sha1_transform(SHA1_CTX *ctx,
+                                                const BYTE data[]) {
     WORD a{}, b{}, c{}, d{}, e{}, i{}, j{}, t{}, m[80]{};
     for (i = 0, j = 0; i < 16; ++i, j += 4)
       m[i] = (WORD)((data[j] << 24) + (data[j + 1] << 16) + (data[j + 2] << 8) +
@@ -7928,9 +8301,9 @@ struct SHA1_CTX : public SHA256_CTX {
     ctx->state[2] += c;
     ctx->state[3] += d;
     ctx->state[4] += e;
-  }  // namespace mjz_ard
+  } // namespace mjz_ard
 
-  static constexpr void sha1_init(SHA1_CTX *ctx) {
+  static _compiler_can_use_ void sha1_init(SHA1_CTX *ctx) {
     ctx->datalen = 0;
     ctx->bitlen = 0;
     ctx->state[0] = 0x67452301;
@@ -7943,8 +8316,8 @@ struct SHA1_CTX : public SHA256_CTX {
     ctx->k[2] = 0x8f1bbcdc;
     ctx->k[3] = 0xca62c1d6;
   }
-  static constexpr void sha1_update(SHA1_CTX *ctx, const BYTE data[],
-                                    size_t len) {
+  static _compiler_can_use_ void sha1_update(SHA1_CTX *ctx, const BYTE data[],
+                                             size_t len) {
     size_t i{};
     for (i = 0; i < len; ++i) {
       ctx->data[ctx->datalen] = data[i];
@@ -7956,7 +8329,7 @@ struct SHA1_CTX : public SHA256_CTX {
       }
     }
   }
-  static constexpr void sha1_final(SHA1_CTX *ctx, BYTE hash[]) {
+  static _compiler_can_use_ void sha1_final(SHA1_CTX *ctx, BYTE hash[]) {
     WORD i{};
     i = ctx->datalen;
     // Pad whatever data is left in the buffer.
@@ -7996,16 +8369,16 @@ struct SHA1_CTX : public SHA256_CTX {
     }
   }
 
- public:
-  constexpr SHA1_CTX() = default;
-  static constexpr SHA1_CTX SHA_1(const void *ptr, size_t len) {
+public:
+  _compiler_can_use_ SHA1_CTX() = default;
+  static _compiler_can_use_ SHA1_CTX SHA_1(const void *ptr, size_t len) {
     SHA1_CTX ctx{}, buffer{};
     sha1_init(&ctx);
     sha1_update(&ctx, (const BYTE *)ptr, len);
     sha1_final(&ctx, buffer.hashed_data);
     return buffer;
   }
-  static constexpr SHA1_CTX SHA_1(const BYTE *ptr, size_t len) {
+  static _compiler_can_use_ SHA1_CTX SHA_1(const BYTE *ptr, size_t len) {
     SHA1_CTX ctx{}, buffer{};
     sha1_init(&ctx);
     sha1_update(&ctx, ptr, len);
@@ -8013,45 +8386,47 @@ struct SHA1_CTX : public SHA256_CTX {
     return buffer;
   }
 };
-#endif  // SHA1_Hstatic
+#endif // SHA1_Hstatic
 class basic_mjz_Str_view : protected static_str_algo {
- public:
-  constexpr static size_t npos = -1;
-  constexpr constexpr inline const char *begining_of_str_ptr() const {
+public:
+  _compiler_can_use_ static size_t npos = -1;
+  _compiler_can_use_ inline const char *begining_of_str_ptr() const {
     return m_buffer;
   }
-  constexpr constexpr inline const char *ending_of_str_ptr() const {
+  _compiler_can_use_ inline const char *ending_of_str_ptr() const {
     return m_buffer + m_length;
   }
-  constexpr constexpr inline char *begining_of_str_ptr() { return m_buffer; }
-  constexpr constexpr inline char *ending_of_str_ptr() {
+  _compiler_can_use_ inline char *begining_of_str_ptr() { return m_buffer; }
+  _compiler_can_use_ inline char *ending_of_str_ptr() {
     return m_buffer + m_length;
   }
 
- protected:  // the actual char array
+protected: // the actual char array
   char *m_buffer;
   // the ptr length (not counting the '\0')
   size_t m_length;
 
- public:
-  constexpr basic_mjz_Str_view(char *buffer, size_t length)
+public:
+  _compiler_can_use_ basic_mjz_Str_view(char *buffer, size_t length)
       : m_buffer(buffer), m_length(length) {}
-  constexpr inline constexpr basic_mjz_Str_view(const char *c_string)
+  _compiler_can_use_ inline basic_mjz_Str_view(const char *c_string)
       : basic_mjz_Str_view(c_string, strlen(c_string)) {}
-  constexpr basic_mjz_Str_view()
+  _compiler_can_use_ basic_mjz_Str_view()
       : m_buffer(const_cast<char *>(empty_STRING_C_STR)), m_length(0) {}
-  constexpr basic_mjz_Str_view(const char *buffer, size_t length)
+  _compiler_can_use_ basic_mjz_Str_view(const char *buffer, size_t length)
       : basic_mjz_Str_view(const_cast<char *>(buffer), length) {}
-  constexpr inline ~basic_mjz_Str_view() = default;
-  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = default;
-  constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = default;
-  constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
-  constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = default;
+  _compiler_can_use_ inline ~basic_mjz_Str_view() = default;
+  _compiler_can_use_ basic_mjz_Str_view &
+  operator=(basic_mjz_Str_view &&) = default;
+  _compiler_can_use_ basic_mjz_Str_view &
+  operator=(const basic_mjz_Str_view &) = default;
+  _compiler_can_use_ basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
+  _compiler_can_use_ basic_mjz_Str_view(const basic_mjz_Str_view &) = default;
 
- public:
-  constexpr inline char *&buffer_ref() { return m_buffer; }
-  constexpr inline const char *buffer_ref() const { return m_buffer; }
-  constexpr bool is_blank() const {
+public:
+  _compiler_can_use_ inline char *&buffer_ref() { return m_buffer; }
+  _compiler_can_use_ inline const char *buffer_ref() const { return m_buffer; }
+  _compiler_can_use_ bool is_blank() const {
     size_t i{};
     while (i < m_length) {
       if (!is_blank_characteres_default(m_buffer[i])) {
@@ -8061,119 +8436,133 @@ class basic_mjz_Str_view : protected static_str_algo {
     }
     return 1;
   }
-  constexpr bool empty() const {
+  _compiler_can_use_ bool empty() const {
     return (!m_length || m_buffer == empty_STRING_C_STR || m_buffer == nullptr);
   }
-  constexpr inline size_t length(void) const { return m_length; }
-  constexpr inline char *data() { return m_buffer; }
-  constexpr inline const char *data() const { return m_buffer; }
+  _compiler_can_use_ inline size_t length(void) const { return m_length; }
+  _compiler_can_use_ inline char *data() { return m_buffer; }
+  _compiler_can_use_ inline const char *data() const { return m_buffer; }
 
- public:
-  constexpr inline const char *c_str() const & { return buffer_ref(); }
-  constexpr inline const char *c_str() & { return buffer_ref(); }
-  constexpr inline char *C_str() & { return m_buffer; }
+public:
+  _compiler_can_use_ inline const char *c_str() const & { return buffer_ref(); }
+  _compiler_can_use_ inline const char *c_str() & { return buffer_ref(); }
+  _compiler_can_use_ inline char *C_str() & { return m_buffer; }
 
- public:
-  constexpr explicit operator const bool() const { return !is_blank(); }
-  constexpr char operator[](int64_t index_) const {
+public:
+  _compiler_can_use_ explicit operator const bool() const {
+    return !is_blank();
+  }
+  _compiler_can_use_ char operator[](int64_t index_) const {
     size_t index = signed_index_to_unsigned(index_);
     if ((size_t)index >= m_length || !m_buffer) {
       return 0;
     }
     return m_buffer[index];
   }
-  constexpr char operator[](size_t index) const {
+  _compiler_can_use_ char operator[](size_t index) const {
     if (index >= m_length || !m_buffer) {
       return 0;
     }
     return m_buffer[index];
   }
-  constexpr bool operator!() const { return is_blank(); }
+  _compiler_can_use_ bool operator!() const { return is_blank(); }
   // parsing/conversion
-  constexpr long long toLL(void) const {
+  _compiler_can_use_ long long toLL(void) const {
     if (m_buffer) {
       return to_LL();
     }
     return 0;
   }
-  constexpr long long to_LL(int radix = 10, bool *had_error = 0,
-                            uint8_t error_level = 0) const {
+  _compiler_can_use_ long long to_LL(int radix = 10, bool *had_error = 0,
+                                     uint8_t error_level = 0) const {
     if (m_buffer) {
       return C_STR_to_LL(c_str(), (uint8_t)min(length(), (uint64_t)255), radix,
                          had_error, error_level);
     }
     return 0;
   }
-  constexpr long toInt(void) const { return (long)toLL(); }
-  constexpr float toFloat(void) const {
+  _compiler_can_use_ long toInt(void) const { return (long)toLL(); }
+  _compiler_can_use_ float toFloat(void) const {
     //
     return float(toDouble());
   }
-  constexpr double toDouble(void) const {
+  _compiler_can_use_ double toDouble(void) const {
     if (m_buffer) {
       char *ptr{};
       return strtod(m_buffer, &ptr);
     }
     return 0;
   }
-  constexpr friend bool operator==(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator==(const basic_mjz_Str_view &a,
+                                            const basic_mjz_Str_view &b) {
     return a.equals(b);
   }
-  constexpr friend bool operator==(const basic_mjz_Str_view &a, const char *b) {
+  _compiler_can_use_ friend bool operator==(const basic_mjz_Str_view &a,
+                                            const char *b) {
     return a.equals(b);
   }
-  constexpr friend bool operator==(const char *a, const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator==(const char *a,
+                                            const basic_mjz_Str_view &b) {
     return b == a;
   }
-  constexpr friend bool operator<(const basic_mjz_Str_view &a,
-                                  const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator<(const basic_mjz_Str_view &a,
+                                           const basic_mjz_Str_view &b) {
     return a.compareTo(b) < 0;
   }
-  constexpr friend bool operator<(const basic_mjz_Str_view &a, const char *b) {
+  _compiler_can_use_ friend bool operator<(const basic_mjz_Str_view &a,
+                                           const char *b) {
     return a.compareTo(b) < 0;
   }
-  constexpr friend bool operator<(const char *a, const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator<(const char *a,
+                                           const basic_mjz_Str_view &b) {
     return b.compareTo(a) > 0;
   }
-  constexpr friend bool operator!=(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator!=(const basic_mjz_Str_view &a,
+                                            const basic_mjz_Str_view &b) {
     return !(a == b);
   }
-  constexpr friend bool operator!=(const basic_mjz_Str_view &a, const char *b) {
+  _compiler_can_use_ friend bool operator!=(const basic_mjz_Str_view &a,
+                                            const char *b) {
     return !(a == b);
   }
-  constexpr friend bool operator!=(const char *a, const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator!=(const char *a,
+                                            const basic_mjz_Str_view &b) {
     return !(a == b);
   }
-  constexpr friend bool operator>(const basic_mjz_Str_view &a,
-                                  const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator>(const basic_mjz_Str_view &a,
+                                           const basic_mjz_Str_view &b) {
     return b < a;
   }
-  constexpr friend bool operator>(const basic_mjz_Str_view &a, const char *b) {
+  _compiler_can_use_ friend bool operator>(const basic_mjz_Str_view &a,
+                                           const char *b) {
     return b < a;
   }
-  constexpr friend bool operator>(const char *a, const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator>(const char *a,
+                                           const basic_mjz_Str_view &b) {
     return b < a;
   }
-  constexpr friend bool operator<=(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator<=(const basic_mjz_Str_view &a,
+                                            const basic_mjz_Str_view &b) {
     return !(b < a);
   }
-  constexpr friend bool operator<=(const basic_mjz_Str_view &a, const char *b) {
+  _compiler_can_use_ friend bool operator<=(const basic_mjz_Str_view &a,
+                                            const char *b) {
     return !(b < a);
   }
-  constexpr friend bool operator<=(const char *a, const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator<=(const char *a,
+                                            const basic_mjz_Str_view &b) {
     return !(b < a);
   }
-  constexpr friend bool operator>=(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator>=(const basic_mjz_Str_view &a,
+                                            const basic_mjz_Str_view &b) {
     return !(a < b);
   }
-  constexpr friend bool operator>=(const basic_mjz_Str_view &a, const char *b) {
+  _compiler_can_use_ friend bool operator>=(const basic_mjz_Str_view &a,
+                                            const char *b) {
     return !(a < b);
   }
-  constexpr friend bool operator>=(const char *a, const basic_mjz_Str_view &b) {
+  _compiler_can_use_ friend bool operator>=(const char *a,
+                                            const basic_mjz_Str_view &b) {
     return !(a < b);
   }
   friend std::ostream &operator<<(std::ostream &COUT,
@@ -8182,191 +8571,208 @@ class basic_mjz_Str_view : protected static_str_algo {
     return COUT;
   }
   // hash function
-  constexpr hash_sha256 mjz_hash(uint8_t n = 0) const {
+  _compiler_can_use_ hash_sha256 mjz_hash(uint8_t n = 0) const {
     return SHA256_CTX::hash_msg_to_sha_512_n(c_str(), length(), n);
   }
-  constexpr hash_sha256 hash() const { return mjz_hash(0); }
-  constexpr int64_t compareTo(const basic_mjz_Str_view &s) const {
+  _compiler_can_use_ hash_sha256 hash() const { return mjz_hash(0); }
+  _compiler_can_use_ int64_t compareTo(const basic_mjz_Str_view &s) const {
     return compare_two_str(m_buffer, m_length, s.m_buffer, s.m_length);
   }
-  constexpr int64_t compareTo(const char *cstr) const {
+  _compiler_can_use_ int64_t compareTo(const char *cstr) const {
     return compare_two_str(m_buffer, m_length, cstr, strlen(cstr));
   }
-  constexpr inline int compare(const basic_mjz_Str_view &str) const {
+  _compiler_can_use_ inline int compare(const basic_mjz_Str_view &str) const {
     return compareTo(str);
   }
-  constexpr inline int compare(size_t pos, size_t len,
-                               const basic_mjz_Str_view &str) const {
+  _compiler_can_use_ inline int compare(size_t pos, size_t len,
+                                        const basic_mjz_Str_view &str) const {
     return substr_view_beg_n(pos, len).compareTo(str);
   }
-  constexpr inline int compare(size_t pos, size_t len,
-                               const basic_mjz_Str_view &str, size_t subpos,
-                               size_t sublen) const {
+  _compiler_can_use_ inline int compare(size_t pos, size_t len,
+                                        const basic_mjz_Str_view &str,
+                                        size_t subpos, size_t sublen) const {
     return substr_view_beg_n(pos, len).compareTo(
         str.substr_view_beg_n(subpos, sublen));
   }
-  constexpr inline int compare(const char *s, size_t n) const {
+  _compiler_can_use_ inline int compare(const char *s, size_t n) const {
     return compare_two_str(m_buffer, m_length, s, n);
   }
-  constexpr inline int compare(size_t pos, size_t len, const char *s,
-                               size_t n) const {
+  _compiler_can_use_ inline int compare(size_t pos, size_t len, const char *s,
+                                        size_t n) const {
     return substr_view_beg_n(pos, len).compare(s, n);
   }
-  constexpr inline int compare(size_t pos, size_t len, const char *s) const {
+  _compiler_can_use_ inline int compare(size_t pos, size_t len,
+                                        const char *s) const {
     return compare(pos, len, s, strlen(s));
   }
-  constexpr inline int compare(const char *s) const {
+  _compiler_can_use_ inline int compare(const char *s) const {
     return compare(s, strlen(s));
   }
-  constexpr inline bool starts_with(const char *s, size_t n) const {
+  _compiler_can_use_ inline bool starts_with(const char *s, size_t n) const {
     return substr_view(0ULL, n).equals(s, n);
   }
-  constexpr inline bool starts_with(const basic_mjz_Str_view &s) const {
+  _compiler_can_use_ inline bool
+  starts_with(const basic_mjz_Str_view &s) const {
     return starts_with(s.c_str(), s.length());
   }
-  constexpr inline bool starts_with(char c) const { return c == *c_str(); }
-  constexpr inline bool starts_with(const char *s) const {
+  _compiler_can_use_ inline bool starts_with(char c) const {
+    return c == *c_str();
+  }
+  _compiler_can_use_ inline bool starts_with(const char *s) const {
     return starts_with(s, strlen(s));
   }
-  constexpr inline bool ends_with(const char *s, size_t n) const {
+  _compiler_can_use_ inline bool ends_with(const char *s, size_t n) const {
     return substr_view(length() - n, length()).equals(s, n);
   }
-  constexpr inline bool ends_with(const basic_mjz_Str_view &s) const {
+  _compiler_can_use_ inline bool ends_with(const basic_mjz_Str_view &s) const {
     return ends_with(s.c_str(), s.length());
   }
-  constexpr inline bool ends_with(char c) const {
+  _compiler_can_use_ inline bool ends_with(char c) const {
     return c == c_str()[length() - 1];
   }
-  constexpr inline bool ends_with(const char *s) const {
+  _compiler_can_use_ inline bool ends_with(const char *s) const {
     return ends_with(s, strlen(s));
   }
-  inline constexpr int64_t indexOf(const basic_mjz_Str_view &s2) const {
+  _compiler_can_use_ inline int64_t
+  indexOf(const basic_mjz_Str_view &s2) const {
     return indexOf(s2, 0);
   }
-  inline constexpr int64_t indexOf(const basic_mjz_Str_view &s2,
-                                   size_t fromIndex) const {
+  _compiler_can_use_ inline int64_t indexOf(const basic_mjz_Str_view &s2,
+                                            size_t fromIndex) const {
     return indexOf_cstr(s2.data(), s2.length(), fromIndex);
   }
-  inline constexpr int64_t lastIndexOf(const basic_mjz_Str_view &s2) const {
+  _compiler_can_use_ inline int64_t
+  lastIndexOf(const basic_mjz_Str_view &s2) const {
     return lastIndexOf(s2, m_length - s2.m_length);
   }
-  inline constexpr int64_t lastIndexOf(const basic_mjz_Str_view &s2,
-                                       size_t fromIndex) const {
+  _compiler_can_use_ inline int64_t lastIndexOf(const basic_mjz_Str_view &s2,
+                                                size_t fromIndex) const {
     return lastIndexOf_cstr(s2.c_str(), s2.length(), fromIndex);
   }
-  constexpr inline size_t find(const basic_mjz_Str_view &str,
-                               size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find(const basic_mjz_Str_view &str,
+                                        size_t pos = 0) const {
     return indexOf(str, pos);
   }
-  constexpr inline size_t find(const char *s, size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find(const char *s, size_t pos = 0) const {
     return indexOf_cstr(s, strlen(s), pos);
   }
-  constexpr inline size_t find(const char *s, size_t pos, size_t n) const {
+  _compiler_can_use_ inline size_t find(const char *s, size_t pos,
+                                        size_t n) const {
     return indexOf_cstr(s, n, pos);
   }
-  constexpr inline size_t find(char c, size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find(char c, size_t pos = 0) const {
     return indexOf(c, pos);
   }
-  constexpr inline size_t rfind(const basic_mjz_Str_view &str,
-                                size_t pos = npos) const {
+  _compiler_can_use_ inline size_t rfind(const basic_mjz_Str_view &str,
+                                         size_t pos = npos) const {
     return lastIndexOf(str, pos);
   }
-  constexpr inline size_t rfind(const char *s, size_t pos = npos) const {
+  _compiler_can_use_ inline size_t rfind(const char *s,
+                                         size_t pos = npos) const {
     return lastIndexOf_cstr(s, strlen(s), pos);
   }
-  constexpr inline size_t rfind(const char *s, size_t pos, size_t n) const {
+  _compiler_can_use_ inline size_t rfind(const char *s, size_t pos,
+                                         size_t n) const {
     return lastIndexOf_cstr(s, n, pos);
   }
-  constexpr inline size_t rfind(char c, size_t pos = npos) const {
+  _compiler_can_use_ inline size_t rfind(char c, size_t pos = npos) const {
     return lastIndexOf(c, pos);
   }
-  constexpr inline size_t find_first_of_in_str(const char *s, size_t n) const {
+  _compiler_can_use_ inline size_t find_first_of_in_str(const char *s,
+                                                        size_t n) const {
     return static_str_algo::find_first_of_in_str(m_buffer, m_length, s, n);
   }
-  constexpr inline size_t find_last_of_in_str(const char *s, size_t n) const {
+  _compiler_can_use_ inline size_t find_last_of_in_str(const char *s,
+                                                       size_t n) const {
     return static_str_algo::find_last_of_in_str(m_buffer, m_length, s, n);
   }
-  constexpr inline size_t find_first_of_in_str(
-      const basic_mjz_Str_view &str) const {
+  _compiler_can_use_ inline size_t
+  find_first_of_in_str(const basic_mjz_Str_view &str) const {
     return find_first_of_in_str(str.m_buffer, str.m_length);
   }
-  constexpr inline size_t find_first_of(const basic_mjz_Str_view &str,
-                                        size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find_first_of(const basic_mjz_Str_view &str,
+                                                 size_t pos = 0) const {
     return substr_view(pos).find_first_of_in_str(str);
   }
-  constexpr inline size_t find_first_of(const char *s, size_t pos,
-                                        size_t n) const {
+  _compiler_can_use_ inline size_t find_first_of(const char *s, size_t pos,
+                                                 size_t n) const {
     return substr_view(pos).find_first_of_in_str(s, n);
   }
-  constexpr inline size_t find_first_of(const char *s, size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find_first_of(const char *s,
+                                                 size_t pos = 0) const {
     return find_first_of(s, pos, strlen(s));
   }
-  constexpr inline size_t find_first_of(char c, size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find_first_of(char c, size_t pos = 0) const {
     return find_first_of(&c, pos, 1);
   }
-  constexpr inline size_t find_last_of(const basic_mjz_Str_view &str,
-                                       size_t pos = npos) const {
+  _compiler_can_use_ inline size_t find_last_of(const basic_mjz_Str_view &str,
+                                                size_t pos = npos) const {
     return substr_view(pos).find_last_of_in_str(str.data(), str.length());
   }
-  constexpr inline size_t find_last_of(const char *s, size_t pos = npos) const {
+  _compiler_can_use_ inline size_t find_last_of(const char *s,
+                                                size_t pos = npos) const {
     return substr_view(pos).find_last_of_in_str(s, strlen(s));
   }
-  constexpr inline size_t find_last_of(const char *s, size_t pos,
-                                       size_t n) const {
+  _compiler_can_use_ inline size_t find_last_of(const char *s, size_t pos,
+                                                size_t n) const {
     return substr_view(pos).find_last_of_in_str(s, n);
   }
-  constexpr inline size_t find_last_of(char c, size_t pos = npos) const {
+  _compiler_can_use_ inline size_t find_last_of(char c,
+                                                size_t pos = npos) const {
     return find_last_of(&c, pos, 1);
   }
-  inline constexpr size_t find_last_not_of_in_str(const char *s,
-                                                  size_t n) const {
+  _compiler_can_use_ inline size_t find_last_not_of_in_str(const char *s,
+                                                           size_t n) const {
     return static_str_algo::find_last_of_not_in_str(m_buffer, m_length, s, n);
   }
-  inline constexpr size_t find_last_not_of(const basic_mjz_Str_view &str,
-                                           size_t pos = npos) const {
+  _compiler_can_use_ inline size_t
+  find_last_not_of(const basic_mjz_Str_view &str, size_t pos = npos) const {
     return substr_view(pos).find_last_not_of_in_str(str.c_str(), str.length());
   }
-  inline constexpr size_t find_last_not_of(const char *s,
-                                           size_t pos = npos) const {
+  _compiler_can_use_ inline size_t find_last_not_of(const char *s,
+                                                    size_t pos = npos) const {
     return substr_view(pos).find_last_not_of_in_str(s, strlen(s));
   }
-  inline constexpr size_t find_last_not_of(const char *s, size_t pos,
-                                           size_t n) const {
+  _compiler_can_use_ inline size_t find_last_not_of(const char *s, size_t pos,
+                                                    size_t n) const {
     return substr_view(pos).find_last_not_of_in_str(s, n);
   }
-  inline constexpr size_t find_last_not_of(char c, size_t pos = npos) const {
+  _compiler_can_use_ inline size_t find_last_not_of(char c,
+                                                    size_t pos = npos) const {
     return substr_view(pos).find_last_not_of_in_str(&c, 1);
   }
-  inline constexpr size_t find_first_not_of_in_str(const char *s,
-                                                   size_t n) const {
+  _compiler_can_use_ inline size_t find_first_not_of_in_str(const char *s,
+                                                            size_t n) const {
     return static_str_algo::find_first_of_not_in_str(m_buffer, m_length, s, n);
   }
-  inline constexpr size_t find_first_not_of(const basic_mjz_Str_view &str,
-                                            size_t pos = 0) const {
+  _compiler_can_use_ inline size_t
+  find_first_not_of(const basic_mjz_Str_view &str, size_t pos = 0) const {
     return substr_view(pos).find_first_not_of_in_str(str.c_str(), str.length());
   }
-  inline constexpr size_t find_first_not_of(const char *s,
-                                            size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find_first_not_of(const char *s,
+                                                     size_t pos = 0) const {
     return substr_view(pos).find_first_not_of_in_str(s, strlen(s));
   }
-  inline constexpr size_t find_first_not_of(const char *s, size_t pos,
-                                            size_t n) const {
+  _compiler_can_use_ inline size_t find_first_not_of(const char *s, size_t pos,
+                                                     size_t n) const {
     return substr_view(pos).find_first_not_of_in_str(s, n);
   }
-  inline constexpr size_t find_first_not_of(char c, size_t pos = 0) const {
+  _compiler_can_use_ inline size_t find_first_not_of(char c,
+                                                     size_t pos = 0) const {
     return substr_view(pos).find_first_not_of_in_str(&c, 1);
   }
-  constexpr bool equals(const char *cstr, size_t cstr_len) const {
+  _compiler_can_use_ bool equals(const char *cstr, size_t cstr_len) const {
     return are_two_str_equale(m_buffer, m_length, cstr, cstr_len);
   }
-  constexpr bool equals(const basic_mjz_Str_view &s2) const {
+  _compiler_can_use_ bool equals(const basic_mjz_Str_view &s2) const {
     //
     return equals(s2.data(), s2.length());
   }
-  constexpr inline bool equals(const char *cstr) const {
+  _compiler_can_use_ inline bool equals(const char *cstr) const {
     return equals(cstr, strlen(cstr));
   }
-  constexpr inline size_t signed_index_to_unsigned(int64_t input) const {
+  _compiler_can_use_ inline size_t
+  signed_index_to_unsigned(int64_t input) const {
     size_t index{length()};
     if (input < 0) {
       index = (size_t)(input + (int64_t)length());
@@ -8375,10 +8781,12 @@ class basic_mjz_Str_view : protected static_str_algo {
     }
     return index;
   }
-  constexpr size_t UN_ORDERED_compare(const basic_mjz_Str_view &s) const {
+  _compiler_can_use_ size_t
+  UN_ORDERED_compare(const basic_mjz_Str_view &s) const {
     return UN_ORDERED_compare(s.m_buffer, s.m_length);
   }
-  constexpr size_t UN_ORDERED_compare(const char *s, size_t s_len) const {
+  _compiler_can_use_ size_t UN_ORDERED_compare(const char *s,
+                                               size_t s_len) const {
     const unsigned char *ucs_ = (const unsigned char *)s;
     const unsigned char *ucbuffer_ = (const unsigned char *)this->m_buffer;
     size_t number_of_not_right{};
@@ -8396,7 +8804,7 @@ class basic_mjz_Str_view : protected static_str_algo {
     }
     return number_of_not_right;
   }
-  constexpr bool equalsIgnoreCase(const basic_mjz_Str_view &s2) const {
+  _compiler_can_use_ bool equalsIgnoreCase(const basic_mjz_Str_view &s2) const {
     if (this == &s2) {
       //
       return true;
@@ -8421,7 +8829,7 @@ class basic_mjz_Str_view : protected static_str_algo {
     //
     return true;
   }
-  constexpr bool startsWith(const basic_mjz_Str_view &s2) const {
+  _compiler_can_use_ bool startsWith(const basic_mjz_Str_view &s2) const {
     if (m_length < s2.m_length) {
       //
       return false;
@@ -8429,7 +8837,8 @@ class basic_mjz_Str_view : protected static_str_algo {
     //
     return startsWith(s2, 0);
   }
-  constexpr bool startsWith(const basic_mjz_Str_view &s2, size_t offset) const {
+  _compiler_can_use_ bool startsWith(const basic_mjz_Str_view &s2,
+                                     size_t offset) const {
     if (offset > m_length - s2.m_length || !m_buffer || !s2.m_buffer) {
       //
       return false;
@@ -8437,7 +8846,7 @@ class basic_mjz_Str_view : protected static_str_algo {
     //
     return MJZ_STRnCMP(&m_buffer[offset], s2.m_buffer, s2.m_length) == 0;
   }
-  constexpr bool endsWith(const basic_mjz_Str_view &s2) const {
+  _compiler_can_use_ bool endsWith(const basic_mjz_Str_view &s2) const {
     if (m_length < s2.m_length || !m_buffer || !s2.m_buffer) {
       //
       return false;
@@ -8447,16 +8856,16 @@ class basic_mjz_Str_view : protected static_str_algo {
                        s2.m_length) == 0;
   }
   // Function that return the length
-  constexpr size_t size() const { return length(); }
-  constexpr char charAt(int64_t loc) const {
+  _compiler_can_use_ size_t size() const { return length(); }
+  _compiler_can_use_ char charAt(int64_t loc) const {
     return operator[](signed_index_to_unsigned(loc));
   }
-  constexpr char charAt(size_t loc) const {
+  _compiler_can_use_ char charAt(size_t loc) const {
     //
     return operator[](loc);
   }
-  constexpr void getBytes(unsigned char *buf, size_t bufsize,
-                          size_t index = 0) const {
+  _compiler_can_use_ void getBytes(unsigned char *buf, size_t bufsize,
+                                   size_t index = 0) const {
     if (!bufsize || !buf) {
       //
       return;
@@ -8474,12 +8883,12 @@ class basic_mjz_Str_view : protected static_str_algo {
     buf[n] = 0;
     //
   }
-  inline constexpr void toCharArray(char *buf, size_t bufsize,
-                                    size_t index = 0) const {
+  _compiler_can_use_ inline void toCharArray(char *buf, size_t bufsize,
+                                             size_t index = 0) const {
     getBytes((unsigned char *)buf, bufsize, index);
   }
-  constexpr int64_t indexOf(char c) const { return indexOf(c, 0); }
-  constexpr int64_t indexOf(char ch, size_t fromIndex) const {
+  _compiler_can_use_ int64_t indexOf(char c) const { return indexOf(c, 0); }
+  _compiler_can_use_ int64_t indexOf(char ch, size_t fromIndex) const {
     if (fromIndex >= m_length) {
       return -1;
     }
@@ -8489,8 +8898,8 @@ class basic_mjz_Str_view : protected static_str_algo {
     }
     return (int64_t)(temp - m_buffer);
   }
-  constexpr int64_t indexOf_cstr(const char *c_str_, size_t len_str,
-                                 size_t fromIndex) const {
+  _compiler_can_use_ int64_t indexOf_cstr(const char *c_str_, size_t len_str,
+                                          size_t fromIndex) const {
     if (fromIndex >= m_length) {
       return -1;
     }
@@ -8501,8 +8910,9 @@ class basic_mjz_Str_view : protected static_str_algo {
     }
     return (int64_t)(found - m_buffer);
   }
-  constexpr int64_t lastIndexOf_cstr(const char *cstr__, size_t length__,
-                                     size_t fromIndex) const {
+  _compiler_can_use_ int64_t lastIndexOf_cstr(const char *cstr__,
+                                              size_t length__,
+                                              size_t fromIndex) const {
     if (fromIndex >= m_length) {
       return -1;
     }
@@ -8513,14 +8923,14 @@ class basic_mjz_Str_view : protected static_str_algo {
     }
     return (int64_t)(found - m_buffer);
   }
-  inline constexpr int64_t lastIndexOf_cstr(const char *cstr__,
-                                            size_t length__) const {
+  _compiler_can_use_ inline int64_t lastIndexOf_cstr(const char *cstr__,
+                                                     size_t length__) const {
     return lastIndexOf_cstr(cstr__, length__, 0);
   }
-  constexpr int64_t lastIndexOf(char theChar) const {
+  _compiler_can_use_ int64_t lastIndexOf(char theChar) const {
     return lastIndexOf(theChar, m_length - 1);
   }
-  constexpr int64_t lastIndexOf(char ch, size_t fromIndex) const {
+  _compiler_can_use_ int64_t lastIndexOf(char ch, size_t fromIndex) const {
     if (fromIndex >= m_length) {
       return -1;
     }
@@ -8533,9 +8943,10 @@ class basic_mjz_Str_view : protected static_str_algo {
     }
     return (int64_t)(temp - m_buffer);
   };
-  constexpr const char *substring_give_ptrULL(size_t left, size_t right,
-                                              const char *&c_str_out,
-                                              size_t &len_out) const {
+  _compiler_can_use_ const char *substring_give_ptrULL(size_t left,
+                                                       size_t right,
+                                                       const char *&c_str_out,
+                                                       size_t &len_out) const {
     if (left > right) {
       size_t temp = right;
       right = left;
@@ -8553,72 +8964,78 @@ class basic_mjz_Str_view : protected static_str_algo {
     len_out = right - left;
     return c_str_out;
   }
-  constexpr const char *substring_give_ptr(int64_t left, int64_t right,
-                                           const char *&c_str_out,
-                                           size_t &len_out) const {
+  _compiler_can_use_ const char *substring_give_ptr(int64_t left, int64_t right,
+                                                    const char *&c_str_out,
+                                                    size_t &len_out) const {
     return substring_give_ptrULL(signed_index_to_unsigned(left),
                                  signed_index_to_unsigned(right), c_str_out,
                                  len_out);
   }
   friend class mjz_str_view;
-  constexpr const char &at(int64_t i) const & { return operator[](i); }
-  constexpr const char &back() const & { return buffer_ref()[0]; }
-  constexpr const char &front() const & { return operator[]((int64_t)-1); }
-  inline constexpr basic_mjz_Str_view substr_view(size_t beginIndex) {
+  _compiler_can_use_ const char &at(int64_t i) const & { return operator[](i); }
+  _compiler_can_use_ const char &back() const & { return buffer_ref()[0]; }
+  _compiler_can_use_ const char &front() const & {
+    return operator[]((int64_t)-1);
+  }
+  _compiler_can_use_ inline basic_mjz_Str_view substr_view(size_t beginIndex) {
     return substr_view(beginIndex, length() - beginIndex);
   }
-  inline constexpr basic_mjz_Str_view substr_view(size_t beginIndex,
-                                                  size_t endIndex) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view(size_t beginIndex, size_t endIndex) const {
     const char *out_ptr{};
     size_t out_len{};
     substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
     return out_len ? basic_mjz_Str_view(out_ptr, out_len)
                    : basic_mjz_Str_view();
   }
-  inline constexpr basic_mjz_Str_view substr_view_beg_n(size_t beginIndex,
-                                                        size_t number) {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view_beg_n(size_t beginIndex, size_t number) {
     return substr_view(beginIndex, number + beginIndex);
   }
-  inline constexpr basic_mjz_Str_view substr_view(int64_t beginIndex,
-                                                  int64_t endIndex) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view(int64_t beginIndex, int64_t endIndex) const {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(endIndex));
   }
-  inline constexpr basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
-                                                        size_t number) {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view_beg_n(int64_t beginIndex, size_t number) {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(beginIndex) + number);
   }
-  inline constexpr basic_mjz_Str_view substr_view_beg_n(
-      unsigned int beginIndex, unsigned int number) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view_beg_n(unsigned int beginIndex, unsigned int number) const {
     return substr_view_beg_n((size_t)beginIndex, (size_t)number);
   }
-  inline constexpr basic_mjz_Str_view substr_view(int64_t beginIndex) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view(int64_t beginIndex) const {
     return substr_view(signed_index_to_unsigned(beginIndex));
   }
-  inline constexpr basic_mjz_Str_view substr_view(int beginIndex,
-                                                  int endIndex) const {
+  _compiler_can_use_ inline basic_mjz_Str_view substr_view(int beginIndex,
+                                                           int endIndex) const {
     return substr_view((int64_t)beginIndex, (int64_t)endIndex);
   }
-  inline constexpr basic_mjz_Str_view substr_view_beg_n(int beginIndex,
-                                                        int number) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view_beg_n(int beginIndex, int number) const {
     return substr_view_beg_n((int64_t)beginIndex, (size_t)number);
   }
-  inline constexpr basic_mjz_Str_view substr_view_beg_n(size_t beginIndex,
-                                                        size_t number) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view_beg_n(size_t beginIndex, size_t number) const {
     return substr_view(beginIndex, number + beginIndex);
   }
-  inline constexpr basic_mjz_Str_view substr_view(size_t beginIndex) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view(size_t beginIndex) const {
     return substr_view(beginIndex, length() - beginIndex);
   }
-  inline constexpr basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
-                                                        size_t number) const {
+  _compiler_can_use_ inline basic_mjz_Str_view
+  substr_view_beg_n(int64_t beginIndex, size_t number) const {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(beginIndex) + number);
   }
-  constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
+  _compiler_can_use_ inline size_t max_size() const {
+    return (((size_t)(-1)) >> 1) - 1;
+  }
 
- public:
+public:
   template <typename T = mjz_normal_allocator>
   std::pair<hash_sha256, mjz_str_t<T>> hash_with_output(uint8_t n = 0) const;
   template <typename T = mjz_normal_allocator>
@@ -8652,20 +9069,20 @@ class basic_mjz_Str_view : protected static_str_algo {
 
 class mjz_str_view;
 class basic_mjz_String : public basic_mjz_Str_view {
- protected:
-  template <typename T>
-  friend class mjz_str_t;
+protected:
+  template <typename T> friend class mjz_str_t;
   // the array length minus one (for the '\0')
   size_t m_capacity;
 
- public:
-  constexpr inline basic_mjz_String(char *bfr, size_t cap, size_t len)
+public:
+  _compiler_can_use_ inline basic_mjz_String(char *bfr, size_t cap, size_t len)
       : basic_mjz_Str_view(bfr, len), m_capacity(cap){};
-  constexpr inline basic_mjz_String(const char *bfr, size_t cap, size_t len)
+  _compiler_can_use_ inline basic_mjz_String(const char *bfr, size_t cap,
+                                             size_t len)
       : basic_mjz_String(const_cast<char *>(bfr), cap, len){};
-  constexpr inline basic_mjz_String()
+  _compiler_can_use_ inline basic_mjz_String()
       : basic_mjz_String(empty_STRING_C_STR, 0, 0) {}
-  constexpr inline ~basic_mjz_String() = default;
+  _compiler_can_use_ inline ~basic_mjz_String() = default;
   ;
   basic_mjz_String(basic_mjz_String &&) = delete;
   basic_mjz_String(const basic_mjz_String &) = delete;
@@ -8673,11 +9090,11 @@ class basic_mjz_String : public basic_mjz_Str_view {
   basic_mjz_String &operator=(basic_mjz_String &&) = delete;
   basic_mjz_String &operator=(const basic_mjz_String &) = delete;
   basic_mjz_String &operator=(basic_mjz_String &) = delete;
-  constexpr inline inline basic_mjz_Str_view sv() const {
+  _compiler_can_use_ inline basic_mjz_Str_view sv() const {
     return basic_mjz_Str_view{*((basic_mjz_Str_view *)this)};
   }
 
- public:
+public:
 };
 
 template <typename T>
@@ -8733,13 +9150,13 @@ template <typename T>
 class mjz_str_t : public basic_mjz_String {
 #if 0
 
- }
+}
 #endif
 #else
 class mjz_Str : public basic_mjz_String,
-                public Stream {  //
-#endif  // Arduino
- protected:
+                public Stream { //
+#endif // Arduino
+protected:
   // void (mjz_Str<T>::*update_event_F_p)( void); //departed
   // (object_ptr->*pointer_name)(arguments)//like (this->*update_event_F_p)();
   stack_str_buf stack_obj_buf;
@@ -8751,37 +9168,38 @@ class mjz_Str : public basic_mjz_String,
   void StringIfHelper() const {}
   inline bool realloc_helper_is_in_stack(void *ptr);
 
- private:
+private:
   // copy and move
   mjz_str_t<T> &copy(const char *cstr, size_t length) {
     return copy(cstr, length, 0);
   }
   mjz_str_t<T> &copy(const __FlashStringHelper *pstr, size_t length);
   void move(mjz_str_t<T> &rhs);
-  [[nodiscard]] void *realloc_pv(void *ptr, size_t new_size, bool constructor);
+  _THIS_IS_YOURS_NOW_ void *realloc_pv(void *ptr, size_t new_size,
+                                       bool constructor);
   void free_pv(void *&ptr, bool constructor);
   void free_pv(void *const &ptr, bool constructor);
   mjz_str_t<T> &copy(const char *cstr, size_t length, bool constructor);
 
- protected:
-  [[nodiscard]] void *realloc(void *ptr, size_t new_size) {
+protected:
+  _THIS_IS_YOURS_NOW_ void *realloc(void *ptr, size_t new_size) {
     return T().allocate(new_size, ptr);
   }
   void free(void *ptr) { return T().deallocate((char *)ptr, m_capacity + 1); }
 
- public:
+public:
   static int8_t char_to_int_for_string(char c_char);
   // stream
- protected:
+protected:
   // This enumeration provides the lookahead options for parseInt(), //
   // parseFloat() The rules set out here are used until either the first valid
   // character is found or a time out occurs due to lack of input.
   enum LookaheadMode : uint8_t {
-    SKIP_ALL,   // All invalid characters are ignored.
-    SKIP_NONE,  // Nothing is skipped, and the stream is not touched unless the
-    // first waiting character is valid.
-    SKIP_WHITESPACE  // Only tabs, spaces, line feeds & carriage returns are
-    // skipped.
+    SKIP_ALL,  // All invalid characters are ignored.
+    SKIP_NONE, // Nothing is skipped, and the stream is not touched unless the
+               // first waiting character is valid.
+    SKIP_WHITESPACE // Only tabs, spaces, line feeds & carriage returns are
+                    // skipped.
   };
   int64_t parseInt(char ignore) { return parseInt(SKIP_ALL, ignore); }
   float parseFloat(char ignore) { return parseFloat(SKIP_ALL, ignore); }
@@ -8789,9 +9207,9 @@ class mjz_Str : public basic_mjz_String,
   // mjz_Str<T> and used parseFloat/Int with a custom ignore character. To keep
   // the public API simple, these overload remains protected.
   struct MultiTarget {
-    const char *str;  // string you're searching for
-    size_t len;       // length of string you're searching for
-    size_t index;     // index used by the search routine.
+    const char *str; // string you're searching for
+    size_t len;      // length of string you're searching for
+    size_t index;    // index used by the search routine.
   };
   // This allows you to search for an arbitrary number of strings.
   // Returns index of the target that is found first or -1 if timeout occurs.
@@ -8799,12 +9217,12 @@ class mjz_Str : public basic_mjz_String,
   size_t printNumber(unsigned long, uint8_t);
   size_t printULLNumber(unsigned long long, uint8_t);
   size_t printFloat(double, int);
-  int timedRead();  // private method to read stream with timeout
-  int timedPeek();  // private method to peek stream with timeout
+  int timedRead(); // private method to read stream with timeout
+  int timedPeek(); // private method to peek stream with timeout
   int peekNextDigit(LookaheadMode lookahead,
-                    bool detectDecimal);  // returns the next numeric digit in
+                    bool detectDecimal); // returns the next numeric digit in
 
- public:
+public:
   // default to zero, meaning "a single write may block"
   // should be overridden by subclasses with buffering
   int availableForWrite() if_ard_then_override {
@@ -8835,23 +9253,24 @@ class mjz_Str : public basic_mjz_String,
   size_t println(unsigned long long, int = DEC) if_override_then_override;
   size_t println(double, int = 2) if_override_then_override;
   size_t println(const mjz_str_t<T> &) if_override_then_override;
-  size_t println(void) if_override_then_override;  // TODO: V1071
-  // https://pvs-studio.com/en/docs/warnings/V1071/
+  size_t println(void)
+      if_override_then_override; // TODO: V1071
+                                 // https://pvs-studio.com/en/docs/warnings/V1071/
   // Consider inspecting the 'println' function.
   // The return value is not always used. Total
   // calls: 13, discarded results: 1.
   // parsing methods
 
   bool find_in_stream(
-      const char *target);  // reads data from the stream until the target
+      const char *target); // reads data from the stream until the target
   // string is found
   bool find_in_stream(const uint8_t *target) {
     return find_in_stream((const char *)target);
   }
   // returns true if target string is found, false if timed out (see setTimeout)
-  bool find_in_stream(
-      const char *target,
-      size_t length);  // reads data from the stream until the target
+  bool
+  find_in_stream(const char *target,
+                 size_t length); // reads data from the stream until the target
   // string of given length is found
   bool find_in_stream(const uint8_t *target, size_t length) {
     return find_in_stream((const char *)target, length);
@@ -8860,14 +9279,14 @@ class mjz_Str : public basic_mjz_String,
   bool find_in_stream(char target) { return find_in_stream(&target, 1); }
   bool find_in_stream_Until(
       const char *target,
-      const char *terminator);  // as find but search ends if the
+      const char *terminator); // as find but search ends if the
   // terminator string is found
   bool find_in_stream_Until(const uint8_t *target, const char *terminator) {
     return find_in_stream_Until((const char *)target, terminator);
   }
   bool find_in_stream_Until(
       const char *target, size_t targetLen, const char *terminate,
-      size_t termLen);  // as above but search ends if the terminate
+      size_t termLen); // as above but search ends if the terminate
   // string is found
   bool find_in_stream_Until(const uint8_t *target, size_t targetLen,
                             const char *terminate, size_t termLen) {
@@ -8888,7 +9307,7 @@ class mjz_Str : public basic_mjz_String,
   // returns the number of characters placed in the buffer (0 means no valid
   // data found)
   size_t readBytesUntil(char terminator, char *buffer, size_t length)
-      if_override_then_override;  // as readBytes with terminator character
+      if_override_then_override; // as readBytes with terminator character
   size_t readBytesUntil(char terminator, uint8_t *buffer_,
                         size_t length) if_override_then_override {
     return readBytesUntil(terminator, (char *)buffer_, length);
@@ -8924,8 +9343,8 @@ class mjz_Str : public basic_mjz_String,
   // stream
 
   // new and delete
-  [[nodiscard]] static void *operator new(size_t m_size);
-  [[nodiscard]] static void *operator new[](size_t m_size);
+  _THIS_IS_YOURS_NOW_ static void *operator new(size_t m_size);
+  _THIS_IS_YOURS_NOW_ static void *operator new[](size_t m_size);
   static void operator delete(void *p);
   static void operator delete[](void *ptr);
   static void operator delete(void *p, size_t);
@@ -8936,23 +9355,21 @@ class mjz_Str : public basic_mjz_String,
   inline static mjz_str_t<T> &replace_with_new_str(mjz_str_t<T> &where) {
     // obj.mjz_Str<T>::~mjz_Str<T>();//bad not calling virtually
     // obj->~mjz_Str<T>(); // good calls the most derived constructor
-    where.~mjz_str_t<T>();  // end lifetime
+    where.~mjz_str_t<T>(); // end lifetime
     new (&where)
-        mjz_str_t<T>;  // create an object in the place of the peivios one
+        mjz_str_t<T>; // create an object in the place of the peivios one
     return where;
   }
   inline static mjz_str_t<T> *replace_with_new_str(mjz_str_t<T> *where) {
-    where->~mjz_str_t<T>();  // end lifetime
+    where->~mjz_str_t<T>(); // end lifetime
     new (where)
-        mjz_str_t<T>;  // create an object in the place of the peivios one
+        mjz_str_t<T>; // create an object in the place of the peivios one
     return where;
   }
-  template <typename my_type>
-  inline auto operator->*(my_type my_var) {
+  template <typename my_type> inline auto operator->*(my_type my_var) {
     return this->*my_var;
   }
-  template <typename my_type>
-  inline auto operator->*(my_type my_var) const {
+  template <typename my_type> inline auto operator->*(my_type my_var) const {
     return this->*my_var;
   }
   mjz_str_t<T> &assign_range(std::initializer_list<const char> list);
@@ -8996,7 +9413,7 @@ class mjz_Str : public basic_mjz_String,
     concat(x.c_str(), x.length());
     return *this;
   }
-  ~mjz_str_t(void);  // make all drived destructors called
+  ~mjz_str_t(void); // make all drived destructors called
   void adjust_cap();
   mjz_str_t<T> &operator-=(const mjz_str_t<T> &othr_);
   mjz_str_t<T> &operator-=(const basic_mjz_Str_view &othr_);
@@ -9051,10 +9468,10 @@ class mjz_Str : public basic_mjz_String,
     obj /= lhs;
     return obj;
   }
-  mjz_str_t<T> &operator++();  // print empty line
+  mjz_str_t<T> &operator++(); // print empty line
   mjz_str_t<T> operator++(int);
-  mjz_str_t<T> &operator--();        // read one character
-  StringSumHelper_t<T> operator-();  // copy
+  mjz_str_t<T> &operator--();       // read one character
+  StringSumHelper_t<T> operator-(); // copy
   inline mjz_str_t<T> &operator~() { return operator()(); }
   inline mjz_str_t<T> &operator+() { return ++(*this); }
   mjz_str_t<T> operator--(int);
@@ -9079,8 +9496,8 @@ class mjz_Str : public basic_mjz_String,
   // return true on success,false on failure (in which case,the string
   // is left unchanged). reserve(0),if successful,will validate an
   // invalid string (i.e.,"if (s)" will be true afterwards)
-  inline constexpr const char *c_str() const & { return m_buffer; }
-  inline constexpr char *C_str() & { return m_buffer; }
+  _compiler_can_use_ inline const char *c_str() const & { return m_buffer; }
+  _compiler_can_use_ inline char *C_str() & { return m_buffer; }
   explicit operator char *() & { return buffer_ref(); }
   explicit operator const uint8_t *() const & {
     return (const uint8_t *)buffer_ref();
@@ -9128,7 +9545,7 @@ class mjz_Str : public basic_mjz_String,
   bool concat(const mjz_str_t<T> &str);
   bool concat(
       const char
-          *cstr);  // TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/
+          *cstr); // TODO: V1071 https://pvs-studio.com/en/docs/warnings/V1071/
   // Consider inspecting the 'concat' function. The return value
   // is not always used. Total calls: 11, discarded results: 1.
   bool concat(const char *cstr, size_t length);
@@ -9163,16 +9580,18 @@ class mjz_Str : public basic_mjz_String,
     return *this;
   }
   mjz_str_t<T> &append(size_t n, char c) {
-    if (!addto_length(n)) return *this;
+    if (!addto_length(n))
+      return *this;
     memset(m_buffer + length() - n, c, n);
     return *this;
   }
   template <class InputIterator>
   mjz_str_t<T> &append(InputIterator first, InputIterator last) {
     size_t newlen = last - first;
-    if (!addto_length(newlen)) return *this;
+    if (!addto_length(newlen))
+      return *this;
     char *ptr_{m_buffer + length() - newlen};
-    for (; first != last; first++) {  // i don't like != but :(
+    for (; first != last; first++) { // i don't like != but :(
       *ptr_++ = *first;
     }
     return *this;
@@ -9298,11 +9717,11 @@ class mjz_Str : public basic_mjz_String,
   }
   void *do_this_for_me(function_ptr, void *x = 0);
   // comparison (only works w/ Strings and "strings")
-  [[nodiscard]] static mjz_str_t<T> create_mjz_Str_char_array(size_t m_size,
-                                                              char filler = 0,
-                                                              bool do_fill = 1);
-  [[nodiscard]] static mjz_str_t<T> create_mjz_Str_2D_char_array(
-      size_t size_col, size_t size_row, char filler = 0, bool do_fill = 1);
+  _THIS_IS_YOURS_NOW_ static mjz_str_t<T>
+  create_mjz_Str_char_array(size_t m_size, char filler = 0, bool do_fill = 1);
+  _THIS_IS_YOURS_NOW_ static mjz_str_t<T>
+  create_mjz_Str_2D_char_array(size_t size_col, size_t size_row,
+                               char filler = 0, bool do_fill = 1);
   friend class STRINGSerial;
   // character access
   void setCharAt(size_t index, char c);
@@ -9420,11 +9839,13 @@ class mjz_Str : public basic_mjz_String,
   }
   mjz_str_t<T> &insert(size_t pos, size_t n, char c);
   void insert(iterator p, size_t n, const char *s) {
-    if (p.end() != end()) return;
+    if (p.end() != end())
+      return;
     insert((size_t)(p.get_pointer() - m_buffer), s, n);
   }
   void insert(iterator p, size_t n, char c) {
-    if (p.end() != end()) return;
+    if (p.end() != end())
+      return;
     insert((size_t)(p.get_pointer() - m_buffer), c, n);
   }
   iterator insert(iterator p, char c) {
@@ -9438,7 +9859,7 @@ class mjz_Str : public basic_mjz_String,
     insert(p, str.length(), str.c_str());
   }
   friend class basic_mjz_Str_view;
-  constexpr size_t capacity() const { return m_capacity; }
+  _compiler_can_use_ size_t capacity() const { return m_capacity; }
   void clear() { operator()(); }
   void shrink_to_fit() {
     mjz_str_t<T> str = create_mjz_Str_char_array(length(), 0, 1);
@@ -9447,22 +9868,21 @@ class mjz_Str : public basic_mjz_String,
   }
   inline bool empty() const { return is_blank(); }
 
- protected:
+protected:
   // void update_event();
   // void update_event_ard_string();
   void init(bool constructor = 1);
   void invalidate(bool constructor = 1);
   bool changeBuffer(size_t maxStrLen, bool constructor);
 
- public:
+public:
   // easy quality of life
   inline mjz_str_t<T> *operator->() { return this; }
   inline const mjz_str_t<T> *operator->() const { return this; }
   inline mjz_str_t<T> &operator*() { return *this; }
   inline const mjz_str_t<T> &operator*() const { return *this; }
   // templated
-  template <typename TYPE_>
-  mjz_str_t<T> substring(TYPE_ beginIndex) const {
+  template <typename TYPE_> mjz_str_t<T> substring(TYPE_ beginIndex) const {
     return basic_mjz_String::substring((int64_t)beginIndex);
   };
   template <typename TYPE_, typename TYPE_2>
@@ -9539,7 +9959,7 @@ class mjz_Str : public basic_mjz_String,
                            std::forward<arguments_types>(arguments_arr)...);
   }
 
- public:
+public:
   // constructors
   // creates a copy of the initial value.
   // if the initial value is null or invalid,or if memory allocation
@@ -9549,7 +9969,7 @@ class mjz_Str : public basic_mjz_String,
     init();
     if (cstr) {
       copy(cstr, len_,
-           1);  // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/
+           1); // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/
       // Calling the 'free' virtual function indirectly in the
       // constructor may lead to unexpected result at runtime. Check
       // lines: 'mjzString.cpp:358', 'mjzString.hpp:734'.
@@ -9624,6 +10044,12 @@ class mjz_Str : public basic_mjz_String,
     ulltoa(value, buf, base);
     *this = buf;
   }
+  mjz_str_t(const void *const ptr, unsigned char base = 16) {
+    init();
+    char buf[1 + 8 * sizeof(const void *const)];
+    ulltoa(reinterpret_cast<uint64_t>(ptr), buf, base);
+    *this = buf;
+  }
   mjz_str_t(float value, unsigned char decimalPlaces = 2) {
     static size_t const FLOAT_BUF_SIZE = FLT_MAX_10_EXP +
                                          FLT_MAX_DECIMAL_PLACES + 1 /* '-' */ +
@@ -9650,25 +10076,26 @@ class mjz_Str : public basic_mjz_String,
     size_t newlen{};
     InputIterator begin_it = first;
     while (begin_it !=
-           last) {  // not using last-first for compatibility //TODO: V776
-      // https://pvs-studio.com/en/docs/warnings/V776/ Potentially
-      // infinite loop. The variable in the loop exit condition
-      // 'begin_it != last' does not change its value between
-      // iterations.
+           last) { // not using last-first for compatibility //TODO: V776
+                   // https://pvs-studio.com/en/docs/warnings/V776/ Potentially
+                   // infinite loop. The variable in the loop exit condition
+                   // 'begin_it != last' does not change its value between
+                   // iterations.
       begin_it++;
       newlen++;
     }
-    if (!addto_length(newlen, 1)) return;
+    if (!addto_length(newlen, 1))
+      return;
     char *ptr_{m_buffer};
     while (first != last) {
       *ptr_++ = *first++;
     }
   }
   mjz_str_t(mjz_ard::mjz_str_t<T> &&rval) noexcept
-      : mjz_ard::basic_mjz_String(
-            (rval.stack_obj_buf.get() ? stack_obj_buf.stack_buffer
-                                      : rval.m_buffer),
-            (rval.m_capacity), (rval.m_length)),
+      : mjz_ard::basic_mjz_String((rval.stack_obj_buf.get()
+                                       ? stack_obj_buf.stack_buffer
+                                       : rval.m_buffer),
+                                  (rval.m_capacity), (rval.m_length)),
         stack_obj_buf(rval.stack_obj_buf) {
     // update_event_F_p = &mjz_ard::mjz_str_t<T>::update_event;//departed
     if (rval.stack_obj_buf.get()) {
@@ -9687,7 +10114,8 @@ class mjz_Str : public basic_mjz_String,
   // explicit mjz_Str<T>(const mjz_Str<T> *&&rval) :
   // mjz_Str<T>(std::move(*rval)) {
   // } // this will give me headaches in the long run so i dont move it
-  // inline explicit mjz_str_t(const mjz_str_t<T> *rval) : mjz_str_t(*rval) { }
+  // inline explicit mjz_str_t(const mjz_str_t<T> *rval) : mjz_str_t(*rval)
+  // { }
   inline mjz_str_t() : mjz_str_t((const char *)empty_STRING_C_STR, 0) {}
   mjz_str_t(const basic_mjz_String &otr)
       : mjz_str_t(otr.c_str(), otr.length()) {}
@@ -9695,60 +10123,65 @@ class mjz_Str : public basic_mjz_String,
       : mjz_str_t(otr.c_str(), otr.length()) {}
 };
 /*
- please dont use mjz_str_view with temporary strings
+please dont use mjz_str_view with temporary strings
  if the string that it references goes out of scope (delete , ~obj , } ,free
  ,...)the string_view will have undefined behavior use this obj like a
  std::string_view not like std::string
 */
 class mjz_str_view : public basic_mjz_Str_view {
- protected:
-  constexpr char *&buffer_ref(void) & { return m_buffer; }
+protected:
+  _compiler_can_use_ char *&buffer_ref(void) & { return m_buffer; }
   using basic_mjz_Str_view::buffer_ref;
   using basic_mjz_Str_view::C_str;
   using basic_mjz_Str_view::c_str;
-  constexpr mjz_str_view &copy(const basic_mjz_Str_view &s) {
+  _compiler_can_use_ mjz_str_view &copy(const basic_mjz_Str_view &s) {
     m_buffer = const_cast<char *>(s.c_str());
     m_length = s.length();
     return *this;
   };
-  constexpr inline const char *begin_c_str() const & { return c_str(); }
-  constexpr inline const char *end_c_str() const & {
+  _compiler_can_use_ inline const char *begin_c_str() const & {
+    return c_str();
+  }
+  _compiler_can_use_ inline const char *end_c_str() const & {
     return c_str() + length();
   }
 
- public:
-  constexpr inline const char *data() const && { return m_buffer; }
-  constexpr inline const char *data() && { return m_buffer; }
-  constexpr inline const char *data() & { return m_buffer; }
-  constexpr inline const char *data() const & { return m_buffer; }
+public:
+  _compiler_can_use_ inline const char *data() const && { return m_buffer; }
+  _compiler_can_use_ inline const char *data() && { return m_buffer; }
+  _compiler_can_use_ inline const char *data() & { return m_buffer; }
+  _compiler_can_use_ inline const char *data() const & { return m_buffer; }
   template <typename T>
   mjz_str_view(const mjz_str_t<T> &s) : mjz_str_view(s.c_str(), s.length()) {}
-  constexpr mjz_str_view(const basic_mjz_Str_view &str)
+  _compiler_can_use_ mjz_str_view(const basic_mjz_Str_view &str)
       : basic_mjz_Str_view(str) {}
-  constexpr mjz_str_view(const char *cstr_, size_t len)
+  _compiler_can_use_ mjz_str_view(const char *cstr_, size_t len)
       : basic_mjz_Str_view(cstr_, len) {}
-  constexpr mjz_str_view(const uint8_t *cstr_, size_t len)
+  _compiler_can_use_ mjz_str_view(const uint8_t *cstr_, size_t len)
       : mjz_str_view((char *)(cstr_), len) {}
-  constexpr mjz_str_view(const uint8_t *cstr_)
+  _compiler_can_use_ mjz_str_view(const uint8_t *cstr_)
       : mjz_str_view((char *)(cstr_)) {}
-  constexpr mjz_str_view(const char *cstr_)
+  _compiler_can_use_ mjz_str_view(const char *cstr_)
       : mjz_str_view(cstr_, strlen(cstr_)) {}
-  constexpr mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
+  _compiler_can_use_ mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
   mjz_str_view(mjz_str_view &&s) =
-      default;  // we are string views and not strings
+      default; // we are string views and not strings
   mjz_str_view &operator=(mjz_str_view &&) = default;
   template <typename T>
-  constexpr mjz_str_view &operator=(mjz_str_t<T> &&s) {
+  _compiler_can_use_ mjz_str_view &operator=(mjz_str_t<T> &&s) {
     return copy(s);
   }
-  template <typename T>
-  mjz_str_view(mjz_str_t<T> &&s) : mjz_str_view(s) {}
-  constexpr mjz_str_view(const mjz_str_view &s)
+  template <typename T> mjz_str_view(mjz_str_t<T> &&s) : mjz_str_view(s) {}
+  _compiler_can_use_ mjz_str_view(const mjz_str_view &s)
       : mjz_str_view(s.c_str(), s.length()) {}
-  constexpr mjz_str_view(mjz_str_view &s)
+  _compiler_can_use_ mjz_str_view(mjz_str_view &s)
       : mjz_str_view(s.c_str(), s.length()) {}
-  constexpr mjz_str_view &operator=(const mjz_str_view &s) { return copy(s); };
-  constexpr mjz_str_view &operator=(mjz_str_view &s) { return copy(s); }
+  _compiler_can_use_ mjz_str_view &operator=(const mjz_str_view &s) {
+    return copy(s);
+  };
+  _compiler_can_use_ mjz_str_view &operator=(mjz_str_view &s) {
+    return copy(s);
+  }
   inline ~mjz_str_view() = default;
   using iterator_template_CC = iterator_template_t<const char>;
   using const_iterator = iterator_template_CC;
@@ -9768,20 +10201,21 @@ class mjz_str_view : public basic_mjz_Str_view {
     return const_rev_iterator(begin());
   };
 
- public:
-  constexpr inline void remove_prefix(size_t n) {
+public:
+  _compiler_can_use_ inline void remove_prefix(size_t n) {
     m_buffer += n;
     remove_suffix(n);
   }
-  constexpr inline void remove_suffix(size_t n) { m_length -= n; }
-  constexpr friend void swap(mjz_str_view &lhs, mjz_str_view &rhs) {
+  _compiler_can_use_ inline void remove_suffix(size_t n) { m_length -= n; }
+  _compiler_can_use_ friend void swap(mjz_str_view &lhs, mjz_str_view &rhs) {
     lhs.swap(rhs);
   }
-  constexpr void swap(mjz_str_view &rhs) {
+  _compiler_can_use_ void swap(mjz_str_view &rhs) {
     static_str_algo::swap(m_length, rhs.m_length);
     static_str_algo::swap(m_buffer, rhs.m_buffer);
   }
-  constexpr size_t copy(char *dest, size_t count, size_t pos = 0) const {
+  _compiler_can_use_ size_t copy(char *dest, size_t count,
+                                 size_t pos = 0) const {
     if (length() <= pos) {
       return 0;
     }
@@ -9789,7 +10223,7 @@ class mjz_str_view : public basic_mjz_Str_view {
     memmove(dest, m_buffer + pos, amount);
     return amount;
   }
-  constexpr size_t copy(char *dest, size_t count, int64_t pos) const {
+  _compiler_can_use_ size_t copy(char *dest, size_t count, int64_t pos) const {
     return copy(dest, count, mjz_str_view::signed_index_to_unsigned(pos));
   }
   friend std::ostream &operator<<(std::ostream &COUT, const mjz_str_view &rhs) {
@@ -9828,10 +10262,9 @@ class mjz_virtual_string_view : public mjz_str_view {
       : mjz_virtual_string_view(cstr_, strlen(cstr_)) {}
   mjz_virtual_string_view() : mjz_virtual_string_view(empty_STRING_C_STR, 0) {}
   mjz_virtual_string_view(mjz_virtual_string_view &&s) =
-      default;  // we are ptr views and not strings
+      default; // we are ptr views and not strings
   mjz_virtual_string_view &operator=(mjz_virtual_string_view &&) = default;
-  template <typename T>
-  mjz_virtual_string_view &operator=(mjz_str_t<T> &&s) {
+  template <typename T> mjz_virtual_string_view &operator=(mjz_str_t<T> &&s) {
     copy(s);
     return *this;
   }
@@ -9853,9 +10286,8 @@ class mjz_virtual_string_view : public mjz_str_view {
 };
 extern std::shared_ptr<mjz_Str_DATA_storage_cls>
     main_mjz_Str_DATA_storage_Obj_ptr;
-template <typename T>
-class extended_mjz_str_t : public mjz_str_t<T> {
- public:
+template <typename T> class extended_mjz_str_t : public mjz_str_t<T> {
+public:
   extended_mjz_str_t() : mjz_str_t<T>() {}
   extended_mjz_str_t(const basic_mjz_String &s) : mjz_str_t<T>(s) {}
   extended_mjz_str_t(basic_mjz_String &&s) : extended_mjz_str_t(s) {}
@@ -9946,13 +10378,13 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   const extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> *typing) const;
   extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> &typing);
   extended_mjz_str_t<T> &operator>>(extended_mjz_str_t<T> *typing);
-  const extended_mjz_str_t<T> &operator>>=(
-      extended_mjz_str_t<T> &typing) const {
+  const extended_mjz_str_t<T> &
+  operator>>=(extended_mjz_str_t<T> &typing) const {
     (typing)();
     return operator>>(typing);
   }
-  const extended_mjz_str_t<T> &operator>>=(
-      extended_mjz_str_t<T> *typing) const {
+  const extended_mjz_str_t<T> &
+  operator>>=(extended_mjz_str_t<T> *typing) const {
     (*typing)();
     return operator>>(typing);
   }
@@ -10014,26 +10446,26 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   extended_mjz_str_t<T> string_do_interpret();
   void string_do_interpret(extended_mjz_str_t<T> &instr);
 
- public:
-  inline const std::function<char(char)>
-      &get_char_to_char_for_reinterpret_fnc_ptr_function() const {
+public:
+  inline const std::function<char(char)> &
+  get_char_to_char_for_reinterpret_fnc_ptr_function() const {
     return drived_mjz_Str_DATA_storage_Obj_ptr
         ->char_to_char_for_reinterpret_fnc_ptr;
   }
-  inline const std::function<bool(char)> &get_is_forbiden_character_function()
-      const {
+  inline const std::function<bool(char)> &
+  get_is_forbiden_character_function() const {
     return drived_mjz_Str_DATA_storage_Obj_ptr->is_forbiden_character;
   }
-  inline const std::function<bool(char)> &get_is_blank_character_function()
-      const {
+  inline const std::function<bool(char)> &
+  get_is_blank_character_function() const {
     return drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character;
   }
 
- public:
+public:
   friend class basic_mjz_String;
-  void set_realloc_free_functions(
-      std::function<void(void *)> free_,
-      std::function<void *(void *, size_t)> realloc_) {
+  void
+  set_realloc_free_functions(std::function<void(void *)> free_,
+                             std::function<void *(void *, size_t)> realloc_) {
     if (free_ && realloc_) {
       drived_mjz_Str_DATA_storage_Obj_ptr_set()->realloc_fnctn = realloc_;
       drived_mjz_Str_DATA_storage_Obj_ptr_set()->free_fnctn = free_;
@@ -10051,8 +10483,8 @@ class extended_mjz_str_t : public mjz_str_t<T> {
           ->char_to_char_for_reinterpret_fnc_ptr = fnction;
     }
   }
-  void change_is_forbiden_character_function(
-      std::function<bool(char)> fnction) {
+  void
+  change_is_forbiden_character_function(std::function<bool(char)> fnction) {
     if (fnction) {
       drived_mjz_Str_DATA_storage_Obj_ptr_set()->is_forbiden_character =
           fnction;
@@ -10064,12 +10496,12 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   bool char_to_char_for_reinterpret(char &c_char) const;
   char get_reinterpret_char_char() const;
 
- protected:
+protected:
   uint8_t did_drived_mjz_Str_DATA_storage_Obj_ptr_set{0};
   std::shared_ptr<mjz_Str_DATA_storage_cls>
       drived_mjz_Str_DATA_storage_Obj_ptr = main_mjz_Str_DATA_storage_Obj_ptr;
-  std::shared_ptr<mjz_Str_DATA_storage_cls>
-      &drived_mjz_Str_DATA_storage_Obj_ptr_set();
+  std::shared_ptr<mjz_Str_DATA_storage_cls> &
+  drived_mjz_Str_DATA_storage_Obj_ptr_set();
   const extended_mjz_str_t<T> &get_shift_op_rc() const;
   extended_mjz_str_t<T> &get_shift_op_r();
   const extended_mjz_str_t<T> &get_shift_op_lc() const;
@@ -10087,9 +10519,8 @@ class extended_mjz_str_t : public mjz_str_t<T> {
   const extended_mjz_str_t<T> &get_s_shift_op_l_sc() const;
   extended_mjz_str_t<T> &get_s_shift_op_l_s();
 };
-template <typename T>
-class StringSumHelper_t : public mjz_str_t<T> {
- public:
+template <typename T> class StringSumHelper_t : public mjz_str_t<T> {
+public:
   StringSumHelper_t(const basic_mjz_String &s) : mjz_str_t<T>(s) {}
   StringSumHelper_t(basic_mjz_String &&s) : StringSumHelper_t(s) {}
   StringSumHelper_t(const basic_mjz_Str_view &otr) : mjz_str_t<T>(otr) {}
@@ -10110,26 +10541,20 @@ class StringSumHelper_t : public mjz_str_t<T> {
   // non virtual
   ~StringSumHelper_t() = default;
 };
-template <typename TYPE_>
-class type_cmp_class {
- public:
+template <typename TYPE_> class type_cmp_class {
+public:
   bool operator()(const TYPE_ &a, const TYPE_ &b) { return cmp(a, b); }
   bool cmp(const TYPE_ &a, const TYPE_ &b) { return a < b; }
 };
-template <typename TYPE_, class cmpr_function>
-class type_cmp_fn_class {
- public:
+template <typename TYPE_, class cmpr_function> class type_cmp_fn_class {
+public:
   bool operator()(const TYPE_ &a, const TYPE_ &b) {
     return cmpr_function(a, b);
   }
 };
-template <class _function>
-class type_fn_class {
- public:
-  template <class Type>
-  bool operator()(const Type &x) {
-    return _function(x);
-  }
+template <class _function> class type_fn_class {
+public:
+  template <class Type> bool operator()(const Type &x) { return _function(x); }
 };
 template <typename T = mjz_normal_allocator>
 mjz_ard::mjz_str_t<T> ULL_LL_to_str(size_t value, int radix, bool is_signed,
@@ -10232,25 +10657,24 @@ inline mjz_str_view operator"" _mv(const char *p) {
   return operator""_v(p, static_str_algo::strlen(p));
 }
 inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
-}  // namespace short_string_convestion_operators
+} // namespace short_string_convestion_operators
 
 /************************************************************
- Author: Charlie Murphy
+Author: Charlie Murphy
  Email: tm507211@ohio.edu
 
- Date: July 20, 2015
+Date: July 20, 2015
 
- Description: Implementation of mjz_vector classes
+Description: Implementation of mjz_vector classes
 ************************************************************/
-}  // namespace mjz_ard
+} // namespace mjz_ard
 
 namespace mjz_ard {
 /***************************************************************************************
- Vector2 -- 2-D mjz_vector class
+Vector2 -- 2-D mjz_vector class
 ***************************************************************************************/
-template <class Type>
-class Vector2 {
- public:
+template <class Type> class Vector2 {
+public:
   union {
     struct {
       Type m_x, m_y;
@@ -10260,41 +10684,46 @@ class Vector2 {
     };
   };
   inline ~Vector2() {
-    m_x.~Type();  // the
+    m_x.~Type(); // the
     // https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
     m_y.~Type();
   };
-  constexpr inline Vector2 &operator=(const Vector2 &v) {
+  _compiler_can_use_ inline Vector2 &operator=(const Vector2 &v) {
     m_x = (v.m_x);
     m_y = (v.m_y);
     return *this;
   }
-  constexpr inline Vector2 &operator=(Vector2 &v) {
+  _compiler_can_use_ inline Vector2 &operator=(Vector2 &v) {
     return operator=((const Vector2<Type> &)v);
   }
-  constexpr inline Vector2 &operator=(Vector2 &&v) { return operator=(v); }
-  constexpr inline Vector2 &operator()(Vector2 &obj) { return *this = obj; };
-  constexpr inline Vector2 &operator()(Vector2 &&obj) { return *this = obj; };
-  constexpr inline Vector2 &operator()(const Vector2 &obj) {
+  _compiler_can_use_ inline Vector2 &operator=(Vector2 &&v) {
+    return operator=(v);
+  }
+  _compiler_can_use_ inline Vector2 &operator()(Vector2 &obj) {
     return *this = obj;
   };
-  constexpr inline Vector2 &operator()(const Type &x, const Type &y) {
+  _compiler_can_use_ inline Vector2 &operator()(Vector2 &&obj) {
+    return *this = obj;
+  };
+  _compiler_can_use_ inline Vector2 &operator()(const Vector2 &obj) {
+    return *this = obj;
+  };
+  _compiler_can_use_ inline Vector2 &operator()(const Type &x, const Type &y) {
     m_x = (x);
     m_y = (y);
     return *this;
   };
-  template <typename FNC_T>
-  inline auto operator()(FNC_T your_function) {
+  template <typename FNC_T> inline auto operator()(FNC_T your_function) {
     return your_function(*this);
   };
-  template <typename FNC_T>
-  inline auto operator()(FNC_T your_function) const {
+  template <typename FNC_T> inline auto operator()(FNC_T your_function) const {
     return your_function(*this);
   };
   template <typename FNC_T>
   inline Vector2 operator()(int do_save, FNC_T your_function) {
     auto v = Vector2(your_function(x()), your_function(y()));
-    if (do_save) return (*this)(v);
+    if (do_save)
+      return (*this)(v);
     return v;
   };
   template <typename FNC_T>
@@ -10310,68 +10739,76 @@ class Vector2 {
                          FNC_T your_function) const {
     return your_function_returning(operator()(0, your_function));
   };
-  inline constexpr Vector2() : m_x{}, m_y{} {}
-  inline constexpr Vector2(const Type &s) : m_x(s), m_y(s) {}
-  inline constexpr Vector2(const Type &x, const Type &y) : m_x(x), m_y(y) {}
-  inline constexpr Vector2(const Vector2<Type> &v) : m_x(v.m_x), m_y(v.m_y) {}
-  inline constexpr Vector2(Vector2 &v) : Vector2((const Vector2<Type> &)v){};
-  inline constexpr Vector2(Vector2 &&v) : Vector2(v){};
-  inline constexpr bool operator==(const Vector2<Type> &v) const {
+  _compiler_can_use_ inline Vector2() : m_x{}, m_y{} {}
+  _compiler_can_use_ inline Vector2(const Type &s) : m_x(s), m_y(s) {}
+  _compiler_can_use_ inline Vector2(const Type &x, const Type &y)
+      : m_x(x), m_y(y) {}
+  _compiler_can_use_ inline Vector2(const Vector2<Type> &v)
+      : m_x(v.m_x), m_y(v.m_y) {}
+  _compiler_can_use_ inline Vector2(Vector2 &v)
+      : Vector2((const Vector2<Type> &)v){};
+  _compiler_can_use_ inline Vector2(Vector2 &&v) : Vector2(v){};
+  _compiler_can_use_ inline bool operator==(const Vector2<Type> &v) const {
     return abs(m_x - v.m_x) < 0.01 && abs(m_y - v.m_y) < 0.01;
   }
-  inline constexpr bool operator!=(const Vector2<Type> &v) const {
+  _compiler_can_use_ inline bool operator!=(const Vector2<Type> &v) const {
     return !(operator==(v));
   }
   /**********************************************
   Indexing operator
-  **********************************************/
-  inline constexpr Type &operator[](int i) { return *(&m_x + i); }
-  inline constexpr const Type operator[](int i) const { return *(&m_x + i); }
+   **********************************************/
+  _compiler_can_use_ inline Type &operator[](int i) { return *(&m_x + i); }
+  _compiler_can_use_ inline const Type operator[](int i) const {
+    return *(&m_x + i);
+  }
   /*********************************************
   Non modifying math operators
-  *********************************************/
-  inline constexpr Vector2<Type> operator-() const {
+   *********************************************/
+  _compiler_can_use_ inline Vector2<Type> operator-() const {
     return Vector2<Type>(-m_x, -m_y);
   }
-  inline constexpr Vector2<Type> operator+(const Vector2<Type> &v) const {
+  _compiler_can_use_ inline Vector2<Type>
+  operator+(const Vector2<Type> &v) const {
     return Vector2<Type>(m_x + v.m_x, m_y + v.m_y);
   }
-  inline constexpr Vector2<Type> operator-(const Vector2<Type> &v) const {
+  _compiler_can_use_ inline Vector2<Type>
+  operator-(const Vector2<Type> &v) const {
     return Vector2<Type>(m_x - v.m_x, m_y - v.m_y);
   }
-  inline constexpr Vector2<Type> operator*(const Type &s) const {
+  _compiler_can_use_ inline Vector2<Type> operator*(const Type &s) const {
     return Vector2<Type>(m_x * s, m_y * s);
   }
-  inline constexpr Vector2<Type> operator*(const Vector2<Type> &v) const {
+  _compiler_can_use_ inline Vector2<Type>
+  operator*(const Vector2<Type> &v) const {
     return Vector2<Type>(m_x * v.m_x, m_y * v.m_y);
   }
-  inline constexpr Vector2<Type> operator/(const Type &s) const {
+  _compiler_can_use_ inline Vector2<Type> operator/(const Type &s) const {
     return Vector2<Type>(m_x / s, m_y / s);
   }
   /*******************************************
   Modifying Math Operators
-  *******************************************/
-  inline constexpr Vector2<Type> &operator+=(const Vector2<Type> &v) {
+   *******************************************/
+  _compiler_can_use_ inline Vector2<Type> &operator+=(const Vector2<Type> &v) {
     m_x += v.m_x;
     m_y += v.m_y;
     return *this;
   }
-  inline constexpr Vector2<Type> &operator-=(const Vector2<Type> &v) {
+  _compiler_can_use_ inline Vector2<Type> &operator-=(const Vector2<Type> &v) {
     m_x -= v.m_x;
     m_y -= v.m_y;
     return *this;
   }
-  inline constexpr Vector2<Type> &operator*=(const Type &s) {
+  _compiler_can_use_ inline Vector2<Type> &operator*=(const Type &s) {
     m_x *= s;
     m_y *= s;
     return *this;
   }
-  inline constexpr Vector2<Type> &operator*=(const Vector2<Type> &v) {
+  _compiler_can_use_ inline Vector2<Type> &operator*=(const Vector2<Type> &v) {
     m_x *= v.m_x;
     m_y *= v.m_y;
     return *this;
   }
-  inline constexpr Vector2<Type> &operator/=(const Type &s) {
+  _compiler_can_use_ inline Vector2<Type> &operator/=(const Type &s) {
     m_x /= s;
     m_y /= s;
     return *this;
@@ -10379,30 +10816,34 @@ class Vector2 {
   /*******************************************
   Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
-  inline constexpr operator const Type *() const {
+  _compiler_can_use_ inline operator const Type *() const {
     return static_cast<Type *>(&m_x);
   }
-  inline constexpr operator Type *() { return static_cast<Type *>(&m_x); }
+  _compiler_can_use_ inline operator Type *() {
+    return static_cast<Type *>(&m_x);
+  }
   /********************************************
   Useful Vector Operations
-  ********************************************/
-  inline constexpr Type length() const {
+   ********************************************/
+  _compiler_can_use_ inline Type length() const {
     return 1 / static_str_algo::Q_rsqrt_unsafe(m_x * m_x + m_y * m_y);
   }
-  inline constexpr Type lengthSq() const { return m_x * m_x + m_y * m_y; }
-  inline constexpr Vector2<Type> &normalize() {
+  _compiler_can_use_ inline Type lengthSq() const {
+    return m_x * m_x + m_y * m_y;
+  }
+  _compiler_can_use_ inline Vector2<Type> &normalize() {
     return operator*=((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
-  inline constexpr Vector2<Type> unit() const {
+  _compiler_can_use_ inline Vector2<Type> unit() const {
     return operator*((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
-  inline constexpr Type dot(const Vector2<Type> &v) const {
+  _compiler_can_use_ inline Type dot(const Vector2<Type> &v) const {
     return m_x * v.m_x + m_y * v.m_y;
   }
-  inline constexpr Type cross(
-      const Vector2<Type> &v) const {  // 3-D cross product with z assumed 0
+  _compiler_can_use_ inline Type
+  cross(const Vector2<Type> &v) const { // 3-D cross product with z assumed 0
     return m_x * v.m_y +
-           v.m_x * m_y;  // return magnitude of resulting mjz_vector
+           v.m_x * m_y; // return magnitude of resulting mjz_vector
   }
   friend std::ostream &operator<<(std::ostream &outs, const Vector2<Type> &v) {
     outs << "<" << v.m_x << ", " << v.m_y << ">";
@@ -10412,54 +10853,53 @@ class Vector2 {
     ins >> v.m_x >> v.m_y;
     return ins;
   }
-  friend inline constexpr Vector2<Type> operator*(Type s,
-                                                  const Vector2<Type> &v) {
+  friend _compiler_can_use_ inline Vector2<Type>
+  operator*(Type s, const Vector2<Type> &v) {
     return Vector2<Type>(s * v.m_x, s * v.m_y);
   }
   /********************************************************
   Basic Trig functions of angle between vectors
-  ********************************************************/
-  friend inline constexpr Type cos(const Vector2<Type> &v1,
-                                   const Vector2<Type> &v2) {
+   ********************************************************/
+  friend _compiler_can_use_ inline Type cos(const Vector2<Type> &v1,
+                                            const Vector2<Type> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
   }
-  friend inline constexpr Type sin(const Vector2<Type> &v1,
-                                   const Vector2<Type> &v2) {
+  friend _compiler_can_use_ inline Type sin(const Vector2<Type> &v1,
+                                            const Vector2<Type> &v2) {
     return cross(v1, v2) / v1.length() / v2.length();
   }
-  friend inline constexpr Type tan(const Vector2<Type> &v1,
-                                   const Vector2<Type> &v2) {
+  friend _compiler_can_use_ inline Type tan(const Vector2<Type> &v1,
+                                            const Vector2<Type> &v2) {
     return sin(v1, v2) / cos(v1, v2);
   }
-  friend inline constexpr Type angle(const Vector2<Type> &v1,
-                                     const Vector2<Type> &v2) {
+  friend _compiler_can_use_ inline Type angle(const Vector2<Type> &v1,
+                                              const Vector2<Type> &v2) {
     return std::acos(cos(v1, v2));
   }
-  friend inline constexpr Type dot(const Vector2<Type> &v1,
-                                   const Vector2<Type> &v2) {
+  friend _compiler_can_use_ inline Type dot(const Vector2<Type> &v1,
+                                            const Vector2<Type> &v2) {
     return v1.dot(v2);
   }
-  friend inline constexpr Type cross(const Vector2<Type> &v1,
-                                     const Vector2<Type> &v2) {
+  friend _compiler_can_use_ inline Type cross(const Vector2<Type> &v1,
+                                              const Vector2<Type> &v2) {
     return v1.cross(v2);
   }
-  inline constexpr Type *begin() { return &m_x; }
-  inline constexpr Type *end() { return begin() + size(); }
-  inline constexpr const Type *begin() const { return &m_x; }
-  inline constexpr const Type *end() const { return begin() + size(); }
-  inline constexpr const Type *cbegin() const { return begin(); }
-  inline constexpr const Type *cend() const { return end(); }
-  inline constexpr static const size_t size() { return 2; }
-  inline constexpr bool operator!() const { return !m_x && !m_y; }
-  inline constexpr operator bool() const { return !!*this; }
+  _compiler_can_use_ inline Type *begin() { return &m_x; }
+  _compiler_can_use_ inline Type *end() { return begin() + size(); }
+  _compiler_can_use_ inline const Type *begin() const { return &m_x; }
+  _compiler_can_use_ inline const Type *end() const { return begin() + size(); }
+  _compiler_can_use_ inline const Type *cbegin() const { return begin(); }
+  _compiler_can_use_ inline const Type *cend() const { return end(); }
+  _compiler_can_use_ inline static const size_t size() { return 2; }
+  _compiler_can_use_ inline bool operator!() const { return !m_x && !m_y; }
+  _compiler_can_use_ inline operator bool() const { return !!*this; }
 };
 /*********************************************************************************
- Vector3 -- 3D mjz_vector
+Vector3 -- 3D mjz_vector
 *********************************************************************************/
 
-template <class Type>
-class Vector3 {
- public:
+template <class Type> class Vector3 {
+public:
   union {
     struct {
       Type m_x, m_y, m_z;
@@ -10468,36 +10908,39 @@ class Vector3 {
       Type x, y, z;
     };
   };
-  inline ~Vector3() {  // https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
+  inline ~Vector3() { // https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
     m_x.~Type();
     m_y.~Type();
     m_z.~Type();
   };
-  constexpr inline Vector3 &operator()(Vector3 &obj) { return *this = obj; };
-  constexpr inline Vector3 &operator()(Vector3 &&obj) { return *this = obj; };
-  constexpr inline Vector3 &operator()(const Vector3 &obj) {
+  _compiler_can_use_ inline Vector3 &operator()(Vector3 &obj) {
     return *this = obj;
   };
-  constexpr inline Vector3 &operator()(const Type &x, const Type &y,
-                                       const Type &z) {
+  _compiler_can_use_ inline Vector3 &operator()(Vector3 &&obj) {
+    return *this = obj;
+  };
+  _compiler_can_use_ inline Vector3 &operator()(const Vector3 &obj) {
+    return *this = obj;
+  };
+  _compiler_can_use_ inline Vector3 &operator()(const Type &x, const Type &y,
+                                                const Type &z) {
     m_x = (x);
     m_x = (y);
     m_x = (z);
     return *this;
   };
-  template <typename FNC_T>
-  inline auto operator()(FNC_T your_function) {
+  template <typename FNC_T> inline auto operator()(FNC_T your_function) {
     return your_function(*this);
   };
-  template <typename FNC_T>
-  inline auto operator()(FNC_T your_function) const {
+  template <typename FNC_T> inline auto operator()(FNC_T your_function) const {
     return your_function(*this);
   };
   template <typename FNC_T>
   inline Vector3 operator()(int do_save, FNC_T your_function) {
     auto v =
         Vector3(your_function(x()), your_function(y()), your_function(z()));
-    if (do_save) return (*this)(v);
+    if (do_save)
+      return (*this)(v);
     return v;
   };
   template <typename FNC_T>
@@ -10513,106 +10956,114 @@ class Vector3 {
                          FNC_T your_function) const {
     return your_function_returning(operator()(0, your_function));
   };
-  inline constexpr Vector3() : m_x{}, m_y{}, m_z{} {}
-  inline constexpr Vector3(const Type &s) : m_x(s), m_y(s), m_z(s) {}
-  inline constexpr Vector3(const Type &x, const Type &y, const Type &z)
+  _compiler_can_use_ inline Vector3() : m_x{}, m_y{}, m_z{} {}
+  _compiler_can_use_ inline Vector3(const Type &s) : m_x(s), m_y(s), m_z(s) {}
+  _compiler_can_use_ inline Vector3(const Type &x, const Type &y, const Type &z)
       : m_x(x), m_y(y), m_z(z) {}
-  inline constexpr Vector3(const Vector2<Type> &v, const Type &s = Type())
+  _compiler_can_use_ inline Vector3(const Vector2<Type> &v,
+                                    const Type &s = Type())
       : m_x(v.m_x), m_y(v.m_y), m_z(s) {}
-  inline constexpr Vector3(const Vector3<Type> &v)
+  _compiler_can_use_ inline Vector3(const Vector3<Type> &v)
       : m_x(v.m_x), m_y(v.m_y), m_z(v.m_z) {}
-  inline constexpr Vector3(Vector3 &v) : Vector3((const Vector3<Type> &)v){};
-  inline constexpr Vector3(Vector3 &&v) : Vector3(v){};
-  constexpr inline Vector3 &operator=(const Vector3 &v) {
+  _compiler_can_use_ inline Vector3(Vector3 &v)
+      : Vector3((const Vector3<Type> &)v){};
+  _compiler_can_use_ inline Vector3(Vector3 &&v) : Vector3(v){};
+  _compiler_can_use_ inline Vector3 &operator=(const Vector3 &v) {
     m_x = (v.m_x);
     m_y = (v.m_y);
     m_z = (v.m_z);
     return *this;
   }
-  constexpr inline Vector3 &operator=(Vector3 &v) {
+  _compiler_can_use_ inline Vector3 &operator=(Vector3 &v) {
     return operator=((const Vector3<Type> &)v);
   }
-  constexpr inline Vector3 &operator=(Vector3 &&v) { return operator=(v); }
-  inline constexpr bool operator==(const Vector3<Type> &v) const {
+  _compiler_can_use_ inline Vector3 &operator=(Vector3 &&v) {
+    return operator=(v);
+  }
+  _compiler_can_use_ inline bool operator==(const Vector3<Type> &v) const {
     return abs(m_x - v.m_x) < 0.01 && abs(m_y - v.m_y) < 0.01 &&
            abs(m_z - v.m_z) < 0.01;
   }
-  inline constexpr bool operator!=(const Vector3<Type> &v) const {
+  _compiler_can_use_ inline bool operator!=(const Vector3<Type> &v) const {
     return !operator==(v);
   }
   /**********************************************
   Indexing operator
-  **********************************************/
-  inline constexpr Type &operator[](int i) { return *(&m_x + i); }
+   **********************************************/
+  _compiler_can_use_ inline Type &operator[](int i) { return *(&m_x + i); }
   const Type operator[](int i) const { return *(&m_x + i); }
   /**********************************************
   Itrator
-  **********************************************/
-  inline constexpr Type *begin() { return &m_x; }
-  inline constexpr Type *end() { return begin() + size(); }
-  inline constexpr const Type *begin() const { return &m_x; }
-  inline constexpr const Type *end() const { return begin() + size(); }
-  inline constexpr const Type *cbegin() const { return begin(); }
-  inline constexpr const Type *cend() const { return end(); }
-  inline constexpr static const size_t size() { return 3; }
+   **********************************************/
+  _compiler_can_use_ inline Type *begin() { return &m_x; }
+  _compiler_can_use_ inline Type *end() { return begin() + size(); }
+  _compiler_can_use_ inline const Type *begin() const { return &m_x; }
+  _compiler_can_use_ inline const Type *end() const { return begin() + size(); }
+  _compiler_can_use_ inline const Type *cbegin() const { return begin(); }
+  _compiler_can_use_ inline const Type *cend() const { return end(); }
+  _compiler_can_use_ inline static const size_t size() { return 3; }
   /*********************************************
   Non modifying math operators
-  *********************************************/
-  inline constexpr Vector3<Type> operator-() const {
+   *********************************************/
+  _compiler_can_use_ inline Vector3<Type> operator-() const {
     return Vector3<Type>(-m_x, -m_y, -m_z);
   }
-  inline constexpr Vector3<Type> operator+(const Vector3<Type> &v) const {
+  _compiler_can_use_ inline Vector3<Type>
+  operator+(const Vector3<Type> &v) const {
     return Vector3<Type>(m_x + v.m_x, m_y + v.m_y, m_z + v.m_z);
   }
-  inline constexpr Vector3<Type> operator-(const Vector3<Type> &v) const {
+  _compiler_can_use_ inline Vector3<Type>
+  operator-(const Vector3<Type> &v) const {
     return Vector3<Type>(m_x - v.m_x, m_y - v.m_y, m_z - v.m_z);
   }
-  inline constexpr Vector3<Type> operator*(const Type &s) const {
+  _compiler_can_use_ inline Vector3<Type> operator*(const Type &s) const {
     return Vector3<Type>(m_x * s, m_y * s, m_z * s);
   }
-  inline constexpr Vector3<Type> operator*(const Vector3<Type> &v) const {
+  _compiler_can_use_ inline Vector3<Type>
+  operator*(const Vector3<Type> &v) const {
     return Vector3<Type>(m_x * v.m_x, m_y * v.m_y, m_z * v.m_z);
   }
-  inline constexpr Vector3<Type> operator/(const Type &s) const {
+  _compiler_can_use_ inline Vector3<Type> operator/(const Type &s) const {
     return Vector3<Type>(m_x / s, m_y / s, m_z / s);
   }
-  inline constexpr Vector3<Type> operator/(const Vector3<Type> &v) const {
+  _compiler_can_use_ inline Vector3<Type>
+  operator/(const Vector3<Type> &v) const {
     return Vector3<Type>(m_x / v.m_x, m_y / v.m_y, m_z / v.m_z);
   }
   /*******************************************
   Modifying Math Operators
-  *******************************************/
-  inline constexpr Vector3<Type> &operator+=(const Vector3<Type> &v) {
+   *******************************************/
+  _compiler_can_use_ inline Vector3<Type> &operator+=(const Vector3<Type> &v) {
     m_x += v.m_x;
     m_y += v.m_y;
     m_z += v.m_z;
     return *this;
   }
-  inline constexpr Vector3<Type> &operator-=(const Vector3<Type> &v) {
+  _compiler_can_use_ inline Vector3<Type> &operator-=(const Vector3<Type> &v) {
     m_x -= v.m_x;
     m_y -= v.m_y;
     m_y -= v.m_z;
     return *this;
   }
-  inline constexpr Vector3<Type> &operator*=(const Type &s) {
+  _compiler_can_use_ inline Vector3<Type> &operator*=(const Type &s) {
     m_x *= s;
     m_y *= s;
     m_z *= s;
     return *this;
   }
-  inline constexpr Vector3<Type> &operator*=(const Vector3<Type> &v) {
+  _compiler_can_use_ inline Vector3<Type> &operator*=(const Vector3<Type> &v) {
     m_x *= v.m_x;
     m_y *= v.m_y;
     m_z *= v.m_z;
     return *this;
   }
-  inline constexpr Vector3<Type> &operator/=(const Vector3<Type> &v) {
+  _compiler_can_use_ inline Vector3<Type> &operator/=(const Vector3<Type> &v) {
     m_x /= v.m_x;
     m_y /= v.m_y;
     m_z /= v.m_z;
     return *this;
   }
-  inline constexpr Vector3<Type> &operator/=(const Type &s) {
+  _compiler_can_use_ inline Vector3<Type> &operator/=(const Type &s) {
     m_x /= s;
     m_y /= s;
     m_z /= s;
@@ -10621,33 +11072,37 @@ class Vector3 {
   /*******************************************
   Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
-  inline constexpr operator const Type *() const {
+  _compiler_can_use_ inline operator const Type *() const {
     return static_cast<Type *>(&m_x);
   }
-  inline constexpr bool operator!() const { return !m_x && !m_y && !m_z; }
-  inline constexpr operator bool() const { return !!*this; }
-  inline constexpr operator Type *() { return static_cast<Type *>(&m_x); }
+  _compiler_can_use_ inline bool operator!() const {
+    return !m_x && !m_y && !m_z;
+  }
+  _compiler_can_use_ inline operator bool() const { return !!*this; }
+  _compiler_can_use_ inline operator Type *() {
+    return static_cast<Type *>(&m_x);
+  }
   /********************************************
   Useful Vector Operations
-  ********************************************/
-  inline constexpr Type length() const {
+   ********************************************/
+  _compiler_can_use_ inline Type length() const {
     return 1 / static_str_algo::Q_rsqrt_unsafe(lengthSq());
   }
-  inline constexpr Type lengthSq() const {
+  _compiler_can_use_ inline Type lengthSq() const {
     return m_x * m_x + m_y * m_y + m_z * m_z;
   }
-  inline constexpr Vector3<Type> &normalize() {
+  _compiler_can_use_ inline Vector3<Type> &normalize() {
     return operator*=((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
-  inline constexpr Vector3<Type> unit() const {
+  _compiler_can_use_ inline Vector3<Type> unit() const {
     return operator*((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
-  inline constexpr Type dot(const Vector3<Type> &v) const {
+  _compiler_can_use_ inline Type dot(const Vector3<Type> &v) const {
     return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
   }
-  inline constexpr Vector3<Type> cross_with_this(
-      const Vector3<Type> &v) { /* NOTE this function modifies the
-      mjz_vector unlike 2D and non-member versions */
+  _compiler_can_use_ inline Vector3<Type>
+  cross_with_this(const Vector3<Type> &v) { /* NOTE this function modifies the
+            mjz_vector unlike 2D and non-member versions */
     Type x_(m_x), y_(m_y), z_(m_z);
     m_x = y_ * v.m_z - z_ * v.m_y;
     m_y = z_ * v.m_x - x_ * v.m_z;
@@ -10662,81 +11117,82 @@ class Vector3 {
     ins >> v.m_x >> v.m_y >> v.m_z;
     return ins;
   }
-  inline constexpr friend Vector3<Type> operator*(Type s,
-                                                  const Vector3<Type> &v) {
+  _compiler_can_use_ inline friend Vector3<Type>
+  operator*(Type s, const Vector3<Type> &v) {
     return Vector3<Type>(s * v.m_x, s * v.m_y, s * v.m_z);
   }
   /********************************************************
   Basic Trig functions of angle between vectors
-  ********************************************************/
-  inline constexpr friend Type cos(const Vector3<Type> &v1,
-                                   const Vector3<Type> &v2) {
+   ********************************************************/
+  _compiler_can_use_ inline friend Type cos(const Vector3<Type> &v1,
+                                            const Vector3<Type> &v2) {
     return dot(v1, v2) / v1.length() / v2.length();
   }
-  inline constexpr friend Type sin(const Vector3<Type> &v1,
-                                   const Vector3<Type> &v2) {
+  _compiler_can_use_ inline friend Type sin(const Vector3<Type> &v1,
+                                            const Vector3<Type> &v2) {
     return cross(v1, v2).length() / v1.length() / v2.length();
   }
-  inline constexpr friend Type tan(const Vector3<Type> &v1,
-                                   const Vector3<Type> &v2) {
+  _compiler_can_use_ inline friend Type tan(const Vector3<Type> &v1,
+                                            const Vector3<Type> &v2) {
     return sin(v1, v2) / cos(v1, v2);
   }
-  inline constexpr friend Type angle(const Vector3<Type> &v1,
-                                     const Vector3<Type> &v2) {
+  _compiler_can_use_ inline friend Type angle(const Vector3<Type> &v1,
+                                              const Vector3<Type> &v2) {
     return std::acos(cos(v1, v2));
   }
-  inline constexpr friend Type dot(const Vector3<Type> &v1,
-                                   const Vector3<Type> &v2) {
+  _compiler_can_use_ inline friend Type dot(const Vector3<Type> &v1,
+                                            const Vector3<Type> &v2) {
     return v1.dot(v2);
   }
-  inline constexpr friend Vector3<Type> cross(const Vector3<Type> &v1,
-                                              const Vector3<Type> &v2) {
+  _compiler_can_use_ inline friend Vector3<Type>
+  cross(const Vector3<Type> &v1, const Vector3<Type> &v2) {
     return Vector3<Type>(v1.m_y * v2.m_z - v1.m_z * v2.m_y,
                          v1.m_z * v2.m_x - v1.m_x * v2.m_z,
                          v1.m_x * v2.m_y - v1.m_y * v2.m_x);
   }
 };
 /******************************************************************************************
- Author: Charlie Murphy
+Author: Charlie Murphy
  Email: tm507211@ohio.edu
 
- Date: Augost 7, 2015
+Date: Augost 7, 2015
 
- Description: Defines point class.
+Description: Defines point class.
 ******************************************************************************************/
 
-template <class Type>
-class Point3D {
- public:
+template <class Type> class Point3D {
+public:
   Type m_x;
   Type m_y;
   Type m_z;
   Type m_w;
-  inline constexpr Point3D(const Type &s = Type())
+  _compiler_can_use_ inline Point3D(const Type &s = Type())
       : m_x(s), m_y(s), m_z(s), m_w(s) {}
-  inline constexpr Point3D(const Type &x, const Type &y, const Type &z,
-                           const Type &w)
+  _compiler_can_use_ inline Point3D(const Type &x, const Type &y, const Type &z,
+                                    const Type &w)
       : m_x(x), m_y(y), m_z(z), m_w(w) {}
-  inline constexpr Point3D(const Point3D<Type> &p)
+  _compiler_can_use_ inline Point3D(const Point3D<Type> &p)
       : m_x(p.m_x), m_y(p.m_y), m_z(p.m_z), m_w(p.m_w) {}
-  inline constexpr Point3D(const Point3D<Type> &p, const Vector3<Type> &v)
-      : m_x(p.m_x + v.m_x),
-        m_y(p.m_y + v.m_y),
-        m_z(p.m_z + v.m_z),
-        m_w(p.m_w) {}
-  inline constexpr Point3D(Point3D &p) : Point3D((const Point3D<Type> &)p){};
-  inline constexpr Point3D(Point3D &&p) : Point3D(p){};
-  constexpr inline Point3D &operator=(const Point3D &p) {
+  _compiler_can_use_ inline Point3D(const Point3D<Type> &p,
+                                    const Vector3<Type> &v)
+      : m_x(p.m_x + v.m_x), m_y(p.m_y + v.m_y), m_z(p.m_z + v.m_z), m_w(p.m_w) {
+  }
+  _compiler_can_use_ inline Point3D(Point3D &p)
+      : Point3D((const Point3D<Type> &)p){};
+  _compiler_can_use_ inline Point3D(Point3D &&p) : Point3D(p){};
+  _compiler_can_use_ inline Point3D &operator=(const Point3D &p) {
     m_x = (p.m_x);
     m_y = (p.m_y);
     m_z = (p.m_z);
     m_w = (p.m_w);
     return *this;
   }
-  constexpr inline Point3D &operator=(Point3D &p) {
+  _compiler_can_use_ inline Point3D &operator=(Point3D &p) {
     return operator=((const Point3D<Type> &)p);
   }
-  constexpr inline Point3D &operator=(Point3D &&p) { return operator=(p); }
+  _compiler_can_use_ inline Point3D &operator=(Point3D &&p) {
+    return operator=(p);
+  }
 };
 //
 // mjz_vector.h
@@ -10754,16 +11210,11 @@ using mjz_estr = extended_mjz_Str;
 using mjz_eStr = extended_mjz_Str;
 using malloc_wrpr = malloc_wrapper;
 using algorithm = static_str_algo;
-template <typename T, size_t size>
-using ex_Array = extended_mjz_Array<T, size>;
-template <typename T, size_t size>
-using ex_array = extended_mjz_Array<T, size>;
-template <typename T, size_t size>
-using Array = mjz_Array<T, size>;
-template <typename T>
-using Vector = mjz_Vector<T>;
-template <typename T, size_t size>
-using array = mjz_Array<T, size>;
+template <typename T, size_t size> using ex_Array = extended_mjz_Array<T, size>;
+template <typename T, size_t size> using ex_array = extended_mjz_Array<T, size>;
+template <typename T, size_t size> using Array = mjz_Array<T, size>;
+template <typename T> using Vector = mjz_Vector<T>;
+template <typename T, size_t size> using array = mjz_Array<T, size>;
 
 template <typename T, class C_free_realloc>
 using mjz_C_allocator_warpper =
@@ -10774,10 +11225,8 @@ using C_char_allocator_warpper = mjz_C_allocator_warpper<char, C_free_realloc>;
 template <typename T, size_t max_size>
 using static_vector = mjz_static_vector_template_t<T, max_size>;
 
-template <typename T>
-using iterator = iterator_template_t<T>;
-template <typename T>
-using iterator_template = iterator_template_t<T>;
+template <typename T> using iterator = iterator_template_t<T>;
+template <typename T> using iterator_template = iterator_template_t<T>;
 template <typename T>
 using filter_iterator =
     iterator_template_filter_warper<T, iterator_template_t<T>>;
@@ -10786,8 +11235,7 @@ using filter_iterator_template =
     iterator_template_filter_warper<T, iterator_template_t<T>>;
 template <typename it_T>
 using iterator_warper = iterator_warper_template_t<it_T>;
-template <typename it_T>
-using iterator_wrpr = iterator_warper<it_T>;
+template <typename it_T> using iterator_wrpr = iterator_warper<it_T>;
 template <typename T, class it_T>
 using mjz_to_it_warper_t = mjz_to_iterator_template_warper_t<T, it_T>;
 template <typename T, class it_T>
@@ -10800,8 +11248,7 @@ using mjz_to_it_wrpr =
     mjz_to_iterator_template_warper_t<mjz_get_value_Type<it_T>, it_T>;
 
 using arena_allocator = arena_allocator;
-template <typename T>
-using vector = mjz_Vector<T>;
+template <typename T> using vector = mjz_Vector<T>;
 template <typename T>
 template <typename T, bool init = true>
 using obj_warper = mjz_stack_obj_warper_template_t<T, init>;
@@ -10817,14 +11264,10 @@ using mjz_optional = mjz_stack_obj_warper_template_t<T, false>;
 
 template <typename T, bool init = true>
 using mjz_heap_obj_warper = mjz_heap_obj_warper_template_t<T, init>;
-template <typename T>
-using allocator = mjz_allocator_warpper<T>;
-template <typename T>
-using allocator_warpper = mjz_allocator_warpper<T>;
-template <typename T>
-using mjz_allocator = mjz_allocator_warpper<T>;
-template <typename T>
-using mjz_allocator_warpper = mjz_allocator_warpper<T>;
+template <typename T> using allocator = mjz_allocator_warpper<T>;
+template <typename T> using allocator_warpper = mjz_allocator_warpper<T>;
+template <typename T> using mjz_allocator = mjz_allocator_warpper<T>;
+template <typename T> using mjz_allocator_warpper = mjz_allocator_warpper<T>;
 using mlc_wrp = malloc_wrapper;
 using mjz_StringSumHelper = StringSumHelper_t<mjz_normal_allocator>;
 using StringSumHelper = StringSumHelper_t<mjz_normal_allocator>;
@@ -10833,44 +11276,39 @@ using mstrview = mjz_str_view;
 using mstrv = mjz_str_view;
 using mjz_Vectorf3 = Vector3<float>;
 using mjz_Vectorf2 = Vector2<float>;
-}  // namespace have_mjz_ard_removed
-}  // namespace mjz_ard
+} // namespace have_mjz_ard_removed
+} // namespace mjz_ard
 namespace std {
-template <>
-struct hash<mjz_ard::basic_mjz_Str_view> {
-  constexpr size_t operator()(const mjz_ard::basic_mjz_Str_view &k) const {
+template <> struct hash<mjz_ard::basic_mjz_Str_view> {
+  _compiler_can_use_ size_t
+  operator()(const mjz_ard::basic_mjz_Str_view &k) const {
     return mjz_ard::SHA1_CTX::hash_c_str(k.data(), k.length());
   }
-};  // namespace std::hash
+}; // namespace std::hash
 
-template <typename T>
-struct hash<mjz_ard::mjz_str_t<T>> {
+template <typename T> struct hash<mjz_ard::mjz_str_t<T>> {
   size_t operator()(const mjz_ard::mjz_str_t<T> &k) const {
     return mjz_ard::SHA1_CTX::hash_c_str(k.c_str(), k.length());
   }
-};  // namespace std::hash
-template <>
-struct hash<mjz_ard::mjz_str_view> {
+}; // namespace std::hash
+template <> struct hash<mjz_ard::mjz_str_view> {
   size_t operator()(const mjz_ard::mjz_str_view &k) const {
     return mjz_ard::SHA1_CTX::hash_c_str(k.data(), k.length());
   }
-};  // namespace std::hash
-template <>
-struct hash<mjz_ard::mjz_virtual_string_view> {
+}; // namespace std::hash
+template <> struct hash<mjz_ard::mjz_virtual_string_view> {
   size_t operator()(const mjz_ard::mjz_virtual_string_view &k) const {
     return mjz_ard::SHA1_CTX::hash_c_str(k.data(), k.length());
   }
-};  // namespace std::hash
+}; // namespace std::hash
 
-template <typename Type>
-struct hash<mjz_ard::Vector3<Type>> {
+template <typename Type> struct hash<mjz_ard::Vector3<Type>> {
   size_t operator()(const mjz_ard::Vector3<Type> &k) const {
     return hash<mjz_ard::mjz_str_view>()(mjz_ard::mjz_str_view(
         (const char *)&k, sizeof(mjz_ard::Vector3<Type>)));
   }
 };
-template <typename Type>
-struct hash<mjz_ard::Vector2<Type>> {
+template <typename Type> struct hash<mjz_ard::Vector2<Type>> {
   size_t operator()(const mjz_ard::Vector2<Type> &k) const {
     return hash<mjz_ard::mjz_str_view>()(mjz_ard::mjz_str_view(
         (const char *)&k, sizeof(mjz_ard::Vector2<Type>)));
@@ -10881,8 +11319,7 @@ inline mjz_ard::Vector3<Type> sqrt(mjz_ard::Vector3<Type> v) {
   return mjz_ard::Vector3<Type>(sqrt(v.x()), sqrt(v.y()), sqrt(v.z()));
 }
 
-template <typename Type>
-struct hash<mjz_ard::iterator_template_t<Type>> {
+template <typename Type> struct hash<mjz_ard::iterator_template_t<Type>> {
   size_t operator()(const mjz_ard::iterator_template_t<Type> &k) const {
     return hash()(k.get_pointer());
   }
@@ -10897,8 +11334,8 @@ struct hash<mjz_ard::iterator_template_filter_warper<Types...>> {
 };
 template <typename... Types>
 struct hash<mjz_ard::iterator_warper_template_t<Types...>> {
-  size_t operator()(
-      const mjz_ard::iterator_warper_template_t<Types...> &k) const {
+  size_t
+  operator()(const mjz_ard::iterator_warper_template_t<Types...> &k) const {
     return hash()(mjz_ard::Vector2<size_t>(hash()(k.m_begin), hash()(k.m_end)));
   }
 };
@@ -10930,53 +11367,49 @@ struct hash<mjz_ard::mjz_stack_obj_warper_template_t<T, COOC_t, MOC_t, DEC_t>> {
 };
 template <typename... Types>
 struct hash<mjz_ard::mjz_heap_obj_warper_template_t<Types...>> {
-  size_t operator()(
-      const mjz_ard::mjz_heap_obj_warper_template_t<Types...> &k) const {
+  size_t
+  operator()(const mjz_ard::mjz_heap_obj_warper_template_t<Types...> &k) const {
     return hash()(*k);
   }
 };
 template <typename... Types>
 struct hash<mjz_ard::mjz_temp_malloc_wrapper_t<Types...>> {
-  size_t operator()(
-      const mjz_ard::mjz_temp_malloc_wrapper_t<Types...> &k) const {
+  size_t
+  operator()(const mjz_ard::mjz_temp_malloc_wrapper_t<Types...> &k) const {
     return hash()(k.get_ptr());
   }
 };
-template <>
-struct hash<mjz_ard::hash_sha256> {
+template <> struct hash<mjz_ard::hash_sha256> {
   size_t operator()(const mjz_ard::hash_sha256 &k) const {
     return *((size_t *)k.data);
   }
 };
-}  // namespace std
+} // namespace std
 
 namespace mjz_ard {
 
 template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new(size_t m_size) {
+_THIS_IS_YOURS_NOW_ void *mjz_ard::mjz_str_t<T>::operator new(size_t m_size) {
   void *p = T().allocate(sizeof(size_t) + m_size);
   *((size_t *)p) = sizeof(size_t) + m_size;
   return ((size_t *)p) + 1;
 }
 template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::operator new[](size_t m_size) {
+_THIS_IS_YOURS_NOW_ void *mjz_ard::mjz_str_t<T>::operator new[](size_t m_size) {
   void *p = T().allocate(sizeof(size_t) + m_size);
   *((size_t *)p) = sizeof(size_t) + m_size;
   return ((size_t *)p) + 1;
 }
 
-template <typename T>
-void mjz_ard::mjz_str_t<T>::operator delete(void *p) {
+template <typename T> void mjz_ard::mjz_str_t<T>::operator delete(void *p) {
   size_t *real = (((size_t *)p) - 1);
   size_t m_size = *real;
   T().deallocate((mjz_get_value_Type<T> *)real, m_size);
 }
 
-template <typename T>
-void mjz_ard::mjz_str_t<T>::operator delete[](void *p) {
+template <typename T> void mjz_ard::mjz_str_t<T>::operator delete[](void *p) {
   size_t *real = (((size_t *)p) - 1);
   size_t m_size = *real;
-
   T().deallocate((mjz_get_value_Type<T> *)real, m_size);
 }
 
@@ -10994,8 +11427,8 @@ void mjz_ard::mjz_str_t<T>::operator delete[](void *p, size_t) {
   T().deallocate((mjz_get_value_Type<T> *)real, m_size);
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
-    std::initializer_list<const char> list) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::assign_range(std::initializer_list<const char> list) {
   (*this)();
   size_t newlen = list.size();
   addto_length(newlen);
@@ -11007,8 +11440,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
 }
 
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
-    iterator_template_t<const char> list) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::assign_range(iterator_template_t<const char> list) {
   (*this)();
   size_t newlen = list.size();
   addto_length(newlen);
@@ -11019,28 +11452,27 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
   return *this;
 }
 
-template <typename T>
-mjz_ard::mjz_str_t<T>::~mjz_str_t(void) {
+template <typename T> mjz_ard::mjz_str_t<T>::~mjz_str_t(void) {
   invalidate(
-      1);  // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling
-           // the 'free' virtual function indirectly in the destructor may lead
-           // to unexpected result at runtime. Check lines: 'mjzString.cpp:462',
-           // 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640',
-           // 'mjzString.hpp:734'.
-}  // i don't need to do this but this is explained in stackoverfllow . the
+      1); // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling
+          // the 'free' virtual function indirectly in the destructor may lead
+          // to unexpected result at runtime. Check lines: 'mjzString.cpp:462',
+  // 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640',
+  // 'mjzString.hpp:734'.
+} // i don't need to do this but this is explained in stackoverfllow . the
 // vtable of the derived free override gets destroyed when
 // ~mjz_ard::mjz_str_t<T>() gets called so mjz_ard::mjz_str_t<T>::free should be
 // called and i do it explicitly its not necessary but i do it see
 // https://stackoverflow.com/questions/41732051/when-is-a-vtable-destroy-in-c
 /*
- Can I call a virtual function in the destructor of a base class?
- Calling virtual functions from destructors or constructors is a bad practice.
- See the standard (emphasis mine):
- 12.7 Construction and destruction
+Can I call a virtual function in the destructor of a base class?
+Calling virtual functions from destructors or constructors is a bad practice.
+See the standard (emphasis mine):
+12.7 Construction and destruction
  ....
- Member functions, including virtual functions (10.3),
- can be called during construction or destruction (12.6.2).
- When a virtual function is called directly or indirectly from a constructor or
+Member functions, including virtual functions (10.3),
+can be called during construction or destruction (12.6.2).
+When a virtual function is called directly or indirectly from a constructor or
  from a destructor, including during the construction or destruction of the
  class’s non-static data members, and the object to which the call applies is
  the object (call it x) under construction or destruction, the function called
@@ -11050,26 +11482,26 @@ mjz_ard::mjz_str_t<T>::~mjz_str_t(void) {
  refers to the complete object of x or one of that object’s base class
  sub objects but not x or one of its base class sub objects, the behavior
  is undefined.
- You can find this recommendation in many sources, including Scott Meyers'
- Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item 9:
- Never call virtual functions during construction or destruction.)
- or Herb Sutter's
+You can find this recommendation in many sources, including Scott Meyers'
+Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item 9:
+Never call virtual functions during construction or destruction.)
+or Herb Sutter's
  C++ Coding Standards: 101 Rules, Guidelines, and Best Practices (49. Avoid
  calling virtual functions in constructors and destructors).
- Yes, the object will have a pointer to its vtable when you call the
+Yes, the object will have a pointer to its vtable when you call the
  destructor. The standard explicitly says it is possible to call virtual
  functions in the destructor, and says what happens. There is agreement that
  even though it is allowed it is a bad practice, because it is inherently
  brittle code that leads to surprises with apparently innocent changes. If you
  have that DerDer inherits from Der, which inherits from Base, all of them
  override member function void member(), and you are in the destructor of Der,
- and call member(), you are calling Der::member(), not DerDer::member(),
- because the DerDer part of your object is GONE, DESTROYED already. A base
+and call member(), you are calling Der::member(), not DerDer::member(),
+because the DerDer part of your object is GONE, DESTROYED already. A base
  class can refer inadvertently to data in a derived class, for example: struct
  Base { int *ip; Base(int *ip): ip(ip) { } virtual void useInt() {
- std::cout << *ip << std::endl; } ~Base() { useInt(); } } ; struct Der:
- Base { int theInt; Der(): Base(&theInt) { } void useIntPointer() override {
- std::cout << theInt << std::endl; } } ; When an object of type Der gets
+std::cout << *ip << std::endl; } ~Base() { useInt(); } } ; struct Der:
+Base { int theInt; Der(): Base(&theInt) { } void useIntPointer() override {
+std::cout << theInt << std::endl; } } ; When an object of type Der gets
  deleted, there is "undefined behavior": First the implicit destructor of Der is
  called, then the explicit destructor of Base, Base::~Base. At that point
  Base::ip is referring to a member of Der that has already been destroyed. Share
@@ -11088,8 +11520,7 @@ mjz_ard::mjz_str_t<T>::~mjz_str_t(void) {
 /*********************************************/
 /* Memory Management */
 /*********************************************/
-template <typename T>
-void mjz_ard::mjz_str_t<T>::init(bool) {
+template <typename T> void mjz_ard::mjz_str_t<T>::init(bool) {
   m_buffer = NULL;
   // update_event_F_p = &mjz_ard::mjz_str_t<T>::update_event;//departed
   ;
@@ -11097,8 +11528,7 @@ void mjz_ard::mjz_str_t<T>::init(bool) {
   stack_obj_buf.set(0);
   m_length = 0;
 }
-template <typename T>
-void mjz_ard::mjz_str_t<T>::invalidate(bool constructor) {
+template <typename T> void mjz_ard::mjz_str_t<T>::invalidate(bool constructor) {
   if (!m_buffer) {
     // goto _end__;
     m_capacity = m_length = 0;
@@ -11153,11 +11583,11 @@ bool mjz_ard::mjz_str_t<T>::realloc_helper_is_in_stack(void *ptr) {
   return (stack_obj_buf.get() || stack_obj_buf.stack_buffer == (char *)ptr);
 }
 template <typename T>
-[[nodiscard]] void *mjz_ard::mjz_str_t<T>::realloc_pv(void *ptr,
-                                                      size_t new_size,
-                                                      bool constructor) {
+_THIS_IS_YOURS_NOW_ void *mjz_ard::mjz_str_t<T>::realloc_pv(void *ptr,
+                                                            size_t new_size,
+                                                            bool constructor) {
   bool ptr_is_in_stack = realloc_helper_is_in_stack(ptr);
-  bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr));  //(buffer == ptr);
+  bool ptr_is_buffer = !(ptr_is_in_stack || (0 == ptr)); //(buffer == ptr);
   bool ptr_Can_set_to_stack = (new_size <= (stack_buffer_size + 1));
   if (ptr_Can_set_to_stack) {
     if (ptr_is_buffer) {
@@ -11166,7 +11596,7 @@ template <typename T>
         memmove(stack_obj_buf.stack_buffer, ptr,
                 min_macro_(the__length, stack_buffer_size));
       free_pv(ptr,
-              constructor);  // because of my custom free 0 and stack_buffer are
+              constructor); // because of my custom free 0 and stack_buffer are
       // ignored and i reset STR_is_in_stack in next line
     }
     stack_obj_buf.set(1);
@@ -11208,7 +11638,7 @@ void mjz_ard::mjz_str_t<T>::free_pv(void *&ptr, bool constructor) {
 }
 template <typename T>
 void mjz_ard::mjz_str_t<T>::free_pv(void *const &ptr,
-                                    bool constructor) {  // TODO: V835
+                                    bool constructor) { // TODO: V835
   // https://pvs-studio.com/en/docs/warnings/V835/
   // Passing cheap-to-copy argument by reference may lead
   // to decreased performance. To avoid this, replace the
@@ -11253,8 +11683,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::copy(const char *cstr,
 #define PGM_P const char *
 
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::copy(
-    const __FlashStringHelper *pstr, size_t length) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::copy(const __FlashStringHelper *pstr, size_t length) {
   if (!reserve(length)) {
     invalidate();
     return *this;
@@ -11283,8 +11713,8 @@ void mjz_ard::mjz_str_t<T>::move(mjz_ard::mjz_str_t<T> &rhs) {
 }
 
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(
-    const mjz_ard::mjz_str_t<T> &rhs) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator=(const mjz_ard::mjz_str_t<T> &rhs) {
   if (this == &rhs) {
     return *this;
   }
@@ -11296,8 +11726,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(
-    mjz_ard::mjz_str_t<T> &&rval) noexcept {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator=(mjz_ard::mjz_str_t<T> &&rval) noexcept {
   move(rval);
   return *this;
 }
@@ -11317,8 +11747,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator()(const char *other,
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator=(
-    const __FlashStringHelper *pstr) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator=(const __FlashStringHelper *pstr) {
   if (pstr) {
     copy(pstr, (size_t)strlen((PGM_P)pstr));
   } else {
@@ -11333,8 +11763,9 @@ bool mjz_ard::mjz_str_t<T>::concat(const mjz_ard::mjz_str_t<T> &s) {
   return concat(s.m_buffer, s.m_length);
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::append(
-    const mjz_ard::mjz_str_t<T> &str, size_t subpos, size_t sublen) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::append(const mjz_ard::mjz_str_t<T> &str, size_t subpos,
+                              size_t sublen) {
   concat(str.substr_view_beg_n(subpos, sublen));
   return *this;
 }
@@ -11355,49 +11786,41 @@ bool mjz_ard::mjz_str_t<T>::concat(const char *cstr, size_t length) {
   m_buffer[m_length] = '\0';
   return true;
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(const char *cstr) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(const char *cstr) {
   if (!cstr) {
     return false;
   }
   return concat(cstr, (size_t)strlen(cstr));
 }
-template <typename T>
-inline bool mjz_ard::mjz_str_t<T>::concat(char c) {
+template <typename T> inline bool mjz_ard::mjz_str_t<T>::concat(char c) {
   return concat(&c, 1);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(unsigned char num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(unsigned char num) {
   char buf[1 + 3 * sizeof(unsigned char)];
   itoa(num, buf, 10);
   return concat(buf);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(int num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(int num) {
   char buf[2 + 3 * sizeof(int)];
   itoa(num, buf, 10);
   return concat(buf);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(unsigned int num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(unsigned int num) {
   char buf[1 + 3 * sizeof(unsigned int)];
   utoa(num, buf, 10);
   return concat(buf);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(long num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(long num) {
   char buf[2 + 3 * sizeof(long)];
   ltoa(num, buf, 10);
   return concat(buf);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(unsigned long num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(unsigned long num) {
   char buf[1 + 3 * sizeof(unsigned long)];
   ultoa(num, buf, 10);
   return concat(buf);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(long long num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(long long num) {
   char buf[2 + 3 * sizeof(long long)];
   lltoa(num, buf, 10);
   return concat(buf);
@@ -11408,14 +11831,12 @@ bool mjz_ard::mjz_str_t<T>::concat(unsigned long long num) {
   ulltoa(num, buf, 10);
   return concat(buf);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(float num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(float num) {
   char buf[20];
   char *string = dtostrf(num, 4, 2, buf);
   return concat(string);
 }
-template <typename T>
-bool mjz_ard::mjz_str_t<T>::concat(double num) {
+template <typename T> bool mjz_ard::mjz_str_t<T>::concat(double num) {
   char buf[20];
   char *string = dtostrf(num, 4, 2, buf);
   return concat(string);
@@ -11451,14 +11872,14 @@ mjz_ard::mjz_str_t<T> &&operator_plus(mjz_ard::mjz_str_t<T> &&lhs,
 }
 
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(
-    const mjz_ard::basic_mjz_Str_view &rhs,
-    const mjz_ard::basic_mjz_Str_view &lhs) {
+mjz_ard::StringSumHelper_t<T>
+operator+(const mjz_ard::basic_mjz_Str_view &rhs,
+          const mjz_ard::basic_mjz_Str_view &lhs) {
   return operator_plus(mjz_ard::mjz_Str(rhs), lhs);
 }
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(
-    mjz_ard::mjz_str_t<T> &&lhs, const mjz_ard::basic_mjz_Str_view &rhs) {
+mjz_ard::StringSumHelper_t<T>
+operator+(mjz_ard::mjz_str_t<T> &&lhs, const mjz_ard::basic_mjz_Str_view &rhs) {
   return operator_plus((mjz_ard::mjz_str_t<T>)std::move(lhs),
                        (const mjz_ard::basic_mjz_Str_view &)rhs);
 }
@@ -11469,13 +11890,6 @@ mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::StringSumHelper_t<T> &&lhs,
 }
 
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(mjz_ard::mjz_str_t<T> lhs,
-                                        const mjz_ard::basic_mjz_String &rhs) {
-  return operator_plus((mjz_ard::mjz_str_t<T>)std::move(lhs),
-                       (const mjz_ard::basic_mjz_String &)rhs);
-}
-
-template <typename T>
 mjz_ard::StringSumHelper_t<T> operator+(const mjz_ard::basic_mjz_String &lhs,
                                         const mjz_ard::basic_mjz_String &rhs) {
   return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
@@ -11483,35 +11897,37 @@ mjz_ard::StringSumHelper_t<T> operator+(const mjz_ard::basic_mjz_String &lhs,
 }
 
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(
-    mjz_ard::mjz_str_t<T> lhs, const mjz_ard::StringSumHelper_t<T> &rhs) {
+mjz_ard::StringSumHelper_t<T>
+operator+(mjz_ard::mjz_str_t<T> lhs, const mjz_ard::StringSumHelper_t<T> &rhs) {
   return operator_plus((mjz_ard::mjz_str_t<T>)std::move(lhs),
                        (const mjz_ard::basic_mjz_Str_view &)rhs);
 }
 
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(
-    const mjz_ard::basic_mjz_Str_view &lhs,
-    const mjz_ard::StringSumHelper_t<T> &rhs) {
+mjz_ard::StringSumHelper_t<T>
+operator+(const mjz_ard::basic_mjz_Str_view &lhs,
+          const mjz_ard::StringSumHelper_t<T> &rhs) {
   return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
                        (const mjz_ard::basic_mjz_Str_view &)rhs);
 }
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(
-    mjz_ard::StringSumHelper_t<T> lhs, const mjz_ard::basic_mjz_Str_view &rhs) {
+mjz_ard::StringSumHelper_t<T>
+operator+(mjz_ard::StringSumHelper_t<T> lhs,
+          const mjz_ard::basic_mjz_Str_view &rhs) {
   return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
                        (const mjz_ard::basic_mjz_Str_view &)rhs);
 }
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(
-    const mjz_ard::mjz_str_view &lhs, const mjz_ard::basic_mjz_Str_view &rhs) {
+mjz_ard::StringSumHelper_t<T>
+operator+(const mjz_ard::mjz_str_view &lhs,
+          const mjz_ard::basic_mjz_Str_view &rhs) {
   return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
                        (const mjz_ard::basic_mjz_Str_view &)rhs);
 }
 template <typename T>
-mjz_ard::StringSumHelper_t<T> operator+(
-    const mjz_ard::mjz_str_view &lhs,
-    const mjz_ard::StringSumHelper_t<T> &rhs) {
+mjz_ard::StringSumHelper_t<T>
+operator+(const mjz_ard::mjz_str_view &lhs,
+          const mjz_ard::StringSumHelper_t<T> &rhs) {
   return operator_plus(mjz_ard::mjz_str_t<T>(lhs),
                        (const mjz_ard::basic_mjz_Str_view &)rhs);
 }
@@ -11646,8 +12062,7 @@ void mjz_ard::mjz_str_t<T>::setCharAt(int64_t loc, char c) {
     m_buffer[loc] = c;
   }
 }
-template <typename T>
-char &mjz_ard::mjz_str_t<T>::operator[](size_t index) & {
+template <typename T> char &mjz_ard::mjz_str_t<T>::operator[](size_t index) & {
   static char dummy_writable_char;
   if (index >= m_length || !m_buffer) {
     dummy_writable_char = 0;
@@ -11669,14 +12084,16 @@ char &mjz_ard::mjz_str_t<T>::operator[](int64_t index_) & {
 /* Modification */
 /*********************************************/
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::insert(
-    size_t pos, const mjz_ard::basic_mjz_Str_view &other) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::insert(size_t pos,
+                              const mjz_ard::basic_mjz_Str_view &other) {
   return insert(pos, other, 0, length());
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::insert(
-    size_t pos, const mjz_ard::basic_mjz_Str_view &other, size_t subpos,
-    size_t sublen) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::insert(size_t pos,
+                              const mjz_ard::basic_mjz_Str_view &other,
+                              size_t subpos, size_t sublen) {
   return insert(pos, other.c_str() + subpos, sublen);
 }
 template <typename T>
@@ -11708,8 +12125,9 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::insert(size_t pos, size_t n,
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace_ll(
-    int64_t pos, size_t len, const mjz_ard::basic_mjz_Str_view &str) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::replace_ll(int64_t pos, size_t len,
+                                  const mjz_ard::basic_mjz_Str_view &str) {
   return replace(signed_index_to_unsigned(pos), len, str);
 }
 template <typename T>
@@ -11723,9 +12141,10 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
   return replace(pos, len, s, strlen(s));
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
-    size_t pos, size_t len, const mjz_ard::basic_mjz_Str_view &str,
-    size_t subpos, size_t sublen) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
+                               const mjz_ard::basic_mjz_Str_view &str,
+                               size_t subpos, size_t sublen) {
   return replace(pos, len,
                  mjz_ard::mjz_str_view(str.c_str(), str.length())
                      .substr_view_beg_n(subpos, sublen));
@@ -11733,7 +12152,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
 template <typename T>
 mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
                                                       size_t n, char c) {
-  if (length() <= pos) return *this;
+  if (length() <= pos)
+    return *this;
   if (len == n) {
     memset(m_buffer + pos, c, len);
     return *this;
@@ -11750,29 +12170,36 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
-    mjz_ard::mjz_str_t<T>::iterator i1, mjz_ard::mjz_str_t<T>::iterator i2,
-    const char *s, size_t n) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::replace(mjz_ard::mjz_str_t<T>::iterator i1,
+                               mjz_ard::mjz_str_t<T>::iterator i2,
+                               const char *s, size_t n) {
   return replace(i1, i2, mjz_ard::mjz_str_view(s, n));
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
-    mjz_ard::mjz_str_t<T>::iterator i1, mjz_ard::mjz_str_t<T>::iterator i2,
-    const mjz_ard::basic_mjz_Str_view &str) {
-  if (i1.end() != end() || i2.end() != end()) return *this;
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::replace(mjz_ard::mjz_str_t<T>::iterator i1,
+                               mjz_ard::mjz_str_t<T>::iterator i2,
+                               const mjz_ard::basic_mjz_Str_view &str) {
+  if (i1.end() != end() || i2.end() != end())
+    return *this;
   return replace(i1.get_pointer() - m_buffer, i2 - i1, str);
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
-    mjz_ard::mjz_str_t<T>::iterator i1, mjz_ard::mjz_str_t<T>::iterator i2,
-    size_t n, char c) {
-  if (i1.end() != end() || i2.end() != end()) return *this;
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::replace(mjz_ard::mjz_str_t<T>::iterator i1,
+                               mjz_ard::mjz_str_t<T>::iterator i2, size_t n,
+                               char c) {
+  if (i1.end() != end() || i2.end() != end())
+    return *this;
   return replace(i1.get_pointer() - m_buffer, i2 - i1, n, c);
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::replace(
-    size_t pos, size_t len, const mjz_ard::basic_mjz_Str_view &str) {
-  if (length() <= pos) return *this;
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::replace(size_t pos, size_t len,
+                               const mjz_ard::basic_mjz_Str_view &str) {
+  if (length() <= pos)
+    return *this;
   if (len == str.length()) {
     memmove(m_buffer + pos, str.c_str(), len);
     return *this;
@@ -11819,8 +12246,7 @@ void mjz_ard::mjz_str_t<T>::find_and_replace(
   find_and_replace(find.buffer_ref(), find.length(), replace_.buffer_ref(),
                    replace_.length());
 }
-template <typename T>
-void mjz_ard::mjz_str_t<T>::remove(size_t index) {
+template <typename T> void mjz_ard::mjz_str_t<T>::remove(size_t index) {
   // Pass the biggest integer as the count. The remove method
   // below will take care of truncating it at the end of the
   // string.
@@ -11851,8 +12277,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::erase(size_t pos_, size_t len_) {
   return *this;
 }
 template <typename T>
-iterator_template_t<char> mjz_ard::mjz_str_t<T>::erase(
-    iterator_template_t<char> p) {
+iterator_template_t<char>
+mjz_ard::mjz_str_t<T>::erase(iterator_template_t<char> p) {
   if (p < begin() || end() < p) {
     return begin();
   }
@@ -11861,8 +12287,9 @@ iterator_template_t<char> mjz_ard::mjz_str_t<T>::erase(
   return p;
 }
 template <typename T>
-iterator_template_t<char> mjz_ard::mjz_str_t<T>::erase(
-    iterator_template_t<char> first, iterator_template_t<char> last) {
+iterator_template_t<char>
+mjz_ard::mjz_str_t<T>::erase(iterator_template_t<char> first,
+                             iterator_template_t<char> last) {
   if ((last <= first) || (end() < last) || (first < begin())) {
     return begin();
   }
@@ -11882,8 +12309,7 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::erase_from_f_to_l(size_t first,
   remove(first, last - first);
   return *this;
 }
-template <typename T>
-void mjz_ard::mjz_str_t<T>::toLowerCase(void) {
+template <typename T> void mjz_ard::mjz_str_t<T>::toLowerCase(void) {
   if (!m_buffer) {
     return;
   }
@@ -11891,8 +12317,7 @@ void mjz_ard::mjz_str_t<T>::toLowerCase(void) {
     *p = (char)tolower(*p);
   }
 }
-template <typename T>
-void mjz_ard::mjz_str_t<T>::toUpperCase(void) {
+template <typename T> void mjz_ard::mjz_str_t<T>::toUpperCase(void) {
   if (!m_buffer) {
     return;
   }
@@ -11900,12 +12325,10 @@ void mjz_ard::mjz_str_t<T>::toUpperCase(void) {
     *p = (char)toupper(*p);
   }
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::write(char cr) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::write(char cr) {
   return concat(cr);
 }
-template <typename T>
-void mjz_ard::mjz_str_t<T>::trim(void) {
+template <typename T> void mjz_ard::mjz_str_t<T>::trim(void) {
   if (!m_buffer || m_length == 0) {
     return;
   }
@@ -11918,7 +12341,7 @@ void mjz_ard::mjz_str_t<T>::trim(void) {
     end--;
   }
   m_length = (size_t)(end + 1 -
-                      begin);  // i dont care if you make bad sizing for strings
+                      begin); // i dont care if you make bad sizing for strings
 
   if (begin > m_buffer) {
     memmove(m_buffer, begin, m_length);
@@ -11936,91 +12359,91 @@ void *mjz_ard::mjz_str_t<T>::do_this_for_me(function_ptr function_ptr_,
 /*********************************************/
 
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_rc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_rc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_r() {
   return *this;
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_lc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_lc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_l() {
   return *this;
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_sc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_sc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_s() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_s() {
   return *this;
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_sc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_sc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_s() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_s() {
   return *this;
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_rc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_rc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r() {
   return *this;
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_lc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_lc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l() {
   return *this;
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_sc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_sc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_s() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_s() {
   return *this;
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_sc() const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_sc() const {
   //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
-mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_s() {
+mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_s() {
   return *this;
 }
 template <typename T>
@@ -12036,17 +12459,17 @@ mjz_ard::extended_mjz_str_t<T> &mjz_ard::extended_mjz_str_t<T>::operator>>(
   return get_s_shift_op_r();
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::operator>>(
-        mjz_ard::extended_mjz_str_t<T> &typing) const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::operator>>(
+    mjz_ard::extended_mjz_str_t<T> &typing) const {
   helper__op_shift_input_(*this, get_s_shift_op_rc(), typing.get_shift_op_r());
   //
   return get_s_shift_op_rc();
 }
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T>
-    &mjz_ard::extended_mjz_str_t<T>::operator>>(
-        mjz_ard::extended_mjz_str_t<T> *typing) const {
+const mjz_ard::extended_mjz_str_t<T> &
+mjz_ard::extended_mjz_str_t<T>::operator>>(
+    mjz_ard::extended_mjz_str_t<T> *typing) const {
   helper__op_shift_input_(*this, get_s_shift_op_rc(), typing->get_shift_op_r());
   //
   return get_s_shift_op_rc();
@@ -12095,8 +12518,7 @@ void mjz_ard::extended_mjz_str_t<T>::string_do_interpret(
 }
 /**********************************************************************/
 // stream stuff
-template <typename T>
-void mjz_ard::mjz_str_t<T>::adjust_cap() {
+template <typename T> void mjz_ard::mjz_str_t<T>::adjust_cap() {
   if (!m_capacity && !m_buffer) {
     return;
   }
@@ -12108,8 +12530,7 @@ void mjz_ard::mjz_str_t<T>::adjust_cap() {
   }
   return;
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::write(uint8_t c) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::write(uint8_t c) {
   mjz_ard::mjz_str_t<T>::operator+=(c);
   return 1;
 }
@@ -12123,17 +12544,14 @@ size_t mjz_ard::mjz_str_t<T>::write(const char *buf, size_t m_size) {
   mjz_ard::mjz_str_t<T>::operator+=(mjz_ard::mjz_str_t<T>(buf, (size_t)m_size));
   return m_size;
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::write(const char *buf) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::write(const char *buf) {
   mjz_ard::mjz_str_t<T>::operator+=(buf);
   return strlen(buf);
 }
-template <typename T>
-int64_t mjz_ard::mjz_str_t<T>::availableLL() {
+template <typename T> int64_t mjz_ard::mjz_str_t<T>::availableLL() {
   return length();
 }
-template <typename T>
-int mjz_ard::mjz_str_t<T>::read() {
+template <typename T> int mjz_ard::mjz_str_t<T>::read() {
   if (available()) {
     char x = charAt(0ULL);
     remove(0, 1);
@@ -12141,8 +12559,7 @@ int mjz_ard::mjz_str_t<T>::read() {
   }
   return -1;
 }
-template <typename T>
-int mjz_ard::mjz_str_t<T>::peek() {
+template <typename T> int mjz_ard::mjz_str_t<T>::peek() {
   int64_t len_ = length();
   if (len_ == 0) {
     return -1;
@@ -12166,10 +12583,8 @@ size_t mjz_ard::mjz_str_t<T>::read(uint8_t *buf, size_t m_size) {
   remove(0, (size_t)m_size);
   return m_size;
 }
-template <typename T>
-void mjz_ard::mjz_str_t<T>::flush() {}
-template <typename T>
-void mjz_ard::mjz_str_t<T>::begin(unsigned long) {}
+template <typename T> void mjz_ard::mjz_str_t<T>::flush() {}
+template <typename T> void mjz_ard::mjz_str_t<T>::begin(unsigned long) {}
 template <typename T>
 void mjz_ard::mjz_str_t<T>::begin(unsigned long, uint16_t) {}
 template <typename T>
@@ -12185,15 +12600,17 @@ mjz_ard::mjz_str_t<T> ULL_LL_to_str(uint64_t value, int radix, bool is_signed,
   return ret_var;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::ULL_LL_to_str_add(
-    uint64_t value, int radix, bool is_signed, bool force_neg) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::ULL_LL_to_str_add(uint64_t value, int radix,
+                                         bool is_signed, bool force_neg) {
   this->operator+=(ULL_LL_to_str(value, radix, is_signed, force_neg));
   return *this;
 }
 
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::ULL_LL_to_str_rep(
-    uint64_t value, int radix, bool is_signed, bool force_neg) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::ULL_LL_to_str_rep(uint64_t value, int radix,
+                                         bool is_signed, bool force_neg) {
   operator=(empty_STRING_C_STR);
   reserve(70, 1);
   char *ptr_ = b_U_lltoa(value, buffer_ref(), radix, is_signed, force_neg);
@@ -12203,8 +12620,7 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::ULL_LL_to_str_rep(
   addto_length((size_t)strlen(ptr_), 1);
   return *this;
 }
-template <typename T>
-bool mjz_ard::extended_mjz_str_t<T>::is_blank() const {
+template <typename T> bool mjz_ard::extended_mjz_str_t<T>::is_blank() const {
   for (size_t index_i{}; index_i < mjz_str_t<T>::length(); index_i++) {
     if (!drived_mjz_Str_DATA_storage_Obj_ptr->is_blank_character(
             mjz_str_t<T>::c_str()[index_i])) {
@@ -12235,7 +12651,8 @@ char mjz_ard::extended_mjz_str_t<T>::get_reinterpret_char_char() const {
 template <typename T>
 bool mjz_ard::extended_mjz_str_t<T>::char_to_char_for_reinterpret(
     char &c_char) const {
-  if (!drived_mjz_Str_DATA_storage_Obj_ptr) return 1;
+  if (!drived_mjz_Str_DATA_storage_Obj_ptr)
+    return 1;
   if (c_char == drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char) {
     return drived_mjz_Str_DATA_storage_Obj_ptr->reinterpret_char_char;
   }
@@ -12257,7 +12674,7 @@ bool mjz_ard::extended_mjz_str_t<T>::is_forbiden(char x) const {
 }
 
 template <typename T>
-[[nodiscard]] mjz_ard::mjz_str_t<T>
+_THIS_IS_YOURS_NOW_ mjz_ard::mjz_str_t<T>
 mjz_ard::mjz_str_t<T>::create_mjz_Str_char_array(size_t m_size, char filler,
                                                  bool do_fill) {
   mjz_ard::mjz_str_t<T> ret_val;
@@ -12270,7 +12687,7 @@ mjz_ard::mjz_str_t<T>::create_mjz_Str_char_array(size_t m_size, char filler,
   return ret_val;
 }
 template <typename T>
-[[nodiscard]] mjz_ard::mjz_str_t<T>
+_THIS_IS_YOURS_NOW_ mjz_ard::mjz_str_t<T>
 mjz_ard::mjz_str_t<T>::create_mjz_Str_2D_char_array(size_t size_col,
                                                     size_t size_row,
                                                     char filler, bool do_fill) {
@@ -12299,13 +12716,14 @@ void mjz_ard::mjz_str_t<T>::find_and_replace(const char *find_cstr,
   size_t i{length()};
   for (;;) {
     i = (substr_view(0ULL, i).rfind(find_cstr, 0, find_count));
-    if (std::bit_cast<int64_t>(i) == -1) break;
+    if (std::bit_cast<int64_t>(i) == -1)
+      break;
     replace(i, find_count, replace_cstr, replace_count);
   }
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator-=(
-    const mjz_ard::mjz_str_t<T> &othr_) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator-=(const mjz_ard::mjz_str_t<T> &othr_) {
   int64_t index_of_remove = lastIndexOf(othr_);
   if (index_of_remove != -1) {
     remove(index_of_remove, othr_.length());
@@ -12313,8 +12731,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator-=(
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator-=(
-    const basic_mjz_Str_view &othr_) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator-=(const basic_mjz_Str_view &othr_) {
   int64_t index_of_remove = lastIndexOf(othr_);
   if (index_of_remove != -1) {
     remove(index_of_remove, othr_.length());
@@ -12322,8 +12740,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator-=(
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator%=(
-    const mjz_ard::mjz_str_t<T> &othr_) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator%=(const mjz_ard::mjz_str_t<T> &othr_) {
   int64_t index_of_remove = find_first_of(othr_);
   if (index_of_remove != -1) {
     remove(index_of_remove, othr_.length());
@@ -12331,8 +12749,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator%=(
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator%=(
-    const basic_mjz_Str_view &othr_) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator%=(const basic_mjz_Str_view &othr_) {
   int64_t index_of_remove = find_first_of(othr_);
   if (index_of_remove != -1) {
     remove(index_of_remove, othr_.length());
@@ -12340,8 +12758,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator%=(
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator*=(
-    unsigned int number_of_it) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator*=(unsigned int number_of_it) {
   mjz_str_t<T> temperory_str_view(*this);
   for (size_t i{1}; i < number_of_it; i++) {
     concat(temperory_str_view);
@@ -12349,20 +12767,20 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator*=(
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::operator*(
-    unsigned int number_of_it) {
+mjz_ard::mjz_str_t<T>
+mjz_ard::mjz_str_t<T>::operator*(unsigned int number_of_it) {
   mjz_ard::mjz_str_t<T> lhs = mjz_ard::mjz_str_t<T>(*this);
   return lhs.operator*=(number_of_it);
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator/=(
-    const mjz_ard::mjz_str_t<T> &othr_) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator/=(const mjz_ard::mjz_str_t<T> &othr_) {
   find_and_replace(othr_.data(), othr_.length(), empty_STRING_C_STR, 0);
   return *this;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::operator/=(
-    const basic_mjz_Str_view &othr_) {
+mjz_ard::mjz_str_t<T> &
+mjz_ard::mjz_str_t<T>::operator/=(const basic_mjz_Str_view &othr_) {
   find_and_replace(othr_.data(), othr_.length(), empty_STRING_C_STR, 0);
   return *this;
 }
@@ -12412,7 +12830,7 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_with_output(
 template <typename T>
 mjz_ard::hash_sha256 hash_msg_to_sha_512_n_with_output(
     const char *dev_passwoed, const size_t dev_passwoedLength, uint8_t n,
-    mjz_ard::mjz_str_t<T> &output_name) {  // intended copy
+    mjz_ard::mjz_str_t<T> &output_name) { // intended copy
   if (n == 0) {
     return hash_msg_to_sha_512_with_output(dev_passwoed, dev_passwoedLength,
                                            output_name);
@@ -12430,8 +12848,8 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_n_with_output(
 }
 
 template <typename T>
-std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls>
-    &mjz_ard::extended_mjz_str_t<T>::drived_mjz_Str_DATA_storage_Obj_ptr_set() {
+std::shared_ptr<mjz_ard::mjz_Str_DATA_storage_cls> &
+mjz_ard::extended_mjz_str_t<T>::drived_mjz_Str_DATA_storage_Obj_ptr_set() {
   if (!did_drived_mjz_Str_DATA_storage_Obj_ptr_set) {
     drived_mjz_Str_DATA_storage_Obj_ptr = mjz_Str_DATA_storage_cls::create();
     did_drived_mjz_Str_DATA_storage_Obj_ptr_set = 1;
@@ -12447,28 +12865,24 @@ template <typename T>
 size_t mjz_ard::mjz_str_t<T>::print(const mjz_ard::mjz_str_t<T> &s) {
   return write(s.c_str(), s.length());
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::print(const char *str) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::print(const char *str) {
   return write(str);
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::print(char c) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::print(char c) {
   return write(c);
 }
 template <typename T>
 size_t mjz_ard::mjz_str_t<T>::print(unsigned char b, int base) {
   return print((unsigned long)b, base);
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::print(int n, int base) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::print(int n, int base) {
   return print((long)n, base);
 }
 template <typename T>
 size_t mjz_ard::mjz_str_t<T>::print(unsigned int n, int base) {
   return print((unsigned long)n, base);
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::print(long n, int base) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::print(long n, int base) {
   if (base == 0) {
     return write((uint8_t)n);
   } else if (base == 10) {
@@ -12523,8 +12937,7 @@ size_t mjz_ard::mjz_str_t<T>::println(const __FlashStringHelper *ifsh) {
   n += println();
   return n;
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::println() {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::println() {
   return write("\r\n");
 }
 template <typename T>
@@ -12533,14 +12946,12 @@ size_t mjz_ard::mjz_str_t<T>::println(const mjz_ard::mjz_str_t<T> &s) {
   n += println();
   return n;
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::println(const char *c) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::println(const char *c) {
   size_t n = print(c);
   n += println();
   return n;
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::println(char c) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::println(char c) {
   size_t n = print(c);
   n += println();
   return n;
@@ -12551,8 +12962,7 @@ size_t mjz_ard::mjz_str_t<T>::println(unsigned char b, int base) {
   n += println();
   return n;
 }
-template <typename T>
-size_t mjz_ard::mjz_str_t<T>::println(int num, int base) {
+template <typename T> size_t mjz_ard::mjz_str_t<T>::println(int num, int base) {
   size_t n = print(num, base);
   n += println();
   return n;
@@ -12596,7 +13006,7 @@ size_t mjz_ard::mjz_str_t<T>::println(double num, int digits) {
 // Private Methods /////////////////////////////////////////////////////////////
 template <typename T>
 size_t mjz_ard::mjz_str_t<T>::printNumber(unsigned long n, uint8_t base) {
-  char buf[8 * sizeof(long) + 1]{};  // Assumes 8-bit chars plus zero byte.
+  char buf[8 * sizeof(long) + 1]{}; // Assumes 8-bit chars plus zero byte.
   char *str = &buf[sizeof(buf) - 1];
   *str = '\0';
   // prevent crash if called with base == 1
@@ -12691,11 +13101,11 @@ size_t mjz_ard::mjz_str_t<T>::printFloat(double number, int digits) {
   }
   if (number > 4294967040.0) {
     return print("ovf");
-  }  // constant determined empirically
+  } // constant determined empirically
 
   if (number < -4294967040.0) {
     return print("ovf");
-  }  // constant determined empirically
+  } // constant determined empirically
 
   // Handle negative numbers
   if (number < 0.0) {
@@ -12727,8 +13137,7 @@ size_t mjz_ard::mjz_str_t<T>::printFloat(double number, int digits) {
   return n;
 }
 // private method to read stream with timeout
-template <typename T>
-int mjz_ard::mjz_str_t<T>::timedRead() {
+template <typename T> int mjz_ard::mjz_str_t<T>::timedRead() {
   // unsigned long _startMillis; // used for timeout measurement
   int c;
   // _startMillis = millis();
@@ -12742,11 +13151,10 @@ int mjz_ard::mjz_str_t<T>::timedRead() {
   // millis() - _startMillis <
   // drived_mjz_Str_DATA_storage_Obj_ptr->_timeout
   //);
-  return -1;  // -1 indicates timeout
+  return -1; // -1 indicates timeout
 }
 // private method to peek stream with timeout
-template <typename T>
-int mjz_ard::mjz_str_t<T>::timedPeek() {
+template <typename T> int mjz_ard::mjz_str_t<T>::timedPeek() {
   // unsigned long _startMillis; // used for timeout measurement
   int c;
   // _startMillis = millis();
@@ -12758,7 +13166,7 @@ int mjz_ard::mjz_str_t<T>::timedPeek() {
   // }
   // while ( millis() - _startMillis <
   // drived_mjz_Str_DATA_storage_Obj_ptr->_timeout );
-  return -1;  // -1 indicates timeout
+  return -1; // -1 indicates timeout
 }
 // returns peek of the next digit in the stream or -1 if timeout
 // discards non-numeric characters
@@ -12773,22 +13181,22 @@ int mjz_ard::mjz_str_t<T>::peekNextDigit(LookaheadMode lookahead,
       return c;
     }
     switch (lookahead) {
-      case SKIP_NONE:
-        return -1;  // Fail code.
-      case SKIP_WHITESPACE:
-        switch (c) {
-          case ' ':
-          case '\t':
-          case '\r':
-          case '\n':
-            break;
-          default:
-            return -1;  // Fail code.
-        }
-      case SKIP_ALL:
+    case SKIP_NONE:
+      return -1; // Fail code.
+    case SKIP_WHITESPACE:
+      switch (c) {
+      case ' ':
+      case '\t':
+      case '\r':
+      case '\n':
         break;
+      default:
+        return -1; // Fail code.
+      }
+    case SKIP_ALL:
+      break;
     }
-    read();  // discard non-numeric
+    read(); // discard non-numeric
   }
 }
 // Public Methods
@@ -12842,17 +13250,17 @@ long mjz_ard::mjz_str_t<T>::parseInt(
   // ignore non numeric leading characters
   if (c < 0) {
     return 0;
-  }  // zero returned if timeout
+  } // zero returned if timeout
 
   do {
     if ((char)c == ignore)
-      ;  // ignore this character
+      ; // ignore this character
     else if (c == '-') {
       isNegative = true;
-    } else if (c >= '0' && c <= '9') {  // is c a digit?
+    } else if (c >= '0' && c <= '9') { // is c a digit?
       value = value * 10 + c - '0';
     }
-    read();  // consume the character we got with peek
+    read(); // consume the character we got with peek
     c = timedPeek();
   } while ((c >= '0' && c <= '9') || (char)c == ignore);
   if (isNegative) {
@@ -12872,16 +13280,16 @@ float mjz_ard::mjz_str_t<T>::parseFloat(LookaheadMode lookahead, char ignore) {
   // ignore non numeric leading characters
   if (c < 0) {
     return 0;
-  }  // zero returned if timeout
+  } // zero returned if timeout
 
   do {
     if ((char)c == ignore)
-      ;  // ignore
+      ; // ignore
     else if (c == '-') {
       isNegative = true;
     } else if (c == '.') {
       isFraction = true;
-    } else if (c >= '0' && c <= '9') {  // is c a digit?
+    } else if (c >= '0' && c <= '9') { // is c a digit?
       if (isFraction) {
         fraction *= 0.1;
         value = value + fraction * ((char)c - '0');
@@ -12889,7 +13297,7 @@ float mjz_ard::mjz_str_t<T>::parseFloat(LookaheadMode lookahead, char ignore) {
         value = value * 10 + c - '0';
       }
     }
-    read();  // consume the character we got with peek
+    read(); // consume the character we got with peek
     c = timedPeek();
   } while ((c >= '0' && c <= '9') || (c == '.' && !isFraction) ||
            (char)c == ignore);
@@ -12903,17 +13311,17 @@ float mjz_ard::mjz_str_t<T>::parseFloat(LookaheadMode lookahead, char ignore) {
 // returns the number of characters placed in the buffer
 // the buffer is NOT null terminated.
 /*
- size_t mjz_ard::mjz_str_t<T>::readBytes(char *buffer, size_t length)
- {
- size_t count = 0;
- while (count < length) {
- int c = timedRead();
- if (c < 0) break;
- buffer++ = (char)c;
- count++;
- }
- return count;
- } */
+size_t mjz_ard::mjz_str_t<T>::readBytes(char *buffer, size_t length)
+{
+size_t count = 0;
+while (count < length) {
+int c = timedRead();
+if (c < 0) break;
+buffer++ = (char)c;
+count++;
+}
+return count;
+} */
 // as readBytes with terminator character
 // terminates if length characters have been read, timeout, or if the terminator
 // character detected returns the number of characters placed in the buffer (0
@@ -12930,7 +13338,7 @@ size_t mjz_ard::mjz_str_t<T>::readBytesUntil(char terminator, char *buffer_,
     *buffer_++ = (char)c;
     index++;
   }
-  return index;  // return number of characters, not including null terminator
+  return index; // return number of characters, not including null terminator
 }
 template <typename T>
 mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str() {
@@ -12944,13 +13352,13 @@ mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str() {
   }
   return ret;
   */
-  mjz_ard::mjz_str_t<T> ret = std::move(*this);  // be careful
+  mjz_ard::mjz_str_t<T> ret = std::move(*this); // be careful
   replace_with_new_str(this);
   return ret;
 }
 template <typename T>
-mjz_ard::mjz_str_t<T> mjz_ard::mjz_str_t<T>::read_mjz_Str_Until(
-    char terminator) {
+mjz_ard::mjz_str_t<T>
+mjz_ard::mjz_str_t<T>::read_mjz_Str_Until(char terminator) {
   mjz_ard::mjz_str_t<T> ret;
   int c = timedRead();
   while (c >= 0 && (char)c != terminator) {
@@ -13025,12 +13433,13 @@ int mjz_ard::mjz_str_t<T>::findMulti(
 }
 
 template <typename T>
-std::istream &helper__op_shift_input_(
-    const mjz_ard::extended_mjz_str_t<T> &rhs, std::istream &CIN,
-    mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
+std::istream &
+helper__op_shift_input_(const mjz_ard::extended_mjz_str_t<T> &rhs,
+                        std::istream &CIN,
+                        mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
   char bfr[2050]{};
   int8_t is_reinterpreted{};
-  constexpr uint8_t is_reinterpreted_and_is_int = 2;
+  _compiler_can_use_ uint8_t is_reinterpreted_and_is_int = 2;
   int8_t value_reinterpreted_and_is_int{};
   for (uint16_t i{0}; i < 2047; i++) {
     uint8_t is_reinterpreted_do_not_forbid{};
@@ -13088,10 +13497,10 @@ std::istream &helper__op_shift_input_(
 }
 
 template <typename T>
-const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
-    const mjz_ard::extended_mjz_str_t<T> &rhs,
-    const mjz_ard::extended_mjz_str_t<T> &CIN,
-    mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
+const mjz_ard::extended_mjz_str_t<T> &
+helper__op_shift_input_(const mjz_ard::extended_mjz_str_t<T> &rhs,
+                        const mjz_ard::extended_mjz_str_t<T> &CIN,
+                        mjz_ard::extended_mjz_str_t<T> &get_shift_op_s) {
   if (CIN.is_blank()) {
     return CIN;
   }
@@ -13101,7 +13510,7 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
   mjz_temp_malloc_wrapper_t<T> my_bfr_obj_ptr(my_bfr_obj_length + 5, 0);
   char *bfr = (char *)my_bfr_obj_ptr.get_ptr();
   uint8_t is_reinterpreted{};
-  constexpr uint8_t is_reinterpreted_and_is_int = 2;
+  _compiler_can_use_ uint8_t is_reinterpreted_and_is_int = 2;
   int8_t value_reinterpreted_and_is_int{};
   char reinterpret_char_char_ref = rhs.get_reinterpret_char_char();
   auto continue_event_is_reinterpreted_and_is_int = [&](uint16_t &i) -> bool {
@@ -13120,7 +13529,7 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
         value_reinterpreted_and_is_int *= 10;
         value_reinterpreted_and_is_int += value_buffer;
         i--;
-        return 1;  // continue;
+        return 1; // continue;
       }
     }
     return 0;
@@ -13132,7 +13541,7 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
       is_reinterpreted = 0;
       if (!rhs.char_to_char_for_reinterpret(bfr[i])) {
         i--;
-        return 1;  // continue;
+        return 1; // continue;
       } else {
         is_reinterpreted_do_not_forbid = 1;
       }
@@ -13140,7 +13549,7 @@ const mjz_ard::extended_mjz_str_t<T> &helper__op_shift_input_(
       value_reinterpreted_and_is_int = value_buffer_;
       is_reinterpreted = is_reinterpreted_and_is_int;
       i--;
-      return 1;  // continue;
+      return 1; // continue;
     }
     return 0;
   };
@@ -13222,8 +13631,9 @@ mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int beginIndex) const {
   return substring((int64_t)beginIndex);
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(
-    unsigned int beginIndex, unsigned int number) const {
+mjz_str_t<T>
+mjz_ard::basic_mjz_Str_view::substring_beg_n(unsigned int beginIndex,
+                                             unsigned int number) const {
   return substring_beg_n((size_t)beginIndex, (size_t)number);
 }
 template <typename T>
@@ -13262,8 +13672,7 @@ mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substr(size_t pos, size_t len) const {
   }
   return substring_beg_n(pos, len);
 }
-template <typename T>
-mjz_str_t<T> SHA256_CTX::to_string() const {
+template <typename T> mjz_str_t<T> SHA256_CTX::to_string() const {
   char buffer[2 * 1024 + 1]{};
   return mjz_str_t<T>(SHA256_CTX::to_c_string(buffer));
 }
@@ -13282,15 +13691,12 @@ mjz_str_t<T> float_get_bits_interpretation(float x) {
   return str;
 }
 
-template <typename T>
-StringSumHelper_t<T> mjz_str_t<T>::operator-() {
+template <typename T> StringSumHelper_t<T> mjz_str_t<T>::operator-() {
   return *this;
 }
-template <typename TO>
-class mv_to_T2 {
- public:
-  template <typename... Types>
-  TO operator()(Types &&...obj) {
+template <typename TO> class mv_to_T2 {
+public:
+  template <typename... Types> TO operator()(Types &&...obj) {
     return TO(std::forward<Types>(obj)...);
   }
 };
@@ -13308,7 +13714,8 @@ template StringSumHelper operator+
     <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const mjz_Str &,
                                            const basic_mjz_Str_view &);
 template StringSumHelper operator+
-    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(mjz_Str &&, const mjz_str_view &);
+    <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(mjz_Str &&,
+                                           const basic_mjz_Str_view &);
 template StringSumHelper operator+
     <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(mjz_Str &&, const StringSumHelper &);
 template StringSumHelper operator+
@@ -13316,7 +13723,7 @@ template StringSumHelper operator+
                                            const basic_mjz_Str_view &);
 template StringSumHelper operator+
     <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(StringSumHelper &&,
-                                           const mjz_str_view &);
+                                           const basic_mjz_Str_view &);
 template StringSumHelper operator+
     <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(StringSumHelper &&,
                                            const StringSumHelper &);
@@ -13325,31 +13732,20 @@ template StringSumHelper operator+
                                            const basic_mjz_Str_view &);
 template StringSumHelper operator+
     <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const StringSumHelper &,
-                                           const mjz_str_view &);
+                                           const basic_mjz_Str_view &);
 template StringSumHelper operator+
     <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const StringSumHelper &,
                                            const StringSumHelper &);
 template StringSumHelper operator+
     <mv_to_T2<mjz_Str>, mv_to_T2<mjz_Str>>(const StringSumHelper &,
                                            const basic_mjz_Str_view &);
-
-template <typename T2>
-inline StringSumHelper operator+(StringSumHelper &&lhs, T2 rhs) {
-  return operator_plus(mv_to_T2<mjz_Str>(lhs), mv_to_T2<mjz_Str>(rhs));
-}
-template <typename T2>
-inline StringSumHelper operator+(const StringSumHelper &lhs, T2 rhs) {
-  return operator_plus(mv_to_T2<mjz_Str>(lhs), mv_to_T2<mjz_Str>(rhs));
-}
 
 typedef mjz_RingBufferN<SERIAL_BUFFER_SIZE> RingBuffer;
-template <int N>
-mjz_RingBufferN<N>::mjz_RingBufferN(void) {
+template <int N> mjz_RingBufferN<N>::mjz_RingBufferN(void) {
   static_str_algo::memset(_aucBuffer, 0, N);
   clear();
 }
-template <int N>
-void mjz_RingBufferN<N>::store_char(uint8_t c) {
+template <int N> void mjz_RingBufferN<N>::store_char(uint8_t c) {
   // if we should be storing the received character into the location
   // just before the tail (meaning that the head would advance to the
   // current location of the tail), we're about to overflow the buffer
@@ -13360,14 +13756,12 @@ void mjz_RingBufferN<N>::store_char(uint8_t c) {
     _numElems = _numElems + 1;
   }
 }
-template <int N>
-void mjz_RingBufferN<N>::clear() {
+template <int N> void mjz_RingBufferN<N>::clear() {
   _iHead = 0;
   _iTail = 0;
   _numElems = 0;
 }
-template <int N>
-int mjz_RingBufferN<N>::read_char() {
+template <int N> int mjz_RingBufferN<N>::read_char() {
   if (isEmpty()) {
     return -1;
   }
@@ -13376,33 +13770,24 @@ int mjz_RingBufferN<N>::read_char() {
   _numElems = _numElems - 1;
   return value;
 }
-template <int N>
-int mjz_RingBufferN<N>::available() {
-  return _numElems;
-}
-template <int N>
-int mjz_RingBufferN<N>::availableForStore() {
+template <int N> int mjz_RingBufferN<N>::available() { return _numElems; }
+template <int N> int mjz_RingBufferN<N>::availableForStore() {
   return (N - _numElems);
 }
-template <int N>
-int mjz_RingBufferN<N>::peek() {
+template <int N> int mjz_RingBufferN<N>::peek() {
   if (isEmpty()) {
     return -1;
   }
   return _aucBuffer[_iTail];
 }
-template <int N>
-int mjz_RingBufferN<N>::nextIndex(int index) {
+template <int N> int mjz_RingBufferN<N>::nextIndex(int index) {
   return (uint32_t)(index + 1) % N;
 }
-template <int N>
-bool mjz_RingBufferN<N>::isFull() {
-  return (_numElems == N);
-}
-}  // namespace mjz_ard
+template <int N> bool mjz_RingBufferN<N>::isFull() { return (_numElems == N); }
+} // namespace mjz_ard
 namespace mjz_ard_types = mjz_ard::have_mjz_ard_removed;
 namespace mjz = mjz_ard;
 namespace mjzt = mjz_ard_types;
 #undef NO_IGNORE_CHAR
-#endif  // __mjz_ard_STRINGS__
-#endif  // __cplusplus
+#endif // __mjz_ard_STRINGS__
+#endif // __cplusplus
