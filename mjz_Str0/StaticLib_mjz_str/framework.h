@@ -64,22 +64,21 @@ class Scoped_speed_Timer {
   }
   Scoped_speed_Timer(const std::string& name, bool glob = 1) : m_Name(name) {
     if (glob) {
-      m_uomp = g_map;
+      m_uomp = get_global_map_rf();
     }
   }
   Scoped_speed_Timer(const char* name, size_t size_, bool glob = 1)
       : m_Name(name, size_) {
     if (glob) {
-      m_uomp = g_map;
+      m_uomp = get_global_map_rf();
     }
   }
   Scoped_speed_Timer(const char* name, bool glob = 1)
       : m_Name(name, strlen(name)) {
     if (glob) {
-      m_uomp = g_map;
+      m_uomp = get_global_map_rf();
     }
   }
-  Scoped_speed_Timer& operator()(const std::string& name, bool nomatter = 1);
   void Stop(timer_cmd cmd_ = timer_cmd::NONE) {
     long double time = m_Timer.Elapsednano();
 
@@ -201,19 +200,30 @@ class Scoped_speed_Timer {
       m_uomp = name.m_uomp;
     }
   }
+ 
   static inline void set_global_map(
       std::shared_ptr<std::map<std::string, timer_info>> g_map_) {
-    g_map = g_map_;
+    get_global_map_rf() = g_map_;
   }
   static inline std::shared_ptr<std::map<std::string, timer_info>>
   get_global_map() {
-    return g_map;
+    return get_global_map_rf();
   }
-
+  inline Scoped_speed_Timer& operator()(const std::string& name, const bool non_matter=0) {
+    Stop();
+    stoped = 0;
+    m_Name = name;
+    m_Timer.Reset();
+    return *this;
+  }
  protected:
+  static inline std::shared_ptr<std::map<std::string, timer_info>>&
+  get_global_map_rf() {
+    static std::shared_ptr<std::map<std::string, timer_info>> glob_map;
+    return glob_map;
+  }
   bool stoped{};
   std::string m_Name;
-  static std::shared_ptr<std::map<std::string, timer_info>> g_map;
   std::shared_ptr<std::map<std::string, timer_info>> m_uomp;
   speed_Timer m_Timer;
 };
@@ -720,4 +730,7 @@ typedef speed_Timer speed_Timer;
 typedef Scoped_speed_Timer Scoped_speed_Timer;
 }  // namespace have_mjz_ard_removed
 }  // namespace mjz_ard
+
+
+
 #define WIN32_LEAN_AND_MEAN  // Exclude rarely-used stuff from Windows headers

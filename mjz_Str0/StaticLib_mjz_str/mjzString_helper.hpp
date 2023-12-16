@@ -69,9 +69,10 @@ union my_data_randomizer_union {
   uint32_t my_data_randomizer;
   double my_data_randomizer_d;
 };
-extern my_data_randomizer_union my_data_randomizer_uni;
+
 template <typename... Type>
-constexpr inline uint32_t esp_random(Type... arggs) {
+inline uint32_t esp_random(Type... arggs) {
+  static my_data_randomizer_union my_data_randomizer_uni;
   ++my_data_randomizer_uni.my_data_randomizer_d;
   my_data_randomizer_uni.my_data_randomizer_d *=
       my_data_randomizer_uni.my_data_randomizer_u;
