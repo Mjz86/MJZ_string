@@ -2109,6 +2109,10 @@ class mjz_arena_allocator_t {
     if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return 0;
     return !(((size_t)((size_t)ptr - (size_t)m_blocks.begin())) % block_length);
   }
+  constexpr inline void *unsafe_data() & { return m_blocks.data(); }
+  constexpr inline size_t unsafe_size() & {
+    return ((char *)m_blocks.end()) - ((char *)m_blocks.begin());
+  }
   constexpr inline mjz_arena_allocator_t() { clean_all_data(); }
   constexpr inline ~mjz_arena_allocator_t() { clean_all_data(); }
   constexpr inline mjz_arena_allocator_t(mjz_arena_allocator_t &&)
@@ -7531,12 +7535,20 @@ class mjz_heap_obj_warper_template_t {
   using container_Type =
       mjz_stack_obj_warper_template_t<Type, construct_obj_on_constructor,
                                       my_obj_creator_t>;
-
-  class my_unique_ptr_of_container_Type
-      : private mjz_allocator_warpper<container_Type> {
+  struct unique_make_er : private mjz_allocator_warpper<container_Type> {
     constexpr inline mjz_allocator_warpper<container_Type> &get_obj_creator() {
       return *this;
     }
+  };
+  /*
+  this class is  unsafe if handled incorrectly
+  and may dereference null  but if you want to pass  a  heap allocated
+  stack_obj_warper by  reference it is a good option .
+  it deallocates the object automatically.
+
+  */
+  class my_unique_ptr_of_container_Type : private unique_make_er {
+   private:
     mutable container_Type
         *m_obj{};  // sorry for <mutable> but it is what it is
     constexpr inline container_Type *get_then_null() {
@@ -7544,6 +7556,8 @@ class mjz_heap_obj_warper_template_t {
       m_obj = 0;
       return t;
     }
+    my_unique_ptr_of_container_Type &&temp_me() { return std::move(*this); }
+    my_unique_ptr_of_container_Type &me() { return *this; }
 
    public:
     constexpr inline my_unique_ptr_of_container_Type(
@@ -7556,20 +7570,16 @@ class mjz_heap_obj_warper_template_t {
       m_obj = otr.get_then_null();
     }
 
-    constexpr inline my_unique_ptr_of_container_Type(
-        container_Type *valid_heap_object) {
-      m_obj = valid_heap_object;
-    }
-
+    
     constexpr inline my_unique_ptr_of_container_Type &operator=(
-        my_unique_ptr_of_container_Type &&otr) {
+        my_unique_ptr_of_container_Type &&otr)& {
       if (&otr == this) return *this;
       m_obj = otr.get_then_null();
       return *this;
     }
 
     constexpr inline my_unique_ptr_of_container_Type &operator=(
-        const my_unique_ptr_of_container_Type &&otr) {
+        const my_unique_ptr_of_container_Type &&otr)& {
       if (&otr == this) return *this;
       m_obj = otr.get_then_null();
       return *this;
@@ -7583,23 +7593,11 @@ class mjz_heap_obj_warper_template_t {
     my_unique_ptr_of_container_Type &operator=(
         my_unique_ptr_of_container_Type &) = delete;
 
-    constexpr inline ~my_unique_ptr_of_container_Type() {
-      if (m_obj) {
-        get_obj_creator().destroy_at(m_obj);
-        get_obj_creator().deallocate(m_obj, 1);
-        m_obj = 0;
-      }
-    }
-    template <typename... args_t>
+    constexpr inline ~my_unique_ptr_of_container_Type() { ~*this; }
 
-    constexpr static inline my_unique_ptr_of_container_Type make_unique(
-        args_t &&...args) {
-      my_unique_ptr_of_container_Type ret;
-      ret.m_obj = (ret.get_obj_creator().allocate(1));
-      if (!ret.m_obj) return ret;
-      ret.get_obj_creator().construct_at(ret.m_obj,
-                                         std::forward<args_t>(args)...);
-      return ret;
+    constexpr inline my_unique_ptr_of_container_Type &&operator~() && {
+      to_null();
+      return temp_me();
     }
 
     constexpr inline container_Type &operator*() & { return *m_obj; }
@@ -7617,7 +7615,6 @@ class mjz_heap_obj_warper_template_t {
     constexpr inline const Type &&operator()() const && {
       return *std::move(*m_obj);
     }
-
     constexpr inline container_Type *operator->() { return m_obj; }
     constexpr inline const container_Type *operator->() const { return m_obj; }
 
@@ -7634,7 +7631,35 @@ class mjz_heap_obj_warper_template_t {
     constexpr inline bool operator!() const { return !m_obj; }
 
    private:
+    constexpr inline my_unique_ptr_of_container_Type &operator~() & {
+      to_null();
+      return me();
+    }
+    constexpr inline void to_null() {
+      if (m_obj) {
+        this->get_obj_creator().destroy_at(m_obj);
+        this->get_obj_creator().deallocate(m_obj, 1);
+        m_obj = 0;
+      }
+    }
+    constexpr inline my_unique_ptr_of_container_Type(
+        container_Type *valid_heap_object) {
+      m_obj = valid_heap_object;
+    }
+    template <typename... args_t>
+    constexpr static inline [[nodiscard]] my_unique_ptr_of_container_Type
+    make_unique(args_t &&...args) {
+      my_unique_ptr_of_container_Type ret;
+      ret.m_obj = (ret.get_obj_creator().allocate(1));
+      if (!ret.m_obj) return ret;
+      ret.get_obj_creator().construct_at(ret.m_obj,
+                                         std::forward<args_t>(args)...);
+      return ret;
+    }
     constexpr inline my_unique_ptr_of_container_Type() : m_obj(0) {}
+
+    friend class mjz_heap_obj_warper_template_t<
+        my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t>;
   };
   using container_Type_ptr =
       my_unique_ptr_of_container_Type;  // std::unique_ptr<container_Type>;
@@ -7933,15 +7958,15 @@ class mjz_heap_obj_warper_template_t {
   }
   constexpr inline my_Type_t &&operator~() && {
     base_mv().operator~();
-    return *this;
+    return temp_me();
   }
   constexpr inline my_Type_t &&operator+() && {
     base_mv().operator+();
-    return *this;
+    return temp_me();
   }
   constexpr inline my_Type_t &&operator-() && {
     base_mv().operator~();
-    return *this;
+    return temp_me();
   }
   constexpr inline mjz_heap_obj_warper_template_t &operator--() & {
     de_init();
@@ -7992,9 +8017,7 @@ class mjz_heap_obj_warper_template_t {
   const Type *cbegin() const && = delete;
   const Type *cend() const && = delete;
   constexpr inline static size_t size() { return 1; }  // for iterator
-  constexpr inline static size_t my_size() {
-    return sizeof_Type + sizeof(container_Type_ptr);
-  }
+  constexpr inline static size_t my_size() { return sizeof_Type; }
   constexpr inline static size_t size_T() { return my_size(); }
   constexpr inline Type &operator()(Type &&moved) & {
     return *this = std::move(moved);
