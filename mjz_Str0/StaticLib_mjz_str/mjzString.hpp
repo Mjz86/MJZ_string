@@ -15034,7 +15034,9 @@ class mjz_class_operation_reporter_t {
     print_c_str_len_1(s, len);
     println_wi(index++, "\"   ");
   }
-  ~mjz_class_operation_reporter_t() { println_wi(--index, " destroyed : "); }
+  ~mjz_class_operation_reporter_t() { println_wi(--index, " destroyed : ");
+  filler='_';
+  }
   mjz_class_operation_reporter_t(mjz_class_operation_reporter_t &&obj) {
     index++;
     println_wf(obj, " move constructed ");
