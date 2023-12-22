@@ -978,6 +978,14 @@ using mjz_get_value_Type = typename Type::value_type;
 
 template <class Type>
 using mjz_get_pointer_Type = typename Type::pointer;
+
+
+template <typename... args_t>
+inline constexpr auto get_arg_count() -> size_t {
+  constexpr const std::size_t n = sizeof...(args_t);
+  return n;
+}
+
 template <class Type>
 Type *remove_const(const Type *o) {
   return const_cast<Type *>(o);
@@ -3161,6 +3169,21 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     while (first != last) obj_copy_to_obj(*(--d_last), std::forward(*(--last)));
     return d_last;
   }
+
+  template <class BidirIt1, class BidirIt2, class BidirIt3>
+  static constexpr inline BidirIt3 uninitialized_move_backward(
+      BidirIt1 first, BidirIt2 last,
+                                                 BidirIt3 d_last) {
+    while (first != last) me::construct_at((--d_last), std::move(*(--last)));
+    return d_last;
+  }
+  template <class BidirIt1, class BidirIt2>
+  static constexpr inline BidirIt2 uninitialized_copy_backward(
+      BidirIt1 first, BidirIt1 last,
+                                                 BidirIt2 d_last) {
+    while (first != last) construct_at((--d_last), std::forward(*(--last)));
+    return d_last;
+  }
   template <class InputIt, class OutputIt>
   static constexpr inline OutputIt copy(InputIt first, InputIt last,
                                         OutputIt d_first) {
@@ -3654,6 +3677,261 @@ struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
   }
 };
 
+
+template <class Type, size_t m_Capacity, bool error_check = 1>
+struct mjz_dynamic_array
+    : private mjz_temp_type_obj_algorithims_warpper_t<
+          Type> {  // fixed size mjz_dynamic_array of values
+
+ public:
+  using value_type = Type;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using difference_type = std::ptrdiff_t;
+  using const_reference = const Type &;
+  using size_type = size_t;
+  using iterator = iterator_template_t<Type, error_check>;
+  using const_iterator = iterator_template_t<const Type, error_check>;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+ private:
+  using mjz_obj_algorithims = mjz_temp_type_obj_algorithims_warpper_t<Type>;
+  size_t m_size{};
+  M_DATA_U<Type, m_Capacity> m_data;
+  using array_type_t = typename Type (&)[m_Capacity];
+
+  constexpr inline array_type_t m_elements() { return m_data.m_elements; }
+
+  constexpr inline const array_type_t m_elements() const {
+    return m_data.m_elements;
+  }
+
+  constexpr inline void set_len(size_t len) {
+    if (m_Capacity < len) len = m_Capacity;
+    m_size = len;
+  }
+
+ public:
+  constexpr inline void assign(const Type &_Value) { fill(_Value); }
+  constexpr inline void fill(const Type &value) {
+    iterator fst = begin();
+    iterator lst = end();
+    while (fst < lst) *fst++ = value;
+  }
+  constexpr inline void swap(mjz_dynamic_array &other) {
+    iterator fst[2] = {begin(), other.begin()};
+    iterator lst[2] = {end(), other.end()};
+    while ((fst[0] < lst[0]) && (fst[1] < lst[1]))
+      std::swap(*fst[0]++, *fst[1]++);
+  }
+  constexpr [[nodiscard]] inline iterator begin() noexcept {
+    return iterator(m_elements(), m_elements(), m_elements() + size());
+  }
+  constexpr [[nodiscard]] inline const_iterator begin() const noexcept {
+    return const_iterator(m_elements(), m_elements(), m_elements() + size());
+  }
+  constexpr [[nodiscard]] inline iterator end() noexcept {
+    return iterator(m_elements() + size(), m_elements(), m_elements() + size());
+  }
+  constexpr [[nodiscard]] inline const_iterator end() const noexcept {
+    return const_iterator(m_elements() + size(), m_elements(),
+                          m_elements() + size());
+  }
+  constexpr [[nodiscard]] inline reverse_iterator rbegin() noexcept {
+    return reverse_iterator(end());
+  }
+  constexpr [[nodiscard]] inline const_reverse_iterator rbegin()
+      const noexcept {
+    return const_reverse_iterator(end());
+  }
+  constexpr [[nodiscard]] inline reverse_iterator rend() noexcept {
+    return reverse_iterator(begin());
+  }
+  constexpr [[nodiscard]] inline const_reverse_iterator rend() const noexcept {
+    return const_reverse_iterator(begin());
+  }
+  constexpr [[nodiscard]] inline const_iterator cbegin() const noexcept {
+    return begin();
+  }
+  constexpr [[nodiscard]] inline const_iterator cend() const noexcept {
+    return end();
+  }
+  constexpr [[nodiscard]] inline const_reverse_iterator crbegin()
+      const noexcept {
+    return rbegin();
+  }
+  constexpr [[nodiscard]] inline const_reverse_iterator crend() const noexcept {
+    return rend();
+  }
+  constexpr [[nodiscard]] inline size_type size() const noexcept {
+    return m_size;
+  }
+  constexpr [[nodiscard]] inline size_type max_size() const noexcept {
+    return m_Capacity;
+  }
+  constexpr inline bool empty() const noexcept { return !!size(); }
+  constexpr [[nodiscard]] inline reference at(size_type _Pos) {
+    if constexpr (error_check) {
+      if (size() <= _Pos) {
+        invld_throw();
+      }
+    }
+    return m_elements()[_Pos];
+  }
+  constexpr [[nodiscard]] inline const_reference at(size_type _Pos) const {
+    if constexpr (error_check) {
+      if (size() <= _Pos) {
+        invld_throw();
+      }
+    }
+    return m_elements()[_Pos];
+  }
+  constexpr [[nodiscard]] inline reference operator[](size_type _Pos) noexcept
+  /* strengthened */ {
+    if constexpr (error_check) {
+      if (_Pos >= size()) {
+        throw std::out_of_range{"mjz_dynamic_array subscript out of range"};
+      }
+    }
+    return m_elements()[_Pos];
+  }
+  constexpr [[nodiscard]] inline const_reference operator[](
+      size_type _Pos) const noexcept
+  /* strengthened */ {
+    if constexpr (error_check) {
+      {
+        if (_Pos >= size())
+          throw std::out_of_range{"mjz_dynamic_array subscript out of range"};
+      }
+    }
+    return m_elements()[_Pos];
+  }
+  constexpr [[nodiscard]] inline reference front() noexcept
+  /* strengthened */ {
+    return m_elements()[0];
+  }
+  constexpr [[nodiscard]] inline const_reference front() const noexcept
+  /* strengthened */ {
+    return m_elements()[0];
+  }
+  constexpr [[nodiscard]] inline reference back() noexcept
+  /* strengthened */ {
+    return m_elements()[size() - 1];
+  }
+  constexpr [[nodiscard]] inline const_reference back() const noexcept
+  /* strengthened */ {
+    return m_elements()[size() - 1];
+  }
+  constexpr [[nodiscard]] inline Type *data() noexcept { return m_elements(); }
+  constexpr [[nodiscard]] inline const Type *data() const noexcept {
+    return m_elements();
+  }
+  [[noreturn]] void invld_throw() const {
+    throw std::out_of_range("invalid mjz_dynamic_array<T, N> subscript");
+  }
+  template <size_t N>
+  constexpr inline mjz_dynamic_array(Type (&&input_c_array)[N]) {
+    size_t len = min(N, m_Capacity);
+    mjz_obj_algorithims::uninitialized_move_n(input_c_array, len, m_elements());
+    set_len(len);
+  }
+  constexpr inline mjz_dynamic_array(Type *p, size_t n) {
+    size_t len = min(n, m_Capacity);
+    mjz_obj_algorithims::uninitialized_move_n(p, len, m_elements());
+    set_len(len);
+  }
+  constexpr inline mjz_dynamic_array() { set_len(0); }
+  constexpr inline mjz_dynamic_array(size_t n) {
+    if (m_Capacity < n) n = m_Capacity;
+    mjz_obj_algorithims::construct_arr_at(m_elements(), n);
+    set_len(n); }
+  constexpr inline void resize(size_t n) {
+    if (m_Capacity < n) n = m_Capacity;
+    if (size() < n)
+   {
+      mjz_obj_algorithims::construct_arr_at(m_elements() + size(), n - size());
+      set_len(n);
+      return;
+    }
+    if (size() > n) {
+      mjz_obj_algorithims::obj_destructor_arr(m_elements() + n,
+                                               size()-n);
+      set_len(n);
+      return;
+    }
+  }
+  template <size_t number,typename... args_t>
+  constexpr inline mjz_dynamic_array(args_t &&...args) {
+    new (&m_data)
+        M_DATA_U<Type, min_macro_(number,m_Capacity)>(std::forward<args_t>(args)...);
+    set_len(min_macro_(number, m_Capacity));
+  }
+  template <  typename... args_t>
+  static constexpr inline mjz_dynamic_array make(
+      args_t &&...args)  // for emplacement
+  {
+    mjz_dynamic_array ret<get_arg_count<args_t...>(), args_t...>(
+        std::forward<args_t>(args)...);
+    return ret;
+  }
+  template <typename... args_fn_t>
+  static constexpr inline mjz_dynamic_array make_emplace(
+      args_fn_t &&...args)  // for emplacement
+  {
+    mjz_dynamic_array ret{std::forward<args_fn_t>(args)()...};
+    return ret;
+  }
+  constexpr inline ~mjz_dynamic_array() {
+    mjz_obj_algorithims::obj_destructor_arr(m_elements(), size());
+  }
+  template <size_t O_size, bool O_err>
+  constexpr inline mjz_dynamic_array(
+      mjz_dynamic_array<Type, O_size, O_err> &&other) {
+    size_t len = min(other.size(), this->max_size());
+    mjz_obj_algorithims::uninitialized_move_n(other.begin(), len,
+                                              this->begin());
+    set_len(len);
+  }
+  template <size_t O_size, bool O_err>
+  constexpr inline mjz_dynamic_array(
+      const mjz_dynamic_array<Type, O_size, O_err> &other) {
+    size_t len = min(other.size(), this->max_size());
+    mjz_obj_algorithims::uninitialized_copy_n(other.begin(), len,
+                                              this->begin());
+    set_len(len);
+  }
+  template <size_t O_size, bool O_err>
+  constexpr inline mjz_dynamic_array<Type, m_Capacity, error_check> &operator=(
+      mjz_dynamic_array<Type, O_size, O_err> &&other) {
+    size_t len = min(other.size(), this->size());
+    size_t new_len = min(other.size(), this->max_size());
+    mjz_obj_algorithims::move_backward(other.begin(), other.begin() + len,
+                                       this->begin() + len);
+    if (len < new_len)
+      mjz_obj_algorithims::uninitialized_move_backward(other.begin() + len,
+                                                       other.begin() + new_len,
+                                                       this->begin() + new_len);
+
+    return *this;
+  }
+  template <size_t O_size, bool O_err>
+  constexpr inline mjz_dynamic_array<Type, m_Capacity, error_check> &operator=(
+      const mjz_dynamic_array<Type, O_size, O_err> &other) {
+    size_t len = min(other.size(), this->size());
+    size_t new_len = min(other.size(), this->max_size());
+    mjz_obj_algorithims::copy_backward(other.begin(), other.begin() + len,
+                                       this->begin() + len);
+    if (len < new_len)
+      mjz_obj_algorithims::uninitialized_copy_backward(other.begin() + len,
+                                                       other.begin() + new_len,
+                                                       this->begin() + new_len);
+    return *this;
+  }
+};
+
+
+
 template <typename T, typename U = T>
 constexpr inline T exchange(T &obj, U &&new_value) {
   T old_value = std::move(obj);
@@ -3976,7 +4254,9 @@ struct mjz_Vector {
   constexpr inline void reallocate(size_type newCapacity) {
     pointer newData = m_allocator.allocate(newCapacity);
     m_allocator.uninitialized_move_n(m_data, m_size, newData);
+   size_t s= m_size;
     deallocate();
+   m_size = s;
     m_data = newData;
     m_capacity = newCapacity;
   }
