@@ -1945,15 +1945,15 @@ constexpr inline auto to_mjz_it(const T &obj) {
                                                                   obj.end()};
 }
 
-template <size_t number_of_blocks =
+template <uint32_t number_of_blocks =
               number_of_global_mjz_areana_allocator_blocks,
-          size_t block_length = size_of_global_mjz_areana_allocator_blocks,
-          bool KEEP_the_heap_clean = false>
+    uint16_t block_length = size_of_global_mjz_areana_allocator_blocks,
+          bool KEEP_the_heap_clean = false, typename size_type=uint32_t>
 class mjz_arena_allocator_t {
-  template <typename T, size_t m_size>
+  template <typename T, size_type m_size>
   struct data_buffer {
     T m_data[m_size];
-    constexpr inline size_t size() { return m_size; }
+    constexpr inline size_type size() { return m_size; }
     constexpr inline T *begin() { return data(); }
     constexpr inline T *end() { return data() + m_size; }
     constexpr inline T *data() { return m_data; }
@@ -1962,30 +1962,30 @@ class mjz_arena_allocator_t {
   };
 
  public:
-  constexpr static size_t not_valid = (((size_t)-1 >> 1) - 1);
+  constexpr static size_type not_valid = (((size_type)-1 >> 1) - 1);
   constexpr static char EMPTY_char = 'A';
   struct block_data {
-    size_t index_of_begin = not_valid;
-    size_t index_of_end = not_valid;
+    size_type index_of_begin = not_valid;
+    size_type index_of_end = not_valid;
   };
 
  protected:
-  data_buffer<data_buffer<uint8_t, block_length>, number_of_blocks> m_blocks;
   data_buffer<block_data, number_of_blocks> m_block_data;
+  data_buffer<data_buffer<uint8_t, block_length>, number_of_blocks> m_blocks;
   constexpr inline void clean_all_data() & {
     if constexpr (KEEP_the_heap_clean)
       memset((char *)m_blocks.begin(), EMPTY_char,
              ((char *)m_blocks.end()) - ((char *)m_blocks.begin()));
   }
-  constexpr inline size_t get_index_of_pointer(void *ptr) & {
+  constexpr inline size_type get_index_of_pointer(void *ptr) & {
     if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return not_valid;
-    size_t ptr_diff = (size_t)((size_t)ptr - (size_t)m_blocks.begin());
+    size_type ptr_diff = (size_type)((size_type)ptr - (size_type)m_blocks.begin());
     if ((ptr_diff % block_length) && ptr_diff) return not_valid;
     return (ptr_diff / block_length);
   }
-  constexpr inline size_t get_index_of_pointer_that_is_not_allocated(
-      size_t number_of_blocks_in_a_row = 1,
-      size_t begin_search_at_index = 0) & {
+  constexpr inline size_type get_index_of_pointer_that_is_not_allocated(
+      size_type number_of_blocks_in_a_row = 1,
+      size_type begin_search_at_index = 0) & {
     block_data *begin_it = m_block_data.begin() + begin_search_at_index;
     block_data *end_it = m_block_data.end();
     while (1) {
@@ -1998,13 +1998,13 @@ class mjz_arena_allocator_t {
              (begin_it->index_of_begin == not_valid))
         begin_it++;
       if (end_of_row_it == begin_it)
-        return (size_t)(begin_it_buf - m_block_data.begin());
+        return (size_type)(begin_it_buf - m_block_data.begin());
     }
   }
-  constexpr inline size_t allocate_block(size_t size,
-                                         size_t realloc_index = not_valid) & {
+  constexpr inline size_type allocate_block(size_type size,
+                                         size_type realloc_index = not_valid) & {
     bool reallocatating = (realloc_index != not_valid);
-    size_t index = get_index_of_pointer_that_is_not_allocated(
+    size_type index = get_index_of_pointer_that_is_not_allocated(
         reallocatating ? (size - get_size_in_blocks(realloc_index)) : size,
         reallocatating ? m_block_data[realloc_index].index_of_end : 0);
     if (reallocatating) {
@@ -2018,8 +2018,8 @@ class mjz_arena_allocator_t {
     set_range_to(index, {index + size});
     return index;
   }
-  constexpr inline void set_range_to(size_t ren_beg, size_t ren_end, size_t beg,
-                                     size_t end) & {
+  constexpr inline void set_range_to(size_type ren_beg, size_type ren_end, size_type beg,
+                                     size_type end) & {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + beg;
     auto index_end_it = the_begin_data_ptr + end;
@@ -2028,10 +2028,10 @@ class mjz_arena_allocator_t {
       (*index_beg_it++).index_of_end = end;
     }
   }
-  constexpr inline void set_range_to(size_t ren_beg, size_t ren_end) {
+  constexpr inline void set_range_to(size_type ren_beg, size_type ren_end) {
     set_range_to(ren_beg, ren_end, ren_beg, ren_end);
   }
-  constexpr inline void deallocate_rage(size_t index_begin, size_t index_end) {
+  constexpr inline void deallocate_rage(size_type index_begin, size_type index_end) {
     auto the_begin_data_ptr = m_block_data.begin();
     auto index_beg_it = the_begin_data_ptr + index_begin;
     auto index_end_it = the_begin_data_ptr + index_end;
@@ -2040,12 +2040,12 @@ class mjz_arena_allocator_t {
       (*index_beg_it++).index_of_end = not_valid;
     }
   }
-  constexpr inline void deallocate_block(size_t index) & {
+  constexpr inline void deallocate_block(size_type index) & {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return;
     if constexpr (KEEP_the_heap_clean) {
-      size_t end_i = m_block_data[index].index_of_end;
-      size_t beg_i = index;
+      size_type end_i = m_block_data[index].index_of_end;
+      size_type beg_i = index;
       deallocate_rage(beg_i, end_i);
       char *beg_p = (char *)(m_blocks[beg_i]).data();
       char *end_p = (char *)(m_blocks[end_i]).data();
@@ -2054,34 +2054,34 @@ class mjz_arena_allocator_t {
       deallocate_rage(index, m_block_data[index].index_of_end);
     }
   }
-  constexpr inline void *get_ptr(size_t index) & {
+  constexpr inline void *get_ptr(size_type index) & {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_blocks[index]).data();
   }
-  constexpr inline size_t get_size_in_blocks(size_t index) & {
+  constexpr inline size_type get_size_in_blocks(size_type index) & {
     if (index == not_valid || m_block_data[index].index_of_begin != index)
       return 0;
     return (m_block_data[index].index_of_end - index);
   }
-  constexpr inline size_t get_real_size(size_t index) & {
+  constexpr inline size_type get_real_size(size_type index) & {
     return get_size_in_blocks(index) * block_length;
   }
-  constexpr inline size_t size_to_number_of_blocks(size_t size) & {
+  constexpr inline size_type size_to_number_of_blocks(size_type size) & {
     return (size % block_length) ? ((size / block_length) + 1)
                                  : (size / block_length);
   }
 
  public:
-  constexpr inline void *malloc(size_t size) & {
+  constexpr inline void *malloc(size_type size) & {
     size = size_to_number_of_blocks(size);
     return get_ptr(allocate_block(size));
   }
-  constexpr inline void *realloc(void *ptr, size_t size) & {
-    size_t index_of_ptr = get_index_of_pointer(ptr);
+  constexpr inline void *realloc(void *ptr, size_type size) & {
+    size_type index_of_ptr = get_index_of_pointer(ptr);
     if (index_of_ptr == not_valid) return malloc(size);
     size = size_to_number_of_blocks(size);
-    size_t size_of_current_ptr = get_size_in_blocks(index_of_ptr);
+    size_type size_of_current_ptr = get_size_in_blocks(index_of_ptr);
     if (size < size_of_current_ptr) {
       deallocate_rage(index_of_ptr + size, index_of_ptr + size_of_current_ptr);
       set_range_to(index_of_ptr, index_of_ptr + size);
@@ -2094,7 +2094,7 @@ class mjz_arena_allocator_t {
       free(ptr);
       return 0;
     }
-    size_t index = allocate_block(size, index_of_ptr);
+    size_type index = allocate_block(size, index_of_ptr);
     if (index == not_valid) {
       free(ptr);
       return 0;
@@ -2110,15 +2110,15 @@ class mjz_arena_allocator_t {
   constexpr inline void free(void *ptr) & {
     deallocate_block(get_index_of_pointer(ptr));
   }
-  constexpr inline size_t get_size(void *ptr) & {
+  constexpr inline size_type get_size(void *ptr) & {
     return get_real_size(get_index_of_pointer(ptr));
   }
   constexpr inline bool is_valid(void *ptr) & {
     if (m_blocks.end() <= ptr || ptr < m_blocks.begin()) return 0;
-    return !(((size_t)((size_t)ptr - (size_t)m_blocks.begin())) % block_length);
+    return !(((size_type)((size_type)ptr - (size_type)m_blocks.begin())) % block_length);
   }
   constexpr inline void *unsafe_data() & { return m_blocks.data(); }
-  constexpr inline size_t unsafe_size() & {
+  constexpr inline size_type unsafe_size() & {
     return ((char *)m_blocks.end()) - ((char *)m_blocks.begin());
   }
   constexpr inline mjz_arena_allocator_t() { clean_all_data(); }
