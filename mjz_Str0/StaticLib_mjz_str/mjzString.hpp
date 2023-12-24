@@ -966,7 +966,7 @@ constexpr size_t size_of_global_mjz_areana_allocator_blocks = 32;
 #define global_mjz_areana_allocator_on true
 #endif  // !global_mjz_areana_allocator_on
 #ifndef global_mjz_areana_allocator_log
-#define global_mjz_areana_allocator_log false
+#define global_mjz_areana_allocator_log true
 #endif
 inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
@@ -14932,7 +14932,8 @@ class mjz_class_operation_reporter_t {
     print_c_str_len_1(s, len);
     println_wi(index++, "\"   ");
   }
-  ~mjz_class_operation_reporter_t() { println_wi(--index, " destroyed : ");
+  ~mjz_class_operation_reporter_t() {
+      println_wi(--index, " destroyed : ");
   filler='_';
   }
   mjz_class_operation_reporter_t(mjz_class_operation_reporter_t &&obj) {
