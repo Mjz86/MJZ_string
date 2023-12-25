@@ -2714,6 +2714,8 @@ struct mjz_arena_allocator_warper
   ~mjz_arena_allocator_warper() {}
 };
 
+
+
 template <class Type>
 struct basic_mjz_allocator
     : std_reallocator_warper<std::allocator<uint8_t>, Type> {
@@ -2741,6 +2743,12 @@ template <typename Type>
 struct mjz_obj_manager_template_t {
   using me = mjz_obj_manager_template_t;
 
+  struct address_geter_class_when_we_overload_operator_addressof
+      : private Type {
+   public:
+    Type *get_the_this() { return this; }
+    const Type *get_the_this() const { return this; }
+  };
  public:
   template <typename... args_t>
   static constexpr inline Type *construct_at(Type *dest,
@@ -2863,13 +2871,27 @@ struct mjz_obj_manager_template_t {
   static constexpr inline Type &obj_equals(Type &dest, Args &&...args) {
     return dest.operator=(std::forward<Args>(args)...);
   }
-  friend constexpr inline Type *addressof(Type &obj) { return &obj; }
-  friend constexpr inline const Type *addressof(const Type &obj) {
-    return &obj;
+  using address_geter_class=address_geter_class_when_we_overload_operator_addressof;
+  public:
+  friend constexpr inline const Type *addressof(const Type &&obj) = delete;
+   static constexpr inline const Type *addressof(const Type &&obj) = delete;
+   friend constexpr inline  Type *addressof(  Type &&obj) = delete;
+   static constexpr inline Type *addressof(  Type &&obj) = delete;
+
+
+
+  friend constexpr inline Type *addressof(Type &obj) {
+    return me::addressof(obj);
+   }
+   friend constexpr inline const Type *addressof(const Type &obj) {
+    return me::addressof( obj);
   }
-  static constexpr inline Type *addressof(Type &obj) { return &obj; }
+  static constexpr inline Type *addressof(Type &obj) {
+    return ((address_geter_class &)obj).address_geter_class::get_the_this();// not virtualy calling explicitly
+  }
   static constexpr inline const Type *addressof(const Type &obj) {
-    return &obj;
+    return ((const address_geter_class &)obj)
+        .address_geter_class::get_the_this();
   }
   friend constexpr inline Type *to_address(Type *p) noexcept { return p; }
   friend constexpr inline const Type *to_address(const Type &obj) noexcept {
@@ -3440,6 +3462,508 @@ union M_DATA_U {
   constexpr inline M_DATA_U(args_t &&...args)
       : m_elements{std::forward<args_t>(args)...} {}
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // this will crash the program
+[[noreturn]] static inline void trap_crash(void) {
+  *(volatile char *)0 = (volatile char)0;  // address 0 is invalid
+  // this will crash the program
+}
+
+
+
+namespace smart_ptr {
+template <typename T>
+union data_storage {
+  using Type = T;
+  char f;
+  Type object;
+  inline data_storage() {}  // no initilization
+
+  inline ~data_storage() {}  // no deinitilization
+
+  inline operator Type &() & { return *((Type *)&f); }
+
+  inline operator Type &&() && { return (Type &&) * ((Type *)&f); }
+
+  inline operator const Type &() & { return *((const Type *)&f); }
+
+  inline operator const Type &&() && {
+    return (const Type &&)*((const Type *)&f);
+  }
+
+  inline operator const Type &() const & { return *((const Type *)&f); }
+
+  inline operator const Type &&() const && {
+    return (const Type &&)*((const Type *)&f);
+  }
+
+  inline operator Type *() & { return ((Type *)&f); }
+
+  inline operator const Type *() & { return ((const Type *)&f); }
+
+  inline operator const Type *() const & { return ((const Type *)&f); }
+
+  inline Type &operator*() & { return operator Type &(); }
+
+  inline const Type &operator*() const & { return *((const Type *)&f); }
+
+  inline Type *operator->() & { return operator Type *(); }
+
+  inline const Type *operator->() const & { return operator const Type *(); }
+
+  inline Type *ptr() & { return operator Type *(); }
+
+  inline Type &get() & { return operator Type &(); }
+
+  inline const Type *ptr() const & { return operator const Type *(); }
+
+  inline const Type &get() const & { return *((const Type *)&f); }
+
+  inline Type &&get() && { return (Type &&) * ((Type *)&f); }
+
+  inline const Type &&get() const && {
+    return (const Type &&)*((const Type *)&f);
+  }
+};
+template <typename T>
+struct smart_data_structure_base {
+  using Type = T;
+  using size_lt = uint32_t;
+  size_lt shared_ptr_ref_count{};
+  size_lt weak_ptr_ref_count{};
+  data_storage<T> *data;
+  // a char will exist in both derived classes at this spot
+  // like this  char first_of_obj_if_allocted_both_in_one_go = pure variable;
+  smart_data_structure_base() {}
+  ~smart_data_structure_base() {}
+};
+template <typename T>
+struct smart_data_structure_sepereat : public smart_data_structure_base<T> {
+  char first_of_obj_if_allocted_both_in_one_go{};
+};
+template <typename T>
+struct smart_data_structure_both : public smart_data_structure_base<T> {
+  union data_storage_t {
+    data_storage_t() {}   // no initilization of T
+    ~data_storage_t() {}  // no deinitilization of T
+    T Data_of_var;
+    char first_of_obj_if_allocted_both_in_one_go;
+  };
+  data_storage_t buff;
+};
+template <typename T>
+bool is_sepereat(const smart_data_structure_base<T> &obj) {
+  static_assert(offsetof(smart_data_structure_both<T>,
+                         buff.first_of_obj_if_allocted_both_in_one_go) ==
+                offsetof(smart_data_structure_sepereat<T>,
+                         first_of_obj_if_allocted_both_in_one_go));
+
+  return ((void *)(&((smart_data_structure_sepereat<T> *)&obj)
+                        ->first_of_obj_if_allocted_both_in_one_go)) !=
+         (void *)obj.data;
+}
+
+template <typename T>
+class smart_ptr_base_template_t : private  mjz_allocator_warpper<T> {
+ private:
+  void deallocate_seperate() {
+    if (!m_data) return;
+    if (m_data->data) {
+      try {
+        operator delete(m_data->data);  // no destructor called
+      } catch (...) {
+      }
+    }
+    try {
+      delete m_data;
+    } catch (...) {
+    }
+    m_data = 0;
+  }
+  void allocate_seperate(data_storage<T> *p) {
+    if (m_data) trap_crash();  // if has object ??
+    try {
+      m_data = new DB_t;
+    } catch (...) {
+      m_data = 0;
+    }
+    if (!m_data) return;
+    m_data->data = p;
+  }
+  void deallocate_both() {
+    if (!m_data) return;
+    try {
+      delete ((smart_data_structure_both<T> *)(m_data));
+    } catch (...) {
+    }
+    m_data = 0;
+  }
+  void allocate_both() {
+    if (m_data) trap_crash();  // if has object ??
+    try {
+      m_data = new smart_data_structure_both<T>;
+    } catch (...) {
+      m_data = 0;
+    }
+    if (!m_data) return;
+    try {
+      m_data->data =
+          (decltype(m_data
+                        ->data))(((char *)m_data) +
+                                 offsetof(
+                                     smart_data_structure_both<T>,
+                                     buff.first_of_obj_if_allocted_both_in_one_go));
+    } catch (...) {
+      m_data->data = 0;
+    }
+
+    if (!m_data->data) {
+      deallocate_both();
+    }
+  }
+
+ public:
+  void deallocate() {
+    if (is_sepereat(*m_data)) return deallocate_seperate();
+    return deallocate_both();
+  }
+  void allocate(data_storage<T> *p = 0) {
+    if (p) return allocate_seperate(p);
+    return allocate_both();
+  }
+
+ public:
+  using DB_t = smart_data_structure_base<T>;
+  DB_t *m_data{};
+  using Type = T;
+
+  void destroy() {
+    if (!m_data) return;
+    if (!m_data->data) return;
+    get_object_allocator().destroy_at(m_data->data->ptr());
+  }
+  template <typename... args_t>
+  bool create(args_t &&...args) {
+    return create_with([&, this](Type *p) {
+      get_object_allocator().construct_at(p, std::forward<args_t>(args)...);
+      return true;
+    });
+  }
+  bool create_with(std::function<bool(Type *)> FN_construct_at) {
+    if (!m_data) return false;
+    bool sucsses_full{false};
+    try {
+      sucsses_full = FN_construct_at(m_data->data->ptr());
+    } catch (...) {
+    }
+    return sucsses_full;
+  }
+
+  void weak_add(DB_t *p) {
+    if (!p) return;
+    m_data = p;
+    m_data->weak_ptr_ref_count++;
+  }
+  bool sheared_add(DB_t *p) {
+    if (!p) return false;
+    m_data = p;
+    m_data->shared_ptr_ref_count++;
+    return true;
+  }
+
+ protected:
+  smart_ptr_base_template_t() {}
+  ~smart_ptr_base_template_t() {}
+   mjz_temp_type_allocator_warpper_t<T> &get_object_allocator() {
+    return *this;
+  }
+  const  mjz_temp_type_allocator_warpper_t<T> &get_object_allocator()
+      const {
+    return *this;
+  }
+  void update_weak() {
+    if (!m_data) return;
+    if (!m_data->shared_ptr_ref_count) {
+      weak_free();
+    }
+  }
+  void weak_set(DB_t *p) { weak_add(p); }
+
+  void weak_free() {
+    if (!m_data) return;
+    DB_t &data = *m_data;
+    data.weak_ptr_ref_count--;
+    if (data.shared_ptr_ref_count) {
+    } else if (!data.weak_ptr_ref_count) {
+      deallocate();
+    }
+
+    m_data = nullptr;
+  }
+  void sheared_free() {
+    if (!m_data) return;
+    DB_t &data = *m_data;
+
+    data.shared_ptr_ref_count--;
+    if (!data.shared_ptr_ref_count) {
+      destroy();
+      if (!data.weak_ptr_ref_count) {
+        deallocate();
+      }
+    }
+    m_data = nullptr;
+  }
+};
+template<class T>
+class weak_ptr_template_t ;
+template <typename T>
+class sheared_ptr_template_t : protected smart_ptr_base_template_t<T> {
+  using DB_t = typename smart_ptr_base_template_t<T>::DB_t;
+  using Type = T;
+  DB_t *&ptr() { return this->m_data; }
+  const DB_t *const&ptr() const { return this->m_data; }
+
+ public:
+  sheared_ptr_template_t() : smart_ptr_base_template_t<T>() {}
+  ~sheared_ptr_template_t() { operator~(); }
+  void operator~() { this->sheared_free(); }
+  sheared_ptr_template_t(sheared_ptr_template_t &&obj) {
+    ptr() = std::exchange(obj.ptr(), {0});
+  }
+  sheared_ptr_template_t(const sheared_ptr_template_t &&obj) {
+    ptr() = std::exchange( remove_const(obj.ptr()), {0});
+  }
+  sheared_ptr_template_t(sheared_ptr_template_t &obj) {
+    this->sheared_add(obj.ptr());
+  }
+  sheared_ptr_template_t(const sheared_ptr_template_t &obj) {
+    this->sheared_add( remove_const(obj.ptr()));
+  }
+
+  sheared_ptr_template_t &operator=(sheared_ptr_template_t &&obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    ptr() = std::exchange(obj.ptr(), {0});
+    return *this;
+  }
+  sheared_ptr_template_t &operator=(const sheared_ptr_template_t &&obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    ptr() = std::exchange( remove_const(obj.ptr()), {0});
+  }
+  sheared_ptr_template_t &operator=(sheared_ptr_template_t &obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    this->sheared_add(obj.ptr());
+    return *this;
+  }
+  sheared_ptr_template_t &operator=(const sheared_ptr_template_t &obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    this->sheared_add( remove_const(obj.ptr()));
+    return *this;
+  }
+
+  void reset() noexcept { operator~(); }
+  template <class T_der>
+  void reset(smart_data_structure_base<T_der> *p)
+    requires(std::is_base_of<T, T_der>)
+  {
+    operator~();
+    if (p) {
+      ptr() = (smart_data_structure_base<T> *)
+          p;  // dont worry its just a {s_lt,s_lt,der ptr}
+    }
+  }
+  T *get() {
+    if (!ptr()) return nullptr;
+    if (!ptr()->data) return nullptr;
+    return ptr()->data->get();
+  }
+  T &operator*() {
+    return *get();  // may derefrence null;
+  }
+  T *operator->() {
+    return get();  // may derefrence null;
+  }
+  long use_count() const noexcept {
+    if (!ptr()) return 0;
+    return ptr()->shared_ptr_ref_count;
+  }
+
+  const T *get() const {
+    if (!ptr()) return nullptr;
+    if (!ptr()->data) return nullptr;
+    return ptr()->data->get();
+  }
+  const T &operator*() const {
+    return *get();  // may derefrence null;
+  }
+  const T *operator->() const {
+    return get();  // may derefrence null;
+  }
+
+  explicit operator bool() const { return !!ptr(); }
+  bool operator!() const { return !ptr(); }
+
+ public:
+  template <typename... args_t>
+  [[nodiscard]] static sheared_ptr_template_t mjz_make_sheared(
+      args_t &&...args) {
+    sheared_ptr_template_t ret;
+    ret.allocate();
+    ret.create(std::forward<args_t>(args)...);
+    ret.sheared_add(ret.m_data);
+    return ret;
+  }
+
+  friend class weak_ptr_template_t<T>;
+};
+
+template <typename T, typename... args_t>
+sheared_ptr_template_t<T> make_sheared(args_t &&...args) {
+  return sheared_ptr_template_t<T>::mjz_make_sheared(
+      std::forward<args_t>(args)...);
+}
+
+template <typename T>
+class weak_ptr_template_t : protected smart_ptr_base_template_t<T> {
+  using DB_t = typename smart_ptr_base_template_t<T>::DB_t;
+  using Type = T;
+  friend class sheared_ptr_template_t<T>;
+
+  DB_t *&ptr() {
+    UW();
+    return this->m_data;
+  }
+  const DB_t *const&ptr() const {
+    UW();
+    return this->m_data;
+  }
+  void UW() const  // not really
+  {
+     remove_const(this)->update_weak();
+  }
+
+ public:
+  weak_ptr_template_t() : smart_ptr_base_template_t<T>() {}
+  ~weak_ptr_template_t() { operator~(); }
+  void operator~() { this->weak_free(); }
+  weak_ptr_template_t(weak_ptr_template_t &&obj) {
+    ptr() = std::exchange(obj.ptr(), {0});
+  }
+  weak_ptr_template_t(const weak_ptr_template_t &&obj) {
+    ptr() = std::exchange( remove_const(obj.ptr()), {0});
+  }
+  weak_ptr_template_t(weak_ptr_template_t &obj) { this->weak_add(obj.ptr()); }
+  weak_ptr_template_t(const weak_ptr_template_t &obj) {
+    this->weak_add( remove_const(obj.ptr()));
+  }
+
+  weak_ptr_template_t(const sheared_ptr_template_t<T> &obj) {
+    this->weak_add( remove_const(obj.ptr()));
+  }
+
+  weak_ptr_template_t &operator=(weak_ptr_template_t &&obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    ptr() = std::exchange(obj.ptr(), {0});
+    return *this;
+  }
+  weak_ptr_template_t &operator=(const weak_ptr_template_t &&obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    ptr() = std::exchange( remove_const(obj.ptr()), {0});
+  }
+  weak_ptr_template_t &operator=(weak_ptr_template_t &obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    this->weak_add(obj.ptr());
+    return *this;
+  }
+  weak_ptr_template_t &operator=(const weak_ptr_template_t &obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    this->weak_add( remove_const(obj.ptr()));
+    return *this;
+  }
+
+  weak_ptr_template_t &operator=(const sheared_ptr_template_t<T> &obj) {
+    if (ptr() == obj.ptr()) return *this;
+    operator~();
+    this->weak_add( remove_const(obj.ptr()));
+    return *this;
+  }
+
+  void reset() noexcept { operator~(); }
+  template <class T_der>
+  void reset(smart_data_structure_base<T_der> *p)
+    requires(std::is_base_of<T, T_der>)
+  {
+    operator~();
+    if (p) {
+      ptr() = (smart_data_structure_base<T> *)
+          p;  // dont worry its just a {s_lt,s_lt,der ptr}
+    }
+  }
+  T *get() {
+    if (!ptr()) return nullptr;
+    if (!ptr()->data) return nullptr;
+    return ptr()->data->get();
+  }
+  T &operator*() {
+    return *get();  // may derefrence null;
+  }
+  T *operator->() {
+    return get();  // may derefrence null;
+  } 
+
+  const T *get() const {
+    if (!ptr()) return nullptr;
+    if (!ptr()->data) return nullptr;
+    return ptr()->data->get();
+  }
+  const T &operator*() const {
+    return *get();  // may derefrence null;
+  }
+  const T *operator->() const {
+    return get();  // may derefrence null;
+  }
+ 
+
+  explicit operator bool() const { return !!ptr(); }
+  bool operator!() const { return !ptr(); }
+};
+
+};
+
+
+
+
+
 
 
 template <class Type, size_t m_Size, bool error_check = 1>
@@ -4545,11 +5069,6 @@ class static_str_algo {
           ' ',  '@',  '\\', '\"', '\'', '"',  '\\', '\0'};
 
  public:
-  // this will crash the program
-  [[noreturn]] static inline void trap_crash(void) {
-    *(volatile char *)0 = (volatile char)0;  // address 0 is invalid
-    // this will crash the program
-  }
 
  public:
   template <class Type>

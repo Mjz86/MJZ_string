@@ -2,6 +2,7 @@
 
 #include "mjzString.hpp"
 
+extern void get_main_argguments(int& argc, const char* const*& argv);
 
 class main_class {
   std::unique_ptr<main_class> run(int argc, const char* const* const argv);
@@ -28,12 +29,12 @@ class main_class {
       } catch (void* ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
         if (ex == 0) {
-          mjz_ard::static_str_algo::trap_crash();
+          mjz_ard::trap_crash();
         }
       } catch (int ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
         if (ex == -1) {
-          mjz_ard::static_str_algo::trap_crash();
+          mjz_ard::trap_crash();
         }
       } catch (...) {
         std::cout << "\n\n\n EXEPTION happened :( ";
