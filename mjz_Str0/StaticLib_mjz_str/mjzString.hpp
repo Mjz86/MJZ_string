@@ -5652,6 +5652,8 @@ class static_str_algo {
     constexpr inline ~just_str_view_data() {}
     constexpr inline just_str_view_data(char *p, size_t n)
         : buffer(p), len(n) {}
+    constexpr inline just_str_view_data()
+        : just_str_view_data(0,0) {}
     char *buffer;
     size_t len;
   };
@@ -5743,64 +5745,57 @@ class static_str_algo {
   }
 
  public:
-  static constexpr inline just_str_view_data b_U_lltoa_n(
-      uint64_t value, char *BFR_buffer,
-      size_t BFR_len,  // has to be 66 bytes for all values
+
+
+
+  private:
+   static constexpr inline uint8_t num_digit_fast_minimal_for_lltoa(
+      uint64_t __val) {
+    uint8_t int_component_log{0};
+    uint8_t i{};
+    if (!__val) return 0;
+    while (int_component_log == 0 && i < 21) {
+      ++i;
+      int_component_log |= MJZ_logic_bit_to_64_bits(__val < pow_of_10s[i]) & i;
+    }
+    return int_component_log ;
+  }
+
+  public:
+    static constexpr inline just_str_view_data b_U_lltoa_n(
+      uint64_t value, char *const BFR_buffer,
+     const size_t BFR_len,  // has to be 66 bytes for all values
                        // from 0 to -1ULL  in base2  to base36
       int radix, bool is_signed, bool force_neg = 0, bool is_upper_case = 1) {
-    if (!(BFR_buffer && (2 < BFR_len))) return {0, 0};
-    if (value == 0) {
-      *BFR_buffer = '0';
-      BFR_buffer[1] = '\0';
-      return {BFR_buffer, 1};
+    if (!(BFR_buffer && BFR_len && (1< radix) && (radix < 37) ))return {};
+    int64_t& signed_var = *((int64_t *)(&value));
+    char* buffer=BFR_buffer;
+    size_t len = BFR_len;
+    if (is_signed && signed_var<0) {
+      signed_var = -signed_var;
+      len--;
+      *buffer++ = '-';
     }
-    constexpr char end_of_transmission_char = 4;
-    constexpr char null_char = 0;
-    bool IS_NEGITIVE__ = (is_signed && (*((int64_t *)&value) < 0) &&
-                          ((radix == 10) || force_neg));
-    if (IS_NEGITIVE__) {
-      *((int64_t *)&value) =
-          ((-1) *
-           (*((int64_t *)&value)));  // use a positive insted of the - sign
+    size_t neded_len = num_digit_fast_minimal_for_lltoa(value);
+    if(len<neded_len){
+      *BFR_buffer = '\0';
+      return {};
     }
-    char buffer[200]{};
-    if ((radix < 2) || (36 < radix)) {
-      return {0, 0};
-    }
-    for (int64_t i = 0; (i < 200); i++) {
-      buffer[i] = null_char;
-    }
-    char buffer_[129]{};
-    for (int64_t i = 0; i < 129; i++) {
-      buffer_[i] = end_of_transmission_char;
-    }
-    int64_t number_of_numbers{};
-    for (int64_t i = 0; i < 129; i++) {
-      buffer_[128 - i] =
-          GET_CHAR_from_int((uint8_t)(value % radix), is_upper_case);
+    len = neded_len;
+    char*r_ptr_end=buffer-1; 
+    char *ptr = buffer + len-1;
+    for (; r_ptr_end < ptr && value; ptr--) {
+      uint8_t v = value % radix;
       value /= radix;
-      number_of_numbers++;
-      if (value == null_char) {
-        for (int64_t j = 0, k = 0; j < 129; j++) {
-          if (buffer_[j] != end_of_transmission_char) {
-            buffer[k] = buffer_[j];  // when its done we reverse the string
-            k++;
-          }
+      *ptr=   GET_CHAR_from_int(v, is_upper_case);
         }
-        break;
-      }
+    if(value){
+     * BFR_buffer=0;
+    return {};
     }
-    buffer[number_of_numbers] = 0;
-    if (BFR_len < number_of_numbers) return {0, 0};
-    if (IS_NEGITIVE__) {
-      BFR_buffer[0] = '-';
-      static_str_algo::memmove(BFR_buffer + 1, buffer,
-                               number_of_numbers + 1);  //+null
-    } else {
-      static_str_algo::memmove(BFR_buffer, buffer,
-                               number_of_numbers + 1);  //+null
-    }
-    return {BFR_buffer, (size_t)number_of_numbers};
+    return { BFR_buffer ,len+(buffer!=BFR_buffer)};
+
+
   }
   static constexpr inline just_str_view_data dtostrf(double __val, int8_t width,
                                                      uint8_t __prec,
@@ -6273,6 +6268,7 @@ class static_str_algo {
     memmove(&val, &data, min_macro_(sizeof(val), sizeof(data)));
     return val.val;
   }
+
   static constexpr inline size_t find_first_of_in_str(const char *hay_stack,
                                                       size_t hay_len,
                                                       const char *needle,
@@ -11604,15 +11600,17 @@ class mjz_Str : public basic_mjz_String,
   void toLowerCase(void);
   void toUpperCase(void);
   void trim(void);
-  static mjz_str_t<T> ULL_LL_to_str(uint64_t value, int radix, bool is_signed,
+  [[nodiscard]] static mjz_str_t<T> ULL_LL_to_str(uint64_t value, int radix,
+                                                  bool is_signed,
                                     bool force_neg) {
     mjz_str_t<T> ret_var;
     ret_var.reserve(70, 1);
-    char *ptr_ = b_U_lltoa(value, (char *)ret_var, radix, is_signed, force_neg);
-    if (!ptr_) {
+    auto ptr_ =
+        b_U_lltoa_n(value, (char *)ret_var, 70, radix, is_signed, force_neg);
+    if (!ptr_.buffer) {
       return ret_var;
     }
-    ret_var.addto_length((uint64_t)strlen(ptr_), 1);
+    ret_var.addto_length(ptr_.len, 1);
     return ret_var;
   }
   mjz_str_t<T> &ULL_LL_to_str_add(uint64_t value, int radix, bool is_signed,
@@ -11624,11 +11622,12 @@ class mjz_Str : public basic_mjz_String,
                                   bool force_neg = 0) {
     operator=(empty_STRING_C_STR);
     reserve(70, 1);
-    char *ptr_ = b_U_lltoa(value, buffer_ref(), radix, is_signed, force_neg);
-    if (!ptr_) {
+    auto ptr_ = b_U_lltoa_n(value, buffer_ref(), capacity(), radix, is_signed,
+                                force_neg);
+    if (!ptr_.buffer) {
       return *this;
     }
-    addto_length((size_t)strlen(ptr_), 1);
+    addto_length(ptr_.len, 1);
     return *this;
   }
   friend void swap(mjz_str_t<T> &lhs, mjz_str_t<T> &rhs) { lhs.swap(rhs); }
