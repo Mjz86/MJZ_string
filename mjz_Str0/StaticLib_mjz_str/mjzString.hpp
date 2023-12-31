@@ -5652,6 +5652,9 @@ class static_str_algo {
     constexpr inline ~just_str_view_data() {}
     constexpr inline just_str_view_data(char *p, size_t n)
         : buffer(p), len(n) {}
+    template<size_t N>
+    constexpr inline just_str_view_data(char (&a)[N])
+        : buffer(a), len(N) {}
     constexpr inline just_str_view_data()
         : just_str_view_data(0,0) {}
     char *buffer;
@@ -5777,10 +5780,11 @@ class static_str_algo {
       *buffer++ = '-';
     }
     size_t neded_len = num_digit_fast_minimal_for_lltoa(value);
-    if(len<neded_len){
+    if ((len - 1) < neded_len) {
       *BFR_buffer = '\0';
       return {};
     }
+    
     len = neded_len;
     char*r_ptr_end=buffer-1; 
     char *ptr = buffer + len-1;
@@ -5792,7 +5796,8 @@ class static_str_algo {
     if(value){
      * BFR_buffer=0;
     return {};
-    }
+    } 
+    buffer[len]='\0';
     return { BFR_buffer ,len+(buffer!=BFR_buffer)};
 
 
@@ -5954,76 +5959,27 @@ class static_str_algo {
     return c1 - c2;
   }
 
-  static constexpr inline char *b_U_lltoa(
-      uint64_t value, char *BFR_buffer,  // has to be 66 bytes for all values
-                                         // from 0 to -1ULL  in base2  to base36
-      int radix, bool is_signed, bool force_neg = 0, bool is_upper_case = 0) {
-    constexpr char end_of_transmission_char = 4;
-    constexpr char null_char = 0;
-    bool IS_NEGITIVE__ = (is_signed && (*((int64_t *)&value) < 0) &&
-                          ((radix == 10) || force_neg));
-    if (IS_NEGITIVE__) {
-      *((int64_t *)&value) =
-          ((-1) *
-           (*((int64_t *)&value)));  // use a positive insted of the - sign
-    }
-    char buffer[200]{};
-    if ((radix < 2) || (36 < radix)) {
-      return 0;
-    }
-    for (int64_t i = 0; (i < 200); i++) {
-      buffer[i] = null_char;
-    }
-    char buffer_[129]{};
-    for (int64_t i = 0; i < 129; i++) {
-      buffer_[i] = end_of_transmission_char;
-    }
-    int64_t number_of_numbers{};
-    for (int64_t i = 0; i < 129; i++) {
-      buffer_[128 - i] =
-          GET_CHAR_from_int((uint8_t)(value % radix), is_upper_case);
-      value /= radix;
-      number_of_numbers++;
-      if (value == null_char) {
-        for (int64_t j = 0, k = 0; j < 129; j++) {
-          if (buffer_[j] != end_of_transmission_char) {
-            buffer[k] = buffer_[j];  // when its done we reverse the string
-            k++;
-          }
-        }
-        break;
-      }
-    }
-    buffer[number_of_numbers] = 0;
-    if (IS_NEGITIVE__) {
-      BFR_buffer[0] = '-';
-      static_str_algo::memmove(BFR_buffer + 1, buffer,
-                               number_of_numbers + 1);  //+null
-    } else {
-      static_str_algo::memmove(BFR_buffer, buffer,
-                               number_of_numbers + 1);  //+null
-    }
-    return BFR_buffer;
-  }
 
-  static constexpr inline char *ulltoa(uint64_t value, char *buffer,
+  static constexpr inline just_str_view_data ulltoa(uint64_t value,
+                                                    just_str_view_data buffer,
                                        int radix) {
-    return b_U_lltoa((uint64_t)value, buffer, radix, 0);
+    return b_U_lltoa_n((uint64_t)value, buffer.buffer,buffer.len, radix, 0);
   }
-  static constexpr inline char *ultoa(uint32_t value, char *buffer, int radix) {
+  static constexpr inline just_str_view_data ultoa(uint32_t value, just_str_view_data buffer,
+                                      int radix) {
     return ulltoa((uint64_t)value, buffer, radix);
   }
-  static constexpr inline char *utoa(uint32_t value, char *buffer, int radix) {
+  static constexpr inline just_str_view_data utoa(uint32_t value, just_str_view_data buffer, int radix) {
     return ultoa(value, buffer, radix);
   }
-  static constexpr inline char *lltoa(long long value, char *buffer,
+  static constexpr inline just_str_view_data lltoa(long long value, just_str_view_data buffer,
                                       int radix) {
-    return b_U_lltoa((uint64_t)value, buffer, radix, 1);
+    return b_U_lltoa_n((uint64_t)value, buffer.buffer, buffer.len, radix, 1);
   }
-  static constexpr inline char *ltoa(long value, char *buffer, int radix) {
+  static constexpr inline just_str_view_data ltoa(long value, just_str_view_data buffer, int radix) {
     return lltoa((long long)value, buffer, radix);
   }
-  static constexpr inline char *itoa(int value, char *buffer, int radix) {
+  static constexpr inline just_str_view_data itoa(int value, just_str_view_data buffer, int radix) {
     return lltoa((long long)value, buffer, radix);
   }
   static constexpr inline void Set_nth_bit_andret32(
@@ -9834,7 +9790,7 @@ struct SHA256_CTX {
     paste_str("const char ", buf_);
     paste_str("hash", buf_);
     paste_str(" [] = { ", buf_);
-    static_str_algo::itoa((int)hashed_data[0], buf, 10);
+    static_str_algo::itoa((int)hashed_data[0], {buf, str_left()}, 10);
     if ((uint8_t)hashed_data[0] > 100) {
       buf += 3;
     } else if ((uint8_t)hashed_data[0] > 10) {
@@ -9844,7 +9800,7 @@ struct SHA256_CTX {
     }
     for (int64_t i = 1; i < NumberOf(hashed_data); i++) {
       paste_str(",", buf_);
-      static_str_algo::itoa((int)hashed_data[i], buf, 10);
+      static_str_algo::itoa((int)hashed_data[i], {buf, str_left()}, 10);
       if ((uint8_t)hashed_data[i] > 100) {
         buf += 3;
       } else if ((uint8_t)hashed_data[i] > 10) {
@@ -10256,7 +10212,16 @@ class basic_mjz_Str_view : protected static_str_algo {
  public:
   constexpr basic_mjz_Str_view(char *buffer, size_t length)
       : m_buffer(buffer), m_length(length) {}
-  constexpr inline basic_mjz_Str_view(const char *c_string)
+  template <size_t N>
+  constexpr basic_mjz_Str_view(char (&a)[N])       : m_buffer(a), m_length(N) {}
+  template <size_t N>
+  constexpr basic_mjz_Str_view(const char (&a)[N]) : m_buffer(a), m_length(N) {}
+  constexpr basic_mjz_Str_view(const just_str_view_data& s) 
+      : m_buffer(s.buffer), m_length(s.len) {}
+  template <typename c_t,
+      typename = std::enable_if_t<std::disjunction_v<
+          std::is_same<c_t, const char *>, std::is_same<c_t, char *>>>>
+  constexpr explicit inline basic_mjz_Str_view( c_t c_string)
       : basic_mjz_Str_view(c_string, strlen(c_string)) {}
   constexpr basic_mjz_Str_view()
       : m_buffer(const_cast<char *>(empty_STRING_C_STR)), m_length(0) {}
@@ -11333,6 +11298,7 @@ class mjz_Str : public basic_mjz_String,
   // returns true on success,false on failure (in which case,the string
   // is left unchanged). if the argument is null or invalid,the
   // concatenation is considered unsuccessful.
+  bool operator+=(const just_str_view_data &buf);
   bool concat(const mjz_str_t<T> &str);
   bool concat(
       const char
@@ -11760,17 +11726,22 @@ class mjz_Str : public basic_mjz_String,
   }
   // ret( (gets a lambda / function pointer / std::function with ret(mjz_Str<T>
   // * , ... something)),...something)
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto operator()(your_FUNCTION_Type your__function_,
-                  arguments_types &&...arguments_arr) {
-    return your__function_(*this,
-                           std::forward<arguments_types>(arguments_arr)...);
+  template<typename ret_t=void>
+  ret_t operator()(std::function<ret_t(mjz_str_t &)> your__function_) &{
+    return your__function_(*this);
   }
-  template <typename your_FUNCTION_Type, typename... arguments_types>
-  auto operator()(your_FUNCTION_Type your__function_,
-                  arguments_types &&...arguments_arr) const {
-    return your__function_(*this,
-                           std::forward<arguments_types>(arguments_arr)...);
+  template <typename ret_t = void>
+  ret_t operator()(std::function<ret_t(const mjz_str_t &)> your__function_) const&{
+    return your__function_(*this);
+  }
+  template <typename ret_t = void>
+  ret_t operator()(std::function<ret_t(mjz_str_t &&)> your__function_) && {
+    return your__function_(*this);
+  }
+  template <typename ret_t = void>
+  ret_t operator()(
+      std::function<ret_t(const mjz_str_t &&)> your__function_) const && {
+    return your__function_(*this);
   }
 
  public:
@@ -11779,6 +11750,7 @@ class mjz_Str : public basic_mjz_String,
   // if the initial value is null or invalid,or if memory allocation
   // fails,the string will be marked as invalid (i.e. "if (s)" will
   // be false).
+
   mjz_str_t(const char *cstr, size_t len_) {
     init();
     if (cstr) {
@@ -11793,6 +11765,10 @@ class mjz_Str : public basic_mjz_String,
     init();
     *this = value;
   }
+  template<size_t N>
+  mjz_str_t(const char (&a)[N]) : mjz_str_t(a, N) {}
+  template <size_t N>
+  mjz_str_t(  char (&a)[N]) : mjz_str_t(a, N) {}
   mjz_str_t(std::initializer_list<const char> list) {
     init();
     size_t newlen = list.size();
@@ -11802,7 +11778,10 @@ class mjz_Str : public basic_mjz_String,
       *ptr_++ = cr;
     }
   }
-  mjz_str_t(const char *c_str_) : mjz_str_t(basic_mjz_Str_view(c_str_)) {}
+  template <typename c_t,
+      typename = std::enable_if_t<std::disjunction_v<
+          std::is_same<c_t, const char *>, std::is_same<c_t,  char *>>>>
+ explicit mjz_str_t(c_t c_str_) : mjz_str_t(basic_mjz_Str_view(c_str_)) {}
   mjz_str_t(mjz_ard::iterator_template_t<const char> list) {
     init();
     size_t newlen = list.size();
@@ -11816,53 +11795,49 @@ class mjz_Str : public basic_mjz_String,
     init();
     *this = pstr;
   }
+inline  mjz_str_t &operator=(const just_str_view_data&buf) {
+      (*this)(buf.buffer,buf.len);
+      return *this;
+  }
   mjz_str_t(unsigned char value, unsigned char base = 10) {
     init();
     char buf[1 + 8 * sizeof(unsigned char)];
-    utoa(value, buf, base);
-    *this = buf;
+    *this = utoa(value, buf, base);
   }
   mjz_str_t(int value, unsigned char base = 10) {
     init();
     char buf[2 + 8 * sizeof(int)];
-    itoa(value, buf, base);
-    *this = buf;
+    *this = itoa(value, buf, base);
   }
   mjz_str_t(unsigned int value, unsigned char base = 10) {
     init();
     char buf[1 + 8 * sizeof(unsigned int)];
-    utoa(value, buf, base);
-    *this = buf;
+    *this = utoa(value, buf, base);
   }
   mjz_str_t(long value, unsigned char base = 10) {
     init();
     char buf[2 + 8 * sizeof(long)];
-    ltoa(value, buf, base);
-    *this = buf;
+    *this = ltoa(value, buf, base);
   }
   mjz_str_t(unsigned long value, unsigned char base = 10) {
     init();
     char buf[1 + 8 * sizeof(unsigned long)];
-    ultoa(value, buf, base);
-    *this = buf;
+    *this = ultoa(value, buf, base);
   }
   mjz_str_t(long long int value, unsigned char base = 10) {
     init();
     char buf[2 + 8 * sizeof(long long)];
-    lltoa(value, buf, base);
-    *this = buf;
+    *this =  lltoa(value,{ buf,  NumberOf(buf)}, base);
   }
   mjz_str_t(long long unsigned int value, unsigned char base = 10) {
     init();
     char buf[1 + 8 * sizeof(unsigned long long)];
-    ulltoa(value, buf, base);
-    *this = buf;
+    *this = ulltoa(value, {buf, NumberOf(buf)}, base);
   }
   mjz_str_t(const void *const ptr, unsigned char base = 16) {
     init();
     char buf[1 + 8 * sizeof(const void *const)];
-    ulltoa(reinterpret_cast<uint64_t>(ptr), buf, base);
-    *this = buf;
+    *this = ulltoa(reinterpret_cast<uint64_t>(ptr), {buf, NumberOf(buf)}, base);
   }
   mjz_str_t(float value, unsigned char decimalPlaces = 2) {
     static size_t const FLOAT_BUF_SIZE = FLT_MAX_10_EXP +
@@ -11974,10 +11949,13 @@ class mjz_str_view : public basic_mjz_Str_view {
       : basic_mjz_Str_view(cstr_, len) {}
   constexpr mjz_str_view(const uint8_t *cstr_, size_t len)
       : mjz_str_view((char *)(cstr_), len) {}
-  constexpr mjz_str_view(const uint8_t *cstr_)
-      : mjz_str_view((char *)(cstr_)) {}
-  constexpr mjz_str_view(const char *cstr_)
-      : mjz_str_view(cstr_, strlen(cstr_)) {}
+  template <typename c_t, typename = std::enable_if_t<std::disjunction_v<std::is_same<c_t,const char*>, std::is_same<c_t,const uint8_t*>>>>
+  explicit constexpr mjz_str_view( c_t cstr_)
+      : mjz_str_view((const char *)cstr_, strlen((const char *)cstr_)) {}
+ template <size_t N>
+ inline constexpr mjz_str_view(char (&a)[N]) : mjz_str_view(a,N) {}
+ template <size_t N>
+inline constexpr mjz_str_view(const char (&a)[N]) : mjz_str_view(a, N) {}
   constexpr mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
   mjz_str_view(mjz_str_view &&s) =
       default;  // we are string views and not strings
@@ -12474,6 +12452,8 @@ inline mjz_str_view operator"" _mv(const char *p) {
 }
 inline mjz_str_view operator"" _v(const char *p) { return operator""_mv(p); }
 }  // namespace short_string_convestion_operators
+;
+  namespace ssco=  short_string_convestion_operators;
 
 /************************************************************
 Author: Charlie Murphy
@@ -13627,6 +13607,10 @@ bool mjz_ard::mjz_str_t<T>::concat(const char *cstr) {
   }
   return concat(cstr, (size_t)strlen(cstr));
 }
+template<typename T>
+  bool mjz_str_t<T>::operator+=(const just_str_view_data &buf) {
+  return concat(buf.buffer, buf.len);
+}
 template <typename T>
 inline bool mjz_ard::mjz_str_t<T>::concat(char c) {
   return concat(&c, 1);
@@ -13634,44 +13618,37 @@ inline bool mjz_ard::mjz_str_t<T>::concat(char c) {
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(unsigned char num) {
   char buf[1 + 3 * sizeof(unsigned char)];
-  itoa(num, buf, 10);
-  return concat(buf);
+ return *this+= itoa(num, buf, 10);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(int num) {
   char buf[2 + 3 * sizeof(int)];
-  itoa(num, buf, 10);
-  return concat(buf);
+ return *this += itoa(num, buf, 10);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(unsigned int num) {
   char buf[1 + 3 * sizeof(unsigned int)];
-  utoa(num, buf, 10);
-  return concat(buf);
+ return *this += utoa(num, buf, 10);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(long num) {
   char buf[2 + 3 * sizeof(long)];
-  ltoa(num, buf, 10);
-  return concat(buf);
+ return *this += ltoa(num, buf, 10);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(unsigned long num) {
   char buf[1 + 3 * sizeof(unsigned long)];
-  ultoa(num, buf, 10);
-  return concat(buf);
+ return *this += ultoa(num, buf, 10); 
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(long long num) {
   char buf[2 + 3 * sizeof(long long)];
-  lltoa(num, buf, 10);
-  return concat(buf);
+ return *this += lltoa(num, buf, 10);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(unsigned long long num) {
   char buf[1 + 3 * sizeof(unsigned long long)];
-  ulltoa(num, buf, 10);
-  return concat(buf);
+ return *this += ulltoa(num, buf, 10);
 }
 template <typename T>
 bool mjz_ard::mjz_str_t<T>::concat(float num) {
