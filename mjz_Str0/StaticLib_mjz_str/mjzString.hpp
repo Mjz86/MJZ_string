@@ -83,6 +83,11 @@ constexpr inline int sprintf_alt_(char *const buffer_for_print,
   ((((uint64_t) !(B)) + (uint64_t)(-1)))
 #define MJZ_logic_BL_bit_to_64_bits(B) (-((int64_t)(B)))
 #define MJZ_logic_bit_to_64_bits(B) ((B) ? (uint64_t)(-1) : 0ULL)
+
+#define MJZ_logic_BL_bit_to_8_bits_not_bool(B) \
+  ((((uint8_t) !(B)) + (uint8_t)(-1)))
+#define MJZ_logic_BL_bit_to_8_bits(B) (-((int8_t)(B)))
+#define MJZ_logic_bit_to_8_bits(B) ((B) ? (uint8_t)(-1) : 0ULL)
 #define get_the_absoulot_typed_name(X) ((const char *const)#X)
 
 #ifdef Arduino
@@ -991,13 +996,17 @@ Type *remove_const(const Type *o) {
 }
 template <class Type>
 Type &remove_const(const Type &o) {
-  return *remove_const(std::addressof(o));
+  return *remove_const(const_cast<Type &>(o));
+}
+template <class Type>
+Type &&remove_const(const Type &&o) {
+  return *remove_const(const_cast<Type &&>(o));
 }
 
-template <bool IS_NOT_A_TYPE>
+template <bool IS_NOT_A_TYPE, bool has_virtual = false>
 class not_a_type_if {};
 template <>
-class not_a_type_if<true> {
+class not_a_type_if<true, true> {
   not_a_type_if() = delete;
   ~not_a_type_if() = delete;
   void *operator new(size_t) = delete;
@@ -1016,7 +1025,210 @@ class not_a_type_if<true> {
   a_pure_virtual_function_that_shall_not_be_implemented() = 0;
 };
 template <>
-class not_a_type_if<false> {};
+class not_a_type_if<true, false> {
+  not_a_type_if() = delete;
+  ~not_a_type_if() = delete;
+  void *operator new(size_t) = delete;
+  void *operator new[](size_t) = delete;
+  void *operator new(size_t, void *) = delete;
+  void *operator new[](size_t, void *) = delete;
+  void operator delete(void *, size_t) = delete;
+  void operator delete[](void *, size_t) = delete;
+  void operator delete(void *, size_t, void *) = delete;
+  void operator delete[](void *, size_t, void *) = delete;
+  void operator delete(void *) = delete;
+  void operator delete[](void *) = delete;
+  void operator delete(void *, void *) = delete;
+  void operator delete[](void *, void *) = delete;
+};
+template <bool has_virtual>
+class not_a_type_if<false, has_virtual> {};
+
+template <bool>
+class bit_ref_data {};
+template <>
+class bit_ref_data<true> {
+ protected:
+  uint8_t * m_byte{};
+  uint8_t m_mask{};
+
+  inline constexpr bit_ref_data(uint8_t mask, uint8_t *byte)
+      : m_byte(byte), m_mask(mask) {}
+
+  inline constexpr ~bit_ref_data() {}
+  inline constexpr uint8_t &byte() {
+    return ((!!this->m_byte) ? (*this->m_byte) : (m_mask));
+  }
+
+ public:
+  inline constexpr uint8_t byte() const { return (this->m_byte) ? *this->m_byte : m_mask; }
+  inline constexpr uint8_t mask() const { return (this->m_byte) ? m_mask : true; }
+};
+template <>
+class bit_ref_data<false> {
+ protected:
+  uint8_t*m_byte{};
+  uint8_t m_mask{};
+
+  inline constexpr bit_ref_data(uint8_t mask, uint8_t *byte)
+      :  m_byte(byte), m_mask(mask) {}
+
+  inline constexpr ~bit_ref_data() {}
+  inline constexpr uint8_t &byte() {
+    if (!this->m_byte) throw "bad bit accsess";
+    return *this->m_byte;
+  }
+
+ public:
+  inline constexpr uint8_t byte() const {
+    if (!this->m_byte) throw "bad bit accsess";
+    return *this->m_byte;
+  }
+  inline constexpr uint8_t mask() const {
+    if (!this->m_byte) throw "bad bit accsess";
+    return m_mask;
+  }
+};
+
+template <bool no_throw_ref = true>
+class bit_reference_or_bit_t : public bit_ref_data<no_throw_ref> {
+ public:
+ using mask=bit_ref_data<no_throw_ref> ::mask;
+ using byte=bit_ref_data<no_throw_ref> ::byte;
+  inline constexpr bool is_ref() const { return !!this->m_byte; }
+
+  inline constexpr bit_reference_or_bit_t()
+      : bit_ref_data(false,nullptr) {}
+  explicit inline constexpr bit_reference_or_bit_t(bool b)
+      : bit_ref_data(b,nullptr) {}
+  static inline constexpr bit_reference_or_bit_t bit_ref_mk(
+      bit_reference_or_bit_t &b) {
+    return bit_reference_or_bit_t(b.m_mask, b.m_byte);
+  }
+  static inline constexpr bit_reference_or_bit_t bit_ref_mk(
+      const bit_reference_or_bit_t &b) {
+    return bit_reference_or_bit_t(b.m_mask, remove_const(b.m_byte));
+  }
+  explicit inline constexpr bit_reference_or_bit_t(
+      const bit_reference_or_bit_t &b)
+      : bit_ref_data(b.m_mask,b.m_byte) {}
+  explicit inline constexpr bit_reference_or_bit_t(bit_reference_or_bit_t &&b)
+      : bit_ref_data(b.m_mask, b.m_byte) {}
+
+  inline constexpr bit_reference_or_bit_t(uint8_t mask, uint8_t *byte_ptr)
+      : bit_ref_data(mask, byte_ptr) {}
+
+  inline constexpr bit_reference_or_bit_t(uint8_t *byte_ptr, uint8_t mask)
+      : bit_ref_data(mask, byte_ptr) {}
+  constexpr inline bit_reference_or_bit_t &set() {
+    byte() |= mask();
+    return *this;
+  }
+  constexpr inline bit_reference_or_bit_t &set(bool b) {
+    byte() &= MJZ_logic_BL_bit_to_8_bits(b) | ~mask();
+    return *this;
+  }
+  constexpr inline bit_reference_or_bit_t &clear() {
+    byte() &= ~mask();
+    return *this;
+  }
+  constexpr inline bit_reference_or_bit_t &flip() {
+    byte() ^= mask();
+    return *this;
+  }
+
+  constexpr inline bool getN() const { return !(byte() & mask()); }
+  constexpr inline bool get() const { return !getN(); }
+  constexpr inline bool operator!() const { return getN(); }
+  constexpr inline operator bool() const { return b(); }
+
+  explicit constexpr inline operator int32_t() const { return b(); }
+  explicit constexpr inline operator int64_t() const { return b(); }
+  explicit constexpr inline operator uint32_t() const { return b(); }
+  explicit constexpr inline operator uint64_t() const { return b(); }
+
+  constexpr inline uint64_t operator+() const { return b(); }
+  constexpr inline uint64_t operator-() const {
+    return MJZ_logic_BL_bit_to_64_bits(b());
+  }
+  constexpr inline bool b() const { return get(); }
+  constexpr inline bit_reference_or_bit_t operator~() const {
+    return {~this->m_mask, this->m_byte};
+  }
+
+  bit_reference_or_bit_t &change_reference(bit_reference_or_bit_t &b) {
+    this->m_mask = b.m_mask;
+    this->m_byte = b.m_byte;
+  }
+  bit_reference_or_bit_t &operator=(bool b) {
+    set(b);
+    return *this;
+  }
+
+  bit_reference_or_bit_t &operator=(const bit_reference_or_bit_t &b) {
+    set(b.b());
+    return *this;
+  }
+  inline constexpr friend bool operator==(bit_reference_or_bit_t a,
+                                          bit_reference_or_bit_t b) {
+    return b.b() == a.b();
+  }
+  inline constexpr friend bool operator<=(bit_reference_or_bit_t a,
+                                          bit_reference_or_bit_t b) {
+    return b.b() <= a.b();
+  }
+  inline constexpr friend bool operator>=(bit_reference_or_bit_t a,
+                                          bit_reference_or_bit_t b) {
+    return b.b() >= a.b();
+  }
+  inline constexpr friend bool operator<(bit_reference_or_bit_t a,
+                                         bit_reference_or_bit_t b) {
+    return b.b() < a.b();
+  }
+
+  inline constexpr friend bool operator>(bit_reference_or_bit_t a,
+                                         bit_reference_or_bit_t b) {
+    return b.b() > a.b();
+  }
+  inline constexpr friend bool operator!=(bit_reference_or_bit_t a,
+                                          bit_reference_or_bit_t b) {
+    return b.b() != a.b();
+  }
+  inline constexpr friend bool operator&(bit_reference_or_bit_t a,
+                                         bit_reference_or_bit_t b) {
+    return b.b() && a.b();
+  }
+  inline constexpr friend bool operator^(bit_reference_or_bit_t a,
+                                         bit_reference_or_bit_t b) {
+    return b.b() ^ a.b();
+  }
+  inline constexpr friend bool operator|(bit_reference_or_bit_t a,
+                                         bit_reference_or_bit_t b) {
+    return b.b() || a.b();
+  }
+
+  inline constexpr bit_reference_or_bit_t &operator++() {
+    set();
+    return *this;
+  }
+  inline constexpr bit_reference_or_bit_t &operator--() {
+    clear();
+    return *this;
+  }
+
+  inline constexpr bit_reference_or_bit_t operator++(int) {
+    bool bl = b();
+    set();
+    return bl;
+  }
+  inline constexpr bit_reference_or_bit_t operator--(int) {
+    bool bl = b();
+    clear();
+    return bl;
+  }
+};
+using bit_ref_or_bit = bit_reference_or_bit_t<true>;
+using bit_ref = bit_reference_or_bit_t<false>;
 
 // iterator_template Class
 template <typename Type, bool error_check = 1>
@@ -2778,12 +2990,16 @@ template <typename Type>
 struct mjz_non_internal_obj_manager_template_t {
   using me = mjz_non_internal_obj_manager_template_t;
 
-  struct address_geter_class_when_we_overload_operator_addressof
-      : private Type {
-   public:
+ private:
+  class address_geter_class_when_we_overload_operator_addressof
+      : private Type,
+        private not_a_type_if<true, false> {
+    friend class mjz_non_internal_obj_manager_template_t<Type>;
     constexpr inline Type *get_the_this() { return this; }
     constexpr inline const Type *get_the_this() const { return this; }
   };
+  using address_geter_class =
+      address_geter_class_when_we_overload_operator_addressof;
 
  public:
   template <typename... args_t>
@@ -2907,8 +3123,6 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline Type &obj_equals(Type &dest, Args &&...args) {
     return dest.operator=(std::forward<Args>(args)...);
   }
-  using address_geter_class =
-      address_geter_class_when_we_overload_operator_addressof;
 
  public:
   static constexpr inline const Type *addressof(const Type &&obj) = delete;
@@ -6447,7 +6661,8 @@ class static_str_algo {
     uint8_t i{};
     if (!__val) return 0;
     while (!int_component_log && i < num_pow) {
-      int_component_log |=MJZ_logic_bit_to_64_bits(__val < pow_of_xs[i]) & (++i);
+      int_component_log |=
+          MJZ_logic_bit_to_64_bits(__val < pow_of_xs[i]) & (++i);
     }
     return int_component_log;
   }
