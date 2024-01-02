@@ -132,12 +132,13 @@ auto max(const Type &a, const L &b) -> decltype((b < a) ? b : a) {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <bitset>
-#include <cassert>
-#include <cstddef>
+
 #include <algorithm>
 #include <array>
+#include <bitset>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
 #include <cstdio>
 #include <functional>
 #include <initializer_list>
@@ -1051,7 +1052,7 @@ class bit_ref_data {};
 template <>
 class bit_ref_data<1> {
  protected:
-  uint8_t * m_byte{};
+  uint8_t *m_byte{};
   uint8_t m_mask{};
 
   inline constexpr bit_ref_data(uint8_t mask, uint8_t *byte)
@@ -1063,8 +1064,12 @@ class bit_ref_data<1> {
   }
 
  public:
-  inline constexpr uint8_t byte() const { return (this->m_byte) ? *this->m_byte : m_mask; }
-  inline constexpr uint8_t mask() const { return (this->m_byte) ? m_mask : true; }
+  inline constexpr uint8_t byte() const {
+    return (this->m_byte) ? *this->m_byte : m_mask;
+  }
+  inline constexpr uint8_t mask() const {
+    return (this->m_byte) ? m_mask : true;
+  }
 };
 
 template <>
@@ -1077,17 +1082,11 @@ class bit_ref_data<2> {
       : m_byte(byte), m_mask(mask) {}
 
   inline constexpr ~bit_ref_data() {}
-  inline constexpr uint8_t &byte() {
-    return *m_byte;
-  }
+  inline constexpr uint8_t &byte() { return *m_byte; }
 
  public:
-  inline constexpr uint8_t byte() const {
-    return  *m_byte ;
-  }
-  inline constexpr uint8_t mask() const {
-    return m_mask ;
-  }
+  inline constexpr uint8_t byte() const { return *m_byte; }
+  inline constexpr uint8_t mask() const { return m_mask; }
 };
 
 template <>
@@ -1101,6 +1100,7 @@ class bit_ref_data<3> {
 
   inline constexpr ~bit_ref_data() {}
   inline constexpr uint8_t &byte() { return m_mask; }
+
  public:
   inline constexpr uint8_t byte() const { return m_mask; }
   inline constexpr uint8_t mask() const { return true; }
@@ -1108,11 +1108,11 @@ class bit_ref_data<3> {
 template <>
 class bit_ref_data<0> {
  protected:
-  uint8_t*m_byte{};
+  uint8_t *m_byte{};
   uint8_t m_mask{};
 
   inline constexpr bit_ref_data(uint8_t mask, uint8_t *byte)
-      :  m_byte(byte), m_mask(mask) {}
+      : m_byte(byte), m_mask(mask) {}
 
   inline constexpr ~bit_ref_data() {}
   inline constexpr uint8_t &byte() {
@@ -1134,14 +1134,13 @@ class bit_ref_data<0> {
 template <int no_throw_ref = 1>
 class bit_reference_or_bit_t : public bit_ref_data<no_throw_ref> {
  public:
- using mask=bit_ref_data<no_throw_ref> ::mask;
- using byte=bit_ref_data<no_throw_ref> ::byte;
+  using mask = bit_ref_data<no_throw_ref>::mask;
+  using byte = bit_ref_data<no_throw_ref>::byte;
   inline constexpr bool is_ref() const { return !!this->m_byte; }
 
-  inline constexpr bit_reference_or_bit_t()
-      : bit_ref_data(false,nullptr) {}
+  inline constexpr bit_reference_or_bit_t() : bit_ref_data(false, nullptr) {}
   explicit inline constexpr bit_reference_or_bit_t(bool b)
-      : bit_ref_data(b,nullptr) {}
+      : bit_ref_data(b, nullptr) {}
   static inline constexpr bit_reference_or_bit_t bit_ref_mk(
       bit_reference_or_bit_t &b) {
     return bit_reference_or_bit_t(b.m_mask, b.m_byte);
@@ -1152,7 +1151,7 @@ class bit_reference_or_bit_t : public bit_ref_data<no_throw_ref> {
   }
   explicit inline constexpr bit_reference_or_bit_t(
       const bit_reference_or_bit_t &b)
-      : bit_ref_data(b.m_mask,b.m_byte) {}
+      : bit_ref_data(b.m_mask, b.m_byte) {}
   explicit inline constexpr bit_reference_or_bit_t(bit_reference_or_bit_t &&b)
       : bit_ref_data(b.m_mask, b.m_byte) {}
 
@@ -1270,9 +1269,6 @@ class bit_reference_or_bit_t : public bit_ref_data<no_throw_ref> {
 };
 using bit_ref_or_bit = bit_reference_or_bit_t<1>;
 using bit_ref = bit_reference_or_bit_t<0>;
-
-
-
 
 // iterator_template Class
 template <typename Type, bool error_check = 1>
@@ -4371,6 +4367,373 @@ class weak_ptr_template_t : protected smart_ptr_base_template_t<T> {
 
 };  // namespace smart_ptr
 
+
+
+/*
+0 for little
+1 for big
+*/
+using endian_type = std::endian;
+template <typename T, endian_type normal_class_endianness>
+class get_endianed_data {
+  static_assert(std::is_fundamental_v<T>);
+
+ private:
+  union {
+    int8_t m_ca[sizeof(T)];
+    uint8_t m_ua[sizeof(T)];
+    T m_value;
+  };
+
+ public:
+  using me = get_endianed_data<T, normal_class_endianness>;
+  constexpr static const bool change_from_native_endian =
+      (sizeof(T) != 1) && (normal_class_endianness != endian_type::native);
+  constexpr static endian_type get_default_endian() {
+    return normal_class_endianness;
+  }
+  inline constexpr static void mem_rev(int8_t *val) {
+    int8_t *end_p = val + (sizeof(T) - 1);
+    int8_t *beg_p = val;
+    while (beg_p < end_p) {
+      int8_t buf = *beg_p;
+      *beg_p++ = *end_p;
+      *end_p-- = buf;
+    }
+  }
+  inline constexpr T mem_rev_cpy() const {
+    union U {
+      U(T o) : value(o) {}
+      ~U() { value.~T(); }
+      int8_t ca[sizeof(T)];
+      T value;
+    } o(m_value);
+    mem_rev(o.ca);
+    return o.value;
+  }
+
+  inline constexpr get_endianed_data(T value = T()) {
+    m_value = value;
+    if constexpr (!change_from_native_endian) return;
+    mem_rev(m_ca);
+  }
+  inline constexpr get_endianed_data(get_endianed_data &&) = default;
+  inline constexpr get_endianed_data(get_endianed_data &) = default;
+  inline constexpr get_endianed_data(const get_endianed_data &) = default;
+  inline constexpr get_endianed_data &operator=(get_endianed_data &&) = default;
+  inline constexpr get_endianed_data &operator=(get_endianed_data &) = default;
+  inline constexpr get_endianed_data &operator=(const get_endianed_data &) =
+      default;
+  inline constexpr T get_native() const {
+    if constexpr (change_from_native_endian) return mem_rev_cpy();
+    return m_value;
+  }
+  inline constexpr T get_big() const {
+    if constexpr (get_default_endian() == endian_type::big) return m_value;
+    return mem_rev_cpy();
+  }
+  inline constexpr T get_lit() const {
+    if constexpr (get_default_endian() == endian_type::little) return m_value;
+    return mem_rev_cpy();
+  }
+  inline constexpr T get_default() const { return m_value; }
+  inline constexpr void set_default(T val = T()) const { m_value = val; }
+  inline constexpr void set_native(T val = T()) const {
+    m_value = val;
+    if constexpr (change_from_native_endian) mem_rev(m_ca);
+  }
+
+  inline constexpr void set_lit(T val = T()) const {
+    m_value = val;
+    if constexpr (get_default_endian() != endian_type::little) mem_rev(m_ca);
+  }
+  inline constexpr void set_big(T val = T()) const {
+    m_value = val;
+    if constexpr (get_default_endian() != endian_type::big) mem_rev(m_ca);
+  }
+#define do_work_get_defualt_endian_data(x)      \
+  do {                                          \
+    if constexpr (!change_from_native_endian) { \
+      m_value x;                                \
+      return *this;                             \
+    }                                           \
+    mem_rev_cpy();                              \
+    m_value x;                                  \
+    mem_rev_cpy();                              \
+    return *this;                               \
+                                                \
+  } while (0)
+
+#define do_work_get_defualt_endian_data_per(x)  \
+  do {                                          \
+    me per = *this;                             \
+                                                \
+    if constexpr (!change_from_native_endian) { \
+      m_value x;                                \
+      return per;                               \
+    }                                           \
+    mem_rev_cpy();                              \
+    m_value x;                                  \
+    mem_rev_cpy();                              \
+    return per;                                 \
+                                                \
+  } while (0)
+#define do_work_get_defualt_endian_data_from(x) \
+  do {                                          \
+    if constexpr (!change_from_native_endian) { \
+      return {m_value x};                       \
+    }                                           \
+    return {get_native() x};                    \
+                                                \
+  } while (0)
+
+#define obj_do_work_get_defualt_endian_data_from(x) \
+  do {                                              \
+    if constexpr (!change_from_native_endian) {     \
+      return {obj.m_value x};                       \
+    }                                               \
+    return {obj.get_native() x};                    \
+                                                    \
+  } while (0)
+
+#define obj_do_work_get_defualt_endian_data_from_native_lhs(x) \
+  do {                                                         \
+    if constexpr (!change_from_native_endian) {                \
+      return {obj.m_value x lhs.get_native()};                 \
+    }                                                          \
+    return {obj.get_native() x lhs.get_native()};              \
+                                                               \
+  } while (0)
+
+#define obj_do_bitwise_work_from_native_lhs(x) \
+  do {                                         \
+    me t;                                      \
+    t.m_value = {obj.m_value x lhs.m_value};   \
+    return t.get_native();                     \
+  } while (0)
+
+  inline constexpr get_endianed_data &operator++() {
+    do_work_get_defualt_endian_data(++);
+  }
+  inline constexpr get_endianed_data &operator--() {
+    do_work_get_defualt_endian_data(--);
+  }
+  inline constexpr get_endianed_data &operator+=(T x) {
+    do_work_get_defualt_endian_data(+= x);
+  }
+  inline constexpr get_endianed_data &operator-=(T x) {
+    do_work_get_defualt_endian_data(-= x);
+  }
+  inline constexpr get_endianed_data &operator*=(T x) {
+    do_work_get_defualt_endian_data(*= x);
+  }
+  inline constexpr get_endianed_data &operator/=(T x) {
+    do_work_get_defualt_endian_data(/= x);
+  }
+  inline constexpr get_endianed_data &operator%=(T x) {
+    do_work_get_defualt_endian_data(%= x);
+  }
+  inline constexpr get_endianed_data &operator^=(T x) {
+    do_work_get_defualt_endian_data(^= x);
+  }
+  inline constexpr get_endianed_data &operator&=(T x) {
+    do_work_get_defualt_endian_data(&= x);
+  }
+  inline constexpr get_endianed_data &operator|=(T x) {
+    do_work_get_defualt_endian_data(|= x);
+  }
+  template <typename U>
+  inline constexpr get_endianed_data &operator<<=(U x) {
+    do_work_get_defualt_endian_data(<<= x);
+  }
+  template <typename U>
+  inline constexpr get_endianed_data &operator>>=(U x) {
+    do_work_get_defualt_endian_data(>>= x);
+  }
+  template <typename U>
+  inline constexpr T operator<<(U x) {
+    do_work_get_defualt_endian_data_from(<< x);
+  }
+  template <typename U>
+  inline constexpr T operator>>(U x) {
+    do_work_get_defualt_endian_data_from(>> x);
+  }
+  template <typename U>
+  inline constexpr T operator+(U x) {
+    do_work_get_defualt_endian_data_from(+x);
+  }
+  template <typename U>
+  inline constexpr T operator-(U x) {
+    do_work_get_defualt_endian_data_from(-x);
+  }
+  template <typename U>
+  inline constexpr T operator*(U x) {
+    do_work_get_defualt_endian_data_from(*x);
+  }
+  template <typename U>
+  inline constexpr T operator/(U x) {
+    do_work_get_defualt_endian_data_from(/ x);
+  }
+  template <typename U>
+  inline constexpr T operator|(U x) {
+    do_work_get_defualt_endian_data_from(| x);
+  }
+  template <typename U>
+  inline constexpr T operator&(U x) {
+    do_work_get_defualt_endian_data_from(&x);
+  }
+  template <typename U>
+  inline constexpr T operator^(U x) {
+    do_work_get_defualt_endian_data_from(^x);
+  }
+  template <typename U>
+  inline constexpr T operator%(U x) {
+    do_work_get_defualt_endian_data_from(% x);
+  }
+  template <typename U>
+  inline friend constexpr T operator<<(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(<< x);
+  }
+  template <typename U>
+  inline friend constexpr T operator>>(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(>> x);
+  }
+  template <typename U>
+  inline friend constexpr T operator+(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(+x);
+  }
+  template <typename U>
+  inline friend constexpr T operator-(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(-x);
+  }
+  template <typename U>
+  inline friend constexpr T operator*(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(*x);
+  }
+  template <typename U>
+  inline friend constexpr T operator/(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(/ x);
+  }
+  template <typename U>
+  inline friend constexpr T operator|(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(| x);
+  }
+  template <typename U>
+  inline friend constexpr T operator&(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(&x);
+  }
+  template <typename U>
+  inline friend constexpr T operator^(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(^x);
+  }
+  template <typename U>
+  inline friend constexpr T operator%(U x, const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from(% x);
+  }
+
+  inline friend constexpr T operator<<(const get_endianed_data &lhs,
+                                       const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from_native_lhs(<<);
+  }
+
+  inline friend constexpr T operator>>(const get_endianed_data &lhs,
+                                       const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from_native_lhs(>>);
+  }
+
+  inline friend constexpr T operator+(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from_native_lhs(+);
+  }
+
+  inline friend constexpr T operator-(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from_native_lhs(-);
+  }
+
+  inline friend constexpr T operator*(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from_native_lhs(*);
+  }
+
+  inline friend constexpr T operator/(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from_native_lhs(/);
+  }
+  inline friend constexpr T operator%(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_work_get_defualt_endian_data_from_native_lhs(%);
+  }
+
+  inline friend constexpr T operator|(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_bitwise_work_from_native_lhs(|);
+  }
+
+  inline friend constexpr T operator&(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_bitwise_work_from_native_lhs(&);
+  }
+
+  inline friend constexpr T operator^(const get_endianed_data &lhs,
+                                      const get_endianed_data &obj) {
+    obj_do_bitwise_work_from_native_lhs(^);
+  }
+
+  inline constexpr get_endianed_data operator++(int) {
+    do_work_get_defualt_endian_data_per(++);
+  }
+  inline constexpr get_endianed_data operator--(int) {
+    do_work_get_defualt_endian_data_per(--);
+  }
+  inline constexpr T operator~() const { return ~get_native(); }
+  inline constexpr T operator-() const { return -get_native(); }
+  inline constexpr T operator+() const { return +get_native(); }
+  inline constexpr T operator*() const { return get_native(); }
+  inline constexpr bool operator!() const { return !m_value; }  // no one cares
+  inline constexpr explicit operator bool() const {
+    return !!m_value;
+  }  // no one cares
+  template <typename U>
+  inline constexpr explicit operator U() const {
+    return (U)get_native();
+  }  // no one cares
+
+  inline constexpr operator T() const { return get_native(); }
+
+  inline constexpr get_endianed_data &operator()(std::function<T(T)> f) {
+    if constexpr (!change_from_native_endian) {
+      m_value = f(m_value);
+      return *this;
+    }
+    mem_rev_cpy();
+    m_value = f(m_value);
+    mem_rev_cpy();
+    return *this;
+  }
+
+#undef do_work_get_defualt_endian_data
+#undef do_work_get_defualt_endian_data_per
+#undef do_work_get_defualt_endian_data_from
+#undef obj_do_work_get_defualt_endian_data_from
+#undef obj_do_work_get_defualt_endian_data_from_native_lhs
+#undef obj_do_bitwise_work_from_native_lhs
+};
+
+template <typename T>
+using get_big_endian_data = get_endianed_data<T, endian_type::big>;
+template <typename T>
+using get_lit_endian_data = get_endianed_data<T, endian_type::little>;
+template <typename T>
+using get_little_endian_data = get_endianed_data<T, endian_type::little>;
+template <typename T>
+using get_native_endian_data = get_endianed_data<T, endian_type::native>;
+template <typename T>
+using get_non_native_endian_data =
+    get_endianed_data<T, (endian_type::native == endian_type::big)
+                             ? (endian_type::little)
+                             : (endian_type::big)>;
+
 template <class Type, size_t m_Size, bool error_check = 1>
 struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
                        Type> {  // fixed size mjz_Array of values
@@ -6698,16 +7061,19 @@ class static_str_algo {
       NumberOf(pow_of_35s), NumberOf(pow_of_36s)};
   static constexpr inline uint8_t num_digit_fast_minimal_for_lltoa(
       uint64_t __val, uint8_t radix) {
+    if (!__val) return 1;
     uint8_t int_component_log{0};
     uint64_t r_n = radix / 10;
     const uint64_t *pow_of_xs = pow_of_rs[radix - 2];
     uint8_t num_pow = num_pow_of_rs[radix - 2];
     uint8_t i{};
-    if (!__val) return 0;
     while (!int_component_log && i < num_pow) {
       int_component_log |=
           MJZ_logic_bit_to_64_bits(__val < pow_of_xs[i]) & (++i);
     }
+    int_component_log--;
+    // auto const int_component_log_x = ceiling(log((double)__val) /
+    // log((double)radix));
     return int_component_log;
   }
 
