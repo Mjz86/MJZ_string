@@ -1,7 +1,7 @@
 #pragma once
 
 #include "mjzString.hpp"
-
+#include <iostream>
 extern void get_main_argguments(int& argc, const char* const*& argv);
 
 class main_class {

@@ -132,7 +132,9 @@ auto max(const Type &a, const L &b) -> decltype((b < a) ? b : a) {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <bitset>
+#include <cassert>
+#include <cstddef>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -1044,10 +1046,10 @@ class not_a_type_if<true, false> {
 template <bool has_virtual>
 class not_a_type_if<false, has_virtual> {};
 
-template <bool>
+template <int>
 class bit_ref_data {};
 template <>
-class bit_ref_data<true> {
+class bit_ref_data<1> {
  protected:
   uint8_t * m_byte{};
   uint8_t m_mask{};
@@ -1064,8 +1066,47 @@ class bit_ref_data<true> {
   inline constexpr uint8_t byte() const { return (this->m_byte) ? *this->m_byte : m_mask; }
   inline constexpr uint8_t mask() const { return (this->m_byte) ? m_mask : true; }
 };
+
 template <>
-class bit_ref_data<false> {
+class bit_ref_data<2> {
+ protected:
+  uint8_t *m_byte{};
+  uint8_t m_mask{};
+
+  inline constexpr bit_ref_data(uint8_t mask, uint8_t *byte)
+      : m_byte(byte), m_mask(mask) {}
+
+  inline constexpr ~bit_ref_data() {}
+  inline constexpr uint8_t &byte() {
+    return *m_byte;
+  }
+
+ public:
+  inline constexpr uint8_t byte() const {
+    return  *m_byte ;
+  }
+  inline constexpr uint8_t mask() const {
+    return m_mask ;
+  }
+};
+
+template <>
+class bit_ref_data<3> {
+ protected:
+  uint8_t *m_byte{};
+  uint8_t m_mask{};
+
+  inline constexpr bit_ref_data(uint8_t mask, uint8_t *byte)
+      : m_byte(byte), m_mask(mask) {}
+
+  inline constexpr ~bit_ref_data() {}
+  inline constexpr uint8_t &byte() { return m_mask; }
+ public:
+  inline constexpr uint8_t byte() const { return m_mask; }
+  inline constexpr uint8_t mask() const { return true; }
+};
+template <>
+class bit_ref_data<0> {
  protected:
   uint8_t*m_byte{};
   uint8_t m_mask{};
@@ -1090,7 +1131,7 @@ class bit_ref_data<false> {
   }
 };
 
-template <bool no_throw_ref = true>
+template <int no_throw_ref = 1>
 class bit_reference_or_bit_t : public bit_ref_data<no_throw_ref> {
  public:
  using mask=bit_ref_data<no_throw_ref> ::mask;
@@ -1227,8 +1268,11 @@ class bit_reference_or_bit_t : public bit_ref_data<no_throw_ref> {
     return bl;
   }
 };
-using bit_ref_or_bit = bit_reference_or_bit_t<true>;
-using bit_ref = bit_reference_or_bit_t<false>;
+using bit_ref_or_bit = bit_reference_or_bit_t<1>;
+using bit_ref = bit_reference_or_bit_t<0>;
+
+
+
 
 // iterator_template Class
 template <typename Type, bool error_check = 1>
