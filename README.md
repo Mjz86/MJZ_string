@@ -6,7 +6,7 @@ a fast alternative to std::string.<br>
  to use open the sll  .<br>
  and we have a example .<br>
  there are simple interpretation .<br>
- static allocation (max 64 char (can you change at compile time /code)).<br>
+ static allocation (max 64 char ( you may change at compile time /code)).<br>
  modular .<br>
  and more... .<br>
  this test is from the example on my 2core laptop :(<br>
