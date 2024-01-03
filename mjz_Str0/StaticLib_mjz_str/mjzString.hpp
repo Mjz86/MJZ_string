@@ -38,7 +38,6 @@ written by mjz https://github.com/Mjz86
 #include <string.h>
 
 #include <algorithm>
-#include <stack>
 #include <cassert>
 #include <chrono>
 #include <cstdarg>
@@ -46,6 +45,7 @@ written by mjz https://github.com/Mjz86
 #include <exception>
 #include <iostream>
 #include <map>
+#include <stack>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -2424,7 +2424,7 @@ class dynamic_mjz_arena_allocator_t {
  private:
   template <typename T, size_type m_size>
   struct data_buffer {
-    T m_data[(m_size)?m_size:1];
+    T m_data[(m_size) ? m_size : 1];
     constexpr inline size_type size() { return m_size; }
     constexpr inline T *begin() { return data(); }
     constexpr inline T *end() { return data() + m_size; }
@@ -2914,7 +2914,7 @@ struct C_allocate_free_warpper {
   inline C_allocate_free_warpper() {}
   inline ~C_allocate_free_warpper() {}
   inline C_allocate_free_warpper(void *p, size_t n) : my_c_allocator(p, n) {}
-  inline void free(void *ptr, size_t  ) { my_c_allocator.free(ptr); }
+  inline void free(void *ptr, size_t) { my_c_allocator.free(ptr); }
   inline void *realloc(void *ptr, size_t, size_t needed_len) {
     return my_c_allocator.realloc(ptr, needed_len);
   }
@@ -3669,19 +3669,15 @@ struct mjz_temp_type_obj_algorithims_warpper_t
   }
 };
 
+template <typename T>
+struct mjz_inherited_container : private T {
+  inline constexpr T &mjz_inherited_container_get_contained() { return *this; }
+  inline constexpr
 
-template<typename T >
-struct mjz_inherited_container
-    : private  T{
-  inline constexpr T &mjz_inherited_container_get_contained() {
-       return*this;
+      const T &
+      mjz_inherited_container_get_contained() const {
+    return *this;
   }
-   inline constexpr
-   
-   const T& mjz_inherited_container_get_contained( ) const{
-       return*this;
-  }
-
 };
 
 template <typename Type,
@@ -4383,8 +4379,6 @@ class weak_ptr_template_t : protected smart_ptr_base_template_t<T> {
 };
 
 };  // namespace smart_ptr
-
-
 
 /*
 0 for little
@@ -7676,7 +7670,7 @@ class static_str_algo {
     double number = number_;
     number *= (1.5 - (x2 * number * number));
     number *= (1.5 - (x2 * number * number));
-    long flr =(long) floor(number);
+    long flr = (long)floor(number);
     if (abs(number - (double)flr) < 0.0001) return flr;
     return number;
   }
@@ -9458,22 +9452,27 @@ using O_mjz_stack_obj_warper_template_t = mjz_stack_obj_warper_template_class_t<
     my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
     do_error_check, use_object_in_union>;
 
-/*
-NOTE THIS CLASS IS JUST A (REFRENCE / POINTER ) YOU SHALL USE IT LIKE ONE aka
-1.DONT RETURN THIS FROM A FUNCTION INTERNAL (STACK) VARIABLE
-2.USE THIS WHEN VARIABLE IS REFENECED WITHIN THIS TIME FRAME :
- {THE REFRENED OBJECT SHUOLD  EXSIST  } -  CREATION ----------USE... ----------
-LAST USE - {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }  ... DESTRUCTION
-... {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }
-*/
+
+template <class T>
+class functions_return_value;
 
 template <typename T_ref>
-class optional_pointer_template_t
+class optional_pointer_template_t_helper
     : private mjz_non_internal_obj_manager_template_t<
           std::remove_const_t<std::remove_reference_t<T_ref>>> {
  public:
   using Type = std::remove_reference_t<T_ref>;
   static_assert(std::is_same_v<Type &, T_ref>);
+  inline constexpr mjz_non_internal_obj_manager_template_t<
+      std::remove_const_t<Type>>
+      &get_obj_creator() {
+    return *this;
+  }
+  inline constexpr const mjz_non_internal_obj_manager_template_t<
+      std::remove_const_t<Type>>
+      &get_obj_creator() const {
+    return *this;
+  }
 
  private:
   Type *m_ptr{};
@@ -9504,58 +9503,58 @@ class optional_pointer_template_t
     if (m_ptr) return m_ptr;
     throw "no object ";
   }
-  inline constexpr optional_pointer_template_t() {}
+  inline constexpr optional_pointer_template_t_helper() {}
 
-  inline constexpr optional_pointer_template_t(
+  inline constexpr optional_pointer_template_t_helper(
       Type *valid_pointer_to_object_that_meates_the_requirements)
       : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
-  inline constexpr optional_pointer_template_t(
+  inline constexpr optional_pointer_template_t_helper(
       Type &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_template_t(this->addressof(
+      : optional_pointer_template_t_helper(this->addressof(
             valid_refrence_to_object_that_meates_the_requirements)) {}
 
-  inline constexpr optional_pointer_template_t(
-      optional_pointer_template_t
+  inline constexpr optional_pointer_template_t_helper(
+      optional_pointer_template_t_helper
           &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_template_t(
+      : optional_pointer_template_t_helper(
             valid_refrence_to_object_that_meates_the_requirements
                 .ptr_to_valid_object_if_not_nul) {}
-  inline constexpr optional_pointer_template_t(
-      optional_pointer_template_t
+  inline constexpr optional_pointer_template_t_helper(
+      optional_pointer_template_t_helper
           &&valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_template_t(
+      : optional_pointer_template_t_helper(
             valid_refrence_to_object_that_meates_the_requirements
                 .ptr_to_valid_object_if_not_nul) {}
-  inline constexpr optional_pointer_template_t(Type &&) = delete;
+  inline constexpr optional_pointer_template_t_helper(Type &&) = delete;
 
-  inline constexpr optional_pointer_template_t &operator=(
+  inline constexpr optional_pointer_template_t_helper &operator=(
       Type *valid_pointer_to_object_that_meates_the_requirements) {
     m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
     return *this;
   }
-  inline constexpr optional_pointer_template_t &operator=(
+  inline constexpr optional_pointer_template_t_helper &operator=(
       Type &valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr =
         this->addressof(valid_refrence_to_object_that_meates_the_requirements);
     return *this;
   }
-  optional_pointer_template_t &operator=(Type &&) = delete;
-  inline constexpr optional_pointer_template_t &operator=(
-      optional_pointer_template_t
+  optional_pointer_template_t_helper &operator=(Type &&) = delete;
+  inline constexpr optional_pointer_template_t_helper &operator=(
+      optional_pointer_template_t_helper
           &valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
     return *this;
   }
-  inline constexpr optional_pointer_template_t &operator=(
-      optional_pointer_template_t
+  inline constexpr optional_pointer_template_t_helper &operator=(
+      optional_pointer_template_t_helper
           &&valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
     return *this;
   }
 
-  inline constexpr ~optional_pointer_template_t() {}
+  inline constexpr ~optional_pointer_template_t_helper() {}
 
   inline constexpr explicit operator bool() const {
     return !!get_ptr_to_valid_object_or_throw<void>();
@@ -9576,6 +9575,11 @@ class optional_pointer_template_t
   inline constexpr const Type *ptr() const {
     return get_ptr_to_valid_object_or_throw<void>();
   }
+  inline constexpr optional_pointer_template_t_helper &set_ptr(Type *p = 0) {
+    m_ptr = p;
+    return *this;
+  }
+
   inline constexpr Type &get() { return *get_ptr_to_valid_object_or_throw(); }
   inline constexpr const Type &get() const {
     return *get_ptr_to_valid_object_or_throw();
@@ -9614,10 +9618,10 @@ class optional_pointer_template_t
   inline constexpr void operator~() { m_ptr = 0; }
 
   inline constexpr
-  operator optional_pointer_template_t<std::add_const_t<Type> &>() {
+  operator optional_pointer_template_t_helper<std::add_const_t<Type> &>() {
     return {m_ptr};
   }
-  using merf = optional_pointer_template_t &;
+  using merf = optional_pointer_template_t_helper &;
   inline constexpr friend bool operator==(merf a, merf b) { return *a == *b; }
   inline constexpr friend bool operator!=(merf a, merf b) { return *a != *b; }
   inline constexpr friend bool operator<=(merf a, merf b) { return *a <= *b; }
@@ -9641,6 +9645,140 @@ class optional_pointer_template_t
   inline constexpr auto operator-=(merf b) { return (**this) -= *b; }
   inline constexpr auto operator+=(merf b) { return (**this) += *b; }
 };
+
+/*
+NOTE THIS CLASS IS JUST A (REFRENCE / POINTER ) YOU SHALL USE IT LIKE ONE aka
+1.DONT RETURN THIS FROM A FUNCTION INTERNAL (STACK) VARIABLE
+2.USE THIS WHEN VARIABLE IS REFENECED WITHIN THIS TIME FRAME :
+ {THE REFRENED OBJECT SHUOLD  EXSIST  } -  CREATION ----------USE... ----------
+LAST USE - {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }  ... DESTRUCTION
+... {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }
+*/
+
+template <typename T_ref,bool is_for_function_ret>
+class optional_pointer_template_t{};
+
+
+template <typename T_ref>
+class optional_pointer_template_t<T_ref, false>
+    : public optional_pointer_template_t_helper<T_ref> {
+    public:
+  inline constexpr optional_pointer_template_t() {
+
+}
+  inline constexpr ~optional_pointer_template_t() {}
+  template<typename T0,typename...Ts>
+inline constexpr optional_pointer_template_t(T0 &&arg0, Ts &&...args)
+      : optional_pointer_template_t_helper<T_ref>(std::forward<T0>(arg0),
+                                                  std::forward<Ts>(args)...) {
+}
+  template <typename T0 >
+  inline constexpr optional_pointer_template_t&operator=(T0 &&arg0 ) {
+    optional_pointer_template_t_helper<T_ref>::operator=(std::forward<T0>(arg0));
+}
+};
+template <typename T_ref>
+class optional_pointer_template_t<T_ref, true>
+    : public optional_pointer_template_t_helper<T_ref> {
+    public:
+  inline constexpr optional_pointer_template_t() {}
+  inline constexpr ~optional_pointer_template_t() {}
+  template <typename T0, typename... Ts>
+  inline constexpr optional_pointer_template_t(T0 &&arg0, Ts &&...args)
+      : optional_pointer_template_t_helper<T_ref>(std::forward<T0>(arg0),
+                                                  std::forward<Ts>(args)...) {}
+  template <typename T0>
+  inline constexpr optional_pointer_template_t &operator=(T0 &&arg0) {
+    optional_pointer_template_t_helper<T_ref>::operator=(std::forward<T0>(arg0));
+  }
+
+  constexpr optional_pointer_template_t(
+      functions_return_value<std::remove_reference_t<T_ref>> &);
+  template<typename...Ts>
+  inline constexpr void init(Ts&&...args ) {
+    this->get_obj_creator().construct_at(this->ptr(),
+                                         std::forward<Ts>(args)...); 
+  }
+  template <typename... Ts>
+  inline constexpr void ret(Ts &&...args) {
+    this->get_obj_creator().construct_at(this->ptr(),
+                                         std::forward<Ts>(args)...);
+  }
+  template <typename... Ts>
+  inline constexpr void construct(Ts &&...args) {
+    this->get_obj_creator().construct_at(this->ptr(),
+                                         std::forward<Ts>(args)...);
+  }
+
+};
+
+
+/*
+NOTE
+this class is used when you want to do return value optimization by hand but be
+careful and : 1.initialize the   optional_pointer_template_t (aka return_value )
+in all function paths or do the following
+
+2.if the function may throw it should get a
+optional_pointer_template_t reference and set it to null (or do 3)
+
+3.if the function may not give a value back it you should do 2 or get a
+(functions_return_value / OU_mjz_stack_obj_warper_template_t)  reference
+
+4. if the function initializes the value with no exceptions at all branches you
+are free to get a optional_pointer_template_t (not a refrenced argumemt)
+
+5. despite the fact that the state of the object before passing a optional_pointer_template_t will be null (if it was alive we destroy it)
+its a good practice to not initialize it before the function call
+
+
+
+if you dont  obey the notes you may call the destructor on an uninitialized object 
+*/
+template <typename T>
+class functions_return_value : public OU_mjz_stack_obj_warper_template_t<T> {
+  using ptr_t = optional_pointer_template_t<T &, true>;ptr_t ptr_to_me{};
+
+ public:
+  inline constexpr functions_return_value() {}
+  template <typename T0, typename... Ts>
+  inline constexpr functions_return_value(T0 &&arg0, Ts &&...args)
+      : OU_mjz_stack_obj_warper_template_t<T>(std::forward<T0>(arg0),
+                                              std::forward<Ts>(args)...) {}
+  template <typename T0 >
+  inline constexpr functions_return_value &operator=(T0 &&arg0 ) {
+    OU_mjz_stack_obj_warper_template_t<T>::operator=(std::forward<T0>(arg0) );
+  }
+  inline constexpr ~functions_return_value() {
+    if (!!ptr_to_me && !this->has_value()) {
+      this->notify_unsafe_init ();
+    }
+  }
+  inline constexpr operator ptr_t &() {
+      if(this->has_value( )) {
+          this->operator~();
+    }
+     ptr_to_me.set_ptr(this->uuop());
+    return ptr_to_me;
+  }
+  inline constexpr operator ptr_t &&() { return std::move(operator ptr_t &());
+  }
+  inline constexpr operator ptr_t() { return {operator ptr_t &()};
+  }
+  inline constexpr ptr_t &get_ptr_to_me() {
+    return ptr_to_me;
+  }
+  inline constexpr const ptr_t &get_ptr_to_me()
+      const {
+    return ptr_to_me;
+  }
+};
+template<typename T >
+constexpr optional_pointer_template_t<T,true>::optional_pointer_template_t(
+    functions_return_value<std::remove_reference_t<T>>&obj) { 
+  return obj.operator optional_pointer_template_t<T,true>();
+}
+
 
 template <typename T, size_t m_size,
           class obj_cnstructor_t = mjz_temp_type_obj_algorithims_warpper_t<T>>
@@ -9688,8 +9826,8 @@ class safe_array_template_t {
 
   constexpr inline ~safe_array_template_t() {}
 
-  using ref_t = optional_pointer_template_t<Type &>;
-  using cref_t = optional_pointer_template_t<const Type &>;
+  using ref_t = optional_pointer_template_t<Type &,false>;
+  using cref_t = optional_pointer_template_t<const Type &,false>;
 
   template <size_t I>
       constexpr inline std::enable_if_t < I<m_size, Type &> at() noexcept {
@@ -13827,7 +13965,7 @@ template <class Type>
 class Vector2 {
  public:
   Type x, y;
-  inline ~Vector2() {};
+  inline ~Vector2(){};
   constexpr inline Vector2 &operator=(const Vector2 &v) {
     x = (v.x);
     y = (v.y);
@@ -14361,19 +14499,52 @@ template <typename T>
 using optional = OU_mjz_stack_obj_warper_template_t<T>;
 template <typename T>
 using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;
+template <typename T>
+using mjz_optional_return = OU_mjz_stack_obj_warper_template_t<T> &;
+template <typename T>
+using optional_return = OU_mjz_stack_obj_warper_template_t<T> &;
+template <typename T>
+using mjz_nullable_return = OU_mjz_stack_obj_warper_template_t<T> &;
+template <typename T>
+using nullable_return = OU_mjz_stack_obj_warper_template_t<T> &;
+template <typename T>
+using functions_return_value = functions_return_value<T>;
+template <typename T>
+using mjz_functions_return_value = functions_return_value<T>;
+template <typename T>
+using mjz_function_return_value = functions_return_value<T>;
+template <typename T>
+using function_return_value = functions_return_value<T>;
+template <typename T>
+using function_return = functions_return_value<T>;
+template <typename T>
+using func_return = functions_return_value<T>;
+template <typename T>
+using func_ret = functions_return_value<T>;
+template <typename T>
+using ref_return = optional_pointer_template_t<T &,true>;
+template <typename T>
+using forced_return = optional_pointer_template_t<T &,true>;
+template <typename T>
+using mjz_ref_return = optional_pointer_template_t<T &,true>;
+template <typename T>
+using mjz_forced_return = optional_pointer_template_t<T &,true>;
+
+template <typename T>
+using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;
 
 template <typename T, size_t n>
 using safe_array =
     safe_array_template_t<T, n, mjz_temp_type_obj_algorithims_warpper_t<T>>;
 
 template <typename T_ref>
-using mjz_optional_ref = optional_pointer_template_t<T_ref>;
+using mjz_optional_ref = optional_pointer_template_t<T_ref,false>;
 template <typename T_ref>
-using optional_ref = optional_pointer_template_t<T_ref>;
+using optional_ref = optional_pointer_template_t<T_ref,false>;
 template <typename T_ref>
-using mjz_optional_ptr = optional_pointer_template_t<T_ref>;
+using mjz_optional_ptr = optional_pointer_template_t<T_ref,false>;
 template <typename T_ref>
-using optional_ptr = optional_pointer_template_t<T_ref>;
+using optional_ptr = optional_pointer_template_t<T_ref,false>;
 
 template <typename T>
 using H_optional = mjz_heap_obj_warper_template_t<T, false>;
