@@ -74,8 +74,8 @@ class P {// no one can do anything with P except  mjz_obj_destructor<P> and mjz_
       
       
       
-      void* operator new(size_t m_size) { return 0; }
-  inline static [[nodiscard]] void* operator new[](size_t m_size) { return 0; }
+      void* operator new(size_t  ) { return 0; }
+  inline static [[nodiscard]] void* operator new[](size_t  ) { return 0; }
   inline static void *operator new(size_t, void *where) { return where; }
   inline static void operator delete(void * ) {}
   inline static void operator delete[](void * ) {}

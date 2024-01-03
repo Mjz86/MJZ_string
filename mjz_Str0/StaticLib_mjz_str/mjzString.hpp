@@ -37,6 +37,8 @@ written by mjz https://github.com/Mjz86
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
+#include <stack>
 #include <cassert>
 #include <chrono>
 #include <cstdarg>
@@ -2422,7 +2424,7 @@ class dynamic_mjz_arena_allocator_t {
  private:
   template <typename T, size_type m_size>
   struct data_buffer {
-    T m_data[m_size];
+    T m_data[(m_size)?m_size:1];
     constexpr inline size_type size() { return m_size; }
     constexpr inline T *begin() { return data(); }
     constexpr inline T *end() { return data() + m_size; }
@@ -2912,7 +2914,7 @@ struct C_allocate_free_warpper {
   inline C_allocate_free_warpper() {}
   inline ~C_allocate_free_warpper() {}
   inline C_allocate_free_warpper(void *p, size_t n) : my_c_allocator(p, n) {}
-  inline void free(void *ptr, size_t len) { my_c_allocator.free(ptr); }
+  inline void free(void *ptr, size_t  ) { my_c_allocator.free(ptr); }
   inline void *realloc(void *ptr, size_t, size_t needed_len) {
     return my_c_allocator.realloc(ptr, needed_len);
   }
@@ -3034,7 +3036,7 @@ struct mjz_non_internal_obj_manager_template_t {
   class address_geter_class_when_we_overload_operator_addressof
       : private Type,
         private not_a_type_if<true, false> {
-    friend class mjz_non_internal_obj_manager_template_t<Type>;
+    friend struct mjz_non_internal_obj_manager_template_t<Type>;
     constexpr inline Type *get_the_this() { return this; }
     constexpr inline const Type *get_the_this() const { return this; }
   };
@@ -3665,6 +3667,21 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       }
     return d_first;
   }
+};
+
+
+template<typename T >
+struct mjz_inherited_container
+    : private  T{
+  inline constexpr T &mjz_inherited_container_get_contained() {
+       return*this;
+  }
+   inline constexpr
+   
+   const T& mjz_inherited_container_get_contained( ) const{
+       return*this;
+  }
+
 };
 
 template <typename Type,
@@ -7102,7 +7119,7 @@ class static_str_algo {
     char *r_ptr_end = buffer - 1;
     char *ptr = buffer + len - 1;
     for (; r_ptr_end < ptr && value; ptr--) {
-      uint8_t v = value % radix;
+      uint8_t v = (uint8_t)(value % radix);
       value /= radix;
       *ptr = GET_CHAR_from_int(v, is_upper_case);
     }
@@ -7659,7 +7676,7 @@ class static_str_algo {
     double number = number_;
     number *= (1.5 - (x2 * number * number));
     number *= (1.5 - (x2 * number * number));
-    long flr = floor(number);
+    long flr =(long) floor(number);
     if (abs(number - (double)flr) < 0.0001) return flr;
     return number;
   }
@@ -7676,7 +7693,7 @@ class static_str_algo {
     number *= (1.5 - (x2 * number * number));
     number *= (1.5 - (x2 * number * number));
     number *= (1.5 - (x2 * number * number));
-    long flr = floor(number);
+    long flr = (long)floor(number);
     if (abs(number - (double)flr) < 0.0001) return flr;
     return number;
   }
@@ -13809,22 +13826,11 @@ Vector2 -- 2-D mjz_vector class
 template <class Type>
 class Vector2 {
  public:
-  union {
-    struct {
-      Type m_x, m_y;
-    };
-    struct {
-      Type x, y;
-    };
-  };
-  inline ~Vector2() {
-    m_x.~Type();  // the
-    // https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
-    m_y.~Type();
-  };
+  Type x, y;
+  inline ~Vector2() {};
   constexpr inline Vector2 &operator=(const Vector2 &v) {
-    m_x = (v.m_x);
-    m_y = (v.m_y);
+    x = (v.x);
+    y = (v.y);
     return *this;
   }
   constexpr inline Vector2 &operator=(Vector2 &v) {
@@ -13837,8 +13843,8 @@ class Vector2 {
     return *this = obj;
   };
   constexpr inline Vector2 &operator()(const Type &x, const Type &y) {
-    m_x = (x);
-    m_y = (y);
+    x = (x);
+    y = (y);
     return *this;
   };
   template <typename FNC_T>
@@ -13868,14 +13874,14 @@ class Vector2 {
                          FNC_T your_function) const {
     return your_function_returning(operator()(0, your_function));
   };
-  constexpr inline Vector2() : m_x{}, m_y{} {}
-  constexpr inline Vector2(const Type &s) : m_x(s), m_y(s) {}
-  constexpr inline Vector2(const Type &x, const Type &y) : m_x(x), m_y(y) {}
-  constexpr inline Vector2(const Vector2<Type> &v) : m_x(v.m_x), m_y(v.m_y) {}
+  constexpr inline Vector2() : x{}, y{} {}
+  constexpr inline Vector2(const Type &s) : x(s), y(s) {}
+  constexpr inline Vector2(const Type &x, const Type &y) : x(x), y(y) {}
+  constexpr inline Vector2(const Vector2<Type> &v) : x(v.x), y(v.y) {}
   constexpr inline Vector2(Vector2 &v) : Vector2((const Vector2<Type> &)v){};
   constexpr inline Vector2(Vector2 &&v) : Vector2(v){};
   constexpr inline bool operator==(const Vector2<Type> &v) const {
-    return abs(m_x - v.m_x) < 0.01 && abs(m_y - v.m_y) < 0.01;
+    return abs(x - v.x) < 0.01 && abs(y - v.y) < 0.01;
   }
   constexpr inline bool operator!=(const Vector2<Type> &v) const {
     return !(operator==(v));
@@ -13883,71 +13889,71 @@ class Vector2 {
   /**********************************************
   Indexing operator
    **********************************************/
-  constexpr inline Type &operator[](int i) { return *(&m_x + i); }
-  constexpr inline const Type operator[](int i) const { return *(&m_x + i); }
+  constexpr inline Type &operator[](int i) { return *(&x + i); }
+  constexpr inline const Type operator[](int i) const { return *(&x + i); }
   /*********************************************
   Non modifying math operators
    *********************************************/
   constexpr inline Vector2<Type> operator-() const {
-    return Vector2<Type>(-m_x, -m_y);
+    return Vector2<Type>(-x, -y);
   }
   constexpr inline Vector2<Type> operator+(const Vector2<Type> &v) const {
-    return Vector2<Type>(m_x + v.m_x, m_y + v.m_y);
+    return Vector2<Type>(x + v.x, y + v.y);
   }
   constexpr inline Vector2<Type> operator-(const Vector2<Type> &v) const {
-    return Vector2<Type>(m_x - v.m_x, m_y - v.m_y);
+    return Vector2<Type>(x - v.x, y - v.y);
   }
   constexpr inline Vector2<Type> operator*(const Type &s) const {
-    return Vector2<Type>(m_x * s, m_y * s);
+    return Vector2<Type>(x * s, y * s);
   }
   constexpr inline Vector2<Type> operator*(const Vector2<Type> &v) const {
-    return Vector2<Type>(m_x * v.m_x, m_y * v.m_y);
+    return Vector2<Type>(x * v.x, y * v.y);
   }
   constexpr inline Vector2<Type> operator/(const Type &s) const {
-    return Vector2<Type>(m_x / s, m_y / s);
+    return Vector2<Type>(x / s, y / s);
   }
   /*******************************************
   Modifying Math Operators
    *******************************************/
   constexpr inline Vector2<Type> &operator+=(const Vector2<Type> &v) {
-    m_x += v.m_x;
-    m_y += v.m_y;
+    x += v.x;
+    y += v.y;
     return *this;
   }
   constexpr inline Vector2<Type> &operator-=(const Vector2<Type> &v) {
-    m_x -= v.m_x;
-    m_y -= v.m_y;
+    x -= v.x;
+    y -= v.y;
     return *this;
   }
   constexpr inline Vector2<Type> &operator*=(const Type &s) {
-    m_x *= s;
-    m_y *= s;
+    x *= s;
+    y *= s;
     return *this;
   }
   constexpr inline Vector2<Type> &operator*=(const Vector2<Type> &v) {
-    m_x *= v.m_x;
-    m_y *= v.m_y;
+    x *= v.x;
+    y *= v.y;
     return *this;
   }
   constexpr inline Vector2<Type> &operator/=(const Type &s) {
-    m_x /= s;
-    m_y /= s;
+    x /= s;
+    y /= s;
     return *this;
   }
   /*******************************************
   Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
   constexpr inline operator const Type *() const {
-    return static_cast<Type *>(&m_x);
+    return static_cast<Type *>(&x);
   }
-  constexpr inline operator Type *() { return static_cast<Type *>(&m_x); }
+  constexpr inline operator Type *() { return static_cast<Type *>(&x); }
   /********************************************
   Useful Vector Operations
    ********************************************/
   constexpr inline Type length() const {
-    return 1 / static_str_algo::Q_rsqrt_unsafe(m_x * m_x + m_y * m_y);
+    return 1 / static_str_algo::Q_rsqrt_unsafe(x * x + y * y);
   }
-  constexpr inline Type lengthSq() const { return m_x * m_x + m_y * m_y; }
+  constexpr inline Type lengthSq() const { return x * x + y * y; }
   constexpr inline Vector2<Type> &normalize() {
     return operator*=((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
@@ -13955,24 +13961,23 @@ class Vector2 {
     return operator*((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
   constexpr inline Type dot(const Vector2<Type> &v) const {
-    return m_x * v.m_x + m_y * v.m_y;
+    return x * v.x + y * v.y;
   }
   constexpr inline Type cross(
       const Vector2<Type> &v) const {  // 3-D cross product with z assumed 0
-    return m_x * v.m_y +
-           v.m_x * m_y;  // return magnitude of resulting mjz_vector
+    return x * v.y + v.x * y;  // return magnitude of resulting mjz_vector
   }
   friend std::ostream &operator<<(std::ostream &outs, const Vector2<Type> &v) {
-    outs << "<" << v.m_x << ", " << v.m_y << ">";
+    outs << "<" << v.x << ", " << v.y << ">";
     return outs;
   }
   friend std::istream &operator>>(std::istream &ins, Vector2<Type> &v) {
-    ins >> v.m_x >> v.m_y;
+    ins >> v.x >> v.y;
     return ins;
   }
   friend constexpr inline Vector2<Type> operator*(Type s,
                                                   const Vector2<Type> &v) {
-    return Vector2<Type>(s * v.m_x, s * v.m_y);
+    return Vector2<Type>(s * v.x, s * v.y);
   }
   /********************************************************
   Basic Trig functions of angle between vectors
@@ -14001,14 +14006,14 @@ class Vector2 {
                                      const Vector2<Type> &v2) {
     return v1.cross(v2);
   }
-  constexpr inline Type *begin() { return &m_x; }
+  constexpr inline Type *begin() { return &x; }
   constexpr inline Type *end() { return begin() + size(); }
-  constexpr inline const Type *begin() const { return &m_x; }
+  constexpr inline const Type *begin() const { return &x; }
   constexpr inline const Type *end() const { return begin() + size(); }
   constexpr inline const Type *cbegin() const { return begin(); }
   constexpr inline const Type *cend() const { return end(); }
   constexpr inline static const size_t size() { return 2; }
-  constexpr inline bool operator!() const { return !m_x && !m_y; }
+  constexpr inline bool operator!() const { return !x && !y; }
   constexpr inline operator bool() const { return !!*this; }
 };
 /*********************************************************************************
@@ -14018,19 +14023,8 @@ Vector3 -- 3D mjz_vector
 template <class Type>
 class Vector3 {
  public:
-  union {
-    struct {
-      Type m_x, m_y, m_z;
-    };
-    struct {
-      Type x, y, z;
-    };
-  };
-  inline ~Vector3() {  // https://stackoverflow.com/questions/40106941/is-a-union-members-destructor-called
-    m_x.~Type();
-    m_y.~Type();
-    m_z.~Type();
-  };
+  Type x, y, z;
+  constexpr inline ~Vector3(){};
   constexpr inline Vector3 &operator()(Vector3 &obj) { return *this = obj; };
   constexpr inline Vector3 &operator()(Vector3 &&obj) { return *this = obj; };
   constexpr inline Vector3 &operator()(const Vector3 &obj) {
@@ -14038,9 +14032,9 @@ class Vector3 {
   };
   constexpr inline Vector3 &operator()(const Type &x, const Type &y,
                                        const Type &z) {
-    m_x = (x);
-    m_x = (y);
-    m_x = (z);
+    x = (x);
+    x = (y);
+    x = (z);
     return *this;
   };
   template <typename FNC_T>
@@ -14071,20 +14065,19 @@ class Vector3 {
                          FNC_T your_function) const {
     return your_function_returning(operator()(0, your_function));
   };
-  constexpr inline Vector3() : m_x{}, m_y{}, m_z{} {}
-  constexpr inline Vector3(const Type &s) : m_x(s), m_y(s), m_z(s) {}
+  constexpr inline Vector3() : x{}, y{}, z{} {}
+  constexpr inline Vector3(const Type &s) : x(s), y(s), z(s) {}
   constexpr inline Vector3(const Type &x, const Type &y, const Type &z)
-      : m_x(x), m_y(y), m_z(z) {}
+      : x(x), y(y), z(z) {}
   constexpr inline Vector3(const Vector2<Type> &v, const Type &s = Type())
-      : m_x(v.m_x), m_y(v.m_y), m_z(s) {}
-  constexpr inline Vector3(const Vector3<Type> &v)
-      : m_x(v.m_x), m_y(v.m_y), m_z(v.m_z) {}
+      : x(v.x), y(v.y), z(s) {}
+  constexpr inline Vector3(const Vector3<Type> &v) : x(v.x), y(v.y), z(v.z) {}
   constexpr inline Vector3(Vector3 &v) : Vector3((const Vector3<Type> &)v){};
   constexpr inline Vector3(Vector3 &&v) : Vector3(v){};
   constexpr inline Vector3 &operator=(const Vector3 &v) {
-    m_x = (v.m_x);
-    m_y = (v.m_y);
-    m_z = (v.m_z);
+    x = (v.x);
+    y = (v.y);
+    z = (v.z);
     return *this;
   }
   constexpr inline Vector3 &operator=(Vector3 &v) {
@@ -14092,8 +14085,7 @@ class Vector3 {
   }
   constexpr inline Vector3 &operator=(Vector3 &&v) { return operator=(v); }
   constexpr inline bool operator==(const Vector3<Type> &v) const {
-    return abs(m_x - v.m_x) < 0.01 && abs(m_y - v.m_y) < 0.01 &&
-           abs(m_z - v.m_z) < 0.01;
+    return abs(x - v.x) < 0.01 && abs(y - v.y) < 0.01 && abs(z - v.z) < 0.01;
   }
   constexpr inline bool operator!=(const Vector3<Type> &v) const {
     return !operator==(v);
@@ -14101,14 +14093,14 @@ class Vector3 {
   /**********************************************
   Indexing operator
    **********************************************/
-  constexpr inline Type &operator[](int i) { return *(&m_x + i); }
-  const Type operator[](int i) const { return *(&m_x + i); }
+  constexpr inline Type &operator[](int i) { return *(&x + i); }
+  const Type operator[](int i) const { return *(&x + i); }
   /**********************************************
   Itrator
    **********************************************/
-  constexpr inline Type *begin() { return &m_x; }
+  constexpr inline Type *begin() { return &x; }
   constexpr inline Type *end() { return begin() + size(); }
-  constexpr inline const Type *begin() const { return &m_x; }
+  constexpr inline const Type *begin() const { return &x; }
   constexpr inline const Type *end() const { return begin() + size(); }
   constexpr inline const Type *cbegin() const { return begin(); }
   constexpr inline const Type *cend() const { return end(); }
@@ -14117,83 +14109,81 @@ class Vector3 {
   Non modifying math operators
    *********************************************/
   constexpr inline Vector3<Type> operator-() const {
-    return Vector3<Type>(-m_x, -m_y, -m_z);
+    return Vector3<Type>(-x, -y, -z);
   }
   constexpr inline Vector3<Type> operator+(const Vector3<Type> &v) const {
-    return Vector3<Type>(m_x + v.m_x, m_y + v.m_y, m_z + v.m_z);
+    return Vector3<Type>(x + v.x, y + v.y, z + v.z);
   }
   constexpr inline Vector3<Type> operator-(const Vector3<Type> &v) const {
-    return Vector3<Type>(m_x - v.m_x, m_y - v.m_y, m_z - v.m_z);
+    return Vector3<Type>(x - v.x, y - v.y, z - v.z);
   }
   constexpr inline Vector3<Type> operator*(const Type &s) const {
-    return Vector3<Type>(m_x * s, m_y * s, m_z * s);
+    return Vector3<Type>(x * s, y * s, z * s);
   }
   constexpr inline Vector3<Type> operator*(const Vector3<Type> &v) const {
-    return Vector3<Type>(m_x * v.m_x, m_y * v.m_y, m_z * v.m_z);
+    return Vector3<Type>(x * v.x, y * v.y, z * v.z);
   }
   constexpr inline Vector3<Type> operator/(const Type &s) const {
-    return Vector3<Type>(m_x / s, m_y / s, m_z / s);
+    return Vector3<Type>(x / s, y / s, z / s);
   }
   constexpr inline Vector3<Type> operator/(const Vector3<Type> &v) const {
-    return Vector3<Type>(m_x / v.m_x, m_y / v.m_y, m_z / v.m_z);
+    return Vector3<Type>(x / v.x, y / v.y, z / v.z);
   }
   /*******************************************
   Modifying Math Operators
    *******************************************/
   constexpr inline Vector3<Type> &operator+=(const Vector3<Type> &v) {
-    m_x += v.m_x;
-    m_y += v.m_y;
-    m_z += v.m_z;
+    x += v.x;
+    y += v.y;
+    z += v.z;
     return *this;
   }
   constexpr inline Vector3<Type> &operator-=(const Vector3<Type> &v) {
-    m_x -= v.m_x;
-    m_y -= v.m_y;
-    m_y -= v.m_z;
+    x -= v.x;
+    y -= v.y;
+    y -= v.z;
     return *this;
   }
   constexpr inline Vector3<Type> &operator*=(const Type &s) {
-    m_x *= s;
-    m_y *= s;
-    m_z *= s;
+    x *= s;
+    y *= s;
+    z *= s;
     return *this;
   }
   constexpr inline Vector3<Type> &operator*=(const Vector3<Type> &v) {
-    m_x *= v.m_x;
-    m_y *= v.m_y;
-    m_z *= v.m_z;
+    x *= v.x;
+    y *= v.y;
+    z *= v.z;
     return *this;
   }
   constexpr inline Vector3<Type> &operator/=(const Vector3<Type> &v) {
-    m_x /= v.m_x;
-    m_y /= v.m_y;
-    m_z /= v.m_z;
+    x /= v.x;
+    y /= v.y;
+    z /= v.z;
     return *this;
   }
   constexpr inline Vector3<Type> &operator/=(const Type &s) {
-    m_x /= s;
-    m_y /= s;
-    m_z /= s;
+    x /= s;
+    y /= s;
+    z /= s;
     return *this;
   }
   /*******************************************
   Cast to Type* (lets you use vec2 as Type array)
   *******************************************/
   constexpr inline operator const Type *() const {
-    return static_cast<Type *>(&m_x);
+    return static_cast<Type *>(&x);
   }
-  constexpr inline bool operator!() const { return !m_x && !m_y && !m_z; }
+  constexpr inline bool operator!() const { return !x && !y && !z; }
   constexpr inline operator bool() const { return !!*this; }
-  constexpr inline operator Type *() { return static_cast<Type *>(&m_x); }
+  constexpr inline operator Type *() { return static_cast<Type *>(&x); }
   /********************************************
   Useful Vector Operations
    ********************************************/
   constexpr inline Type length() const {
     return 1 / static_str_algo::Q_rsqrt_unsafe(lengthSq());
   }
-  constexpr inline Type lengthSq() const {
-    return m_x * m_x + m_y * m_y + m_z * m_z;
-  }
+  constexpr inline Type lengthSq() const { return x * x + y * y + z * z; }
   constexpr inline Vector3<Type> &normalize() {
     return operator*=((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
@@ -14201,28 +14191,28 @@ class Vector3 {
     return operator*((Type)static_str_algo::Q_rsqrt_unsafe(lengthSq()));
   }
   constexpr inline Type dot(const Vector3<Type> &v) const {
-    return m_x * v.m_x + m_y * v.m_y + m_z * v.m_z;
+    return x * v.x + y * v.y + z * v.z;
   }
   constexpr inline Vector3<Type> cross_with_this(
       const Vector3<Type> &v) { /* NOTE this function modifies the
 mjz_vector unlike 2D and non-member versions */
-    Type x_(m_x), y_(m_y), z_(m_z);
-    m_x = y_ * v.m_z - z_ * v.m_y;
-    m_y = z_ * v.m_x - x_ * v.m_z;
-    m_z = x_ * v.m_y - y_ * v.m_x;
+    Type x_(x), y_(y), z_(z);
+    x = y_ * v.z - z_ * v.y;
+    y = z_ * v.x - x_ * v.z;
+    z = x_ * v.y - y_ * v.x;
     return *this;
   }
   friend std::ostream &operator<<(std::ostream &outs, const Vector3<Type> &v) {
-    outs << "<" << v.m_x << ", " << v.m_y << ", " << v.m_z << ">";
+    outs << "<" << v.x << ", " << v.y << ", " << v.z << ">";
     return outs;
   }
   friend std::istream &operator>>(std::istream &ins, Vector3<Type> &v) {
-    ins >> v.m_x >> v.m_y >> v.m_z;
+    ins >> v.x >> v.y >> v.z;
     return ins;
   }
   constexpr inline friend Vector3<Type> operator*(Type s,
                                                   const Vector3<Type> &v) {
-    return Vector3<Type>(s * v.m_x, s * v.m_y, s * v.m_z);
+    return Vector3<Type>(s * v.x, s * v.y, s * v.z);
   }
   /********************************************************
   Basic Trig functions of angle between vectors
@@ -14249,9 +14239,8 @@ mjz_vector unlike 2D and non-member versions */
   }
   constexpr inline friend Vector3<Type> cross(const Vector3<Type> &v1,
                                               const Vector3<Type> &v2) {
-    return Vector3<Type>(v1.m_y * v2.m_z - v1.m_z * v2.m_y,
-                         v1.m_z * v2.m_x - v1.m_x * v2.m_z,
-                         v1.m_x * v2.m_y - v1.m_y * v2.m_x);
+    return Vector3<Type>(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z,
+                         v1.x * v2.y - v1.y * v2.x);
   }
 };
 /******************************************************************************************
