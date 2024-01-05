@@ -14429,7 +14429,7 @@ auto&RET_=(RET);\
 #define NE_RETURN_EMPLACE(RET, RET_val) \
   do {                               \
                try {                               \
-       RETURN_EMPLACE(RET);                  \
+       RETURN_EMPLACE(RET, RET_val);                  \
     } catch (...) {                     \
       return false;                     \
     }                                   \

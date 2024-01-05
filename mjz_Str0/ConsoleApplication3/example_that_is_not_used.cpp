@@ -5,12 +5,28 @@ namespace test {
 static bool fn_mjz(mjzt::calee_ret<mjzt::operation_reporter> ret,
                    int condition) noexcept {
   NE_RETURN_IF0(ret);
-  if (condition == 0) NE_RETURN_EMPLACE(ret, "i am returned {0}");
-  if (condition == 1) {
-    try {//safer for outside even if emplace is noexcept
-      ret->emplace(" initialized {1}");
-    } catch (...) {}
-  }
+  switch (condition) {
+    case 0:
+      NE_RETURN_EMPLACE(ret, "i am returned {0}");
+      break;
+    case 1:
+      try {  // safer for outside even if emplace is noexcept
+        ret->emplace(" initialized {1}");
+      } catch (...) {
+      }
+      break;
+    case 2:
+      NE_RETURN_EMPLACE(ret, "i am returned {2}");
+      break;
+    default:
+      try {
+        ret->emplace('D');
+        ~ret();
+      }
+      catch (...) {
+      }
+      break;
+  } 
   NE_RETURN_WITH(ret);
 }
 static void run_ret() {
@@ -48,6 +64,6 @@ int my_main::main(int argc, const char* const* const argv) {
   using namespace mjzt;
   using namespace mjz::ssco;
   test::run_ret();
-
+   
   return 0;
 }
