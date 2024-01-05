@@ -14380,14 +14380,6 @@ using optional = OU_mjz_stack_obj_warper_template_t<T>;
 template <typename T>
 using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;
 template <typename T>
-using mjz_optional_return = OU_mjz_stack_obj_warper_template_t<T> &;
-template <typename T>
-using optional_return = OU_mjz_stack_obj_warper_template_t<T> &;
-template <typename T>
-using mjz_nullable_return = OU_mjz_stack_obj_warper_template_t<T> &;
-template <typename T>
-using nullable_return = OU_mjz_stack_obj_warper_template_t<T> &;
-template <typename T>
 using functions_return_value = OU_mjz_stack_obj_warper_template_t<T>;
 template <typename T>
 using mjz_functions_return_value = functions_return_value<T>;
@@ -14402,19 +14394,17 @@ using func_return = functions_return_value<T>;
 template <typename T>
 using func_ret = functions_return_value<T>;
 template <typename T>
-using ref_return = optional_pointer_template_t<functions_return_value<T> &>;
-template <typename T>
-using forced_return = optional_pointer_template_t<functions_return_value<T> &>;
-template <typename T>
 using mjz_ref_return = optional_pointer_template_t<functions_return_value<T> &>;
 template <typename T>
-using mjz_forced_return = optional_pointer_template_t<functions_return_value<T> &>;
-
-
-
-
-
-
+using ref_return = mjz_ref_return<T>;
+template <typename T>
+using mjz_optional_return = mjz_ref_return<T>;
+template <typename T>
+using optional_return = mjz_optional_return<T> ;
+template <typename T>
+using mjz_nullable_return = mjz_optional_return<T>;
+template <typename T>
+using nullable_return = mjz_optional_return<T>;
 
 template <typename T>
 using  mjz_caler_ret= func_ret<T>;
@@ -14426,6 +14416,42 @@ template <typename T>
 using  calee_ret= ref_return<T>;
 
 
+// use  these macros in functions that are like bool(calee_ret)
+#define RETURN_IF0(RET)   \
+  do {                      \
+    if (!RET) return false; \
+  } while (0)
+#define RETURN_EMPLACE(RET,RET_val)  \
+  do {   \
+auto&RET_=(RET);\
+    if (!RET_) return false;\
+       RET_->emplace(RET_val);       \
+    if (!*(RET_)) return false;\
+    return true;\
+  } while (0)
+#define RETURN_WITH(RET) \
+  do {                               \
+    auto &RET_ = (RET);              \
+    if (!RET_) return false;         \
+    if (!*(RET_)) return false;      \
+    return true;                     \
+  } while (0)
+/*
+example:
+
+bool f(calee_ret<int>ret){
+RETURN_IF0(ret);// check for bad function call from caller
+if(condition){
+  // stuff ...
+  RETURN_EMPLACE(ret,0);// 0 is the returned int 
+}
+//other stuff ...
+// ret may have value
+RETURN_WITH(ret);
+}
+
+
+*/ 
 
 
 
