@@ -3,13 +3,17 @@
 namespace mjz_ard {};  // namespace mjz_ard
 namespace test {
 static bool fn_mjz(mjzt::calee_ret<mjzt::operation_reporter> ret,
-                   int condition) {
-  RETURN_IF0(ret);
-  if (condition == 0) RETURN_EMPLACE(ret, "i am returned {0}");
-  if (condition == 1) ret->emplace(" initialized {1}");
-  RETURN_WITH(ret);
+                   int condition) noexcept {
+  NE_RETURN_IF0(ret);
+  if (condition == 0) NE_RETURN_EMPLACE(ret, "i am returned {0}");
+  if (condition == 1) {
+    try {//safer for outside even if emplace is noexcept
+      ret->emplace(" initialized {1}");
+    } catch (...) {}
+  }
+  NE_RETURN_WITH(ret);
 }
-static void run_ret( ) {
+static void run_ret() {
   int i{};
   while (i != 3) {
     mjz::println("give an integer {3 to exit}");
@@ -21,14 +25,13 @@ static void run_ret( ) {
         if ('0' <= c && c <= '9') continue;
         i = 3;
       }
-      if (i==3||!*buf) {
+      if (i == 3 || !*buf) {
         mjz::println(" :( ");
         break;
       }
-      i = mjzt::mjz_str(buf,3).toLL();
+      i = mjzt::mjz_str(buf, 3).toLL();
     }
-   
-    
+
     mjzt::caler_ret<mjzt::operation_reporter> ret_;
     if (!fn_mjz(ret_, i)) {
       mjz::println("no return {!(1 || 0 || 3)}");
@@ -46,7 +49,4 @@ int my_main::main(int argc, const char* const* const argv) {
   test::run_ret();
 
   return 0;
-
 }
-
-

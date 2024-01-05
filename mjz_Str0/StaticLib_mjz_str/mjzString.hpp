@@ -14422,7 +14422,7 @@ using  calee_ret= ref_return<T>;
     if (!RET) return false; \
   } while (0)
 #define RETURN_EMPLACE(RET,RET_val)  \
-  do {   \
+  do {  \
 auto&RET_=(RET);\
     if (!RET_) return false;\
        RET_->emplace(RET_val);       \
@@ -14435,6 +14435,33 @@ auto&RET_=(RET);\
     if (!RET_) return false;         \
     if (!*(RET_)) return false;      \
     return true;                     \
+  } while (0)
+
+
+#define NE_RETURN_IF0(RET)     \
+  do {                      \
+    try {                  \
+      RETURN_IF0(RET);      \
+    } catch (...) {        \
+      return false;        \
+    }\
+  } while (0)
+#define NE_RETURN_EMPLACE(RET, RET_val) \
+  do {                               \
+               try {                               \
+       RETURN_EMPLACE(RET);                  \
+    } catch (...) {                     \
+      return false;                     \
+    }                                   \
+           \
+  } while (0)
+#define NE_RETURN_WITH(RET)        \
+  do {                          \
+   try {                   \
+      RETURN_WITH(RET);      \
+    } catch (...) {         \
+      return false;         \
+    }\
   } while (0)
 /*
 example:
