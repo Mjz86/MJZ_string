@@ -8424,9 +8424,9 @@ struct mjz_stack_obj_warper_template_class_t
           use_object_in_union>  // for that 1 exetera
                                 // (compiler added ) memory
 {
-  using Type = std::remove_cvref_t<my_iner_Type_>;
-
  public:
+  using Type = std::remove_cvref_t<my_iner_Type_>;
+  using my_totaly_uniuqe_type_name_of_content_type=Type;
   static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
   constexpr inline my_obj_creator_t get_obj_creator() {
     return my_obj_creator_t(*((const my_obj_creator_t *)this));
@@ -8614,6 +8614,22 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const mjz_stack_obj_warper_template_class_t &&move_me()
       const {
     return std::move(*this);
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() &{
+    return *this;
+  }
+
+  constexpr inline const mjz_stack_obj_warper_template_class_t &copy_me()
+      const &{
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() &&{
+    return *this;
+  }
+
+  constexpr inline const mjz_stack_obj_warper_template_class_t &copy_me()
+      const && {
+    return *this;
   }
 
  public:  // unsafe may cuse undefined behavior
@@ -9493,10 +9509,11 @@ LAST USE - {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }  ... DESTRUCTION
 */
 
 template <typename T_ref, typename condition_t = void>
-class optional_pointer_refrence_template_t : private not_a_type_if<true> {};
+class optional_pointer_refrence_class_template_t : private not_a_type_if<true> {
+};
 
 template <typename T_ref>
-class optional_pointer_refrence_template_t<
+class optional_pointer_refrence_class_template_t<
     T_ref,
     std::enable_if_t<
         std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
@@ -9545,58 +9562,60 @@ class optional_pointer_refrence_template_t<
     if (m_ptr) return m_ptr;
     throw "no object ";
   }
-  inline constexpr optional_pointer_refrence_template_t() {}
+  inline constexpr optional_pointer_refrence_class_template_t() {}
+  inline constexpr optional_pointer_refrence_class_template_t(
+      std::nullptr_t nullp) {}
 
-  inline constexpr optional_pointer_refrence_template_t(
+  inline constexpr optional_pointer_refrence_class_template_t(
       Type *valid_pointer_to_object_that_meates_the_requirements)
       : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
-  inline constexpr optional_pointer_refrence_template_t(
+  inline constexpr optional_pointer_refrence_class_template_t(
       Type &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_template_t(this->addressof(
+      : optional_pointer_refrence_class_template_t(this->addressof(
             valid_refrence_to_object_that_meates_the_requirements)) {}
 
-  inline constexpr optional_pointer_refrence_template_t(
-      optional_pointer_refrence_template_t
+  inline constexpr optional_pointer_refrence_class_template_t(
+      optional_pointer_refrence_class_template_t
           &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_template_t(
-            valid_refrence_to_object_that_meates_the_requirements
-                .ptr_to_valid_object_if_not_nul) {}
-  inline constexpr optional_pointer_refrence_template_t(
-      optional_pointer_refrence_template_t
+      : optional_pointer_refrence_class_template_t(
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+  inline constexpr optional_pointer_refrence_class_template_t(
+      optional_pointer_refrence_class_template_t
           &&valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_template_t(
-            valid_refrence_to_object_that_meates_the_requirements
-                .ptr_to_valid_object_if_not_nul) {}
-  inline constexpr optional_pointer_refrence_template_t(Type &&) = delete;
-
-  inline constexpr optional_pointer_refrence_template_t &operator=(
+      : optional_pointer_refrence_class_template_t(
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+  inline constexpr optional_pointer_refrence_class_template_t(Type &&) = delete;
+  optional_pointer_refrence_class_template_t &operator=(Type &&) = delete;
+  inline constexpr optional_pointer_refrence_class_template_t(const Type &&) =
+      delete;
+  optional_pointer_refrence_class_template_t &operator=(const Type &&) = delete;
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
       Type *valid_pointer_to_object_that_meates_the_requirements) {
     m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
     return *this;
   }
-  inline constexpr optional_pointer_refrence_template_t &operator=(
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
       Type &valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr =
         this->addressof(valid_refrence_to_object_that_meates_the_requirements);
     return *this;
   }
-  optional_pointer_refrence_template_t &operator=(Type &&) = delete;
-  inline constexpr optional_pointer_refrence_template_t &operator=(
-      optional_pointer_refrence_template_t
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
           &valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
     return *this;
   }
-  inline constexpr optional_pointer_refrence_template_t &operator=(
-      optional_pointer_refrence_template_t
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
           &&valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
     return *this;
   }
 
-  inline constexpr ~optional_pointer_refrence_template_t() {}
+  inline constexpr ~optional_pointer_refrence_class_template_t() {}
 
   inline constexpr explicit operator bool() const {
     return !!get_ptr_to_valid_object_or_throw<void>();
@@ -9617,7 +9636,8 @@ class optional_pointer_refrence_template_t<
   inline constexpr Type *ptr() const {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr optional_pointer_refrence_template_t &set_ptr(Type *p = 0) {
+  inline constexpr optional_pointer_refrence_class_template_t &set_ptr(
+      Type *p = 0) {
     m_ptr = p;
     return *this;
   }
@@ -9659,11 +9679,11 @@ class optional_pointer_refrence_template_t<
   }
   inline constexpr void operator~() { m_ptr = 0; }
 
-  inline constexpr
-  operator optional_pointer_refrence_template_t<std::add_const_t<Type> &>() {
+  inline constexpr operator optional_pointer_refrence_class_template_t<
+      std::add_const_t<Type> &>() {
     return {m_ptr};
   }
-  using merf = optional_pointer_refrence_template_t &;
+  using merf = optional_pointer_refrence_class_template_t &;
   inline constexpr friend bool operator==(merf a, merf b) { return *a == *b; }
   inline constexpr friend bool operator!=(merf a, merf b) { return *a != *b; }
   inline constexpr friend bool operator<=(merf a, merf b) { return *a <= *b; }
@@ -9689,7 +9709,7 @@ class optional_pointer_refrence_template_t<
 };
 
 template <typename T_ref>
-class optional_pointer_refrence_template_t<
+class optional_pointer_refrence_class_template_t<
     T_ref,
     std::enable_if_t<
         std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
@@ -9728,58 +9748,107 @@ class optional_pointer_refrence_template_t<
     if (m_ptr) return m_ptr;
     throw "no object ";
   }
-  inline constexpr optional_pointer_refrence_template_t() {}
+  inline constexpr optional_pointer_refrence_class_template_t() {}
+  inline constexpr optional_pointer_refrence_class_template_t(
+      std::nullptr_t nullp) {}
 
-  inline constexpr optional_pointer_refrence_template_t(
-      Type *valid_pointer_to_object_that_meates_the_requirements)
+  using NC_type = std::remove_const_t<Type>;
+  inline constexpr optional_pointer_refrence_class_template_t(
+      NC_type *valid_pointer_to_object_that_meates_the_requirements)
       : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
-  inline constexpr optional_pointer_refrence_template_t(
-      Type &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_template_t(this->addressof(
+  inline constexpr optional_pointer_refrence_class_template_t(
+      NC_type &valid_refrence_to_object_that_meates_the_requirements)
+      : optional_pointer_refrence_class_template_t(this->addressof(
             valid_refrence_to_object_that_meates_the_requirements)) {}
 
-  inline constexpr optional_pointer_refrence_template_t(
-      optional_pointer_refrence_template_t
+  inline constexpr optional_pointer_refrence_class_template_t(
+      optional_pointer_refrence_class_template_t<NC_type&>
           &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_template_t(
-            valid_refrence_to_object_that_meates_the_requirements
-                .ptr_to_valid_object_if_not_nul) {}
-  inline constexpr optional_pointer_refrence_template_t(
-      optional_pointer_refrence_template_t
+      : optional_pointer_refrence_class_template_t(
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+  inline constexpr optional_pointer_refrence_class_template_t(
+      optional_pointer_refrence_class_template_t<NC_type&>
           &&valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_template_t(
-            valid_refrence_to_object_that_meates_the_requirements
-                .ptr_to_valid_object_if_not_nul) {}
-  inline constexpr optional_pointer_refrence_template_t(Type &&) = delete;
+      : optional_pointer_refrence_class_template_t(
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+  inline constexpr optional_pointer_refrence_class_template_t(NC_type &&) =
+      delete;
 
-  inline constexpr optional_pointer_refrence_template_t &operator=(
-      Type *valid_pointer_to_object_that_meates_the_requirements) {
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      NC_type *valid_pointer_to_object_that_meates_the_requirements) {
     m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
     return *this;
   }
-  inline constexpr optional_pointer_refrence_template_t &operator=(
-      Type &valid_refrence_to_object_that_meates_the_requirements) {
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      NC_type &valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr =
         this->addressof(valid_refrence_to_object_that_meates_the_requirements);
     return *this;
   }
-  optional_pointer_refrence_template_t &operator=(Type &&) = delete;
-  inline constexpr optional_pointer_refrence_template_t &operator=(
-      optional_pointer_refrence_template_t
+  optional_pointer_refrence_class_template_t &operator=(NC_type &&) = delete;
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t<NC_type&>
           &valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
     return *this;
   }
-  inline constexpr optional_pointer_refrence_template_t &operator=(
-      optional_pointer_refrence_template_t
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t<NC_type&>
           &&valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
     return *this;
   }
 
-  inline constexpr ~optional_pointer_refrence_template_t() {}
+  inline constexpr optional_pointer_refrence_class_template_t(
+      Type *valid_pointer_to_object_that_meates_the_requirements)
+      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
+  inline constexpr optional_pointer_refrence_class_template_t(
+      Type &valid_refrence_to_object_that_meates_the_requirements)
+      : optional_pointer_refrence_class_template_t(this->addressof(
+            valid_refrence_to_object_that_meates_the_requirements)) {}
+
+  inline constexpr optional_pointer_refrence_class_template_t(
+      optional_pointer_refrence_class_template_t
+          &valid_refrence_to_object_that_meates_the_requirements)
+      : optional_pointer_refrence_class_template_t(
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+  inline constexpr optional_pointer_refrence_class_template_t(
+      optional_pointer_refrence_class_template_t
+          &&valid_refrence_to_object_that_meates_the_requirements)
+      : optional_pointer_refrence_class_template_t(
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+  inline constexpr optional_pointer_refrence_class_template_t(Type &&) = delete;
+
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      Type *valid_pointer_to_object_that_meates_the_requirements) {
+    m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      Type &valid_refrence_to_object_that_meates_the_requirements) {
+    m_ptr =
+        this->addressof(valid_refrence_to_object_that_meates_the_requirements);
+    return *this;
+  }
+  optional_pointer_refrence_class_template_t &operator=(Type &&) = delete;
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
+          &valid_refrence_to_object_that_meates_the_requirements) {
+    m_ptr = valid_refrence_to_object_that_meates_the_requirements
+                .get_ptr_to_valid_object_or_throw();
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
+          &&valid_refrence_to_object_that_meates_the_requirements) {
+    m_ptr = valid_refrence_to_object_that_meates_the_requirements
+                .get_ptr_to_valid_object_or_throw();
+    return *this;
+  }
+
+  inline constexpr ~optional_pointer_refrence_class_template_t() {}
 
   inline constexpr explicit operator bool() const {
     return !!get_ptr_to_valid_object_or_throw<void>();
@@ -9800,7 +9869,8 @@ class optional_pointer_refrence_template_t<
   inline constexpr Type *ptr() const {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr optional_pointer_refrence_template_t &set_ptr(Type *p = 0) {
+  inline constexpr optional_pointer_refrence_class_template_t &set_ptr(
+      Type *p = 0) {
     m_ptr = p;
     return *this;
   }
@@ -9841,7 +9911,7 @@ class optional_pointer_refrence_template_t<
     return *get_ptr_to_valid_object_or_throw();
   }
   inline constexpr void operator~() { m_ptr = 0; }
-  using merf = optional_pointer_refrence_template_t &;
+  using merf = optional_pointer_refrence_class_template_t &;
   inline constexpr friend bool operator==(merf a, merf b) { return *a == *b; }
   inline constexpr friend bool operator!=(merf a, merf b) { return *a != *b; }
   inline constexpr friend bool operator<=(merf a, merf b) { return *a <= *b; }
@@ -9865,6 +9935,12 @@ class optional_pointer_refrence_template_t<
   inline constexpr auto operator-=(merf b) { return (**this) -= *b; }
   inline constexpr auto operator+=(merf b) { return (**this) += *b; }
 };
+
+template <typename T_ref>
+using optional_pointer_refrence_template_t =
+    optional_pointer_refrence_class_template_t<
+        std::remove_volatile_t<T_ref>, void>;
+
 
 template <typename T, size_t m_size,
           class obj_cnstructor_t = mjz_temp_type_obj_algorithims_warpper_t<T>>
@@ -14633,13 +14709,26 @@ template <typename T>
 using caler_ret = func_ret<T>;
 template <typename T>
 using calee_ret = ref_return<T>;
+#ifndef  _MJZ_NO_CALEE_CALER_HELPER_MACRO_
+#define CR_NO_RETURN(RET) ((RET).copy_me())
+
+//NOTE: this function only works if calee_ret<T> is checked in the called function Undefined Behaviour otherwise
+#define CR_CALL_IF(_CONDITION, _RET)                                         \
+  ((_CONDITION) ? (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
+                      typename decltype(_RET)::                              \
+                          my_totaly_uniuqe_type_name_of_content_type>(_RET)) \
+                : (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
+                      typename decltype(_RET)::                              \
+                 my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
+
+
 
 // use  these macros in functions that are like bool(calee_ret)
-#define RETURN_IF0(RET)     \
+#define CE_RETURN_IF0(RET)     \
   do {                      \
     if (!RET) return false; \
   } while (0)
-#define RETURN_EMPLACE(RET, RET_val) \
+#define CE_RETURN_EMPLACE(RET, RET_val) \
   do {                               \
     auto &RET_ = (RET);              \
     if (!RET_) return false;         \
@@ -14647,7 +14736,7 @@ using calee_ret = ref_return<T>;
     if (!*(RET_)) return false;      \
     return true;                     \
   } while (0)
-#define RETURN_WITH(RET)        \
+#define CE_RETURN_WITH(RET)        \
   do {                          \
     auto &RET_ = (RET);         \
     if (!RET_) return false;    \
@@ -14655,27 +14744,27 @@ using calee_ret = ref_return<T>;
     return true;                \
   } while (0)
 
-#define NE_RETURN_IF0(RET) \
+#define CE_NE_RETURN_IF0(RET) \
   do {                     \
     try {                  \
-      RETURN_IF0(RET);     \
+      CE_RETURN_IF0(RET);     \
     } catch (...) {        \
       return false;        \
     }                      \
   } while (0)
-#define NE_RETURN_EMPLACE(RET, RET_val) \
+#define CE_NE_RETURN_EMPLACE(RET, RET_val) \
   do {                                  \
     try {                               \
-      RETURN_EMPLACE(RET, RET_val);     \
+      CE_RETURN_EMPLACE(RET, RET_val);     \
     } catch (...) {                     \
       return false;                     \
     }                                   \
                                         \
   } while (0)
-#define NE_RETURN_WITH(RET) \
+#define CE_NE_RETURN_WITH(RET) \
   do {                      \
     try {                   \
-      RETURN_WITH(RET);     \
+      CE_RETURN_WITH(RET);     \
     } catch (...) {         \
       return false;         \
     }                       \
@@ -14693,10 +14782,9 @@ if(condition){
 // ret may have value
 RETURN_WITH(ret);
 }
-
-
 */
 
+#endif  // ! _MJZ_NO_CALEE_CALER_HELPER_MACRO_
 template <typename T>
 using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;
 

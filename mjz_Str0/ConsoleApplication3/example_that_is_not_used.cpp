@@ -4,10 +4,10 @@ namespace mjz_ard {};  // namespace mjz_ard
 namespace test {
 static bool fn_mjz(mjzt::calee_ret<mjzt::operation_reporter> ret,
                    int condition) noexcept {
-  NE_RETURN_IF0(ret);
+  CE_NE_RETURN_IF0(ret);
   switch (condition) {
     case 0:
-      NE_RETURN_EMPLACE(ret, "i am returned {0}");
+      CE_NE_RETURN_EMPLACE(ret, "i am returned {0}");
       break;
     case 1:
       try {  // safer for outside even if emplace is noexcept
@@ -16,7 +16,7 @@ static bool fn_mjz(mjzt::calee_ret<mjzt::operation_reporter> ret,
       }
       break;
     case 2:
-      NE_RETURN_EMPLACE(ret, "i am returned {2}");
+      CE_NE_RETURN_EMPLACE(ret, "i am returned {2}");
       break;
     default:
       try {
@@ -27,7 +27,7 @@ static bool fn_mjz(mjzt::calee_ret<mjzt::operation_reporter> ret,
       }
       break;
   } 
-  NE_RETURN_WITH(ret);
+  CE_NE_RETURN_WITH(ret);
 }
 static void run_ret() {
   int i{};
@@ -49,7 +49,7 @@ static void run_ret() {
     }
 
     mjzt::caler_ret<mjzt::operation_reporter> ret_;
-    if (!fn_mjz(ret_, i)) {
+    if (!fn_mjz(CR_CALL_IF(i != 3, ret_), i)) {
       mjz::println("no return {!(1 || 0 || 3)}");
       continue;
     }
@@ -57,7 +57,10 @@ static void run_ret() {
     ret++;
   }
 }
+
+
 };  // namespace test
+
 
 int my_main::main(int argc, const char* const* const argv) {
   using namespace mjz;
