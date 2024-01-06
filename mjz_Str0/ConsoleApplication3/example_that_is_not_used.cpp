@@ -64,6 +64,5 @@ int my_main::main(int argc, const char* const* const argv) {
   using namespace mjzt;
   using namespace mjz::ssco;
   test::run_ret();
-   
   return 0;
 }
