@@ -1689,44 +1689,67 @@ class iterator_template_filter_warper {
   using size_type = size_t;
   constexpr inline iterator_template_filter_warper() noexcept : m_iterator() {}
   constexpr inline iterator_template_filter_warper(iterator_t iter) noexcept
-      : m_iterator(iter) {}
+      : m_iterator(iter) {go_forward();}
   constexpr inline iterator_template_filter_warper(filter_type filter) noexcept
-      : m_iterator(), m_filter(filter) {}
+      : m_iterator(), m_filter(filter) {
+    go_forward();
+  }
   constexpr inline iterator_template_filter_warper(iterator_t iter,
                                                    filter_type filter) noexcept
-      : m_iterator(iter), m_filter(filter) {}
+      : m_iterator(iter), m_filter(filter) {
+    go_forward();
+  }
   constexpr iterator_template_filter_warper(
       const iterator_template_filter_warper &p) noexcept
-      : m_iterator(p.m_iterator), m_filter(p.m_filter) {}
+      : m_iterator(p.m_iterator), m_filter(p.m_filter) {
+    go_forward();
+  }
   constexpr iterator_template_filter_warper(
       iterator_template_filter_warper &&p) noexcept
-      : m_iterator(p.m_iterator), m_filter(p.m_filter) {}
+      : m_iterator(p.m_iterator), m_filter(p.m_filter) {
+    go_forward();
+  }
   constexpr iterator_template_filter_warper(
       const iterator_template_filter_warper &p, filter_type filter) noexcept
-      : m_iterator(p.m_iterator), m_filter(filter) {}
+      : m_iterator(p.m_iterator), m_filter(filter) {
+    go_forward();
+  }
   constexpr iterator_template_filter_warper(iterator_template_filter_warper &&p,
                                             filter_type filter) noexcept
-      : m_iterator(p.m_iterator), m_filter(filter) {}
+      : m_iterator(p.m_iterator), m_filter(filter) {
+    go_forward();
+  }
   constexpr iterator_template_filter_warper &operator=(Type *iter) {
     m_iterator = iter;
+    go_forward();
     return *this;
   }
   constexpr inline iterator_template_filter_warper(Type *iter, Type *min_end,
                                                    Type *max_end) noexcept
-      : m_iterator(iter, min_end, max_end) {}
+      : m_iterator(iter, min_end, max_end) {
+    go_forward();
+  }
   constexpr inline iterator_template_filter_warper(Type *arr,
                                                    size_t len) noexcept
-      : m_iterator(arr, len) {}
+      : m_iterator(arr, len) {
+    go_forward();
+  }
   constexpr inline iterator_template_filter_warper(
       const Type *First_arg, const Type *Last_arg) noexcept
-      : iterator_template_filter_warper(First_arg, First_arg, Last_arg) {}
+      : iterator_template_filter_warper(First_arg, First_arg, Last_arg) {
+    go_forward();
+  }
   constexpr inline iterator_template_filter_warper(Type *iter, Type *min_end,
                                                    Type *max_end,
                                                    filter_type filter) noexcept
-      : m_iterator(iter, min_end, max_end), m_filter(filter) {}
+      : m_iterator(iter, min_end, max_end), m_filter(filter) {
+    go_forward();
+  }
   constexpr inline iterator_template_filter_warper(Type *arr, size_t len,
                                                    filter_type filter) noexcept
-      : m_iterator(arr, len), m_filter(filter) {}
+      : m_iterator(arr, len), m_filter(filter) {
+    go_forward();
+  }
   constexpr inline iterator_template_filter_warper(const Type *First_arg,
                                                    const Type *Last_arg,
                                                    filter_type filter) noexcept
@@ -1734,27 +1757,32 @@ class iterator_template_filter_warper {
   constexpr iterator_template_filter_warper &operator=(iterator_t iter) {
     m_iterator = iter;
     m_filter = (iter.m_filter);
+    go_forward();
     return *this;
   }
   constexpr iterator_template_filter_warper &operator=(
       const iterator_template_filter_warper &p) {
     m_iterator = (p.m_iterator);
     m_filter = (p.m_filter);
+    go_forward();
     return *this;
   }
   constexpr iterator_template_filter_warper &operator=(
       iterator_template_filter_warper &&p) noexcept {
     m_iterator = (p.m_iterator);
     m_filter = (p.m_filter);
+    go_forward();
     return *this;
   }
   inline ~iterator_template_filter_warper() {}
   constexpr bool operator==(
-      const iterator_template_filter_warper &other) const noexcept {
+      const iterator_template_filter_warper &other)   noexcept {
+    go_forward(); 
     return m_iterator == other.m_iterator;
   }
   constexpr bool operator!=(
-      const iterator_template_filter_warper &other) const noexcept {
+      const iterator_template_filter_warper &other)   noexcept {
+    go_forward(); 
     return m_iterator != other.m_iterator;
   }
   constexpr reference operator*() {
@@ -1767,6 +1795,7 @@ class iterator_template_filter_warper {
   }
   template <typename my_type>
   constexpr inline auto operator->*(my_type my_var) {
+    go_forward();
     return operator->()->*my_var;
   }
   constexpr inline const iterator_template_filter_warper begin() const {
@@ -1856,23 +1885,27 @@ class iterator_template_filter_warper {
     go_backward();
     return *this;
   }
-  constexpr reference operator[](std::size_t index) const {
+  constexpr reference operator[](std::size_t index)   {
+    go_forward();
     return m_iterator[index];
   }
   constexpr bool operator<(
-      const iterator_template_filter_warper &other) const noexcept {
+      const iterator_template_filter_warper &other)   noexcept {
+    go_forward();
     return m_iterator < other.m_iterator;
   }
   constexpr bool operator>(
-      const iterator_template_filter_warper &other) const noexcept {
+      const iterator_template_filter_warper &other)   noexcept {
+    go_forward();
     return m_iterator > other.m_iterator;
   }
   constexpr bool operator<=(
-      const iterator_template_filter_warper &other) const noexcept {
+      const iterator_template_filter_warper &other)   noexcept {
+    go_forward();
     return m_iterator <= other.m_iterator;
   }
   constexpr bool operator>=(
-      const iterator_template_filter_warper &other) const noexcept {
+      const iterator_template_filter_warper &other)   noexcept {
     return m_iterator >= other.m_iterator;
   }
   constexpr operator pointer() { return m_iterator; }
@@ -6324,7 +6357,7 @@ class static_str_algo {
     constexpr inline just_str_view_data(char *p, size_t n)
         : buffer(p), len(n) {}
     template <size_t N>
-    constexpr inline just_str_view_data(char (&a)[N]) : buffer(a), len(N) {}
+    constexpr inline just_str_view_data(char (&a)[N]) : buffer(a), len(N-(!a[N-1])) {}
     constexpr inline just_str_view_data() : just_str_view_data(0, 0) {}
     char *buffer;
     size_t len;
@@ -7665,6 +7698,10 @@ class static_str_algo {
  public:
   constexpr static uint8_t number_of_terms = 100;
   static constexpr inline long divide_by_2(long x) { return (x >> 1); }
+  static constexpr inline bool is_approximately_equal(double a, double b,
+                                                      double accuracy = 0.001) {
+    return (abs(a - b) < accuracy);
+  }
 
  private:
   constexpr static float three_halfs = 1.5F;
@@ -7679,6 +7716,7 @@ class static_str_algo {
     y = y * (three_halfs - (x2 * y * y));  // 1st iteration of newtons method
     return y;
   }
+
   static constexpr inline bool check_number_for_r_sqrt(float &number) {
     if (number == 0) {
       number = INFINITY;
@@ -8426,7 +8464,7 @@ struct mjz_stack_obj_warper_template_class_t
 {
  public:
   using Type = std::remove_cvref_t<my_iner_Type_>;
-  using my_totaly_uniuqe_type_name_of_content_type=Type;
+  using my_totaly_uniuqe_type_name_of_content_type = Type;
   static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
   constexpr inline my_obj_creator_t get_obj_creator() {
     return my_obj_creator_t(*((const my_obj_creator_t *)this));
@@ -8615,15 +8653,15 @@ struct mjz_stack_obj_warper_template_class_t
       const {
     return std::move(*this);
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() &{
+  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() & {
     return *this;
   }
 
   constexpr inline const mjz_stack_obj_warper_template_class_t &copy_me()
-      const &{
+      const & {
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() &&{
+  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() && {
     return *this;
   }
 
@@ -9762,12 +9800,12 @@ class optional_pointer_refrence_class_template_t<
             valid_refrence_to_object_that_meates_the_requirements)) {}
 
   inline constexpr optional_pointer_refrence_class_template_t(
-      optional_pointer_refrence_class_template_t<NC_type&>
+      optional_pointer_refrence_class_template_t<NC_type &>
           &valid_refrence_to_object_that_meates_the_requirements)
       : optional_pointer_refrence_class_template_t(
             valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
   inline constexpr optional_pointer_refrence_class_template_t(
-      optional_pointer_refrence_class_template_t<NC_type&>
+      optional_pointer_refrence_class_template_t<NC_type &>
           &&valid_refrence_to_object_that_meates_the_requirements)
       : optional_pointer_refrence_class_template_t(
             valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
@@ -9787,14 +9825,14 @@ class optional_pointer_refrence_class_template_t<
   }
   optional_pointer_refrence_class_template_t &operator=(NC_type &&) = delete;
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t<NC_type&>
+      optional_pointer_refrence_class_template_t<NC_type &>
           &valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t<NC_type&>
+      optional_pointer_refrence_class_template_t<NC_type &>
           &&valid_refrence_to_object_that_meates_the_requirements) {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
@@ -9938,9 +9976,8 @@ class optional_pointer_refrence_class_template_t<
 
 template <typename T_ref>
 using optional_pointer_refrence_template_t =
-    optional_pointer_refrence_class_template_t<
-        std::remove_volatile_t<T_ref>, void>;
-
+    optional_pointer_refrence_class_template_t<std::remove_volatile_t<T_ref>,
+                                               void>;
 
 template <typename T, size_t m_size,
           class obj_cnstructor_t = mjz_temp_type_obj_algorithims_warpper_t<T>>
@@ -11398,34 +11435,22 @@ struct SHA256_CTX {
   static constexpr inline void paste_str(const char *str, char *&ptr) {
     size_t l = static_str_algo::strlen(str);
     static_str_algo::memmove(ptr, str, l);
-    ptr += l - 1;
+    ptr += l;
   }
 
  protected:
-  constexpr inline char *to_c_string(char *buf_) const {
+  constexpr inline char *to_c_string(char *const buf_) const {
     char *buf = buf_;
-    auto str_left = [&]() { return 1024 - (size_t)(buf - buf_); };
-    paste_str("const char ", buf_);
-    paste_str("hash", buf_);
-    paste_str(" [] = { ", buf_);
-    static_str_algo::itoa((int)hashed_data[0], {buf, str_left()}, 10);
-    if ((uint8_t)hashed_data[0] > 100) {
-      buf += 3;
-    } else if ((uint8_t)hashed_data[0] > 10) {
-      buf += 2;
-    } else {
-      buf += 1;
-    }
+    paste_str("const  char ", buf);
+    paste_str(" hash ", buf);
+    paste_str(" [] = {  ", buf);
+
+    buf += static_str_algo::itoa((int64_t)hashed_data[0], {buf, 5}, 10).len;
+
     for (int64_t i = 1; i < NumberOf(hashed_data); i++) {
-      paste_str(",", buf_);
-      static_str_algo::itoa((int)hashed_data[i], {buf, str_left()}, 10);
-      if ((uint8_t)hashed_data[i] > 100) {
-        buf += 3;
-      } else if ((uint8_t)hashed_data[i] > 10) {
-        buf += 2;
-      } else {
-        buf += 1;
-      }
+      paste_str(",", buf);
+
+      buf += static_str_algo::itoa((int64_t)hashed_data[i], {buf, 5}, 10).len;
     }
     paste_str(" };\n", buf);
     return buf_;
@@ -11831,9 +11856,11 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr basic_mjz_Str_view(char *buffer, size_t length)
       : m_buffer(buffer), m_length(length) {}
   template <size_t N>
-  constexpr basic_mjz_Str_view(char (&a)[N]) : m_buffer(a), m_length(N) {}
+  constexpr basic_mjz_Str_view(char (&a)[N])
+      : m_buffer(a), m_length(N-(!a[N - 1])) {}
   template <size_t N>
-  constexpr basic_mjz_Str_view(const char (&a)[N]) : m_buffer(a), m_length(N) {}
+  constexpr basic_mjz_Str_view(const char (&a)[N])
+      : m_buffer(a), m_length(N-(!a[N - 1])) {}
   constexpr basic_mjz_Str_view(const just_str_view_data &s)
       : m_buffer(s.buffer), m_length(s.len) {}
   template <typename c_t,
@@ -13385,9 +13412,9 @@ class mjz_Str : public basic_mjz_String,
     *this = value;
   }
   template <size_t N>
-  mjz_str_t(const char (&a)[N]) : mjz_str_t(a, N) {}
+  mjz_str_t(const char (&a)[N]) : mjz_str_t(a, N - (!a[N - 1])) {}
   template <size_t N>
-  mjz_str_t(char (&a)[N]) : mjz_str_t(a, N) {}
+  mjz_str_t(char (&a)[N]) : mjz_str_t(a, N - (!a[N - 1])) {}
   mjz_str_t(std::initializer_list<const char> list) {
     init();
     size_t newlen = list.size();
@@ -13575,9 +13602,11 @@ class mjz_str_view : public basic_mjz_Str_view {
   explicit constexpr mjz_str_view(c_t cstr_)
       : mjz_str_view((const char *)cstr_, strlen((const char *)cstr_)) {}
   template <size_t N>
-  inline constexpr mjz_str_view(char (&a)[N]) : mjz_str_view(a, N) {}
+  inline constexpr mjz_str_view(char (&a)[N])
+      : mjz_str_view(a, N - (!a[N - 1])) {}
   template <size_t N>
-  inline constexpr mjz_str_view(const char (&a)[N]) : mjz_str_view(a, N) {}
+  inline constexpr mjz_str_view(const char (&a)[N])
+      : mjz_str_view(a, N - (!a[N - 1])) {}
   constexpr mjz_str_view() : mjz_str_view(empty_STRING_C_STR, 0) {}
   mjz_str_view(mjz_str_view &&s) =
       default;  // we are string views and not strings
@@ -14709,34 +14738,34 @@ template <typename T>
 using caler_ret = func_ret<T>;
 template <typename T>
 using calee_ret = ref_return<T>;
-#ifndef  _MJZ_NO_CALEE_CALER_HELPER_MACRO_
+#ifndef _MJZ_NO_CALEE_CALER_HELPER_MACRO_
 #define CR_NO_RETURN(RET) ((RET).copy_me())
 
-//NOTE: this function only works if calee_ret<T> is checked in the called function Undefined Behaviour otherwise
-#define CR_CALL_IF(_CONDITION, _RET)                                         \
-  ((_CONDITION) ? (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
-                      typename decltype(_RET)::                              \
-                          my_totaly_uniuqe_type_name_of_content_type>(_RET)) \
-                : (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
-                      typename decltype(_RET)::                              \
+// NOTE: this function only works if calee_ret<T> is checked in the called
+// function Undefined Behaviour otherwise
+#define CR_CALL_IF(_CONDITION, _RET)                                \
+  ((_CONDITION)                                                     \
+       ? (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
+             typename decltype(_RET)::                              \
+                 my_totaly_uniuqe_type_name_of_content_type>(_RET)) \
+       : (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
+             typename decltype(_RET)::                              \
                  my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
 
-
-
 // use  these macros in functions that are like bool(calee_ret)
-#define CE_RETURN_IF0(RET)     \
+#define CE_RETURN_IF0(RET)  \
   do {                      \
     if (!RET) return false; \
   } while (0)
 #define CE_RETURN_EMPLACE(RET, RET_val) \
-  do {                               \
-    auto &RET_ = (RET);              \
-    if (!RET_) return false;         \
-    RET_->emplace(RET_val);          \
-    if (!*(RET_)) return false;      \
-    return true;                     \
+  do {                                  \
+    auto &RET_ = (RET);                 \
+    if (!RET_) return false;            \
+    RET_->emplace(RET_val);             \
+    if (!*(RET_)) return false;         \
+    return true;                        \
   } while (0)
-#define CE_RETURN_WITH(RET)        \
+#define CE_RETURN_WITH(RET)     \
   do {                          \
     auto &RET_ = (RET);         \
     if (!RET_) return false;    \
@@ -14745,29 +14774,29 @@ using calee_ret = ref_return<T>;
   } while (0)
 
 #define CE_NE_RETURN_IF0(RET) \
-  do {                     \
-    try {                  \
+  do {                        \
+    try {                     \
       CE_RETURN_IF0(RET);     \
-    } catch (...) {        \
-      return false;        \
-    }                      \
+    } catch (...) {           \
+      return false;           \
+    }                         \
   } while (0)
 #define CE_NE_RETURN_EMPLACE(RET, RET_val) \
-  do {                                  \
-    try {                               \
+  do {                                     \
+    try {                                  \
       CE_RETURN_EMPLACE(RET, RET_val);     \
-    } catch (...) {                     \
-      return false;                     \
-    }                                   \
-                                        \
+    } catch (...) {                        \
+      return false;                        \
+    }                                      \
+                                           \
   } while (0)
 #define CE_NE_RETURN_WITH(RET) \
-  do {                      \
-    try {                   \
+  do {                         \
+    try {                      \
       CE_RETURN_WITH(RET);     \
-    } catch (...) {         \
-      return false;         \
-    }                       \
+    } catch (...) {            \
+      return false;            \
+    }                          \
   } while (0)
 /*
 example:
@@ -16370,7 +16399,7 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_with_output(
     const char *dev_passwoed, const size_t dev_passwoedLength,
     mjz_ard::mjz_str_t<T> &output_name_in_output_out) {
   hash_sha256 rtrn{};
-  uint8_t(&shaResult)[SHA256_BLOCK_SIZE] = rtrn.hashed_data;
+  BYTE(&shaResult)[SHA256_BLOCK_SIZE] = rtrn.hashed_data;
   rtrn.sha256_the_string(dev_passwoed, dev_passwoedLength);
   if (output_name_in_output_out != "Null") {
     output_name_in_output_out =
@@ -17369,6 +17398,14 @@ bool mjz_RingBufferN<N>::isFull() {
 namespace mjz_ard_types = mjz_ard::have_mjz_ard_removed;
 namespace mjz = mjz_ard;
 namespace mjzt = mjz_ard_types;
+#define USE_MJZ_NS()                                          \
+  using namespace mjz_ard;                                    \
+  using namespace mjz_ard::have_mjz_ard_removed;              \
+  using namespace mjz_ard::short_string_convestion_operators; \
+  using namespace mjz_ard::iostream;                          \
+  using namespace mjz_ard::util
+//  put semicolon
+
 #endif  // ! _NOT_USING_MJZ_ARD_
 
 #undef NO_IGNORE_CHAR
@@ -18209,6 +18246,61 @@ typedef Scoped_speed_Timer Scoped_speed_Timer;
 }  // namespace mjz_ard
 
 namespace mjz_ard {
+namespace util {
+constexpr inline bool f_EQ(double a, double b, double accuracy = 0.001) {
+  return ::mjz_ard::static_str_algo::is_approximately_equal(a, b, accuracy);
+}
+
+}  // namespace util
+namespace iostream {
+template <typename T>
+const T &scan(T &obj) {
+  std::cin >> obj;
+  return obj;
+}
+template <typename T>
+const T &scanln(T &obj) {
+  getline(std::cin, obj);
+  return obj;
+}
+
+inline void scan() { std::cin.get(); }
+inline void ignore() { std::cin.ignore(); }
+inline void scanln() {
+  char buf[1001]{};
+  std::cin.getline(buf, 1000, '\n');
+}
+
+template <typename... argT>
+void scan(argT &...args) {
+  auto list =
+      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
+        scan(args);
+        return;
+      }...};  // do all tasks in thr rigth order
+  for (auto &f : list) f();
+}
+
+template <typename... argT>
+void scanln(argT &...args) {
+  auto list =
+      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
+        scan(args);
+        return;
+      }...};  // do all tasks in thr rigth order
+  for (auto &f : list) f();
+  scanln();
+}
+template <typename... argT>
+void scanln_FE(argT &...args) {
+  auto list =
+      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
+        scanln(args);
+        return;
+      }...};  // do all tasks in thr rigth order
+  for (auto &f : list) f();
+}
+
 template <typename T>
 const T &print(const T &obj) {
   std::cout << obj;
@@ -18372,6 +18464,7 @@ void println(argT &&...args) {
   print(std::forward<argT>(args)...);
   std::cout << '\n';
 }
+}  // namespace iostream
 namespace print_c_str_n {
 inline void print() {}
 template <typename... args_t>
