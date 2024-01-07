@@ -9411,6 +9411,38 @@ return **this<=> (*other);
     return has_data() ? std::move(*move_me())
                       : static_cast<T>(std::forward<U>(default_value));
   }
+
+  
+
+  template <class... Ts>
+ inline constexpr Type &value_or_emplace(Ts &&...args) & {
+    if (!!*this) return o();
+    emplace(std::forward<Ts>(args)...);
+    return o();
+  }
+  template <class... Ts>
+ inline constexpr Type &&value_or_emplace(Ts &&...args) && {
+    if (!!*this) return std::move(o());
+    emplace(std::forward<Ts>(args)...);
+    return std::move(o());
+  }
+
+ 
+  template <class... Ts>
+  inline constexpr mjz_stack_obj_warper_template_class_t &optional_or_emplace(
+      Ts &&...args) & {
+    if (!!*this) return *this;
+    emplace(std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class... Ts>
+  inline constexpr mjz_stack_obj_warper_template_class_t &&optional_or_emplace(
+      Ts &&...args) && {
+    if (!!*this) return move_me();
+    emplace(std::forward<Ts>(args)...);
+    return move_me();
+  }
+ 
   template <class F>
   constexpr auto transform(F &&f) & {
     if (has_data()) {
@@ -11125,6 +11157,25 @@ return **this<=> (*other);
   constexpr Type value_or(U &&default_value) && {
     return has_data() ? std::move(*move_me())
                       : static_cast<T>(std::forward<U>(default_value));
+  }
+
+  template <class... Ts>
+  constexpr const Type& value_or_emplace(Ts &&...args) const & {
+      if(!!*this)return o();
+    emplace(std::forward<Ts>(args)...);
+    return o();
+  }
+  template <class... Ts>
+  constexpr Type &value_or_emplace(Ts &&...args) & {
+    if (!!*this) return o();
+    emplace(std::forward<Ts>(args)...);
+    return o();
+  }
+  template <class... Ts>
+  constexpr Type&& value_or_emplace(Ts &&...args) && {
+    if (!!*this) return std::move(o());
+    emplace(std::forward<Ts>(args)...);
+    return std::move(o());
   }
   template <class F>
   constexpr auto transform(F &&f) & {
