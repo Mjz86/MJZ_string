@@ -1,4 +1,4 @@
-
+//std::is_invocable_v
 #include "my_main.h"
 namespace mjz_ard {};  // namespace mjz_ard
 namespace test {
@@ -72,38 +72,35 @@ bool get_float(mjzt::calee_ret<float> ret) {
 const static mjz::BYTE hash[] = {94,  -120, 72,  -104, -38, 40,  4,  113, 81, -48, -27,
                           111, -115, -58, 41,   39,  115, 96, 61,  13, 106, -85,
                           -67, -42,  42,  17,   -17, 114, 29, 21,  66, -40};
-using UP_PR = std::pair<mjzt::mstrv, const mjz::BYTE* const>;
+
 #define MK_UP_PR(U, P) std::make_pair<mjzt::mstrv, const mjz::BYTE* const>(U, P)
- std::vector<UP_PR> user_login{MK_UP_PR("user", hash)};
+std::map<mjzt::mstrv, const mjz::BYTE* const> user_login{
+    MK_UP_PR("user", hash)};
 
 bool get_user_password(mjzt::calee_ret<mjzt::mjz_str> ret) {
   USE_MJZ_NS();
   CE_RETURN_IF0(ret);
   uint32_t i{};
   println(" user list: ");
-  for (auto& kv : user_login) println(++i, " :  \"", kv.first,'"');
+  for (auto& [k,v] : user_login) println(++i, " :  \"", k, '"');
   println("enter user: ");
   scanln(*+*ret);
   ret->o().toLowerCase();
-  i = abs(ret->o().toInt());
-  if (i) {
-    ret->emplace(user_login[i-1].first);
-  }
+  
   println("enter password: ");
   
    
     mjz_str ps;
     scanln(ps);
  auto   psho= ps.mjz_hash();
-  
-  for (auto& kv : to_filter_it(
-          to_mjz_it(user_login),
-          [&](const UP_PR& o) -> bool { 
-          return (o.first == **ret); 
-      })) {
-    if (kv.second == psho) {
-      CE_NE_RETURN_EMPLACE(ret, kv.first);
+    optional_ptr <std::remove_reference_t< decltype(user_login.at(**ret)) > * > p;
+    try {
+   p= user_login.at(**ret);
+    } catch (...) {
     }
+    if (!!p)
+ {
+    if (*p != psho)
     ~ret;
     CE_RETURN_WITH(ret);
  }
@@ -125,7 +122,7 @@ int my_main::main(int argc, const char* const* const argv) {
   {
     caler_ret<float> ret;
 
-    if (get_float(CR_CALL_IF(std::rand() % 2, ret))) {
+    if (get_float(CR_CALL_IF(!(std::rand() % 10000), ret))) {
       ignore();
       if (f_EQ(*ret, 3, 0.1)) {
         rn = 0;

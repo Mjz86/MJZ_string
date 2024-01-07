@@ -1670,7 +1670,7 @@ template <typename Type>
 bool dummy_iterator_template_filter_warper_filter(const Type &) {
   return true;
 }
-template <typename Type, typename iterator_t>
+template <typename Type, typename iterator_t,bool is_in_forward_direction>
 class iterator_template_filter_warper {
  public:
   using filter_type = std::function<bool(const Type &)>;
@@ -1687,68 +1687,75 @@ class iterator_template_filter_warper {
   using difference_type = std::ptrdiff_t;
   using const_reference = const Type &;
   using size_type = size_t;
+  constexpr inline void find_next(){
+    if constexpr (is_in_forward_direction) {
+      go_forward ();
+      return;
+      }
+      go_backward ();
+      }
   constexpr inline iterator_template_filter_warper() noexcept : m_iterator() {}
   constexpr inline iterator_template_filter_warper(iterator_t iter) noexcept
-      : m_iterator(iter) {go_forward();}
+      : m_iterator(iter) {find_next();}
   constexpr inline iterator_template_filter_warper(filter_type filter) noexcept
       : m_iterator(), m_filter(filter) {
-    go_forward();
+    find_next();
   }
   constexpr inline iterator_template_filter_warper(iterator_t iter,
                                                    filter_type filter) noexcept
       : m_iterator(iter), m_filter(filter) {
-    go_forward();
+    find_next();
   }
   constexpr iterator_template_filter_warper(
       const iterator_template_filter_warper &p) noexcept
       : m_iterator(p.m_iterator), m_filter(p.m_filter) {
-    go_forward();
+    find_next();
   }
   constexpr iterator_template_filter_warper(
       iterator_template_filter_warper &&p) noexcept
       : m_iterator(p.m_iterator), m_filter(p.m_filter) {
-    go_forward();
+    find_next();
   }
   constexpr iterator_template_filter_warper(
       const iterator_template_filter_warper &p, filter_type filter) noexcept
       : m_iterator(p.m_iterator), m_filter(filter) {
-    go_forward();
+    find_next();
   }
   constexpr iterator_template_filter_warper(iterator_template_filter_warper &&p,
                                             filter_type filter) noexcept
       : m_iterator(p.m_iterator), m_filter(filter) {
-    go_forward();
+    find_next();
   }
   constexpr iterator_template_filter_warper &operator=(Type *iter) {
     m_iterator = iter;
-    go_forward();
+    find_next();
     return *this;
   }
   constexpr inline iterator_template_filter_warper(Type *iter, Type *min_end,
                                                    Type *max_end) noexcept
       : m_iterator(iter, min_end, max_end) {
-    go_forward();
+    find_next();
   }
   constexpr inline iterator_template_filter_warper(Type *arr,
                                                    size_t len) noexcept
       : m_iterator(arr, len) {
-    go_forward();
+    find_next();
   }
   constexpr inline iterator_template_filter_warper(
       const Type *First_arg, const Type *Last_arg) noexcept
       : iterator_template_filter_warper(First_arg, First_arg, Last_arg) {
-    go_forward();
+    find_next();
   }
   constexpr inline iterator_template_filter_warper(Type *iter, Type *min_end,
                                                    Type *max_end,
                                                    filter_type filter) noexcept
       : m_iterator(iter, min_end, max_end), m_filter(filter) {
-    go_forward();
+    find_next();
   }
   constexpr inline iterator_template_filter_warper(Type *arr, size_t len,
                                                    filter_type filter) noexcept
       : m_iterator(arr, len), m_filter(filter) {
-    go_forward();
+    find_next();
   }
   constexpr inline iterator_template_filter_warper(const Type *First_arg,
                                                    const Type *Last_arg,
@@ -1757,45 +1764,45 @@ class iterator_template_filter_warper {
   constexpr iterator_template_filter_warper &operator=(iterator_t iter) {
     m_iterator = iter;
     m_filter = (iter.m_filter);
-    go_forward();
+    find_next();
     return *this;
   }
   constexpr iterator_template_filter_warper &operator=(
       const iterator_template_filter_warper &p) {
     m_iterator = (p.m_iterator);
     m_filter = (p.m_filter);
-    go_forward();
+    find_next();
     return *this;
   }
   constexpr iterator_template_filter_warper &operator=(
       iterator_template_filter_warper &&p) noexcept {
     m_iterator = (p.m_iterator);
     m_filter = (p.m_filter);
-    go_forward();
+    find_next();
     return *this;
   }
   inline ~iterator_template_filter_warper() {}
   constexpr bool operator==(
       const iterator_template_filter_warper &other)   noexcept {
-    go_forward(); 
+    find_next(); 
     return m_iterator == other.m_iterator;
   }
   constexpr bool operator!=(
       const iterator_template_filter_warper &other)   noexcept {
-    go_forward(); 
+    find_next(); 
     return m_iterator != other.m_iterator;
   }
   constexpr reference operator*() {
-    go_forward();
+    find_next();
     return m_iterator.operator*();
   }
   constexpr pointer operator->() {
-    go_forward();
+    find_next();
     return m_iterator.operator->();
   }
   template <typename my_type>
   constexpr inline auto operator->*(my_type my_var) {
-    go_forward();
+    find_next();
     return operator->()->*my_var;
   }
   constexpr inline const iterator_template_filter_warper begin() const {
@@ -1821,12 +1828,12 @@ class iterator_template_filter_warper {
   constexpr inline iterator_t base() { return m_iterator; }
   constexpr inline const iterator_t base() const { return m_iterator; }
   constexpr size_t size() const noexcept { return m_iterator.size(); }
-  constexpr void go_forward() {
+  constexpr void go_forward () {
     while ((m_iterator.end() != m_iterator) && !m_filter(*m_iterator)) {
       ++m_iterator;
     }
   }
-  constexpr void go_backward() {
+  constexpr void go_backward () {
     while ((m_iterator.begin() != m_iterator) && !m_filter(*m_iterator)) {
       --m_iterator;
     }
@@ -1886,22 +1893,22 @@ class iterator_template_filter_warper {
     return *this;
   }
   constexpr reference operator[](std::size_t index)   {
-    go_forward();
+    find_next();
     return m_iterator[index];
   }
   constexpr bool operator<(
       const iterator_template_filter_warper &other)   noexcept {
-    go_forward();
+    find_next();
     return m_iterator < other.m_iterator;
   }
   constexpr bool operator>(
       const iterator_template_filter_warper &other)   noexcept {
-    go_forward();
+    find_next();
     return m_iterator > other.m_iterator;
   }
   constexpr bool operator<=(
       const iterator_template_filter_warper &other)   noexcept {
-    go_forward();
+    find_next();
     return m_iterator <= other.m_iterator;
   }
   constexpr bool operator>=(
@@ -1949,13 +1956,13 @@ class iterator_template_filter_warper {
     rhs = lhsm_iterator;
   }
 };
-template <class iterator_t>
+template <bool is_forward,class iterator_t>
 constexpr iterator_template_filter_warper<mjz_get_value_Type<iterator_t>,
-                                          iterator_t>
+                                          iterator_t, is_forward>
 to_filter_it(
     iterator_t it,
-    typename iterator_template_filter_warper<mjz_get_value_Type<iterator_t>,
-                                             iterator_t>::filter_type filter) {
+    typename iterator_template_filter_warper<mjz_get_value_Type<iterator_t>, iterator_t,
+                                is_forward>::filter_type filter) {
   return {it, filter};
 }
 
@@ -3244,21 +3251,10 @@ struct mjz_internal_obj_manager_template_t {
     for (; first != last; ++first) me::destroy_at(&(*first));
   }
 };
-template <typename Type>
+template <typename Type_>
 struct mjz_non_internal_obj_manager_template_t {
   using me = mjz_non_internal_obj_manager_template_t;
-
- private:
-  class address_geter_class_when_we_overload_operator_addressof
-      : private Type,
-        private not_a_type_if<true, false> {
-    friend struct mjz_non_internal_obj_manager_template_t<Type>;
-    constexpr inline Type *get_the_this() { return this; }
-    constexpr inline const Type *get_the_this() const { return this; }
-  };
-  using address_geter_class =
-      address_geter_class_when_we_overload_operator_addressof;
-
+  using Type=std::remove_cvref_t<Type_>;
  public:
   template <typename... args_t>
   static constexpr inline Type *construct_at(Type *dest,
@@ -3386,13 +3382,10 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline Type *addressof(Type &&obj) = delete;
 
   static constexpr inline Type *addressof(Type &obj) {
-    return ((address_geter_class &)obj)
-        .address_geter_class::get_the_this();  // not virtualy calling
-                                               // explicitly
+    return std::addressof(obj); 
   }
   static constexpr inline const Type *addressof(const Type &obj) {
-    return ((const address_geter_class &)obj)
-        .address_geter_class::get_the_this();
+    return std::addressof(obj);
   }
   constexpr inline Type *to_address(Type *p) noexcept { return p; }
   constexpr inline const Type *to_address(const Type &obj) noexcept {
@@ -3445,10 +3438,30 @@ template <typename Type>
 struct mjz_obj_manager_template_t_helper<true, Type>
     : public mjz_internal_obj_manager_template_t<Type> {};
 
-template <typename Type>
-struct mjz_obj_manager_template_t
-    : public mjz_obj_manager_template_t_helper<std::is_fundamental_v<Type>,
-                                               Type> {};
+template <typename Type,typename R_T>
+struct mjz_obj_manager_template_struct_helper_t
+    : public mjz_obj_manager_template_t_helper<
+    std::conjunction_v<
+
+          std::disjunction<
+    std::is_fundamental<Type>,
+    std::is_pointer< Type>
+          >,
+              std::negation<std::disjunction<
+                  std::is_class<Type>, std::has_virtual_destructor<Type>,
+                  std::is_union<Type>,
+                  std::has_unique_object_representations<Type>,
+                  std::is_abstract<Type>, std::is_enum<Type>,
+                  std::is_polymorphic<Type>
+    >>
+    >,
+          R_T> {
+  static_assert(!std::is_array_v<Type>);
+};
+template<typename T>
+struct   mjz_obj_manager_template_t :public
+      mjz_obj_manager_template_struct_helper_t<std::remove_cvref_t<T>,
+                                                      T>{};
 
 template <typename Type,
           class my_constructor = mjz_obj_manager_template_t<Type>>
@@ -9557,17 +9570,17 @@ class optional_pointer_refrence_class_template_t<
         std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
                        std::remove_cvref_t<T_ref>>,
         void>>
-    : private mjz_non_internal_obj_manager_template_t<
+    : private mjz_obj_manager_template_t<
           std::remove_cvref_t<T_ref>> {
  public:
   using Type = std::remove_volatile_t<std::remove_reference_t<T_ref>>;
   static_assert(std::is_same_v<Type &, T_ref>);
-  inline constexpr mjz_non_internal_obj_manager_template_t<
+  inline constexpr mjz_obj_manager_template_t<
       std::remove_const_t<Type>>
       &get_obj_creator() {
     return *this;
   }
-  inline constexpr const mjz_non_internal_obj_manager_template_t<
+  inline constexpr const mjz_obj_manager_template_t<
       std::remove_const_t<Type>>
       &get_obj_creator() const {
     return *this;
@@ -9753,7 +9766,7 @@ class optional_pointer_refrence_class_template_t<
         std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
                        const std::remove_cvref_t<T_ref>>,
         void>>
-    : private mjz_non_internal_obj_manager_template_t<
+    : private mjz_obj_manager_template_t<
           std::remove_cvref_t<T_ref>> {
  public:
   using Type = const std::remove_cvref_t<T_ref>;
@@ -12490,8 +12503,8 @@ class basic_mjz_String : public basic_mjz_Str_view {
   basic_mjz_String &operator=(basic_mjz_String &&) = delete;
   basic_mjz_String &operator=(const basic_mjz_String &) = delete;
   basic_mjz_String &operator=(basic_mjz_String &) = delete;
-  constexpr inline basic_mjz_Str_view sv() const {
-    return basic_mjz_Str_view{*((basic_mjz_Str_view *)this)};
+  constexpr inline const basic_mjz_Str_view& sv() const {
+    return *this;
   }
 
  public:
@@ -14667,12 +14680,12 @@ template <typename T>
 using iterator = iterator_template_t<T>;
 template <typename T>
 using iterator_template = iterator_template_t<T>;
-template <typename T>
+template <typename T, bool is_forward>
 using filter_iterator =
-    iterator_template_filter_warper<T, iterator_template_t<T>>;
-template <typename T>
+    iterator_template_filter_warper<T, iterator_template_t<T>, is_forward>;
+template <typename T, bool is_forward>
 using filter_iterator_template =
-    iterator_template_filter_warper<T, iterator_template_t<T>>;
+    iterator_template_filter_warper<T, iterator_template_t<T>, is_forward>;
 template <typename it_T>
 using iterator_warper = iterator_warper_template_t<it_T>;
 template <typename it_T>
