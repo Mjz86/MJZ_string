@@ -1,9 +1,9 @@
-//std::is_invocable_v
+// std::is_invocable_v
 #include "my_main.h"
 namespace mjz_ard {};  // namespace mjz_ard
 namespace test {
-static bool fn_mjz(mjzt::calee_ret<mjzt::operation_reporter> ret,
-                   int condition) noexcept {
+static mjzt::calee_ret<mjzt::operation_reporter> fn_mjz(
+    mjzt::calee_ret<mjzt::operation_reporter> ret, int condition) noexcept {
   CE_NE_RETURN_IF0(ret);
   switch (condition) {
     case 0:
@@ -57,7 +57,7 @@ static void run_ret() {
   }
 }
 
-bool get_float(mjzt::calee_ret<float> ret) {
+mjzt::calee_ret<float> get_float(mjzt::calee_ret<float> ret) {
   USE_MJZ_NS();
   CE_RETURN_IF0(ret);
   float flt{};
@@ -69,42 +69,41 @@ bool get_float(mjzt::calee_ret<float> ret) {
   ret->emplace(3);
   CE_RETURN_WITH(ret);
 }
-const static mjz::BYTE hash[] = {94,  -120, 72,  -104, -38, 40,  4,  113, 81, -48, -27,
-                          111, -115, -58, 41,   39,  115, 96, 61,  13, 106, -85,
-                          -67, -42,  42,  17,   -17, 114, 29, 21,  66, -40};
+const static mjz::BYTE hash[] = {94,  -120, 72,  -104, -38,  40,  4,   113,
+                                 81,  -48,  -27, 111,  -115, -58, 41,  39,
+                                 115, 96,   61,  13,   106,  -85, -67, -42,
+                                 42,  17,   -17, 114,  29,   21,  66,  -40};// "password"
 
 #define MK_UP_PR(U, P) std::make_pair<mjzt::mstrv, const mjz::BYTE* const>(U, P)
 std::map<mjzt::mstrv, const mjz::BYTE* const> user_login{
     MK_UP_PR("user", hash)};
 
-bool get_user_password(mjzt::calee_ret<mjzt::mjz_str> ret) {
+mjzt::calee_ret<mjzt::mjz_str> get_user_password(
+    mjzt::calee_ret<mjzt::mjz_str> ret) {
   USE_MJZ_NS();
   CE_RETURN_IF0(ret);
   uint32_t i{};
   println(" user list: ");
-  for (auto& [k,v] : user_login) println(++i, " :  \"", k, '"');
+  for (auto& [k, v] : user_login) println(++i, " :  \"", k, '"');
   println("enter user: ");
   scanln(*+*ret);
   ret->o().toLowerCase();
-  
+
   println("enter password: ");
-  
-   
-    mjz_str ps;
-    scanln(ps);
- auto   psho= ps.mjz_hash();
-    optional_ptr <std::remove_reference_t< decltype(user_login.at(**ret)) > * > p;
-    try {
-   p= user_login.at(**ret);
-    } catch (...) {
-    }
-    if (!!p)
- {
-    if (*p != psho)
-    ~ret;
+
+  mjz_str ps;
+  scanln(ps);
+  auto psho = ps.mjz_hash();
+  optional_ptr<std::remove_reference_t<decltype(user_login.at(**ret))>*> p;
+  try {
+    p = user_login.at(**ret);
+  } catch (...) {
+  }
+  if (!!p) {
+    if (*p != psho) ~ret;
     CE_RETURN_WITH(ret);
- }
- ~ret;
+  }
+  ~ret;
   CE_RETURN_WITH(ret);
 }
 
@@ -113,22 +112,27 @@ bool get_user_password(mjzt::calee_ret<mjzt::mjz_str> ret) {
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   using namespace test;
-  bool rn{1};
- // println("password"_s.mjz_hash());
   if (!get_user_password(CR_NO_RETURN(caler_ret<mjz_str>()))) {
     println("SORRY :( ");
     return 0;
   }
   {
-    caler_ret<float> ret;
-
-    if (get_float(CR_CALL_IF(!(std::rand() % 10000), ret))) {
+    bool rn{1};
+    get_float(CR_NR_CALL_IF(
+        []() -> bool {
+          std::string s;
+          println("Do you want to give a float");
+          scanln(s);
+          if (s[0] == 'y' || s[0] == 'Y') return true;
+          return false;
+        }(),
+        caler_ret<float>()))([&](caler_ret<float>& ret) {
       ignore();
-      if (f_EQ(*ret, 3, 0.1)) {
+      if (f_EQ(ret(), 3, 0.1)) {
         rn = 0;
       }
-    }
+    });
+    if (rn) run_ret();
   }
-  if (rn) run_ret();
   return 0;
 }

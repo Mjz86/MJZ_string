@@ -14833,6 +14833,18 @@ using callee_ret = ref_return<T>;
              typename decltype(_RET)::                              \
                  my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
 
+
+// NOTE: this function only works if calee_ret<T> is checked in the called
+// function Undefined Behaviour otherwise
+#define CR_NR_CALL_IF(_CONDITION, _RET)                                \
+  ((_CONDITION)                                                     \
+       ? (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
+             typename decltype(_RET)::                              \
+                 my_totaly_uniuqe_type_name_of_content_type>((_RET).copy_me())) \
+       : (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
+             typename decltype(_RET)::                              \
+                 my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
+
 // use  these macros in functions that are like calee_ret(calee_ret)
 #define CE_RETURN_IF0(RET)  \
   do {              \
