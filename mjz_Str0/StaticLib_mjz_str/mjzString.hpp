@@ -14801,6 +14801,23 @@ using mjz_nullable_return = mjz_optional_return<T>;
 template <typename T>
 using nullable_return = mjz_optional_return<T>;
 
+
+
+
+/*
+NOTE: if you return a callee_ret :
+1. if you didnt store the  caller_ret you will use a non valid object that is not in your stack frame (aka using a temporary variable outside the lifetime by a pointer to r value)
+
+2.if the caller_ret object is alive  you may use the returned callee_ret
+
+3. if you want to use it but not have it as an lvalue in caller functions stack frame 
+you may use the callee_ret::operator()(std::function<(callee_ret)>) on the function
+like this :
+foo(some args...)([](callee_ret ret)->void{some code....});
+
+
+
+*/
 template <typename T>
 using mjz_caler_ret = func_ret<T>;
 template <typename T>
@@ -14819,9 +14836,9 @@ using caller_ret = func_ret<T>;
 template <typename T>
 using callee_ret = ref_return<T>;
 
+
 #ifndef _MJZ_NO_CALEE_CALER_HELPER_MACRO_
 #define CR_NO_RETURN(RET) ((RET).copy_me())
-
 // NOTE: this function only works if calee_ret<T> is checked in the called
 // function Undefined Behaviour otherwise
 #define CR_CALL_IF(_CONDITION, _RET)                                \
