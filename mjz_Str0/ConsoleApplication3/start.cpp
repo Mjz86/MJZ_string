@@ -1,6 +1,6 @@
 
 #include "start.h"
-static std::function<void(int&, const char* const*&)  >
+static std::function<void(int&, const char* const*&) >
     get_argguments_fn_v{};
 static std::function<void(int&, const char* const*&)  >& get_argguments_fn( ) {
  return get_argguments_fn_v;

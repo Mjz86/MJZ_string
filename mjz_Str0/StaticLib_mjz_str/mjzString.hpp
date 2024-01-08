@@ -9645,6 +9645,11 @@ class optional_pointer_refrence_class_template_t<
     if (m_ptr) return m_ptr;
     throw "no object ";
   }
+
+
+
+
+
   inline constexpr optional_pointer_refrence_class_template_t() {}
   inline constexpr optional_pointer_refrence_class_template_t(
       std::nullptr_t nullp) {}
@@ -9752,11 +9757,12 @@ class optional_pointer_refrence_class_template_t<
     return *get_ptr_to_valid_object_or_throw();
   }
 
-  inline constexpr void operator()(std::function<void(Type &)> f) {
+  inline constexpr void operator()(std::function<void(Type &)> f)  {
     if (m_ptr) {
       f(*m_ptr);
     }
   }
+   
   inline constexpr Type &operator()() const {
     return *get_ptr_to_valid_object_or_throw();
   }
@@ -9985,11 +9991,12 @@ class optional_pointer_refrence_class_template_t<
     return *get_ptr_to_valid_object_or_throw();
   }
 
-  inline constexpr void operator()(std::function<void(Type &)> f) {
+  inline constexpr void operator()(std::function<void(Type &)> f)  {
     if (m_ptr) {
       f(*m_ptr);
     }
   }
+
   inline constexpr Type &operator()() const {
     return *get_ptr_to_valid_object_or_throw();
   }
@@ -14802,6 +14809,16 @@ template <typename T>
 using caler_ret = func_ret<T>;
 template <typename T>
 using calee_ret = ref_return<T>;
+
+template <typename T>
+using mjz_caller_ret = func_ret<T>;
+template <typename T>
+using mjz_callee_ret = ref_return<T>;
+template <typename T>
+using caller_ret = func_ret<T>;
+template <typename T>
+using callee_ret = ref_return<T>;
+
 #ifndef _MJZ_NO_CALEE_CALER_HELPER_MACRO_
 #define CR_NO_RETURN(RET) ((RET).copy_me())
 
@@ -14816,25 +14833,26 @@ using calee_ret = ref_return<T>;
              typename decltype(_RET)::                              \
                  my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
 
-// use  these macros in functions that are like bool(calee_ret)
+// use  these macros in functions that are like calee_ret(calee_ret)
 #define CE_RETURN_IF0(RET)  \
-  do {                      \
-    if (!RET) return false; \
+  do {              \
+                     \
+    if (!RET) return {}; \
   } while (0)
 #define CE_RETURN_EMPLACE(RET, RET_val) \
   do {                                  \
     auto &RET_ = (RET);                 \
-    if (!RET_) return false;            \
+    if (!RET_) return {};            \
     RET_->emplace(RET_val);             \
-    if (!*(RET_)) return false;         \
-    return true;                        \
+    if (!*(RET_)) return {};         \
+    return RET_;                        \
   } while (0)
 #define CE_RETURN_WITH(RET)     \
   do {                          \
     auto &RET_ = (RET);         \
-    if (!RET_) return false;    \
-    if (!*(RET_)) return false; \
-    return true;                \
+    if (!RET_) return {};    \
+    if (!*(RET_)) return {}; \
+    return RET_;                \
   } while (0)
 
 #define CE_NE_RETURN_IF0(RET) \
@@ -14842,7 +14860,7 @@ using calee_ret = ref_return<T>;
     try {                     \
       CE_RETURN_IF0(RET);     \
     } catch (...) {           \
-      return false;           \
+      return {};           \
     }                         \
   } while (0)
 #define CE_NE_RETURN_EMPLACE(RET, RET_val) \
@@ -14850,7 +14868,7 @@ using calee_ret = ref_return<T>;
     try {                                  \
       CE_RETURN_EMPLACE(RET, RET_val);     \
     } catch (...) {                        \
-      return false;                        \
+      return {};                        \
     }                                      \
                                            \
   } while (0)
@@ -14859,25 +14877,13 @@ using calee_ret = ref_return<T>;
     try {                      \
       CE_RETURN_WITH(RET);     \
     } catch (...) {            \
-      return false;            \
+      return {};            \
     }                          \
   } while (0)
-/*
-example:
-
-bool f(calee_ret<int>ret){
-RETURN_IF0(ret);// check for bad function call from caller
-if(condition){
-  // stuff ...
-  RETURN_EMPLACE(ret,0);// 0 is the returned int
-}
-//other stuff ...
-// ret may have value
-RETURN_WITH(ret);
-}
-*/
 
 #endif  // ! _MJZ_NO_CALEE_CALER_HELPER_MACRO_
+
+
 template <typename T>
 using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;
 
