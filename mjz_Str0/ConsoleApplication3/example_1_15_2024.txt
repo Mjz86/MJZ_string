@@ -1,0 +1,275 @@
+// std::is_invocable_v
+#include "my_main.h"
+
+namespace mjz_ard {};  // namespace mjz_ard
+namespace test {
+class Entity {
+ private:
+  using vectorf3 = mjzt::mjz_Vectorf3;
+  using name_t = mjzt::mjz_Str;
+  using oname_t = mjzt::optional<name_t>;
+  using namev_t=mjzt::mstrv;
+  using health_t = float;
+  template<class T,typename=std::enable_if_t<std::same_as<T,std::remove_reference_t<T>&>>>
+  using opref = mjzt::calee_ret<std::remove_reference_t<T>>;
+  using name_cref_t = opref<const name_t&>;
+  using name_ref_t = opref<  name_t&>;
+  vectorf3 m_position{0, 0, 0};
+  oname_t m_name;
+  health_t m_health{-1};
+  static constexpr const health_t max_hp{20.0f};
+  inline static mjzt::Scoped_speed_Timer update_tm(const char* const lineB,
+                                            const char* const lineE)   {
+   return mjzt::Scoped_speed_Timer(lineB,false)(lineE,false);
+  }
+#include "mjz_macro_noformat_txt.tpp"
+#define DEBUG_MJZ_ENTITY() \
+DEBUG_MJZ_ENTITY_()
+ public:
+  Entity() { DEBUG_MJZ_ENTITY(); }
+  ~Entity() {
+   DEBUG_MJZ_ENTITY();
+    m_health = -1;
+    m_position = {0, 0, 0};
+  }
+  Entity(const Entity&& e) : Entity(const_cast<const Entity&>(e)) {}
+  Entity(Entity& e) : Entity(const_cast<const Entity&>(e)) {}
+  Entity(const Entity& e) : m_position(e.m_position), m_health(e.m_health) {
+    DEBUG_MJZ_ENTITY();
+    if (!!e.m_name) m_name  =(e.m_name);
+  }
+  Entity(Entity&& e)
+      : m_position(std::move(e.m_position)), m_health(std::move(e.m_health)) {
+    DEBUG_MJZ_ENTITY();
+    if (!!e.m_name) m_name = (std::move(e.m_name));
+  }
+
+
+   Entity& operator=(const Entity&& e) {
+    DEBUG_MJZ_ENTITY();
+    return operator=(const_cast<const Entity&>(e));
+  }
+   Entity& operator=(Entity& e) {
+    DEBUG_MJZ_ENTITY();
+    return operator=(const_cast<const Entity&>(e));
+  }
+   Entity& operator=(const Entity& e) {
+    DEBUG_MJZ_ENTITY();
+    m_position = (e.m_position);
+    if (!!e.m_name) m_name = (e.m_name);
+    m_health = (e.m_health);
+  }
+   Entity& operator=(Entity&& e) {
+    DEBUG_MJZ_ENTITY();
+    m_position = (std::move(e.m_position));
+    if (!!e.m_name) m_name = (std::move(e.m_name));
+    m_health = (std::move(e.m_health));
+  }
+ 
+
+name_cref_t get_name() const {
+    DEBUG_MJZ_ENTITY();
+    return m_name;
+  }
+name_cref_t set_name(namev_t name) {
+    DEBUG_MJZ_ENTITY();
+    m_name.emplace(name);
+    return m_name; 
+  }
+
+  health_t get_health() const {
+    DEBUG_MJZ_ENTITY();
+    return m_health;
+  }
+
+  health_t set_health(const health_t& health) {
+    DEBUG_MJZ_ENTITY();
+    if (health <= 0) {
+      m_health = 0;
+      return m_health; 
+    }
+    if (max_hp < m_health) {
+      m_health = max_hp;
+      return m_health;
+    }
+      return m_health; 
+  }
+
+  const vectorf3& get_pos() const {
+      DEBUG_MJZ_ENTITY();
+      return m_position;
+  }
+  const vectorf3& set_pos(const vectorf3& position) {
+      DEBUG_MJZ_ENTITY();
+      m_position = position;
+      return m_position;
+  }
+  friend mjzt::optional<Entity> uget_Entity();
+  };
+  template<class T>
+  void desteroy_at(T* p) {
+  p->~T();
+  }
+  mjzt::optional<Entity> uget_Entity() {
+  mjzt::optional<Entity> eo;
+  Entity*up=(eo).uuop();// highly unsafe code
+auto* name_p=  std::addressof(up->m_name);
+auto* health_p = std::addressof(up->m_health);
+auto* position_p = std::addressof(up->m_position);
+name_p=new(name_p) Entity::oname_t();
+position_p = new (position_p) Entity::vectorf3();
+health_p = new (health_p) Entity::health_t();
+if (!(name_p && position_p && health_p)) {
+      if (position_p) desteroy_at(position_p);
+      if (health_p) desteroy_at(health_p);
+      if (name_p) desteroy_at(name_p);
+      return eo;
+}
+eo.notify_unsafe_init();
+  return eo;
+}
+  static mjzt::calee_ret<mjzt::operation_reporter> fn_mjz(
+    mjzt::calee_ret<mjzt::operation_reporter> ret, int condition) noexcept {
+  CE_NE_RETURN_IF0(ret);
+  switch (condition) {
+    case 0:
+      CE_NE_RETURN_EMPLACE(ret, "i am returned {0}");
+      break;
+    case 1:
+      try {  // safer for outside even if emplace is noexcept
+        ret->emplace(" initialized {1}");
+      } catch (...) {
+      }
+      break;
+    case 2:
+      CE_NE_RETURN_EMPLACE(ret, "i am returned {2}");
+      break;
+    default:
+      try {
+        ret->emplace('D');
+        ~ret();
+      } catch (...) {
+      }
+      break;
+  }
+  CE_NE_RETURN_WITH(ret);
+}
+static void run_ret() {
+  int i{};
+  while (i != 3) {
+    mjz::iostream::println("give an integer {3 to exit}");
+    char buf[4]{};
+    std::cin.getline(buf, 3);
+    {
+      for (auto c : buf) {
+        if (c == 0) break;
+        if ('0' <= c && c <= '9') continue;
+        i = 3;
+      }
+      if (i == 3 || !*buf) {
+        mjz::iostream::println(" :( ");
+        break;
+      }
+      i = mjzt::mjz_str(buf, 3).toLL();
+    }
+
+    mjzt::caler_ret<mjzt::operation_reporter> ret_;
+    if (!fn_mjz(CR_CALL_IF(i != 3, ret_), i)) {
+      mjz::iostream::println("no return {!(1 || 0 || 3)}");
+      continue;
+    }
+    mjzt::operation_reporter& ret = ret_;
+    ret++;
+  }
+}
+
+mjzt::calee_ret<float> get_float(mjzt::calee_ret<float> ret) {
+  USE_MJZ_NS();
+  CE_RETURN_IF0(ret);
+  float flt{};
+  println("enter float: ");
+  scan(flt);
+  if (flt != NAN) {
+    CE_RETURN_EMPLACE(ret, flt);
+  }
+  ret->emplace(3);
+  CE_RETURN_WITH(ret);
+}
+const static mjz::BYTE hash[] = {94,  -120, 72,  -104, -38, 40,  4,  113, 81,
+                                 -48, -27,  111, -115, -58, 41,  39, 115, 96,
+                                 61,  13,   106, -85,  -67, -42, 42, 17,  -17,
+                                 114, 29,   21,  66,   -40};  // "password"
+
+#define MK_UP_PR(U, P) std::make_pair<mjzt::mstrv, const mjz::BYTE* const>(U, P)
+std::map<mjzt::mstrv, const mjz::BYTE* const> user_login{
+    MK_UP_PR("user", hash)};
+
+mjzt::calee_ret<mjzt::mjz_str> get_user_password(
+    mjzt::calee_ret<mjzt::mjz_str> ret) {
+  USE_MJZ_NS();
+  CE_RETURN_IF0(ret);
+  uint32_t i{};
+  println(" user list: ");
+  for (auto& [k, v] : user_login) println(++i, " :  \"", k, '"');
+  println("enter user: ");
+  scanln(*+*ret);
+  ret->o().toLowerCase();
+
+  println("enter password: ");
+
+  mjz_str ps;
+  scanln(ps);
+  auto psho = ps.mjz_hash();
+  optional_ptr<std::remove_reference_t<decltype(user_login.at(**ret))>*> p;
+  try {
+    p = user_login.at(**ret);
+  } catch (...) {
+  }
+  if (!!p) {
+    if (*p != psho) ~ret;
+    CE_RETURN_WITH(ret);
+  }
+  ~ret;
+  CE_RETURN_WITH(ret);
+}
+mjzt::calee_ret<int> test_main(mjzt::calee_ret<int> ret) {
+  USE_MJZ_NS();
+  CE_RETURN_IF0(ret);
+  if (!get_user_password(CR_NO_RETURN(caler_ret<mjz_str>()))) {
+    println("SORRY :( ");
+    CE_RETURN_EMPLACE(ret,-1);
+  }
+  {
+    bool rn{1};
+    get_float(CR_NR_CALL_IF(
+        []() -> bool {
+          std::string s;
+          println("Do you want to give a float");
+          scanln(s);
+          if (s[0] == 'y' || s[0] == 'Y') return true;
+          return false;
+        }(),
+        caler_ret<float>()))([&](caler_ret<float>& ret) {
+      ignore();
+      if (f_EQ(ret(), 3, 0.1)) {
+        rn = 0;
+      }
+    });
+    if (rn) run_ret();
+    ret->emplace(0);
+    CE_RETURN_WITH(ret);
+  }
+}
+
+};  // namespace test
+
+int my_main::main(int argc, const char* const* const argv) {
+  USE_MJZ_NS();
+  test::uget_Entity();
+  if (test::test_main(CR_NR_CALL_IF(1 == argc, caler_ret<int>()))) {
+    return 0;
+  }
+  println("SORRY NO ARGS  FOR YOU ");
+  return 0;
+}
+

@@ -21,6 +21,28 @@ this is a simple fast implementation/fork of arduino string and much more...
 written by mjz https://github.com/Mjz86
 */
 
+
+/*
+     my take away :
+     1.why  is  the standard lib so big?
+     because its the boiler plate code .
+
+     2. why is some parts of it compiler  dependent?
+   (   std::addressof & std::construct_at & the bit_cast & std::initializer_list
+   & std::optional->[with constexpr] ) because of portability( std::addressof is
+   implemented by compiler and the c++ ways of going around the [overloaded]
+   operator&() are limited ) and mainly ease of use
+
+   3.why i did this monstrosity ?
+   because it is one of the best ways of learning about c++ and computer memory
+   and cpu design and in some ways it helped with my embedded projects
+
+   4. what did i learn?
+       countless advanced c++ stuff and some wired tricks
+
+*/
+
+
 #define NumberOf(arg) ((size_t)(sizeof(arg) / sizeof(arg[0])))
 #ifdef __cplusplus
 #ifndef __mjz_ard_STRINGS__
@@ -989,6 +1011,54 @@ using mjz_get_value_Type = typename Type::value_type;
 template <class Type>
 using mjz_get_pointer_Type = typename Type::pointer;
 
+template <size_t arg_Index, class U_F, class... U>
+struct mjz_get_template_argument_class_helper_t {
+  using Type = typename mjz_get_template_argument_class_helper_t<arg_Index - 1,
+                                                                 U...>::Type;
+};
+template <size_t arg_Index, class U_F>
+struct mjz_get_template_argument_class_helper_t<arg_Index, U_F> {
+  using Type = void;
+};
+template <class U_F>
+struct mjz_get_template_argument_class_helper_t<0, U_F> {
+  using Type = U_F;
+};
+template <class U_F, class... U>
+struct mjz_get_template_argument_class_helper_t<0, U_F, U...> {
+  using Type = U_F;
+};
+template <size_t arg_Index = 0, typename... U>
+using mjz_get_template_argument =
+    typename mjz_get_template_argument_class_helper_t<arg_Index, U...>::Type;
+
+template <typename T, size_t arg_Index, T U_F, T... U>
+struct mjz_get_template_value_class_helper_t {
+  static constexpr const T Val =
+      mjz_get_template_value_class_helper_t<T, arg_Index - 1, U...>::Val;
+};
+template <typename T, size_t arg_Index, T U_F>
+struct mjz_get_template_value_class_helper_t<T, arg_Index, U_F> {};
+template <typename T, T U_F>
+struct mjz_get_template_value_class_helper_t<T, 0, U_F> {
+  static constexpr const T Val = U_F;
+};
+template <typename T, T U_F, T... U>
+struct mjz_get_template_value_class_helper_t<T, 0, U_F, U...> {
+  static constexpr const T Val = U_F;
+};
+template <typename T, size_t arg_Index = 0, T... U>
+static constexpr const T mjz_get_value_argument =
+    mjz_get_template_value_class_helper_t<T, arg_Index, U...>::Val;
+
+template <template <typename... U> class T, typename... U_IN>
+struct mjz_initilize_template_arguments_helper_class_t {
+  using Type = T<U_IN...>;
+};
+template <template <typename... U> class T, typename... U_IN>
+using mjz_initilize_template_arguments =
+    typename mjz_initilize_template_arguments_helper_class_t<T, U_IN...>::Type;
+
 template <typename... args_t>
 inline constexpr auto get_arg_count() -> size_t {
   constexpr const std::size_t n = sizeof...(args_t);
@@ -1670,7 +1740,7 @@ template <typename Type>
 bool dummy_iterator_template_filter_warper_filter(const Type &) {
   return true;
 }
-template <typename Type, typename iterator_t,bool is_in_forward_direction>
+template <typename Type, typename iterator_t, bool is_in_forward_direction>
 class iterator_template_filter_warper {
  public:
   using filter_type = std::function<bool(const Type &)>;
@@ -1687,16 +1757,18 @@ class iterator_template_filter_warper {
   using difference_type = std::ptrdiff_t;
   using const_reference = const Type &;
   using size_type = size_t;
-  constexpr inline void find_next(){
+  constexpr inline void find_next() {
     if constexpr (is_in_forward_direction) {
-      go_forward ();
+      go_forward();
       return;
-      }
-      go_backward ();
-      }
+    }
+    go_backward();
+  }
   constexpr inline iterator_template_filter_warper() noexcept : m_iterator() {}
   constexpr inline iterator_template_filter_warper(iterator_t iter) noexcept
-      : m_iterator(iter) {find_next();}
+      : m_iterator(iter) {
+    find_next();
+  }
   constexpr inline iterator_template_filter_warper(filter_type filter) noexcept
       : m_iterator(), m_filter(filter) {
     find_next();
@@ -1783,13 +1855,13 @@ class iterator_template_filter_warper {
   }
   inline ~iterator_template_filter_warper() {}
   constexpr bool operator==(
-      const iterator_template_filter_warper &other)   noexcept {
-    find_next(); 
+      const iterator_template_filter_warper &other) noexcept {
+    find_next();
     return m_iterator == other.m_iterator;
   }
   constexpr bool operator!=(
-      const iterator_template_filter_warper &other)   noexcept {
-    find_next(); 
+      const iterator_template_filter_warper &other) noexcept {
+    find_next();
     return m_iterator != other.m_iterator;
   }
   constexpr reference operator*() {
@@ -1828,12 +1900,12 @@ class iterator_template_filter_warper {
   constexpr inline iterator_t base() { return m_iterator; }
   constexpr inline const iterator_t base() const { return m_iterator; }
   constexpr size_t size() const noexcept { return m_iterator.size(); }
-  constexpr void go_forward () {
+  constexpr void go_forward() {
     while ((m_iterator.end() != m_iterator) && !m_filter(*m_iterator)) {
       ++m_iterator;
     }
   }
-  constexpr void go_backward () {
+  constexpr void go_backward() {
     while ((m_iterator.begin() != m_iterator) && !m_filter(*m_iterator)) {
       --m_iterator;
     }
@@ -1892,27 +1964,27 @@ class iterator_template_filter_warper {
     go_backward();
     return *this;
   }
-  constexpr reference operator[](std::size_t index)   {
+  constexpr reference operator[](std::size_t index) {
     find_next();
     return m_iterator[index];
   }
   constexpr bool operator<(
-      const iterator_template_filter_warper &other)   noexcept {
+      const iterator_template_filter_warper &other) noexcept {
     find_next();
     return m_iterator < other.m_iterator;
   }
   constexpr bool operator>(
-      const iterator_template_filter_warper &other)   noexcept {
+      const iterator_template_filter_warper &other) noexcept {
     find_next();
     return m_iterator > other.m_iterator;
   }
   constexpr bool operator<=(
-      const iterator_template_filter_warper &other)   noexcept {
+      const iterator_template_filter_warper &other) noexcept {
     find_next();
     return m_iterator <= other.m_iterator;
   }
   constexpr bool operator>=(
-      const iterator_template_filter_warper &other)   noexcept {
+      const iterator_template_filter_warper &other) noexcept {
     return m_iterator >= other.m_iterator;
   }
   constexpr operator pointer() { return m_iterator; }
@@ -1956,12 +2028,11 @@ class iterator_template_filter_warper {
     rhs = lhsm_iterator;
   }
 };
-template <bool is_forward,class iterator_t>
+template <bool is_forward, class iterator_t>
 constexpr iterator_template_filter_warper<mjz_get_value_Type<iterator_t>,
                                           iterator_t, is_forward>
-to_filter_it(
-    iterator_t it,
-    typename iterator_template_filter_warper<mjz_get_value_Type<iterator_t>, iterator_t,
+to_filter_it(iterator_t it, typename iterator_template_filter_warper<
+                                mjz_get_value_Type<iterator_t>, iterator_t,
                                 is_forward>::filter_type filter) {
   return {it, filter};
 }
@@ -3254,7 +3325,8 @@ struct mjz_internal_obj_manager_template_t {
 template <typename Type_>
 struct mjz_non_internal_obj_manager_template_t {
   using me = mjz_non_internal_obj_manager_template_t;
-  using Type=std::remove_cvref_t<Type_>;
+  using Type = std::remove_cvref_t<Type_>;
+
  public:
   template <typename... args_t>
   static constexpr inline Type *construct_at(Type *dest,
@@ -3382,7 +3454,7 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline Type *addressof(Type &&obj) = delete;
 
   static constexpr inline Type *addressof(Type &obj) {
-    return std::addressof(obj); 
+    return std::addressof(obj);
   }
   static constexpr inline const Type *addressof(const Type &obj) {
     return std::addressof(obj);
@@ -3438,30 +3510,26 @@ template <typename Type>
 struct mjz_obj_manager_template_t_helper<true, Type>
     : public mjz_internal_obj_manager_template_t<Type> {};
 
-template <typename Type,typename R_T>
+template <typename Type, typename R_T>
 struct mjz_obj_manager_template_struct_helper_t
     : public mjz_obj_manager_template_t_helper<
-    std::conjunction_v<
+          std::conjunction_v<
 
-          std::disjunction<
-    std::is_fundamental<Type>,
-    std::is_pointer< Type>
-          >,
+              std::disjunction<std::is_fundamental<Type>,
+                               std::is_pointer<Type>>,
               std::negation<std::disjunction<
                   std::is_class<Type>, std::has_virtual_destructor<Type>,
                   std::is_union<Type>,
                   std::has_unique_object_representations<Type>,
                   std::is_abstract<Type>, std::is_enum<Type>,
-                  std::is_polymorphic<Type>
-    >>
-    >,
+                  std::is_polymorphic<Type>>>>,
           R_T> {
   static_assert(!std::is_array_v<Type>);
 };
-template<typename T>
-struct   mjz_obj_manager_template_t :public
-      mjz_obj_manager_template_struct_helper_t<std::remove_cvref_t<T>,
-                                                      T>{};
+template <typename T>
+struct mjz_obj_manager_template_t
+    : public mjz_obj_manager_template_struct_helper_t<std::remove_cvref_t<T>,
+                                                      T> {};
 
 template <typename Type,
           class my_constructor = mjz_obj_manager_template_t<Type>>
@@ -6370,7 +6438,8 @@ class static_str_algo {
     constexpr inline just_str_view_data(char *p, size_t n)
         : buffer(p), len(n) {}
     template <size_t N>
-    constexpr inline just_str_view_data(char (&a)[N]) : buffer(a), len(N-(!a[N-1])) {}
+    constexpr inline just_str_view_data(char (&a)[N])
+        : buffer(a), len(N - (!a[N - 1])) {}
     constexpr inline just_str_view_data() : just_str_view_data(0, 0) {}
     char *buffer;
     size_t len;
@@ -9364,7 +9433,33 @@ return **this<=> (*other);
   constexpr inline operator Type() const && {
     return get_obj_creator().obj_constructor(std::move(*move_me()));
   }
-  constexpr explicit operator bool() const noexcept { return has_data(); }
+  constexpr explicit operator bool() & noexcept { return has_data(); }
+  constexpr explicit operator bool() && noexcept { return has_data(); }
+  constexpr explicit operator bool() const &noexcept { return has_data(); }
+  constexpr explicit operator bool() const &&noexcept { return has_data(); }
+
+  
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  remove_volatile() volatile &noexcept {
+    return *const_cast<mjz_stack_obj_warper_template_class_t*>(this);
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  remove_volatile() volatile &&noexcept {
+    return *const_cast<mjz_stack_obj_warper_template_class_t *>(this);
+  }
+  constexpr inline const mjz_stack_obj_warper_template_class_t &
+  remove_volatile() volatile const &noexcept {
+    return std::move(*const_cast<const mjz_stack_obj_warper_template_class_t *>(this));
+  }
+  constexpr inline const mjz_stack_obj_warper_template_class_t &&
+  remove_volatile() volatile const &&noexcept {
+    return std::move(
+        *const_cast<const mjz_stack_obj_warper_template_class_t *>(this));
+  }
+  constexpr explicit operator bool() volatile &noexcept { return has_data(); }
+  constexpr explicit operator bool() volatile &&noexcept { return has_data(); }
+  constexpr explicit operator bool() const volatile&noexcept { return has_data(); }
+  constexpr explicit operator bool() const volatile &&noexcept { return has_data();}
   constexpr bool has_value() const noexcept { return has_data(); }
   template <class... Args>
 
@@ -9412,22 +9507,19 @@ return **this<=> (*other);
                       : static_cast<T>(std::forward<U>(default_value));
   }
 
-  
-
   template <class... Ts>
- inline constexpr Type &value_or_emplace(Ts &&...args) & {
+  inline constexpr Type &value_or_emplace(Ts &&...args) & {
     if (!!*this) return o();
     emplace(std::forward<Ts>(args)...);
     return o();
   }
   template <class... Ts>
- inline constexpr Type &&value_or_emplace(Ts &&...args) && {
+  inline constexpr Type &&value_or_emplace(Ts &&...args) && {
     if (!!*this) return std::move(o());
     emplace(std::forward<Ts>(args)...);
     return std::move(o());
   }
 
- 
   template <class... Ts>
   inline constexpr mjz_stack_obj_warper_template_class_t &optional_or_emplace(
       Ts &&...args) & {
@@ -9442,7 +9534,7 @@ return **this<=> (*other);
     emplace(std::forward<Ts>(args)...);
     return move_me();
   }
- 
+
   template <class F>
   constexpr auto transform(F &&f) & {
     if (has_data()) {
@@ -9602,18 +9694,15 @@ class optional_pointer_refrence_class_template_t<
         std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
                        std::remove_cvref_t<T_ref>>,
         void>>
-    : private mjz_obj_manager_template_t<
-          std::remove_cvref_t<T_ref>> {
+    : private mjz_obj_manager_template_t<std::remove_cvref_t<T_ref>> {
  public:
   using Type = std::remove_volatile_t<std::remove_reference_t<T_ref>>;
   static_assert(std::is_same_v<Type &, T_ref>);
-  inline constexpr mjz_obj_manager_template_t<
-      std::remove_const_t<Type>>
+  inline constexpr mjz_obj_manager_template_t<std::remove_const_t<Type>>
       &get_obj_creator() {
     return *this;
   }
-  inline constexpr const mjz_obj_manager_template_t<
-      std::remove_const_t<Type>>
+  inline constexpr const mjz_obj_manager_template_t<std::remove_const_t<Type>>
       &get_obj_creator() const {
     return *this;
   }
@@ -9645,10 +9734,6 @@ class optional_pointer_refrence_class_template_t<
     if (m_ptr) return m_ptr;
     throw "no object ";
   }
-
-
-
-
 
   inline constexpr optional_pointer_refrence_class_template_t() {}
   inline constexpr optional_pointer_refrence_class_template_t(
@@ -9757,12 +9842,12 @@ class optional_pointer_refrence_class_template_t<
     return *get_ptr_to_valid_object_or_throw();
   }
 
-  inline constexpr void operator()(std::function<void(Type &)> f)  {
+  inline constexpr void operator()(std::function<void(Type &)> f) {
     if (m_ptr) {
       f(*m_ptr);
     }
   }
-   
+
   inline constexpr Type &operator()() const {
     return *get_ptr_to_valid_object_or_throw();
   }
@@ -9804,8 +9889,7 @@ class optional_pointer_refrence_class_template_t<
         std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
                        const std::remove_cvref_t<T_ref>>,
         void>>
-    : private mjz_obj_manager_template_t<
-          std::remove_cvref_t<T_ref>> {
+    : private mjz_obj_manager_template_t<std::remove_cvref_t<T_ref>> {
  public:
   using Type = const std::remove_cvref_t<T_ref>;
   static_assert(std::is_same_v<Type &, T_ref>);
@@ -9991,7 +10075,7 @@ class optional_pointer_refrence_class_template_t<
     return *get_ptr_to_valid_object_or_throw();
   }
 
-  inline constexpr void operator()(std::function<void(Type &)> f)  {
+  inline constexpr void operator()(std::function<void(Type &)> f) {
     if (m_ptr) {
       f(*m_ptr);
     }
@@ -11167,8 +11251,8 @@ return **this<=> (*other);
   }
 
   template <class... Ts>
-  constexpr const Type& value_or_emplace(Ts &&...args) const & {
-      if(!!*this)return o();
+  constexpr const Type &value_or_emplace(Ts &&...args) const & {
+    if (!!*this) return o();
     emplace(std::forward<Ts>(args)...);
     return o();
   }
@@ -11179,7 +11263,7 @@ return **this<=> (*other);
     return o();
   }
   template <class... Ts>
-  constexpr Type&& value_or_emplace(Ts &&...args) && {
+  constexpr Type &&value_or_emplace(Ts &&...args) && {
     if (!!*this) return std::move(o());
     emplace(std::forward<Ts>(args)...);
     return std::move(o());
@@ -11928,10 +12012,10 @@ class basic_mjz_Str_view : protected static_str_algo {
       : m_buffer(buffer), m_length(length) {}
   template <size_t N>
   constexpr basic_mjz_Str_view(char (&a)[N])
-      : m_buffer(a), m_length(N-(!a[N - 1])) {}
+      : m_buffer(a), m_length(N - (!a[N - 1])) {}
   template <size_t N>
   constexpr basic_mjz_Str_view(const char (&a)[N])
-      : m_buffer(a), m_length(N-(!a[N - 1])) {}
+      : m_buffer(a), m_length(N - (!a[N - 1])) {}
   constexpr basic_mjz_Str_view(const just_str_view_data &s)
       : m_buffer(s.buffer), m_length(s.len) {}
   template <typename c_t,
@@ -12561,9 +12645,7 @@ class basic_mjz_String : public basic_mjz_Str_view {
   basic_mjz_String &operator=(basic_mjz_String &&) = delete;
   basic_mjz_String &operator=(const basic_mjz_String &) = delete;
   basic_mjz_String &operator=(basic_mjz_String &) = delete;
-  constexpr inline const basic_mjz_Str_view& sv() const {
-    return *this;
-  }
+  constexpr inline const basic_mjz_Str_view &sv() const { return *this; }
 
  public:
 };
@@ -14801,19 +14883,17 @@ using mjz_nullable_return = mjz_optional_return<T>;
 template <typename T>
 using nullable_return = mjz_optional_return<T>;
 
-
-
-
 /*
 NOTE: if you return a callee_ret :
-1. if you didnt store the  caller_ret you will use a non valid object that is not in your stack frame (aka using a temporary variable outside the lifetime by a pointer to r value)
+1. if you didnt store the  caller_ret you will use a non valid object that is
+not in your stack frame (aka using a temporary variable outside the lifetime by
+a pointer to r value)
 
 2.if the caller_ret object is alive  you may use the returned callee_ret
 
-3. if you want to use it but not have it as an lvalue in caller functions stack frame 
-you may use the callee_ret::operator()(std::function<(callee_ret)>) on the function
-like this :
-foo(some args...)([](callee_ret ret)->void{some code....});
+3. if you want to use it but not have it as an lvalue in caller functions stack
+frame you may use the callee_ret::operator()(std::function<(callee_ret)>) on the
+function like this : foo(some args...)([](callee_ret ret)->void{some code....});
 
 
 
@@ -14836,7 +14916,6 @@ using caller_ret = func_ret<T>;
 template <typename T>
 using callee_ret = ref_return<T>;
 
-
 #ifndef _MJZ_NO_CALEE_CALER_HELPER_MACRO_
 #define CR_NO_RETURN(RET) ((RET).copy_me())
 // NOTE: this function only works if calee_ret<T> is checked in the called
@@ -14850,38 +14929,37 @@ using callee_ret = ref_return<T>;
              typename decltype(_RET)::                              \
                  my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
 
-
 // NOTE: this function only works if calee_ret<T> is checked in the called
 // function Undefined Behaviour otherwise
-#define CR_NR_CALL_IF(_CONDITION, _RET)                                \
-  ((_CONDITION)                                                     \
-       ? (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
-             typename decltype(_RET)::                              \
-                 my_totaly_uniuqe_type_name_of_content_type>((_RET).copy_me())) \
-       : (::mjz_ard::have_mjz_ard_removed::calee_ret<               \
-             typename decltype(_RET)::                              \
+#define CR_NR_CALL_IF(_CONDITION, _RET)                       \
+  ((_CONDITION)                                               \
+       ? (::mjz_ard::have_mjz_ard_removed::calee_ret<         \
+             typename decltype(_RET)::                        \
+                 my_totaly_uniuqe_type_name_of_content_type>( \
+             (_RET).copy_me()))                               \
+       : (::mjz_ard::have_mjz_ard_removed::calee_ret<         \
+             typename decltype(_RET)::                        \
                  my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
 
 // use  these macros in functions that are like calee_ret(calee_ret)
-#define CE_RETURN_IF0(RET)  \
-  do {              \
-                     \
-    if (!RET) return {}; \
+#define CE_RETURN_IF0(RET) \
+  do {                     \
+    if (!RET) return {};   \
   } while (0)
 #define CE_RETURN_EMPLACE(RET, RET_val) \
   do {                                  \
     auto &RET_ = (RET);                 \
-    if (!RET_) return {};            \
+    if (!RET_) return {};               \
     RET_->emplace(RET_val);             \
-    if (!*(RET_)) return {};         \
+    if (!*(RET_)) return {};            \
     return RET_;                        \
   } while (0)
-#define CE_RETURN_WITH(RET)     \
-  do {                          \
-    auto &RET_ = (RET);         \
+#define CE_RETURN_WITH(RET)  \
+  do {                       \
+    auto &RET_ = (RET);      \
     if (!RET_) return {};    \
     if (!*(RET_)) return {}; \
-    return RET_;                \
+    return RET_;             \
   } while (0)
 
 #define CE_NE_RETURN_IF0(RET) \
@@ -14889,7 +14967,7 @@ using callee_ret = ref_return<T>;
     try {                     \
       CE_RETURN_IF0(RET);     \
     } catch (...) {           \
-      return {};           \
+      return {};              \
     }                         \
   } while (0)
 #define CE_NE_RETURN_EMPLACE(RET, RET_val) \
@@ -14897,7 +14975,7 @@ using callee_ret = ref_return<T>;
     try {                                  \
       CE_RETURN_EMPLACE(RET, RET_val);     \
     } catch (...) {                        \
-      return {};                        \
+      return {};                           \
     }                                      \
                                            \
   } while (0)
@@ -14906,12 +14984,11 @@ using callee_ret = ref_return<T>;
     try {                      \
       CE_RETURN_WITH(RET);     \
     } catch (...) {            \
-      return {};            \
+      return {};               \
     }                          \
   } while (0)
 
 #endif  // ! _MJZ_NO_CALEE_CALER_HELPER_MACRO_
-
 
 template <typename T>
 using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;

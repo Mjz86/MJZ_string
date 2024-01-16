@@ -10,4 +10,7 @@ class my_main : public main_class {
   my_main(const my_main&) = delete;
   my_main&operator=(const my_main&) = delete;
 };
+namespace lesson {
+extern void show_all();
+}
 
