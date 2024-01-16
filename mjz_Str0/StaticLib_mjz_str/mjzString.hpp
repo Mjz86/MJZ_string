@@ -14988,8 +14988,15 @@ template <typename T>
 using caller_ret = func_ret<T>;
 template <typename T>
 using callee_ret = ref_return<T>;
-
 #ifndef _MJZ_NO_CALEE_CALER_HELPER_MACRO_
+
+template<class T>
+using get_caler_return_type_t=typename T::Type;
+template<class T>
+using get_calee_return_type_t=typename T::Type::Type;
+
+
+
 #define CR_NO_RETURN(RET) ((RET).copy_me())
 // NOTE: this function only works if calee_ret<T> is checked in the called
 // function Undefined Behaviour otherwise
