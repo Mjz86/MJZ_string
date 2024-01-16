@@ -33,12 +33,12 @@ class main_class {
       } catch (void* ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
         if (ex == 0) {
-          mjz_ard::trap_crash();
+          return -1;
         }
       } catch (int ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
         if (ex == -1) {
-          mjz_ard::trap_crash();
+          return -1;
         }
       } catch (...) {
         std::cout << "\n\n\n EXEPTION happened :( ";

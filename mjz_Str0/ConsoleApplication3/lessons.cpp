@@ -49,7 +49,8 @@ void show_exceptions_effect() {
           "SUSO5", "SUSO6", "SUSO7", "SUSO8", "SUSO9"};
       println("stack_unwinding_shower_object created");
       println("throw : ");
-      throw operation_reporter("i am thrown");
+      //throw operation_reporter("i am thrown");
+      JThrow<operation_reporter>("i am thrown");//this is my way to allow an exeption to propagate instead of termination
       println(" this will never run/print ");
 
     } catch (...) {

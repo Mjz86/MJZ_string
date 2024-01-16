@@ -1013,25 +1013,57 @@ struct mjz_std_termenator {
 #endif  // _MJZ_STD_TERMENATE_NO_THROW
   }
 };
+
+template <typename T, typename... Ts>
+[[noreturn]] inline void JThrow(Ts &&...args) noexcept(false) {
+  T obj{std::forward<Ts>(args)...};
+  throw obj;
+}
+
+template <>
+[[noreturn]] inline void JThrow<void>() noexcept(false) {
+  throw /*the current exception*/;
+}
+
+[[noreturn]] inline void JThrow() noexcept(false) { JThrow<void>(); }
+template <typename T>
+[[noreturn]] inline void JThrow(T &&arg) noexcept(false) {
+  throw std::forward<T>(arg);
+}
+
 template <typename T, typename... Ts>
 [[noreturn]] inline void Throw(Ts &&...args) noexcept(false) {
-  mjz_std_termenator noooo;
+  mjz_std_termenator terminate_if;
   {
-    mjz_std_termenator noooo2;
-    T obj{std::forward<Ts>(args)...};
-    throw obj;
+    mjz_std_termenator terminate_if_;
+    JThrow<T>(std::forward<Ts>(args)...);
   }
 }
 
 template <>
-[[noreturn]] inline void Throw<void>() noexcept(_MJZ_STD_TERMENATE_NO_THROW) {
-  mjz_std_termenator noooo;
+[[noreturn]] inline void Throw<void>() noexcept(false) {
+  mjz_std_termenator terminate_if;
   {
-    mjz_std_termenator noooo2;
-    throw /*the current exception*/;
+    mjz_std_termenator terminate_if_;
+    JThrow<void>();
   }
 }
-
+ 
+[[noreturn]] inline void Throw() noexcept(false) {
+  mjz_std_termenator terminate_if;
+  {
+    mjz_std_termenator terminate_if_;
+    JThrow();
+  }
+}
+template <typename T>
+[[noreturn]] inline void Throw(T &&arg) noexcept(false) {
+  mjz_std_termenator terminate_if;
+  {
+    mjz_std_termenator terminate_if_;
+    JThrow<T>(std::forward<T>(arg));
+  }
+}
 template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
 
@@ -17728,7 +17760,6 @@ inline bool get_random_chanch_bool(double chance_var) {
 */
 
 namespace mjz_ard {
-
 
 class speed_Timer {
  public:

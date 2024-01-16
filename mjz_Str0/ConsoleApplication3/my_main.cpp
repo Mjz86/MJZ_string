@@ -5,5 +5,5 @@ std::unique_ptr<main_class> main_class::run(int, const char* const* const) {
   }();
 }
 bool my_main::catch_exceptions() {
-  return false;  // true false
+  return true;  // true false
 }

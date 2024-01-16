@@ -8,6 +8,5 @@ int my_main::main(int argc, const char* const* const argv) {
       "int my_main::main(int argc, const char* const* const argv)");
 
 
-
   return 0;
 }
