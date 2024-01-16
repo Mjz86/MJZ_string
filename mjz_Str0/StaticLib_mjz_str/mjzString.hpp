@@ -13637,6 +13637,16 @@ class mjz_Str : public basic_mjz_String,
     init();
     char buf[1 + 8 * sizeof(const void *const)];
     *this = ulltoa(reinterpret_cast<uint64_t>(ptr), {buf, NumberOf(buf)}, base);
+    if(length( ) >= 16) return;
+    size_t diff =16- length();
+    size_t prlen =  length();
+    if (!addto_length(diff)) return;
+    memmove(m_buffer + diff, m_buffer, prlen);
+    char *it = m_buffer;
+    char *it_e = m_buffer + diff;
+    while (it<it_e) {
+      *it++  ='0';
+    }
   }
   mjz_str_t(float value, unsigned char decimalPlaces = 2) {
     static size_t const FLOAT_BUF_SIZE = FLT_MAX_10_EXP +
@@ -17938,7 +17948,7 @@ class vr_Scoped_speed_Timer : public Scoped_speed_Timer {
 };
 class std_stream_class_warper {
   std_stream_class_warper() {}
-
+  
  public:
   template <typename T>
   inline friend std_stream_class_warper &operator<<(
@@ -17957,10 +17967,26 @@ class std_stream_class_warper {
   }
 };
 
+struct defult_UUID_geter_class{
+using UUID_t=const void*const;
+const static constexpr bool is_visible=false;
+template<typename T>
+ inline  UUID_t operator()(const T*p)const{
+      return p;
+ }
+};template <class counter_class>
+struct mjz_class_operation_reporter_count_t {
+ static counter_class index;
+};
+template <class counter_class>
+counter_class mjz_class_operation_reporter_count_t<counter_class>::index{};
 template <class counter_class, class filler_type = char,
-          class my_stream = std_stream_class_warper>
-class mjz_class_operation_reporter_t {
-  static counter_class index;
+          class my_stream = std_stream_class_warper,
+          class UUID_geter_class = defult_UUID_geter_class>
+class mjz_class_operation_reporter_t
+    : public mjz_class_operation_reporter_count_t<counter_class>,
+      protected UUID_geter_class {
+    using mjz_class_operation_reporter_count_t<counter_class>::index;
   template <typename... argT>
   mjz_class_operation_reporter_t &println(argT &&...args) const {
     print_c_str(std::forward<argT>(args)...);
@@ -18056,52 +18082,52 @@ class mjz_class_operation_reporter_t {
     print(" )\n");
     return none();
   }
-
- public:
-  mutable filler_type filler = '|';
-  inline const void *UUID() const { return this; };
-  mjz_class_operation_reporter_t() { println_wi(index++, " created : "); }
-  mjz_class_operation_reporter_t(int i) {
+  private:
+   void constructor(int i) {
     print_c_str(" created with int :(");
     print(i);
     println_wi(index++, ")  ");
   }
-  mjz_class_operation_reporter_t(float i) {
+  void constructor(float i) {
     print_c_str(" created with float :(");
     print(i);
     println_wi(index++, ")  ");
   }
-  mjz_class_operation_reporter_t(double i) {
+  void constructor(double i) {
     print_c_str(" created with double :(");
     print(i);
     println_wi(index++, ")  ");
   }
-  mjz_class_operation_reporter_t(size_t i) {
+  void constructor(size_t i) {
     print_c_str(" created with size_t :(");
     print(i);
     println_wi(index++, ")  ");
   }
-  mjz_class_operation_reporter_t(int64_t i) {
+  void constructor(int64_t i) {
     print_c_str(" created with int64_t :(");
     print(i);
     println_wi(index++, ")  ");
   }
-  mjz_class_operation_reporter_t(void *i) {
+  void constructor(void *i) {
     print_c_str(" created with size_t :(");
     print(i);
     println_wi(index++, ")  ");
   }
-  mjz_class_operation_reporter_t(char c) {
+  void constructor(char c) {
     print_c_str(" created with char :(");
     print(c);
     println_wi(index++, ")  ");
   }
-  mjz_class_operation_reporter_t(const char *s) {
+  template <
+      typename c_t,
+      typename = std::enable_if_t<std::disjunction_v<
+          std::is_same<c_t, const char *>, std::is_same<c_t, const uint8_t *>>>>
+  void constructor(c_t s) {
     print_c_str(" created with str : \"");
     println_wi(index++, s, "\"   ");
   }
 
-  mjz_class_operation_reporter_t(std::initializer_list<const char *> args) {
+  void constructor(std::initializer_list<const char *> args) {
     print_c_str(" created with c_str list : { ");
     auto it = args.begin(), end = args.end();
     if (it == end) {
@@ -18119,7 +18145,7 @@ class mjz_class_operation_reporter_t {
     }
     println_wi(index++, " }   ");
   }
-  mjz_class_operation_reporter_t(std::initializer_list<std::string_view> args) {
+  void constructor(std::initializer_list<std::string_view> args) {
     print_c_str(" created with string_view list : { ");
     auto it = args.begin(), end = args.end();
     if (it == end) {
@@ -18137,28 +18163,71 @@ class mjz_class_operation_reporter_t {
     }
     println_wi(index++, " }   ");
   }
-
-  mjz_class_operation_reporter_t(const char *s, size_t len) {
-    print_c_str(" created with str , len  : \"");
-    print_c_str_len_1(s, len);
+  template<size_t N>
+  void constructor(const char (&a)[N]) {
+    print_c_str(" created with const str , len  : \"");
+    print_c_str_len_1(a, N);
     println_wi(index++, "\"   ");
   }
-  ~mjz_class_operation_reporter_t() {
-    println_wi(--index, " destroyed : ");
-    filler = '_';
+  template <size_t N>
+  void constructor(  char (&a)[N]) {
+    print_c_str(" created with str , len  : \"");
+    print_c_str_len_1(a, N);
+    println_wi(index++, "\"   ");
   }
-  mjz_class_operation_reporter_t(mjz_class_operation_reporter_t &&obj) {
+ 
+ 
+  void constructor(mjz_class_operation_reporter_t &&obj) {
     index++;
     println_wf(obj, " move constructed ");
+  } 
+  void constructor(const std::nullptr_t &) {
+    println_wi(index++, " created : ");
+  }
+ 
+  void constructor(const mjz_class_operation_reporter_t &obj) {
+    index++;
+    println_wf(obj, " copy constructed ");
+  }
+
+ public:
+  mutable filler_type filler = '|';
+  using UUID_t=typename UUID_geter_class::UUID_t;
+  inline UUID_t UUID() const { return (*((const UUID_geter_class*)this))((const void*)this); };
+  inline UUID_t UUID() { return (*((UUID_geter_class *)this))((void *)this); };
+  template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
+  inline UUID_geter_class &base()& {
+    return *this;
+  }
+  template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
+  inline UUID_geter_class &&base()&& {
+    return std::move( *this);
+  }
+  template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
+  inline const UUID_geter_class &&base()const& {
+    return *this;
+  }
+  template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
+  inline const UUID_geter_class &&base()const&& {
+    return std::move(*this);
+  }
+  mjz_class_operation_reporter_t() { println_wi(index++, " created : "); }
+  template <typename T0, typename ...Ts>
+  inline  mjz_class_operation_reporter_t(T0&&arg0,Ts&&...args)
+      : UUID_geter_class(std::forward<Ts>(args)...)
+         {
+    constructor(std::forward<T0>(arg0));
+;  }
+
+ 
+   ~mjz_class_operation_reporter_t() {
+    println_wi(--index, " destroyed : ");
+    filler = '_';
   }
   mjz_class_operation_reporter_t &operator=(
       mjz_class_operation_reporter_t &&obj) {
     println_wf(obj, " moved to me  ");
     return none();
-  }
-  mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t &obj) {
-    index++;
-    println_wf(obj, " copy constructed ");
   }
   mjz_class_operation_reporter_t &operator=(
       const mjz_class_operation_reporter_t &obj) const {
@@ -18336,7 +18405,7 @@ class mjz_class_operation_reporter_t {
   }
 
   inline int64_t compare(const mjz_class_operation_reporter_t &obj) const {
-    return (int64_t)((char *)UUID() - (char *)obj.UUID());
+    return (int64_t)((char *)this - (char *)this);
   }
   bool operator<=(const mjz_class_operation_reporter_t &obj) const {
     println_obj(obj, "<=");
@@ -18366,6 +18435,10 @@ class mjz_class_operation_reporter_t {
   inline mjz_class_operation_reporter_t &none() const {
     return *((mjz_class_operation_reporter_t *)this);
   }
+  inline const mjz_class_operation_reporter_t *This() const& {
+    return this;
+  }
+  inline   mjz_class_operation_reporter_t *This() & { return this; }
 
   inline operator mjz_class_operation_reporter_t &() const {
     return *((mjz_class_operation_reporter_t *)(this));
@@ -18406,12 +18479,108 @@ class mjz_class_operation_reporter_t {
   }
 };
 
-template <class counter_class, class filler_type, class my_stream>
-counter_class mjz_class_operation_reporter_t<counter_class, filler_type,
-                                             my_stream>::index{};
+
 using operation_reporter = mjz_class_operation_reporter_t<size_t, char>;
 
 using operation_reporter_32 = mjz_class_operation_reporter_t<size_t, char32_t>;
+
+
+template <class T>
+struct mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t {
+ mutable T obj{};
+  template <typename... Ts>
+  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
+                                                                 Ts &&...args)
+      :  obj(std::forward<Ts>(args)...) {}
+  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {}
+  inline constexpr ~mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {}
+  using UUID_t =  T&;
+
+  const static constexpr bool is_visible = true;
+  template <typename U>
+  UUID_t operator()(U *)const {
+    return obj;
+  }
+};
+template <class T>
+struct mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<const T>{
+   const T obj{};
+  template <typename... Ts>
+  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
+      Ts &&...args)
+      : obj(std::forward<Ts>(args)...) {}
+  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {
+  }
+  mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(const mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t&)=delete;
+  inline constexpr ~mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {
+  }
+  using UUID_t =const T &;
+
+  const static constexpr bool is_visible = true;
+  template <typename U>
+  UUID_t operator()(U *) const {
+    return obj;
+  }
+};
+template<typename generate_at_first_use=void>
+struct named_operation_reporter
+    : public mjz_class_operation_reporter_t<
+          size_t, char, std_stream_class_warper,
+          mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<
+              mjz_Str>> {
+  using BASE = mjz_class_operation_reporter_t<
+      size_t, char, std_stream_class_warper,
+      mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<
+          mjz_Str>>;
+  named_operation_reporter():BASE(std::nullptr_t(),((void*)this)){}
+  template <
+      typename c_t,
+      typename = std::enable_if_t<std::disjunction_v<
+          std::is_same<c_t, const char *>, std::is_same<c_t, const uint8_t *>>>>
+  explicit named_operation_reporter(c_t cstr)
+      : BASE(std::nullptr_t(), cstr) {}
+  template<size_t N>
+  named_operation_reporter(const char (&a)[N] )
+      : BASE(std::nullptr_t(), (decltype(a))a) {}
+  template <size_t N>
+  named_operation_reporter(  char (&a)[N])
+      : BASE(std::nullptr_t(), {a, N}) {}
+  template<typename T>
+  named_operation_reporter(T&&arg)
+      : BASE(std::nullptr_t(), std::forward<T>(arg)) {}
+  template <typename T>
+  named_operation_reporter&operator=(T &&arg) {
+    BASE::operator=(std::forward<T>(arg));
+    return *this;
+  }
+  ~named_operation_reporter(){}
+
+
+};
+
+
+template<class T>
+using operation_reporter_ID_with = mjz_class_operation_reporter_t<size_t, char,std_stream_class_warper ,mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<T>>;
+template <class T>
+using operation_reporter_32_ID_with = mjz_class_operation_reporter_t<size_t, char32_t,std_stream_class_warper ,mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<T>>;
+#ifndef __MJZ_operation_reporter_ON_LINE_DEACTIVATE_
+#define MJZ_LINE_AS_STR__(X) (#X)
+#define MJZ_LINE_AS_STR_(X) (MJZ_LINE_AS_STR__(X))
+
+#define MJZ_LINE_AS_STR__NP(X) #X
+#define MJZ_LINE_AS_STR_NP(X) MJZ_LINE_AS_STR__NP(X)
+#define GET_FLINE_C_STR()                                      \
+(MJZ_LINE_AS_STR_(__FILE__ : __LINE__))
+#define CREATE_ONFLINE_operation_reporter(NAME) \
+auto NAME = named_operation_reporter(GET_FLINE_C_STR())
+// for  example this may be ("(""line" "7"")") and that will be "(line7)"
+#define GET_LINE_C_STR() ("(" MJZ_LINE_AS_STR_NP(line) MJZ_LINE_AS_STR_NP(__LINE__) ")")
+#define CREATE_ONLINE_operation_reporter(NAME) \
+  auto NAME = named_operation_reporter(GET_LINE_C_STR())
+#endif  // !__MJZ_operation_reporter_ON_LINE_DEACTIVATE_
+
+
+
 
 namespace have_mjz_ard_removed {
 using operation_reporter = mjz_class_operation_reporter_t<size_t>;
