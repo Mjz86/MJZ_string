@@ -21,7 +21,6 @@ this is a simple fast implementation/fork of arduino string and much more...
 written by mjz https://github.com/Mjz86
 */
 
-
 /*
      my take away :
      1.why  is  the standard lib so big?
@@ -41,7 +40,6 @@ written by mjz https://github.com/Mjz86
        countless advanced c++ stuff and some wired tricks
 
 */
-
 
 #define NumberOf(arg) ((size_t)(sizeof(arg) / sizeof(arg[0])))
 #ifdef __cplusplus
@@ -1000,10 +998,39 @@ constexpr size_t size_of_global_mjz_areana_allocator_blocks = 32;
 #ifndef global_mjz_areana_allocator_log
 #define global_mjz_areana_allocator_log true
 #endif
+#ifndef _MJZ_STD_TERMENATE_NO_THROW
+#define _MJZ_STD_TERMENATE_NO_THROW true
+#endif  //!_MJZ_STD_TERMENATE_NO_THROW
 inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
 
 namespace mjz_ard {
+struct mjz_std_termenator {
+  mjz_std_termenator() {}
+  ~mjz_std_termenator() {
+#if _MJZ_STD_TERMENATE_NO_THROW
+    throw "i am dead";
+#endif  // _MJZ_STD_TERMENATE_NO_THROW
+  }
+};
+template <typename T, typename... Ts>
+[[noreturn]] inline void Throw(Ts &&...args) noexcept(false) {
+  mjz_std_termenator noooo;
+  {
+    mjz_std_termenator noooo2;
+    T obj{std::forward<Ts>(args)...};
+    throw obj;
+  }
+}
+
+template <>
+[[noreturn]] inline void Throw<void>() noexcept(_MJZ_STD_TERMENATE_NO_THROW) {
+  mjz_std_termenator noooo;
+  {
+    mjz_std_termenator noooo2;
+    throw /*the current exception*/;
+  }
+}
 
 template <class Type>
 using mjz_get_value_Type = typename Type::value_type;
@@ -1199,17 +1226,17 @@ class bit_ref_data<0> {
 
   inline constexpr ~bit_ref_data() {}
   inline constexpr uint8_t &byte() {
-    if (!this->m_byte) throw "bad bit accsess";
+    if (!this->m_byte) Throw<const char *>("bad bit accsess");
     return *this->m_byte;
   }
 
  public:
   inline constexpr uint8_t byte() const {
-    if (!this->m_byte) throw "bad bit accsess";
+    if (!this->m_byte) Throw<const char *>("bad bit accsess");
     return *this->m_byte;
   }
   inline constexpr uint8_t mask() const {
-    if (!this->m_byte) throw "bad bit accsess";
+    if (!this->m_byte) Throw<const char *>("bad bit accsess");
     return m_mask;
   }
 };
@@ -1399,7 +1426,7 @@ class iterator_template_t {
           (_iterator <= m_iterator_end_ptr)) {
         return;
       }
-      throw std::out_of_range(
+      Throw<std::out_of_range>(
           "bad ptr access : iterator_template::throw_if_bad ");
     }
   }
@@ -3619,7 +3646,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
         construct_at(addressof(*current), *first);
     } catch (...) {
       for (; d_first != current; ++d_first) d_first->~T();
-      throw;
+      Throw<void>();
     }
     return current;
   }
@@ -3634,7 +3661,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
         me::construct_at(addressof(*current), value);
     } catch (...) {
       for (; first != current; ++first) first->~V();
-      throw;
+      Throw<void>();
     }
   }
   template <class ForwardIt, class Size, class T>
@@ -3649,7 +3676,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       return current;
     } catch (...) {
       for (; first != current; ++first) first->~V();
-      throw;
+      Throw<void>();
     }
   }
   template <class ForwardIt, class T>
@@ -3666,7 +3693,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       }
     } catch (...) {
       for (; first != current; ++first) first->~V();
-      throw;
+      Throw<void>();
     }
   }
   template <class ForwardIt, class Size, class T>
@@ -3686,7 +3713,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       return current;
     } catch (...) {
       for (; first != current; ++first) first->~V();
-      throw;
+      Throw<void>();
     }
   }
   template <class InputIt, class NoThrowForwardIt>
@@ -3699,7 +3726,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       return current;
     } catch (...) {
       me::destroy(d_first, current);
-      throw;
+      Throw<void>();
     }
   }
   template <class InputIt, class Size, class NoThrowForwardIt>
@@ -3711,7 +3738,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
         me::construct_at(addressof(*current), std::move(*first));
     } catch (...) {
       me::destroy(d_first, current);
-      throw;
+      Throw<void>();
     }
     return {first, current};
   }
@@ -3725,7 +3752,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       return current;
     } catch (...) {
       for (; d_first != current; ++d_first) d_first->~T();
-      throw;
+      Throw<void>();
     }
   }
   template <class ForwardIt>
@@ -3738,7 +3765,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       }
     } catch (...) {
       destroy(first, current);
-      throw;
+      Throw<void>();
     }
   }
   template <class ForwardIt>
@@ -3749,7 +3776,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       for (; current != last; ++current) construct_at(addressof(*current));
     } catch (...) {
       destroy(first, current);
-      throw;
+      Throw<void>();
     }
   }
   template <class ForwardIt, class Size>
@@ -3761,7 +3788,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       return current;
     } catch (...) {
       destroy(first, current);
-      throw;
+      Throw<void>();
     }
   }
   template <class ForwardIt, class Size>
@@ -3773,7 +3800,7 @@ struct mjz_temp_type_obj_algorithims_warpper_t
       return current;
     } catch (...) {
       destroy(first, current);
-      throw;
+      Throw<void>();
     }
   }
   template <class BidirIt1, class BidirIt2, class BidirIt3>
@@ -4022,12 +4049,12 @@ get_CPP_local_global_allocator() {
 [[nodiscard]] void *operator new(size_t m_size) {
   void *p = get_CPP_local_global_allocator().realloc(0, m_size);
   if (p) return p;
-  throw std::runtime_error("no memory left ");
+  Throw<std::runtime_error>("no memory left ");
 }
 [[nodiscard]] void *operator new[](size_t m_size) {
   void *p = get_CPP_local_global_allocator().realloc(0, m_size);
   if (p) return p;
-  throw std::runtime_error("no memory left ");
+  Throw<std::runtime_error>("no memory left ");
 }
 void operator delete(void *p) { get_CPP_local_global_allocator().free(p); }
 void operator delete[](void *p) { get_CPP_local_global_allocator().free(p); }
@@ -4066,7 +4093,7 @@ union M_DATA_U {
 };
 
 // this will crash the program
-[[noreturn]] static inline void trap_crash(void) {
+[[noreturn]] static inline void trap_crash(void) noexcept(false) {
   *(volatile char *)0 = (volatile char)0;  // address 0 is invalid
   // this will crash the program
 }
@@ -5009,7 +5036,7 @@ struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
   /* strengthened */ {
     if constexpr (error_check) {
       if (_Pos >= m_Size) {
-        throw std::out_of_range{"mjz_Array subscript out of range"};
+        Throw<std::out_of_range>("mjz_Array subscript out of range");
       }
     }
     return m_elements()[_Pos];
@@ -5020,7 +5047,7 @@ struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
     if constexpr (error_check) {
       {
         if (_Pos >= m_Size)
-          throw std::out_of_range{"mjz_Array subscript out of range"};
+          Throw<std::out_of_range>("mjz_Array subscript out of range");
       }
     }
     return m_elements()[_Pos];
@@ -5046,7 +5073,7 @@ struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
     return m_elements();
   }
   [[noreturn]] void invld_throw() const {
-    throw std::out_of_range("invalid mjz_Array<T, N> subscript");
+    Throw<std::out_of_range>("invalid mjz_Array<T, N> subscript");
   }
   template <size_t N>
   constexpr inline mjz_Array(Type (&&input_c_array)[N]) {
@@ -5460,7 +5487,7 @@ struct mjz_Vector {
     m_capacity = newCapacity;
   }
   constexpr inline void check_range(size_type size) {
-    if (m_size < size) throw std::out_of_range(" bad accesses");
+    if (m_size < size) Throw<std::out_of_range>(" bad accesses");
   }
 };
 
@@ -5628,8 +5655,8 @@ struct mjz_static_vector_template_t {
   /* strengthened */ {
     if constexpr (do_error_check) {
       if (_Pos >= size()) {
-        throw std::out_of_range{
-            "mjz_static_vector_template_t subscript out of range"};
+        Throw<std::out_of_range>(
+            "mjz_static_vector_template_t subscript out of range");
       }
     }
     return m_elements()[_Pos];
@@ -5640,8 +5667,8 @@ struct mjz_static_vector_template_t {
     if constexpr (do_error_check) {
       {
         if (_Pos >= size())
-          throw std::out_of_range{
-              "mjz_static_vector_template_t subscript out of range"};
+          Throw<std::out_of_range>(
+              "mjz_static_vector_template_t subscript out of range");
       }
     }
     return m_elements()[_Pos];
@@ -5667,7 +5694,7 @@ struct mjz_static_vector_template_t {
     return m_elements();
   }
   [[noreturn]] void invld_throw() const {
-    throw std::out_of_range(
+    Throw<std::out_of_range>(
         "invalid mjz_static_vector_template_t<T, N> subscript");
   }
   template <size_t O_size, bool O_err>
@@ -8946,7 +8973,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const Type *throw_if_no_data_or_give_data() const & {
     if (!this->m_Has_data) {
       if constexpr (do_error_check) {
-        throw std::out_of_range(
+        Throw<std::out_of_range>(
             "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data "
             "bad "
             "access");
@@ -8969,15 +8996,15 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline Type *operator->() & { return pointer_to_data(); }
   constexpr inline Type &&operator->() && {
     if (has_data()) return std::move(move_me().O());
-    throw std::out_of_range{
+    Throw<std::out_of_range>(
         "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data bad "
-        "access"};
+        "access");
   }  // overload dosnt give ptr
   constexpr inline const Type &&operator->() const && {
     if (has_data()) return std::move(move_me().O());
-    throw std::out_of_range{
+    Throw<std::out_of_range>(
         "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data bad "
-        "access"};
+        "access");
   }
   template <typename my_type>
   constexpr inline auto operator->*(my_type my_var) & {
@@ -9433,15 +9460,14 @@ return **this<=> (*other);
   constexpr inline operator Type() const && {
     return get_obj_creator().obj_constructor(std::move(*move_me()));
   }
-  constexpr explicit operator bool() & noexcept { return has_data(); }
-  constexpr explicit operator bool() && noexcept { return has_data(); }
+  constexpr explicit operator bool() &noexcept { return has_data(); }
+  constexpr explicit operator bool() &&noexcept { return has_data(); }
   constexpr explicit operator bool() const &noexcept { return has_data(); }
   constexpr explicit operator bool() const &&noexcept { return has_data(); }
 
-  
   constexpr inline mjz_stack_obj_warper_template_class_t &
   remove_volatile() volatile &noexcept {
-    return *const_cast<mjz_stack_obj_warper_template_class_t*>(this);
+    return *const_cast<mjz_stack_obj_warper_template_class_t *>(this);
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &&
   remove_volatile() volatile &&noexcept {
@@ -9449,7 +9475,8 @@ return **this<=> (*other);
   }
   constexpr inline const mjz_stack_obj_warper_template_class_t &
   remove_volatile() volatile const &noexcept {
-    return std::move(*const_cast<const mjz_stack_obj_warper_template_class_t *>(this));
+    return std::move(
+        *const_cast<const mjz_stack_obj_warper_template_class_t *>(this));
   }
   constexpr inline const mjz_stack_obj_warper_template_class_t &&
   remove_volatile() volatile const &&noexcept {
@@ -9458,8 +9485,12 @@ return **this<=> (*other);
   }
   constexpr explicit operator bool() volatile &noexcept { return has_data(); }
   constexpr explicit operator bool() volatile &&noexcept { return has_data(); }
-  constexpr explicit operator bool() const volatile&noexcept { return has_data(); }
-  constexpr explicit operator bool() const volatile &&noexcept { return has_data();}
+  constexpr explicit operator bool() const volatile &noexcept {
+    return has_data();
+  }
+  constexpr explicit operator bool() const volatile &&noexcept {
+    return has_data();
+  }
   constexpr bool has_value() const noexcept { return has_data(); }
   template <class... Args>
 
@@ -9720,7 +9751,7 @@ class optional_pointer_refrence_class_template_t<
   template <>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() {
     if (m_ptr) return m_ptr;
-    throw "no object ";
+    Throw<const char *>("no object ");
   }
   template <typename T = Type>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw() const =
@@ -9732,7 +9763,7 @@ class optional_pointer_refrence_class_template_t<
   template <>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() const {
     if (m_ptr) return m_ptr;
-    throw "no object ";
+    Throw<const char *>("no object ");
   }
 
   inline constexpr optional_pointer_refrence_class_template_t() {}
@@ -9907,7 +9938,7 @@ class optional_pointer_refrence_class_template_t<
   template <>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() {
     if (m_ptr) return m_ptr;
-    throw "no object ";
+    Throw<const char *>("no object ");
   }
   template <typename T = Type>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw() const =
@@ -9919,7 +9950,7 @@ class optional_pointer_refrence_class_template_t<
   template <>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() const {
     if (m_ptr) return m_ptr;
-    throw "no object ";
+    Throw<const char *>("no object ");
   }
   inline constexpr optional_pointer_refrence_class_template_t() {}
   inline constexpr optional_pointer_refrence_class_template_t(
@@ -10339,7 +10370,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
   /* strengthened */ {
     if constexpr (error_check) {
       if (_Pos >= m_Size) {
-        throw std::out_of_range{"extended_mjz_Array subscript out of range"};
+        Throw<std::out_of_range>("extended_mjz_Array subscript out of range");
       }
     }
     return *m_elements[_Pos];
@@ -10350,7 +10381,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     if constexpr (error_check) {
       {
         if (_Pos >= m_Size)
-          throw std::out_of_range{"extended_mjz_Array subscript out of range"};
+          Throw<std::out_of_range>("extended_mjz_Array subscript out of range");
       }
     }
     return *m_elements[_Pos];
@@ -10386,7 +10417,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     return {m_elements, m_Size};
   }
   [[noreturn]] void invld_throw() const {
-    throw std::out_of_range("invalid extended_mjz_Array<T, N> subscript");
+    Throw<std::out_of_range>("invalid extended_mjz_Array<T, N> subscript");
   }
   constexpr inline iterator_r base() { return iterator_r(m_elements, m_Size); }
   constexpr inline const_iterator_r base() const {
@@ -10577,7 +10608,7 @@ class mjz_heap_obj_warper_template_t {
   constexpr inline container_Type_ptr uptr() && { return std::move(m_ptr); }
   mjz_heap_obj_warper_template_t(container_Type_ptr &&my_ptr)
       : m_ptr(std::move(my_ptr)) {
-    if (!m_ptr) throw " NO DATA GIVEN ";
+    if (!m_ptr) Throw<const char *>(" NO DATA GIVEN ");
   }
 
   constexpr inline container_Type_ptr get_ptr_then_iam_invalid() const && {
@@ -10588,7 +10619,7 @@ class mjz_heap_obj_warper_template_t {
   }
   mjz_heap_obj_warper_template_t(const container_Type_ptr &&my_ptr)
       : m_ptr(std::move(my_ptr)) {
-    if (!m_ptr) throw " NO DATA GIVEN ";
+    if (!m_ptr) Throw<const char *>(" NO DATA GIVEN ");
   }
 
   constexpr inline mjz_heap_obj_warper_template_t &operator=(
@@ -13637,15 +13668,15 @@ class mjz_Str : public basic_mjz_String,
     init();
     char buf[1 + 8 * sizeof(const void *const)];
     *this = ulltoa(reinterpret_cast<uint64_t>(ptr), {buf, NumberOf(buf)}, base);
-    if(length( ) >= 16) return;
-    size_t diff =16- length();
-    size_t prlen =  length();
+    if (length() >= 16) return;
+    size_t diff = 16 - length();
+    size_t prlen = length();
     if (!addto_length(diff)) return;
     memmove(m_buffer + diff, m_buffer, prlen);
     char *it = m_buffer;
     char *it_e = m_buffer + diff;
-    while (it<it_e) {
-      *it++  ='0';
+    while (it < it_e) {
+      *it++ = '0';
     }
   }
   mjz_str_t(float value, unsigned char decimalPlaces = 2) {
@@ -17698,6 +17729,7 @@ inline bool get_random_chanch_bool(double chance_var) {
 
 namespace mjz_ard {
 
+
 class speed_Timer {
  public:
   speed_Timer() { Reset(); }
@@ -17948,7 +17980,7 @@ class vr_Scoped_speed_Timer : public Scoped_speed_Timer {
 };
 class std_stream_class_warper {
   std_stream_class_warper() {}
-  
+
  public:
   template <typename T>
   inline friend std_stream_class_warper &operator<<(
@@ -17967,16 +17999,17 @@ class std_stream_class_warper {
   }
 };
 
-struct defult_UUID_geter_class{
-using UUID_t=const void*const;
-const static constexpr bool is_visible=false;
-template<typename T>
- inline  UUID_t operator()(const T*p)const{
-      return p;
- }
-};template <class counter_class>
+struct defult_UUID_geter_class {
+  using UUID_t = const void *const;
+  const static constexpr bool is_visible = false;
+  template <typename T>
+  inline UUID_t operator()(const T *p) const {
+    return p;
+  }
+};
+template <class counter_class>
 struct mjz_class_operation_reporter_count_t {
- static counter_class index;
+  static counter_class index;
 };
 template <class counter_class>
 counter_class mjz_class_operation_reporter_count_t<counter_class>::index{};
@@ -17986,7 +18019,7 @@ template <class counter_class, class filler_type = char,
 class mjz_class_operation_reporter_t
     : public mjz_class_operation_reporter_count_t<counter_class>,
       protected UUID_geter_class {
-    using mjz_class_operation_reporter_count_t<counter_class>::index;
+  using mjz_class_operation_reporter_count_t<counter_class>::index;
   template <typename... argT>
   mjz_class_operation_reporter_t &println(argT &&...args) const {
     print_c_str(std::forward<argT>(args)...);
@@ -18082,8 +18115,9 @@ class mjz_class_operation_reporter_t
     print(" )\n");
     return none();
   }
-  private:
-   void constructor(int i) {
+
+ private:
+  void constructor(int i) {
     print_c_str(" created with int :(");
     print(i);
     println_wi(index++, ")  ");
@@ -18163,28 +18197,27 @@ class mjz_class_operation_reporter_t
     }
     println_wi(index++, " }   ");
   }
-  template<size_t N>
+  template <size_t N>
   void constructor(const char (&a)[N]) {
     print_c_str(" created with const str , len  : \"");
     print_c_str_len_1(a, N);
     println_wi(index++, "\"   ");
   }
   template <size_t N>
-  void constructor(  char (&a)[N]) {
+  void constructor(char (&a)[N]) {
     print_c_str(" created with str , len  : \"");
     print_c_str_len_1(a, N);
     println_wi(index++, "\"   ");
   }
- 
- 
+
   void constructor(mjz_class_operation_reporter_t &&obj) {
     index++;
     println_wf(obj, " move constructed ");
-  } 
+  }
   void constructor(const std::nullptr_t &) {
     println_wi(index++, " created : ");
   }
- 
+
   void constructor(const mjz_class_operation_reporter_t &obj) {
     index++;
     println_wf(obj, " copy constructed ");
@@ -18192,35 +18225,36 @@ class mjz_class_operation_reporter_t
 
  public:
   mutable filler_type filler = '|';
-  using UUID_t=typename UUID_geter_class::UUID_t;
-  inline UUID_t UUID() const { return (*((const UUID_geter_class*)this))((const void*)this); };
+  using UUID_t = typename UUID_geter_class::UUID_t;
+  inline UUID_t UUID() const {
+    return (*((const UUID_geter_class *)this))((const void *)this);
+  };
   inline UUID_t UUID() { return (*((UUID_geter_class *)this))((void *)this); };
   template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
-  inline UUID_geter_class &base()& {
+  inline UUID_geter_class &base() & {
     return *this;
   }
   template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
-  inline UUID_geter_class &&base()&& {
-    return std::move( *this);
+  inline UUID_geter_class &&base() && {
+    return std::move(*this);
   }
   template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
-  inline const UUID_geter_class &&base()const& {
+  inline const UUID_geter_class &&base() const & {
     return *this;
   }
   template <int non_matter = 0, typename = std::enable_if_t<UUID_t::is_visible>>
-  inline const UUID_geter_class &&base()const&& {
+  inline const UUID_geter_class &&base() const && {
     return std::move(*this);
   }
   mjz_class_operation_reporter_t() { println_wi(index++, " created : "); }
-  template <typename T0, typename ...Ts>
-  inline  mjz_class_operation_reporter_t(T0&&arg0,Ts&&...args)
-      : UUID_geter_class(std::forward<Ts>(args)...)
-         {
+  template <typename T0, typename... Ts>
+  inline mjz_class_operation_reporter_t(T0 &&arg0, Ts &&...args)
+      : UUID_geter_class(std::forward<Ts>(args)...) {
     constructor(std::forward<T0>(arg0));
-;  }
+    ;
+  }
 
- 
-   ~mjz_class_operation_reporter_t() {
+  ~mjz_class_operation_reporter_t() {
     println_wi(--index, " destroyed : ");
     filler = '_';
   }
@@ -18435,10 +18469,8 @@ class mjz_class_operation_reporter_t
   inline mjz_class_operation_reporter_t &none() const {
     return *((mjz_class_operation_reporter_t *)this);
   }
-  inline const mjz_class_operation_reporter_t *This() const& {
-    return this;
-  }
-  inline   mjz_class_operation_reporter_t *This() & { return this; }
+  inline const mjz_class_operation_reporter_t *This() const & { return this; }
+  inline mjz_class_operation_reporter_t *This() & { return this; }
 
   inline operator mjz_class_operation_reporter_t &() const {
     return *((mjz_class_operation_reporter_t *)(this));
@@ -18479,42 +18511,22 @@ class mjz_class_operation_reporter_t
   }
 };
 
-
 using operation_reporter = mjz_class_operation_reporter_t<size_t, char>;
 
 using operation_reporter_32 = mjz_class_operation_reporter_t<size_t, char32_t>;
 
-
 template <class T>
 struct mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t {
- mutable T obj{};
-  template <typename... Ts>
-  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
-                                                                 Ts &&...args)
-      :  obj(std::forward<Ts>(args)...) {}
-  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {}
-  inline constexpr ~mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {}
-  using UUID_t =  T&;
-
-  const static constexpr bool is_visible = true;
-  template <typename U>
-  UUID_t operator()(U *)const {
-    return obj;
-  }
-};
-template <class T>
-struct mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<const T>{
-   const T obj{};
+  mutable T obj{};
   template <typename... Ts>
   inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
       Ts &&...args)
       : obj(std::forward<Ts>(args)...) {}
   inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {
   }
-  mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(const mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t&)=delete;
   inline constexpr ~mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {
   }
-  using UUID_t =const T &;
+  using UUID_t = T &;
 
   const static constexpr bool is_visible = true;
   template <typename U>
@@ -18522,7 +18534,30 @@ struct mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<c
     return obj;
   }
 };
-template<typename generate_at_first_use=void>
+template <class T>
+struct mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<
+    const T> {
+  const T obj{};
+  template <typename... Ts>
+  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
+      Ts &&...args)
+      : obj(std::forward<Ts>(args)...) {}
+  inline constexpr mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {
+  }
+  mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
+      const mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t
+          &) = delete;
+  inline constexpr ~mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {
+  }
+  using UUID_t = const T &;
+
+  const static constexpr bool is_visible = true;
+  template <typename U>
+  UUID_t operator()(U *) const {
+    return obj;
+  }
+};
+template <typename generate_at_first_use = void>
 struct named_operation_reporter
     : public mjz_class_operation_reporter_t<
           size_t, char, std_stream_class_warper,
@@ -18532,55 +18567,51 @@ struct named_operation_reporter
       size_t, char, std_stream_class_warper,
       mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<
           mjz_Str>>;
-  named_operation_reporter():BASE(std::nullptr_t(),((void*)this)){}
+  named_operation_reporter() : BASE(std::nullptr_t(), ((void *)this)) {}
   template <
       typename c_t,
       typename = std::enable_if_t<std::disjunction_v<
           std::is_same<c_t, const char *>, std::is_same<c_t, const uint8_t *>>>>
-  explicit named_operation_reporter(c_t cstr)
-      : BASE(std::nullptr_t(), cstr) {}
-  template<size_t N>
-  named_operation_reporter(const char (&a)[N] )
+  explicit named_operation_reporter(c_t cstr) : BASE(std::nullptr_t(), cstr) {}
+  template <size_t N>
+  named_operation_reporter(const char (&a)[N])
       : BASE(std::nullptr_t(), (decltype(a))a) {}
   template <size_t N>
-  named_operation_reporter(  char (&a)[N])
-      : BASE(std::nullptr_t(), {a, N}) {}
-  template<typename T>
-  named_operation_reporter(T&&arg)
+  named_operation_reporter(char (&a)[N]) : BASE(std::nullptr_t(), {a, N}) {}
+  template <typename T>
+  named_operation_reporter(T &&arg)
       : BASE(std::nullptr_t(), std::forward<T>(arg)) {}
   template <typename T>
-  named_operation_reporter&operator=(T &&arg) {
+  named_operation_reporter &operator=(T &&arg) {
     BASE::operator=(std::forward<T>(arg));
     return *this;
   }
-  ~named_operation_reporter(){}
-
-
+  ~named_operation_reporter() {}
 };
 
-
-template<class T>
-using operation_reporter_ID_with = mjz_class_operation_reporter_t<size_t, char,std_stream_class_warper ,mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<T>>;
 template <class T>
-using operation_reporter_32_ID_with = mjz_class_operation_reporter_t<size_t, char32_t,std_stream_class_warper ,mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<T>>;
+using operation_reporter_ID_with = mjz_class_operation_reporter_t<
+    size_t, char, std_stream_class_warper,
+    mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<T>>;
+template <class T>
+using operation_reporter_32_ID_with = mjz_class_operation_reporter_t<
+    size_t, char32_t, std_stream_class_warper,
+    mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<T>>;
 #ifndef __MJZ_operation_reporter_ON_LINE_DEACTIVATE_
 #define MJZ_LINE_AS_STR__(X) (#X)
 #define MJZ_LINE_AS_STR_(X) (MJZ_LINE_AS_STR__(X))
 
 #define MJZ_LINE_AS_STR__NP(X) #X
 #define MJZ_LINE_AS_STR_NP(X) MJZ_LINE_AS_STR__NP(X)
-#define GET_FLINE_C_STR()                                      \
-(MJZ_LINE_AS_STR_(__FILE__ : __LINE__))
+#define GET_FLINE_C_STR() (MJZ_LINE_AS_STR_(__FILE__ : __LINE__))
 #define CREATE_ONFLINE_operation_reporter(NAME) \
-auto NAME = named_operation_reporter(GET_FLINE_C_STR())
+  auto NAME = named_operation_reporter(GET_FLINE_C_STR())
 // for  example this may be ("(""line" "7"")") and that will be "(line7)"
-#define GET_LINE_C_STR() ("(" MJZ_LINE_AS_STR_NP(line) MJZ_LINE_AS_STR_NP(__LINE__) ")")
+#define GET_LINE_C_STR() \
+  ("(" MJZ_LINE_AS_STR_NP(line) MJZ_LINE_AS_STR_NP(__LINE__) ")")
 #define CREATE_ONLINE_operation_reporter(NAME) \
   auto NAME = named_operation_reporter(GET_LINE_C_STR())
 #endif  // !__MJZ_operation_reporter_ON_LINE_DEACTIVATE_
-
-
-
 
 namespace have_mjz_ard_removed {
 using operation_reporter = mjz_class_operation_reporter_t<size_t>;
