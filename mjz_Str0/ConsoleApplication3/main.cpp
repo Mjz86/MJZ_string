@@ -95,12 +95,12 @@ Entity_attribute m_attributes{};
   virtual const Entity_attribute& get_attribute() const = 0;
   virtual Entity& set_attribute(const Entity_attribute&) = 0;
   virtual Entity& set_attribute_at(Attributes at, bool b = true) {
-    Entity_attribute new_at= get_attribute();
-    new_at[at]=b;
-   return set_attribute(new_at);
+    Entity_attribute new_at = get_attribute();
+    new_at[at] = b;
+    return set_attribute(new_at);
   };
   virtual bool get_attribute_at(Attributes at) const {
-   return get_attribute()[at];
+    return get_attribute()[at];
   };
   Entity& reset_attribute_at(Attributes at) {
     return set_attribute_at(at, false);
@@ -188,20 +188,10 @@ class Player : public Entity {
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  auto named_operation_reporter_for_main = named_operation_reporter(
-      "int my_main::main(int argc, const char* const* const argv)");
-  optional<test::Player>().dfn_emplace()
-      .do_first_if_true_or_second_if_false(
-      [&](test::Player&&p) {
-        print(p.set_name("name")
-                  .set_health(20)
-                  .set_position({0, -100, 100})
-                  .set_attribute_at(test::Attributes::debug));
-                                          }, []() {
-                                          
-                                          });
- 
+  auto named_operation_reporter_for_main =
+             named_operation_reporter(
+                 "int my_main::main(int argc, const char* const* const argv)");
   
-  
+
   return 0;
 }
