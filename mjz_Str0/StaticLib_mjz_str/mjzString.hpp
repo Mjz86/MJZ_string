@@ -1069,6 +1069,11 @@ using mjz_get_value_Type = typename Type::value_type;
 
 template <class Type>
 using mjz_get_pointer_Type = typename Type::pointer;
+/*
+this argument shall not be used in any non mjz object or function as argument
+this is a separator just for the compiler
+*/
+struct special_arg{};
 
 template <size_t arg_Index, class U_F, class... U>
 struct mjz_get_template_argument_class_helper_t {
@@ -9357,6 +9362,45 @@ struct mjz_stack_obj_warper_template_class_t
       mjz_stack_obj_warper_template_class_t &s_obj_w) {
     if (s_obj_w.has_data()) construct(s_obj_w.operator*());
   }
+
+  template <class Func_t, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t(
+      special_arg, Func_t &&Func,   Ts &&...class_constructor_args )
+      : mjz_stack_obj_warper_template_class_t(
+            std::forward<Ts>(class_constructor_args)...) {
+    std::forward<Func_t>(Func)(*this);
+  }
+  template <class Func_t, typename... Ts>
+  static constexpr inline mjz_stack_obj_warper_template_class_t s_create_op( Func_t Func, Ts &&...class_constructor_args)
+     {
+    return {special_arg, std::forward<Func_t>(Func),
+            std::forward<Ts>(class_constructor_args)...};
+  }
+  template <class Func_t, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t& do_with_me(
+      Func_t Func, Ts &&...args) & {
+   std::forward<Func_t>(Func)(*this, std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class Func_t, typename... Ts>
+  constexpr inline const mjz_stack_obj_warper_template_class_t& do_with_me(
+      Func_t Func, Ts &&...args) const & {
+   std::forward<Func_t>(Func)(*this, std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class Func_t, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&do_with_me(
+      Func_t Func, Ts &&...args) && {
+   std::forward<Func_t>(Func)(move_me(), std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class Func_t, typename... Ts>
+  constexpr inline const mjz_stack_obj_warper_template_class_t &&do_with_me(
+      Func_t Func, Ts &&...args) const && {
+   std::forward<Func_t>(Func)(move_me(),std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
   constexpr inline mjz_stack_obj_warper_template_class_t(const Type &obj) {
     construct(obj);
   }
@@ -9745,6 +9789,13 @@ struct mjz_stack_obj_warper_template_class_t
 
   constexpr inline mjz_stack_obj_warper_template_class_t clone_me() const && {
     return {move_me()};
+  }
+
+  constexpr inline mjz_stack_obj_warper_template_class_t temp_me() const {
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t temp_me() {
+    return *this;
   }
 
   /*
