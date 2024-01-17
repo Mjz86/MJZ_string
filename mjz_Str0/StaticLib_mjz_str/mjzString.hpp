@@ -19080,7 +19080,12 @@ struct mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t<
   }
   mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
       const mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t
-          &) = delete;
+          &other)
+      : obj(other.obj) {}
+  mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t(
+       mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t
+          &&other)
+      : obj(std::move(other.obj)) {}
   inline constexpr ~mjz_class_operation_reporter_with_T_with_uuid_defult_UUID_geter_class_t() {
   }
   using UUID_t = const T &;

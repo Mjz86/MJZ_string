@@ -188,10 +188,7 @@ class Player : public Entity {
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  auto named_operation_reporter_for_main =
-             named_operation_reporter(
-                 "int my_main::main(int argc, const char* const* const argv)");
-  
+
 
   return 0;
 }

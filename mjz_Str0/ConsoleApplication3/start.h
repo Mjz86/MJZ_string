@@ -21,6 +21,8 @@ class main_class {
     std::unique_ptr<main_class> ptr = run(argc, argv);
     if (ptr->catch_exceptions()) {
       try {
+        USE_MJZ_NS();
+        auto named_operation_reporter_for_main = named_operation_reporter( "int main_class_Base::main(int argc, const char* const* const argv)");
         return_val = ptr->main(argc, argv);
       } catch (std::exception ex) {
         std::cout << "\n\n\n EXEPTION : " << ex.what();
