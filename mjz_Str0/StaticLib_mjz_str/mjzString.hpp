@@ -8842,7 +8842,15 @@ struct mjz_stack_obj_warper_template_class_t
     return std::move(O());
   }
   constexpr inline const Type *uuop() const && = delete;
-  constexpr inline Type *uuop() && = delete;  // no safe use case
+  constexpr inline Type *uuop() && = delete;  
+  
+  // no safe use case
+  constexpr inline const Type *invalid_object_pointer() const &&{
+  return uuop();
+  };
+  // no safe use case
+    constexpr inline Type *invalid_object_pointer() && { return uuop();
+  }
 
   // unsafe object functions end
 
@@ -9524,12 +9532,76 @@ return **this<=> (*other);
     return has_data();
   }
   constexpr bool has_value() const noexcept { return has_data(); }
-  template <class... Args>
 
+   template <typename... Ts>
+  struct deafult_construct_at_fn : private my_obj_creator_t {
+    inline constexpr bool operator()(T *dest, Ts &&...args) {
+      return !!my_obj_creator_t::construct_at(dest, std::forward<Ts>(args)...);
+    }
+  };
+   template <>
+   struct deafult_construct_at_fn<void> : private my_obj_creator_t {
+    inline constexpr bool operator()(T *dest ) {
+      return !!my_obj_creator_t::construct_at(dest);
+    }
+   };
+   template < class... Args>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&fn_emplace(
+      std::function<bool(T *, Args...)> construct_at_fn 
+        ,
+                                  Args &&...args) && {
+    ~*this;
+    if (construct_at_fn(uuop() ,std::forward<Args>(args)...))
+      notify_unsafe_init();
+    return move_me();
+  }
+   template <class... Args>
+   constexpr inline mjz_stack_obj_warper_template_class_t &fn_emplace(
+       std::function<bool(T *, Args...)> construct_at_fn, Args &&...args) & {
+    ~*this;
+    if (construct_at_fn(uuop() ,std::forward<Args>(args)...))
+      notify_unsafe_init();
+    return *this;
+   }
+
+   constexpr inline mjz_stack_obj_warper_template_class_t &&fn_emplace(
+       std::function<bool(T *)> construct_at_fn = deafult_construct_at_fn<void>()) && {
+    ~*this;
+    if (construct_at_fn(uuop())) notify_unsafe_init();
+    return move_me();
+   } 
+   constexpr inline mjz_stack_obj_warper_template_class_t &fn_emplace(
+       std::function<bool(T *)> construct_at_fn =
+           deafult_construct_at_fn<void>()) & {
+    ~*this;
+    if (construct_at_fn(uuop())) notify_unsafe_init();
+    return *this;
+   }
+
+
+      template <class... Args>
+   constexpr inline mjz_stack_obj_warper_template_class_t &&dfn_emplace( Args &&...args) && {
+    
+  return move_me().fn_emplace(deafult_construct_at_fn<Args...>(),
+                         std::forward<Args>(args)...);
+      }
+      template <class... Args>
+   constexpr inline mjz_stack_obj_warper_template_class_t &dfn_emplace( Args &&...args) & {
+  return fn_emplace(deafult_construct_at_fn<Args...>(),
+                              std::forward<Args>(args)...);
+   }
+
+   constexpr inline mjz_stack_obj_warper_template_class_t &&dfn_emplace() && {
+    return move_me().fn_emplace(deafult_construct_at_fn<void>());
+   }
+   constexpr inline mjz_stack_obj_warper_template_class_t &dfn_emplace( ) & {
+    return fn_emplace(deafult_construct_at_fn<void>());
+   }
+  template <class... Args>
   constexpr inline T &emplace(Args &&...args) & {
     ~*this;
     construct(std::forward<Args>(args)...);
-    return *this;
+    return o();
   }
   template <class U, class... Args>
 
@@ -9537,7 +9609,21 @@ return **this<=> (*other);
                               Args &&...args) & {
     ~*this;
     construct(ilist, std::forward<Args>(args)...);
-    return *this;
+    return o();
+  }
+  template <class... Args>
+  constexpr inline T &&emplace(Args &&...args) && {
+    ~*this;
+    construct(std::forward<Args>(args)...);
+    return move_me().o();
+  }
+  template <class U, class... Args>
+
+  constexpr inline T &&emplace(std::initializer_list<U> ilist,
+                              Args &&...args) && {
+    ~*this;
+    construct(ilist, std::forward<Args>(args)...);
+    return move_me().o();
   }
   void reset() noexcept {
     try {
@@ -11268,19 +11354,32 @@ return **this<=> (*other);
   constexpr explicit operator bool() const noexcept { return has_data(); }
   constexpr bool has_value() const noexcept { return has_data(); }
   template <class... Args>
-
   constexpr inline T &emplace(Args &&...args) & {
     ~*this;
     construct(std::forward<Args>(args)...);
-    return *this;
+    return o();
   }
-  template <class U, class... Args>
+  template <class... Args>
+  constexpr inline T &&emplace(Args &&...args) && {
+    ~*this;
+    construct(std::forward<Args>(args)...);
+    return move_me().o();
+  }
 
+
+  template <class U, class... Args>
   constexpr inline T &emplace(std::initializer_list<U> ilist,
                               Args &&...args) & {
     ~*this;
     construct(ilist, std::forward<Args>(args)...);
-    return *this;
+    return o();
+  }
+  template <class U, class... Args>
+  constexpr inline T &&emplace(std::initializer_list<U> ilist,
+                              Args &&...args) && {
+    ~*this;
+    construct(ilist, std::forward<Args>(args)...);
+    return move_me().o();
   }
   void reset() noexcept {
     try {

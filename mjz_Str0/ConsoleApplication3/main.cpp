@@ -189,11 +189,17 @@ int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   auto named_operation_reporter_for_main = named_operation_reporter(
       "int my_main::main(int argc, const char* const* const argv)");
-  test::Player p;
-  print(p.set_name("name")
-            .set_health(20)
-            .set_position({0, -100, 100})
-            .set_attribute_at(test::Attributes::debug));
+  optional<test::Player>().dfn_emplace()
+      .do_first_if_true_or_second_if_false(
+      [&](test::Player&&p) {
+        print(p.set_name("name")
+                  .set_health(20)
+                  .set_position({0, -100, 100})
+                  .set_attribute_at(test::Attributes::debug));
+                                          }, []() {
+                                          
+                                          });
+ 
 
   return 0;
 }
