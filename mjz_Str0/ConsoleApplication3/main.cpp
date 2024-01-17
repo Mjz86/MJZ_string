@@ -188,9 +188,6 @@ class Player : public Entity {
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  if (auto o = optional<operation_reporter>("name")) {
-    o()++;
-  }
   return 0;
 }
 
