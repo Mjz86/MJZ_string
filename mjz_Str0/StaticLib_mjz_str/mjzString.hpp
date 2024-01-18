@@ -3604,7 +3604,19 @@ struct mjz_obj_manager_template_struct_helper_t
 template <typename T>
 struct mjz_obj_manager_template_t
     : public mjz_obj_manager_template_struct_helper_t<std::remove_cvref_t<T>,
-                                                      T> {};
+                                                      T> {
+    using Type=std::remove_cvref_t<T>;
+  static_assert(!std::is_array_v<Type>);
+  static const constexpr size_t alignment = alignof(Type);
+  static const constexpr size_t   size_of_type_v=sizeof(Type);
+    struct alignment_t alignas(alignment) {
+    alignas(alignment) uint8_t a[size_of_type_v]{};
+    };
+    struct Alignment_t alignas(Type) {
+    alignas(Type) uint8_t a[sizeof(Type)]{};
+    };
+
+};
 
 template <typename Type,
           class my_constructor = mjz_obj_manager_template_t<Type>>
@@ -8915,8 +8927,9 @@ struct mjz_stack_obj_warper_template_t_data<true, T, BS> : public BS {
     mutable bool mm_Has_data;
   };
   union UDB_t {
-    mutable uint8_t mm_data[BS::size_of_type()];
-    uint8_t m_data[BS::size_of_type()];
+    alignas(BS::alignment) /*aliens with T */ mutable uint8_t
+        mm_data[BS::size_of_type()];
+    alignas(BS::alignment) uint8_t m_data[BS::size_of_type()];
     T m_obj____;
     mutable T mm_obj____;
   };
@@ -8944,8 +8957,8 @@ struct mjz_stack_obj_warper_template_t_data<false, T, BS> : public BS {
     mutable bool mm_Has_data;
   };
   union UDB_t {
-    mutable uint8_t mm_data[BS::size_of_type()];
-    uint8_t m_data[BS::size_of_type()];
+    alignas(1)/*no alinement*/ mutable uint8_t mm_data[BS::size_of_type()];
+    alignas(1) uint8_t m_data[BS::size_of_type()];
   };
   UDB_t m_obj_buf{};
   constexpr inline uint8_t *mm_data_b() { return m_obj_buf.mm_data; }
