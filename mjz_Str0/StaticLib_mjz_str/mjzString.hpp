@@ -1075,9 +1075,16 @@ using mjz_get_pointer_Type = typename Type::pointer;
 this argument shall not be used in any non mjz object or function as argument
 this is a separator just for the compiler
 */
-struct special_arg {};
+template <size_t N = 0>
+struct special_arg {
+  special_arg() {}
+  special_arg(const special_arg &) {}
+  special_arg &operator=(special_arg) { return *this; }
+};
 template <const char *const what_function>
-struct special_arg_t : public special_arg {};
+struct special_arg_c : public special_arg<0> {};
+template <typename T>
+struct special_arg_t : public special_arg<0> {};
 
 template <size_t arg_Index, class U_F, class... U>
 struct mjz_get_template_argument_class_helper_t {
@@ -5073,8 +5080,7 @@ struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
     }
     return m_elements()[_Pos];
   }
-  constexpr [[nodiscard]] inline reference operator[](size_type _Pos) noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline reference operator[](size_type _Pos) noexcept {
     if constexpr (error_check) {
       if (_Pos >= m_Size) {
         Throw<std::out_of_range>("mjz_Array subscript out of range");
@@ -5083,8 +5089,7 @@ struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
     return m_elements()[_Pos];
   }
   constexpr [[nodiscard]] inline const_reference operator[](
-      size_type _Pos) const noexcept
-  /* strengthened */ {
+      size_type _Pos) const noexcept {
     if constexpr (error_check) {
       {
         if (_Pos >= m_Size)
@@ -5093,20 +5098,16 @@ struct mjz_Array : private mjz_temp_type_obj_algorithims_warpper_t<
     }
     return m_elements()[_Pos];
   }
-  constexpr [[nodiscard]] inline reference front() noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline reference front() noexcept {
     return m_elements()[0];
   }
-  constexpr [[nodiscard]] inline const_reference front() const noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline const_reference front() const noexcept {
     return m_elements()[0];
   }
-  constexpr [[nodiscard]] inline reference back() noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline reference back() noexcept {
     return m_elements()[m_Size - 1];
   }
-  constexpr [[nodiscard]] inline const_reference back() const noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline const_reference back() const noexcept {
     return m_elements()[m_Size - 1];
   }
   constexpr [[nodiscard]] inline Type *data() noexcept { return m_elements(); }
@@ -5692,8 +5693,7 @@ struct mjz_static_vector_template_t {
     }
     return m_elements()[_Pos];
   }
-  constexpr [[nodiscard]] inline reference operator[](size_type _Pos)
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline reference operator[](size_type _Pos) {
     if constexpr (do_error_check) {
       if (_Pos >= size()) {
         Throw<std::out_of_range>(
@@ -5703,8 +5703,7 @@ struct mjz_static_vector_template_t {
     return m_elements()[_Pos];
   }
   constexpr [[nodiscard]] inline const_reference operator[](
-      size_type _Pos) const
-  /* strengthened */ {
+      size_type _Pos) const {
     if constexpr (do_error_check) {
       {
         if (_Pos >= size())
@@ -5714,20 +5713,16 @@ struct mjz_static_vector_template_t {
     }
     return m_elements()[_Pos];
   }
-  constexpr [[nodiscard]] inline reference front() noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline reference front() noexcept {
     return m_elements()[0];
   }
-  constexpr [[nodiscard]] inline const_reference front() const noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline const_reference front() const noexcept {
     return m_elements()[0];
   }
-  constexpr [[nodiscard]] inline reference back() noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline reference back() noexcept {
     return m_elements()[size() - 1];
   }
-  constexpr [[nodiscard]] inline const_reference back() const noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline const_reference back() const noexcept {
     return m_elements()[size() - 1];
   }
   constexpr [[nodiscard]] inline Type *data() noexcept { return m_elements(); }
@@ -9058,6 +9053,8 @@ struct mjz_stack_obj_warper_template_class_t
  public:
   using Type = std::remove_cvref_t<my_iner_Type_>;
   using my_totaly_uniuqe_type_name_of_content_type = Type;
+  using my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t =
+      Type;
   static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
   constexpr inline my_obj_creator_t get_obj_creator() {
     return my_obj_creator_t(*((const my_obj_creator_t *)this));
@@ -9404,16 +9401,34 @@ struct mjz_stack_obj_warper_template_class_t
   static constexpr inline mjz_stack_obj_warper_template_class_t
   s_create_op_ignore_args_if_not(bool b, Ts &&...class_constructor_args) {
     mjz_stack_obj_warper_template_class_t o;
-    mjz_stack_obj_warper_template_class_t *a = &o;
-    if (b) {
-      a->~mjz_stack_obj_warper_template_class_t();
-      auto *p = new (a) mjz_stack_obj_warper_template_class_t(
-          std::forward<Ts>(class_constructor_args)...);
-      if (!p) Throw("failed to construct ");
-    }
+    if (b) o.replace_me(std::forward<Ts>(class_constructor_args)...);
     return o;
   }
-
+  template <typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &replace_me(
+      Ts &&...args) & {
+    this->~mjz_stack_obj_warper_template_class_t();
+    auto *p = new (this)
+        mjz_stack_obj_warper_template_class_t(std::forward<Ts>(args)...);
+    if (!p) Throw("failed to construct ");
+    return *this;
+  }
+  template <typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &replace_obj(
+      Ts &&...args) & {
+    emplace(std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&replace_me(
+      Ts &&...args) && {
+    return replace_me(std::forward<Ts>(args)...).move_me();
+  }
+  template <typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&replace_obj(
+      Ts &&...args) && {
+    return replace_obj(std::forward<Ts>(args)...).move_me();
+  }
   template <class Func_t, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &do_with_me(
       Func_t Func, Ts &&...args) & {
@@ -11026,6 +11041,157 @@ using O_mjz_stack_obj_warper_template_t = mjz_stack_obj_warper_template_class_t<
     my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
     do_error_check, use_object_in_union>;
 
+template <
+    typename OPTIONAL_type, typename OPTIONAL_error_type,
+    typename = typename OPTIONAL_type::
+        my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t,
+    typename = typename OPTIONAL_error_type::
+        my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t>
+struct mjz_stack_obj_warper_with_error_template_class_t : public OPTIONAL_type {
+ public:
+  using Base_t = OPTIONAL_type;
+  /*
+  NOTE:
+  if the types are the same type the error will not show if one argument is set
+  */
+  template <
+      typename U = std::enable_if_t<std::negation_v<std::is_same<
+          typename OPTIONAL_type::Type, typename OPTIONAL_error_type::Type>>>>
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_error_type &&er)
+      : optional_error(er.move_me()) {}
+
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_type &&op)
+      : Base_t(op.move_me()) {}
+
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_type &&op, OPTIONAL_error_type &&er)
+      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, std::move(op))),
+        optional_error(er.move_me()) {}
+
+  template <
+      typename U = std::enable_if_t<std::negation_v<std::is_same<
+          typename OPTIONAL_type::Type, typename OPTIONAL_error_type::Type>>>>
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_error_type const &er)
+      : optional_error(er.copy_me()) {}
+
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_type const &op)
+      : Base_t(op.copy_me()) {}
+
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_type const &op, OPTIONAL_error_type const &er)
+      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, op.copy_me())),
+        optional_error(er.copy_me()) {}
+
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_type const &op, OPTIONAL_error_type &&er)
+      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, op.copy_me())),
+        optional_error(er.move_me()) {}
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
+      OPTIONAL_type &&op, OPTIONAL_error_type const &er)
+      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, op.move_me())),
+        optional_error(er.copy_me()) {}
+  template <typename... Ts>
+  static
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t s_er_create(
+      OPTIONAL_error_type  &&er, Ts &&...args) {
+    return {
+        Base_t::s_create_op_ignore_args_if_not(!er, std::forward<Ts>(args)...),
+        er.move_me()};
+  }
+  template <typename... Ts>
+  static inline constexpr mjz_stack_obj_warper_with_error_template_class_t
+  s_er_create(const OPTIONAL_error_type &er, Ts &&...args) {
+    return {
+        Base_t::s_create_op_ignore_args_if_not(!er, std::forward<Ts>(args)...),
+        er.copy_me()};
+  }
+  template <typename... Ts>
+
+  static
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t s_create(
+      Ts &&...args) {
+    return {{std::forward<Ts>(args)...},
+        {}};
+  }
+
+  inline constexpr OPTIONAL_error_type &get_error() & { return optional_error; }
+
+  inline constexpr OPTIONAL_error_type &&get_error() && {
+    return optional_error.move_me();
+  }
+
+  inline constexpr const OPTIONAL_error_type &get_error() const & {
+    return optional_error;
+  }
+
+  inline constexpr const OPTIONAL_error_type &&get_error() const && {
+    return optional_error.move_me();
+  }
+
+  inline constexpr bool has_error() const { return !!optional_error; }
+  inline constexpr mjz_stack_obj_warper_with_error_template_class_t() {}
+  inline constexpr ~mjz_stack_obj_warper_with_error_template_class_t() {}
+
+ public:
+  OPTIONAL_error_type optional_error;
+};
+
+template <typename my_iner_Type_, typename error_t,
+          bool construct_obj_on_constructor = true,
+          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
+              static_str_algo::remove_reference_t<my_iner_Type_>>,
+          bool do_error_check = 1, bool use_object_in_union = false>
+using mjz_stack_obj_warper_with_error_template_t =
+    mjz_stack_obj_warper_with_error_template_class_t<
+        mjz_stack_obj_warper_template_class_t<
+            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
+            do_error_check, use_object_in_union>,
+        OU_mjz_stack_obj_warper_template_t<
+            static_str_algo::remove_reference_t<error_t>>>;
+
+template <typename my_iner_Type_, typename error_t,
+          bool construct_obj_on_constructor = true,
+          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
+              static_str_algo::remove_reference_t<my_iner_Type_>>,
+          bool do_error_check = 1, bool use_object_in_union = true>
+using U_mjz_stack_obj_warper_with_error_template_t =
+    mjz_stack_obj_warper_with_error_template_class_t<
+        mjz_stack_obj_warper_template_class_t<
+            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
+            do_error_check, use_object_in_union>,
+        OU_mjz_stack_obj_warper_template_t<
+            static_str_algo::remove_reference_t<error_t>>>;
+
+template <typename my_iner_Type_, typename error_t,
+          bool construct_obj_on_constructor = false,
+          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
+              static_str_algo::remove_reference_t<my_iner_Type_>>,
+          bool do_error_check = 1, bool use_object_in_union = true>
+using OU_mjz_stack_obj_warper_with_error_template_t =
+    mjz_stack_obj_warper_with_error_template_class_t<
+        mjz_stack_obj_warper_template_class_t<
+            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
+            do_error_check, use_object_in_union>,
+        OU_mjz_stack_obj_warper_template_t<
+            static_str_algo::remove_reference_t<error_t>>>;
+
+template <typename my_iner_Type_, typename error_t,
+          bool construct_obj_on_constructor = false,
+          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
+              static_str_algo::remove_reference_t<my_iner_Type_>>,
+          bool do_error_check = 1, bool use_object_in_union = false>
+using O_mjz_stack_obj_warper_with_error_template_t =
+    mjz_stack_obj_warper_with_error_template_class_t<
+        mjz_stack_obj_warper_template_class_t<
+            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
+            do_error_check, use_object_in_union>,
+        OU_mjz_stack_obj_warper_template_t<
+            static_str_algo::remove_reference_t<error_t>>>;
+
 template <typename T, size_t m_size,
           class obj_cnstructor_t = mjz_temp_type_obj_algorithims_warpper_t<T>>
 class safe_array_template_t {
@@ -11246,8 +11412,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     }
     return *m_elements[_Pos];
   }
-  constexpr inline [[nodiscard]] reference operator[](size_type _Pos)
-  /* strengthened */ {
+  constexpr inline [[nodiscard]] reference operator[](size_type _Pos) {
     if constexpr (error_check) {
       if (_Pos >= m_Size) {
         Throw<std::out_of_range>("extended_mjz_Array subscript out of range");
@@ -11256,8 +11421,7 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     return *m_elements[_Pos];
   }
   constexpr inline [[nodiscard]] const_reference operator[](
-      size_type _Pos) const noexcept
-  /* strengthened */ {
+      size_type _Pos) const noexcept {
     if constexpr (error_check) {
       {
         if (_Pos >= m_Size)
@@ -11266,20 +11430,16 @@ class extended_mjz_Array {  // fixed size extended_mjz_Array of values
     }
     return *m_elements[_Pos];
   }
-  constexpr inline [[nodiscard]] reference front() noexcept
-  /* strengthened */ {
+  constexpr inline [[nodiscard]] reference front() noexcept {
     return *m_elements[0];
   }
-  constexpr inline [[nodiscard]] const_reference front() const noexcept
-  /* strengthened */ {
+  constexpr inline [[nodiscard]] const_reference front() const noexcept {
     return *m_elements[0];
   }
-  constexpr inline [[nodiscard]] reference back() noexcept
-  /* strengthened */ {
+  constexpr inline [[nodiscard]] reference back() noexcept {
     return *m_elements[m_Size - 1];
   }
-  constexpr [[nodiscard]] inline const_reference back() const noexcept
-  /* strengthened */ {
+  constexpr [[nodiscard]] inline const_reference back() const noexcept {
     return *m_elements[m_Size - 1];
   }
   constexpr inline [[nodiscard]] my_stack_obj_buffer_t *data() noexcept {
@@ -15789,6 +15949,11 @@ template <typename T>
 using optional = OU_mjz_stack_obj_warper_template_t<T>;
 template <typename T>
 using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;
+
+template <typename T, typename E>
+using optional_err = OU_mjz_stack_obj_warper_with_error_template_t<T, E>;
+template <typename T, typename E>
+using mjz_optional_err = OU_mjz_stack_obj_warper_with_error_template_t<T, E>;
 template <typename T>
 using functions_return_value = functions_return_value_t<T>;
 template <typename T>
@@ -16182,70 +16347,8 @@ mjz_ard::mjz_str_t<T> &mjz_ard::mjz_str_t<T>::assign_range(
 
 template <typename T>
 mjz_ard::mjz_str_t<T>::~mjz_str_t(void) {
-  invalidate(
-      1);  // TODO: V1053 https://pvs-studio.com/en/docs/warnings/V1053/ Calling
-           // the 'free' virtual function indirectly in the destructor may lead
-           // to unexpected result at runtime. Check lines: 'mjzString.cpp:462',
-  // 'mjzString.cpp:547', 'mjzString.cpp:646', 'mjzString.cpp:640',
-  // 'mjzString.hpp:734'.
-}  // i don't need to do this but this is explained in stackoverfllow . the
-// vtable of the derived free override gets destroyed when
-// ~mjz_ard::mjz_str_t<T>() gets called so mjz_ard::mjz_str_t<T>::free should be
-// called and i do it explicitly its not necessary but i do it see
-// https://stackoverflow.com/questions/41732051/when-is-a-vtable-destroy-in-c
-/*
-Can I call a virtual function in the destructor of a base class?
-Calling virtual functions from destructors or constructors is a bad practice.
-See the standard (emphasis mine):
-12.7 Construction and destruction
- ....
-Member functions, including virtual functions (10.3),
-can be called during construction or destruction (12.6.2).
-When a virtual function is called directly or indirectly from a constructor or
- from a destructor, including during the construction or destruction of the
- class’s non-static data members, and the object to which the call applies is
- the object (call it x) under construction or destruction, the function called
- is the final overrider in the constructor’s or destructor’s class and not
- one overriding it in a more-derived class. If the virtual function call
- uses an explicit class member access (5.2.5) and the object expression
- refers to the complete object of x or one of that object’s base class
- sub objects but not x or one of its base class sub objects, the behavior
- is undefined.
-You can find this recommendation in many sources, including Scott Meyers'
-Effective C++: 55 Specific Ways to Improve Your Programs and Designs (Item 9:
-Never call virtual functions during construction or destruction.)
-or Herb Sutter's
- C++ Coding Standards: 101 Rules, Guidelines, and Best Practices (49. Avoid
- calling virtual functions in constructors and destructors).
-Yes, the object will have a pointer to its vtable when you call the
- destructor. The standard explicitly says it is possible to call virtual
- functions in the destructor, and says what happens. There is agreement that
- even though it is allowed it is a bad practice, because it is inherently
- brittle code that leads to surprises with apparently innocent changes. If you
- have that DerDer inherits from Der, which inherits from Base, all of them
- override member function void member(), and you are in the destructor of Der,
-and call member(), you are calling Der::member(), not DerDer::member(),
-because the DerDer part of your object is GONE, DESTROYED already. A base
- class can refer inadvertently to data in a derived class, for example: struct
- Base { int *ip; Base(int *ip): ip(ip) { } virtual void useInt() {
-std::cout << *ip << std::endl; } ~Base() { useInt(); } } ; struct Der:
-Base { int theInt; Der(): Base(&theInt) { } void useIntPointer() override {
-std::cout << theInt << std::endl; } } ; When an object of type Der gets
- deleted, there is "undefined behavior": First the implicit destructor of Der is
- called, then the explicit destructor of Base, Base::~Base. At that point
- Base::ip is referring to a member of Der that has already been destroyed. Share
- Edit Follow answered Jan 19, 2017 at 6:48 TheCppZoo's user avatar TheCppZoo
- 1,21977 silver badges1212 bronze badges
- Your answer could be quite nice if you worked it over a little bit. First, in
- your text you're referring to stuff which just isn't there in the source code
- (like void member(), class DerDer, etc.). Second, the thing you point out
- would be problematic even without useInt() being virtual, but just because
- you let ip point to a member of Der, i.e. Der::theInt. So, it doesn't
- illustrate the point. Why don't you just override useInt in Der and access
- theInt from there, or even better access some heap allocated resource
- which has already been deleted? I think would be much nicer. – Elmar
- Zander Apr 5, 2022 at 12:57
-*/
+  invalidate(1);
+}
 /*********************************************/
 /* Memory Management */
 /*********************************************/
@@ -16368,19 +16471,7 @@ void mjz_ard::mjz_str_t<T>::free_pv(void *&ptr, bool constructor) {
   ptr = 0;
 }
 template <typename T>
-void mjz_ard::mjz_str_t<T>::free_pv(void *const &ptr,
-                                    bool constructor) {  // TODO: V835
-  // https://pvs-studio.com/en/docs/warnings/V835/
-  // Passing cheap-to-copy argument by reference may lead
-  // to decreased performance. To avoid this, replace the
-  // first argument 'void*const & ptr' with 'void*const
-  // ptr'. //TODO: V659
-  // https://pvs-studio.com/en/docs/warnings/V659/
-  // Declarations of functions with 'mjz_ard::mjz_str_t<T>::free_pv'
-  // name differ in the 'const' keyword only, but the
-  // bodies of these functions have different
-  // composition. This is suspicious and can possibly be
-  // an error. Check lines: 631, 645.
+void mjz_ard::mjz_str_t<T>::free_pv(void *const &ptr, bool constructor) {
   void *ptr_ = ptr;
   free_pv(ptr_, constructor);
 }
@@ -17089,7 +17180,6 @@ void *mjz_ard::mjz_str_t<T>::do_this_for_me(function_ptr function_ptr_,
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_shift_op_rc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17100,7 +17190,6 @@ mjz_ard::extended_mjz_str_t<T>
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_shift_op_lc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17111,7 +17200,6 @@ mjz_ard::extended_mjz_str_t<T>
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_shift_op_r_sc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17122,7 +17210,6 @@ mjz_ard::extended_mjz_str_t<T>
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_shift_op_l_sc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17133,7 +17220,6 @@ mjz_ard::extended_mjz_str_t<T>
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_rc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17144,7 +17230,6 @@ mjz_ard::extended_mjz_str_t<T>
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_lc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17155,7 +17240,6 @@ mjz_ard::extended_mjz_str_t<T>
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_r_sc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17166,7 +17250,6 @@ mjz_ard::extended_mjz_str_t<T>
 template <typename T>
 const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::get_s_shift_op_l_sc() const {
-  //
   return (const mjz_ard::extended_mjz_str_t<T> &)*this;
 }
 template <typename T>
@@ -17191,7 +17274,6 @@ const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::operator>>(
         mjz_ard::extended_mjz_str_t<T> &typing) const {
   helper__op_shift_input_(*this, get_s_shift_op_rc(), typing.get_shift_op_r());
-  //
   return get_s_shift_op_rc();
 }
 template <typename T>
@@ -17199,7 +17281,6 @@ const mjz_ard::extended_mjz_str_t<T>
     &mjz_ard::extended_mjz_str_t<T>::operator>>(
         mjz_ard::extended_mjz_str_t<T> *typing) const {
   helper__op_shift_input_(*this, get_s_shift_op_rc(), typing->get_shift_op_r());
-  //
   return get_s_shift_op_rc();
 }
 template <typename T>
@@ -17532,7 +17613,7 @@ mjz_ard::hash_sha256 hash_msg_to_sha_512_with_output(
 template <typename T>
 mjz_ard::hash_sha256 hash_msg_to_sha_512_n_with_output(
     const char *dev_passwoed, const size_t dev_passwoedLength, uint8_t n,
-    mjz_ard::mjz_str_t<T> &output_name) {  // intended copy
+    mjz_ard::mjz_str_t<T> &output_name) {
   if (n == 0) {
     return hash_msg_to_sha_512_with_output(dev_passwoed, dev_passwoedLength,
                                            output_name);
@@ -19109,11 +19190,18 @@ class mjz_class_operation_reporter_t
     index++;
     println_wf(obj, " move constructed ");
   }
+  void constructor(const mjz_class_operation_reporter_t &&obj) {
+    index++;
+    println_wf(obj, " const move constructed ");
+  }
   void constructor(const std::nullptr_t &) {
     println_wi(index++, " created : ");
   }
-
   void constructor(const mjz_class_operation_reporter_t &obj) {
+    index++;
+    println_wf(obj, " const  copy constructed ");
+  }
+  void constructor(  mjz_class_operation_reporter_t &obj) {
     index++;
     println_wf(obj, " copy constructed ");
   }
@@ -19142,6 +19230,18 @@ class mjz_class_operation_reporter_t
     return std::move(*this);
   }
   mjz_class_operation_reporter_t() { println_wi(index++, " created : "); }
+  mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t&o) {
+    constructor(o);
+  }
+  mjz_class_operation_reporter_t( mjz_class_operation_reporter_t &&o) {
+    constructor(std::move(o));
+  }
+  mjz_class_operation_reporter_t(  mjz_class_operation_reporter_t &o) {
+    constructor(o);
+  }
+  mjz_class_operation_reporter_t(const mjz_class_operation_reporter_t &&o) {
+    constructor(std::move(o));
+  }
   template <typename T0, typename... Ts>
   inline mjz_class_operation_reporter_t(T0 &&arg0, Ts &&...args)
       : UUID_geter_class(std::forward<Ts>(args)...) {
