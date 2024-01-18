@@ -41,6 +41,8 @@ written by mjz https://github.com/Mjz86
 
 */
 
+#ifndef _MJZ_ARD_LIB_FILE_
+#define _MJZ_ARD_LIB_FILE_
 #define NumberOf(arg) ((size_t)(sizeof(arg) / sizeof(arg[0])))
 #ifdef __cplusplus
 #ifndef __mjz_ard_STRINGS__
@@ -9297,7 +9299,6 @@ struct mjz_stack_obj_warper_template_class_t
     return *this;
   }
 
-
  public:  // unsafe may cuse undefined behavior
   mjz_stack_obj_warper_template_class_t &remove_const() const & {
     return *mjz_ard::remove_const(this);
@@ -9374,21 +9375,21 @@ struct mjz_stack_obj_warper_template_class_t
     if (s_obj_w.has_data()) construct(s_obj_w.operator*());
   }
 
-  
  public:
   template <class Func_t, typename... Ts>
   static constexpr inline mjz_stack_obj_warper_template_class_t s_create_op(
       Func_t Func, Ts &&...class_constructor_args) {
-    mjz_stack_obj_warper_template_class_t obj( std::forward<Ts>(class_constructor_args)...) ;
-      std::forward<Func_t>(Func)(obj);
-    return  obj;
+    mjz_stack_obj_warper_template_class_t obj(
+        std::forward<Ts>(class_constructor_args)...);
+    std::forward<Func_t>(Func)(obj);
+    return obj;
   }
   template <class Func_t, typename... Ts>
   static constexpr inline mjz_stack_obj_warper_template_class_t
   s_create_op_ignore_args_if_not_fn(Func_t Func,
                                     Ts &&...class_constructor_args) {
     mjz_stack_obj_warper_template_class_t o;
-    mjz_stack_obj_warper_template_class_t*a=&o;
+    mjz_stack_obj_warper_template_class_t *a = &o;
     static_assert(
         std::is_same_v<decltype(!!std::forward<Func_t>(Func)(*a)), bool>);
     if (!!std::forward<Func_t>(Func)(*this)) {
@@ -9403,7 +9404,7 @@ struct mjz_stack_obj_warper_template_class_t
   static constexpr inline mjz_stack_obj_warper_template_class_t
   s_create_op_ignore_args_if_not(bool b, Ts &&...class_constructor_args) {
     mjz_stack_obj_warper_template_class_t o;
-    mjz_stack_obj_warper_template_class_t*a=&o;
+    mjz_stack_obj_warper_template_class_t *a = &o;
     if (b) {
       a->~mjz_stack_obj_warper_template_class_t();
       auto *p = new (a) mjz_stack_obj_warper_template_class_t(
@@ -9741,7 +9742,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline Type &operator()() & { return **this; }
   using my_Type_t = mjz_stack_obj_warper_template_class_t;
 
-    constexpr inline my_Type_t &destroy_if_valid() & {
+  constexpr inline my_Type_t &destroy_if_valid() & {
     de_init();
     return *this;
   }
@@ -10103,9 +10104,6 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
 
-
-
-  
   template <class return_type = (decltype(auto)), class has_data_function_type,
             class no_data_function_type, typename... args_t>
   constexpr inline return_type me_do_first_if_true_or_second_if_false_ret(
@@ -10199,8 +10197,6 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
 
-
-  
   template <class return_type = (decltype(auto)), class has_data_function_type,
             typename... args_t>
   constexpr inline return_type do_if_valid_ret(
@@ -10382,7 +10378,7 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
 
-   template <class return_type = (decltype(auto)), class has_data_function_type,
+  template <class return_type = (decltype(auto)), class has_data_function_type,
             typename... args_t>
   constexpr inline return_type me_do_if_valid_ret(
       has_data_function_type has_data_function, return_type false_ret_val,
@@ -18587,7 +18583,6 @@ inline bool get_random_chanch_bool(double chance_var) {
 }  // namespace mjz_ard
 #endif  // __mjz_ard_STRINGS__
 #endif  // __cplusplus
-
 #ifndef FREAMEWORK_FILE_HEDER
 #define FREAMEWORK_FILE_HEDER
 
@@ -19775,3 +19770,5 @@ inline void println(args_t &&...args) {
 }  // namespace mjz_ard
 
 #endif  // !FREAMEWORK_FILE_HEDER
+
+#endif  // !_MJZ_ARD_LIB_FILE_
