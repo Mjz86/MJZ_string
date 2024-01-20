@@ -1113,7 +1113,9 @@ struct special_arg_c : public special_arg<0> {};
 template <typename T>
 struct special_arg_t : public special_arg<0> {};
 template <size_t N = 0>
-struct special_arg_no_init_constructor {};
+struct special_arg_no_init_constructor_t {};
+static const constexpr size_t special_arg_no_init_constructor_for_unsafe_warper_value = 5141098986585;
+using mjz_no_init_uw_special_arg=special_arg_no_init_constructor_t<special_arg_no_init_constructor_for_unsafe_warper_value>;
 
 template <size_t arg_Index, class U_F, class... U>
 struct mjz_get_template_argument_class_helper_t {
@@ -3262,18 +3264,21 @@ concept C_simple_unsafe_init_obj_wrpr_helper =
     requires(T obj, const T cobj, Ts &&...args) {
       T();
       obj.~T();
-      T(special_arg_no_init_constructor<0>());
+      T(mjz_no_init_uw_special_arg());
       T(std::forward<Ts>(args)...);
       { *obj } -> std::same_as<Type &>;
       { *cobj } -> std::same_as<const Type &>;
+      { obj() } -> std::same_as<Type &>;
+      { cobj() } -> std::same_as<const Type &>;
       { obj.operator->() } -> std::same_as<Type *>;
       { cobj.operator->() } -> std::same_as<const Type *>;
       { obj.get() } -> std::same_as<Type &>;
       { cobj.get() } -> std::same_as<const Type &>;
       { obj.ptr() } -> std::same_as<Type *>;
       { cobj.ptr() } -> std::same_as<const Type *>;
-      { obj.create(std::forward<Ts>(args)...) } -> std::same_as<Type *>;
-      { obj.destroy() } -> std::same_as<void>;
+      { obj.unsafe_create() } -> std::same_as<Type *>;
+      { obj.unsafe_create(std::forward<Ts>(args)...) } -> std::same_as<Type *>;
+      { obj.unsafe_destroy() } -> std::same_as<void>;
       { T::has_destroy() } -> std::same_as<bool>;
       requires sizeof(T) == sizeof(Type);
       requires true;
@@ -3639,25 +3644,25 @@ struct mjz_internal_obj_manager_template_t {
 
   template <bool destroy_on_destruction = true>
   union simple_unsafe_init_obj_wrpr {
-    constexpr inline simple_unsafe_init_obj_wrpr() {
-      create();
+    constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
     }
     constexpr inline simple_unsafe_init_obj_wrpr(
-        special_arg_no_init_constructor<0>) {}
+        mjz_no_init_uw_special_arg) {}
     template <class T0>
     constexpr inline simple_unsafe_init_obj_wrpr(T0 &&arg0) {
-      create(  std::forward<T0>(arg0));
+      unsafe_create(std::forward<T0>(arg0));
     }
     constexpr inline ~simple_unsafe_init_obj_wrpr() {
-      if constexpr (destroy_on_destruction) destroy();
+      if constexpr (destroy_on_destruction) unsafe_destroy();
     }
-    Type obj;
     constexpr inline Type *ptr() { return me::addressof(obj); }
     constexpr inline Type &get() { return *ptr(); }
+    constexpr inline Type &operator()() { return get(); }
     constexpr inline Type &operator*() { return get(); }
     constexpr inline Type *operator->() { return ptr(); }
     constexpr inline const Type *ptr() const { return me::addressof(obj); }
     constexpr inline const Type &get() const { return *ptr(); }
+    constexpr inline const Type &operator()() const { return get(); }
     constexpr inline const Type &operator*() const { return get(); }
     constexpr inline const Type *operator->() const { return ptr(); }
     constexpr inline const static bool has_destroy( ) {
@@ -3665,18 +3670,20 @@ struct mjz_internal_obj_manager_template_t {
     }
 
     template <class T>
-    constexpr inline Type *create(T &&args) {
+    constexpr inline Type *unsafe_create(T &&args) {
       return obj_constructor_on(ptr(), std::forward<T>(args));
     }
-    constexpr inline Type *create() {
+    constexpr inline Type *unsafe_create() {
       return obj_constructor_on(ptr());
     }
 
-    constexpr inline void destroy() {
+    constexpr inline void unsafe_destroy() {
       obj_destructor_on(ptr());
     }
+
    private:
-    char NO_USE_;
+    Type obj;
+    alignas(Type) volatile char NO_USE_NO_INITILIZATION_[sizeof(Type)];
   };
   // template <bool destroy_on_destruction = false>
   using simple_unsafe_init_obj_wrpr_false =
@@ -3838,40 +3845,43 @@ struct mjz_non_internal_obj_manager_template_t {
 
   template <bool destroy_on_destruction = true>
   union simple_unsafe_init_obj_wrpr {
-    constexpr inline simple_unsafe_init_obj_wrpr() { create();
+    constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
     }
     constexpr inline simple_unsafe_init_obj_wrpr(
-        special_arg_no_init_constructor<0>) {}
+        mjz_no_init_uw_special_arg) {}
     template <class T0, class... Ts>
     constexpr inline simple_unsafe_init_obj_wrpr(T0 &&arg0, Ts &&...args) {
-      create( std::forward<T0>(arg0),
+      unsafe_create(std::forward<T0>(arg0),
                          std::forward<Ts>(args)...);
     }
     constexpr inline ~simple_unsafe_init_obj_wrpr() {
-      if constexpr (destroy_on_destruction) destroy();
+      if constexpr (destroy_on_destruction) unsafe_destroy();
     }
-    Type obj;
     constexpr inline Type *ptr() { return me::addressof(obj); }
     constexpr inline Type &get() { return *ptr(); }
+    constexpr inline Type &operator()() { return get(); }
     constexpr inline Type &operator*() { return get(); }
     constexpr inline Type *operator->() { return ptr(); }
     constexpr inline const Type *ptr() const { return me::addressof(obj); }
     constexpr inline const Type &get() const { return *ptr(); }
+    constexpr inline const Type &operator()() const { return get(); }
     constexpr inline const Type &operator*() const { return get(); }
     constexpr inline const Type *operator->() const { return ptr(); }
     constexpr inline const static bool has_destroy() {
       return destroy_on_destruction;
     }
     template <class... Ts>
-    constexpr inline Type*create(Ts &&...args) {
+    constexpr inline Type *unsafe_create(Ts &&...args) {
      return  obj_constructor_on(ptr(), std::forward<Ts>(args)...);
     }
 
 
-    constexpr inline void destroy( ) { obj_destructor_on(ptr());
+    constexpr inline void unsafe_destroy() { obj_destructor_on(ptr());
     }
+
    private:
-    char NO_USE_;
+    Type obj;
+   alignas(Type) volatile char NO_USE_NO_INITILIZATION_[sizeof(Type)];
   };
   // template <bool destroy_on_destruction = false>
   using simple_unsafe_init_obj_wrpr_false =
@@ -16319,6 +16329,16 @@ template <typename T>
 using Vector = mjz_Vector<T>;
 template <typename T, size_t size>
 using array = mjz_Array<T, size>;
+using initilizer_in_constructor_helper_class=initilizer_in_constructor_helper_class_t<0>;
+template<size_t N>
+using initilizer_in_constructor_helper_class_t=initilizer_in_constructor_helper_class_t<N>;
+template<class T ,bool destroy_afrer_destruction>
+using simple_unsafe_init_obj_wrpr_t=simple_unsafe_init_obj_wrpr_t<T,destroy_afrer_destruction>;
+template<class T >
+using simple_unsafe_init_obj_wrpr_true_t=simple_unsafe_init_obj_wrpr_true_t<T>;
+template<class T >
+using simple_unsafe_init_obj_wrpr_false_t=simple_unsafe_init_obj_wrpr_false_t<T>;
+using mjz_no_init_uw_special_arg=mjz_no_init_uw_special_arg;
 
 template <typename T, class C_free_realloc>
 using mjz_C_allocator_warpper =
