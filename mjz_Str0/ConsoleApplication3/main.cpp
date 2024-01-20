@@ -184,19 +184,12 @@ class Player : public Entity {
     return *this;
   }
 };
-}  // namespace test
-
+}  // namespace test 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  auto op =
-      optional_err<operation_reporter, operation_reporter>({}, {});
-  if (op)
-    ++op();
-  else if (op.has_error())
-    --op.get_error()();
-  else
-    println("unknown error?!");
-
   
+  
+  
+
   return 0;
 }
