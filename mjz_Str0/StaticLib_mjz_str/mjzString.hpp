@@ -1102,19 +1102,21 @@ using initilizer_class_t = initilizer_in_constructor_helper_class_t<N>;
 this argument shall not be used in any non mjz object or function as argument
 this is a separator just for the compiler
 */
-template <size_t N = 0>
+template <size_t N >
 struct special_arg {
   special_arg() {}
   special_arg(const special_arg &) {}
   special_arg &operator=(special_arg) { return *this; }
 };
 template <const char *const what_function>
-struct special_arg_c : public special_arg<0> {};
+struct special_arg_c   {};
 template <typename T>
-struct special_arg_t : public special_arg<0> {};
-template <size_t N = 0>
+struct special_arg_t  {};
+template <size_t N >
 struct special_arg_no_init_constructor_t {};
-static const constexpr size_t special_arg_no_init_constructor_for_unsafe_warper_value = 5141098986585;
+static const constexpr size_t
+    special_arg_no_init_constructor_for_unsafe_warper_value =
+        0x0242ac12f0a285;//   just a random number
 using mjz_no_init_uw_special_arg=special_arg_no_init_constructor_t<special_arg_no_init_constructor_for_unsafe_warper_value>;
 
 template <size_t arg_Index, class U_F, class... U>
