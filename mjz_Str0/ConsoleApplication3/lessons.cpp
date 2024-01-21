@@ -38,7 +38,21 @@ void show_lifetime() {
   ptr_show({});
   ptr_show(std::make_shared<operation_reporter>());
 }
-
+void function_for_knowledge(char* volatile a) {
+  USE_MJZ_NS();
+  char b[100]{};
+  int movement = int(b - a);
+  println(
+      "value growed"
+      ":",
+      movement, " so stack growes:", (movement < 0) ? "backwards" : "forwards");
+}
+void show_stack() {
+  USE_MJZ_NS();
+  char a_[100]{};
+  char* volatile a = a_;
+  function_for_knowledge(a);
+}
 void show_exceptions_effect() {
   USE_MJZ_NS();
   try {
@@ -84,7 +98,7 @@ void show_exceptions_effect() {
 }
 
 typedef void (*lesson_fn)(void);
-lesson_fn lessons[]{show_lifetime, show_exceptions_effect};
+lesson_fn lessons[]{show_lifetime, show_exceptions_effect, show_stack};
 
 void show_all() {
   USE_MJZ_NS();

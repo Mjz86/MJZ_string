@@ -1102,22 +1102,50 @@ using initilizer_class_t = initilizer_in_constructor_helper_class_t<N>;
 this argument shall not be used in any non mjz object or function as argument
 this is a separator just for the compiler
 */
-template <size_t N >
+template <size_t NUM >
 struct special_arg {
-  special_arg() {}
-  special_arg(const special_arg &) {}
-  special_arg &operator=(special_arg) { return *this; }
+    using me=special_arg<NUM>;
+  static constexpr const size_t N = NUM;
+ inline constexpr special_arg() {}
+  inline constexpr special_arg(const special_arg &) {}
+ inline constexpr special_arg &operator=(special_arg) { return *this; }
 };
 template <const char *const what_function>
 struct special_arg_c   {};
 template <typename T>
 struct special_arg_t  {};
-template <size_t N >
-struct special_arg_no_init_constructor_t {};
+template <size_t NUM, size_t init_if_iam_not_zero_the_base_with_me_minus_one_>
+struct special_arg_no_init_constructor_t {
+    using me=special_arg_no_init_constructor_t<NUM,init_if_iam_not_zero_the_base_with_me_minus_one_>;
+    static constexpr const size_t N=NUM;
+  static constexpr const size_t
+      init_if_iam_not_zero_the_base_with_me_minus_one =
+          init_if_iam_not_zero_the_base_with_me_minus_one_;
+    inline constexpr special_arg_no_init_constructor_t() {}
+  inline constexpr special_arg_no_init_constructor_t(
+      const special_arg_no_init_constructor_t &) {}
+    inline constexpr special_arg_no_init_constructor_t &operator=(
+      const special_arg_no_init_constructor_t &) {return*this;}
+};
 static const constexpr size_t
     special_arg_no_init_constructor_for_unsafe_warper_value =
         0x0242ac12f0a285;//   just a random number
-using mjz_no_init_uw_special_arg=special_arg_no_init_constructor_t<special_arg_no_init_constructor_for_unsafe_warper_value>;
+template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
+using mjz_no_init_uw_special_arg=special_arg_no_init_constructor_t<special_arg_no_init_constructor_for_unsafe_warper_value,init_if_iam_not_zero_the_base_with_me_minus_one>;
+
+static const constexpr size_t
+    special_arg_no_init_constructor_for_mjz_optional_value = 0x4E58B994E905F5;  //   just a random number
+
+static const constexpr size_t
+    special_arg_init_for_mjz_optional_value =
+    (~special_arg_no_init_constructor_for_mjz_optional_value) >> 1;  //   just a
+                                                                  //   random
+                                                                  //   number
+template <size_t init_if_iam_not_zero_the_base_with_me_minus_one=0>
+using mjz_no_init_optional_t = special_arg_no_init_constructor_t<
+    special_arg_no_init_constructor_for_mjz_optional_value,
+    init_if_iam_not_zero_the_base_with_me_minus_one>;
+using mjz_init_optional_t=special_arg<special_arg_init_for_mjz_optional_value>;
 
 template <size_t arg_Index, class U_F, class... U>
 struct mjz_get_template_argument_class_helper_t {
@@ -3266,7 +3294,10 @@ concept C_simple_unsafe_init_obj_wrpr_helper =
     requires(T obj, const T cobj, Ts &&...args) {
       T();
       obj.~T();
-      T(mjz_no_init_uw_special_arg());
+      T(mjz_no_init_uw_special_arg<0>());
+      T(mjz_no_init_uw_special_arg<1>());
+      T(mjz_no_init_uw_special_arg<2>());
+      T(mjz_no_init_uw_special_arg<3>());
       T(std::forward<Ts>(args)...);
       { *obj } -> std::same_as<Type &>;
       { *cobj } -> std::same_as<const Type &>;
@@ -3648,8 +3679,22 @@ struct mjz_internal_obj_manager_template_t {
   union simple_unsafe_init_obj_wrpr {
     constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
     }
+    template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
     constexpr inline simple_unsafe_init_obj_wrpr(
-        mjz_no_init_uw_special_arg) {}
+        mjz_no_init_uw_special_arg<
+            init_if_iam_not_zero_the_base_with_me_minus_one>)
+      requires(init_if_iam_not_zero_the_base_with_me_minus_one != 0)
+    {
+      static_assert(
+          requires {
+          unsafe_create(
+              mjz_no_init_uw_special_arg<
+                  init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
+      });
+      unsafe_create(mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one-1>());
+    }
+    constexpr inline simple_unsafe_init_obj_wrpr(
+        mjz_no_init_uw_special_arg<0>) {}
     template <class T0>
     constexpr inline simple_unsafe_init_obj_wrpr(T0 &&arg0) {
       unsafe_create(std::forward<T0>(arg0));
@@ -3849,8 +3894,17 @@ struct mjz_non_internal_obj_manager_template_t {
   union simple_unsafe_init_obj_wrpr {
     constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
     }
+    template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
     constexpr inline simple_unsafe_init_obj_wrpr(
-        mjz_no_init_uw_special_arg) {}
+        mjz_no_init_uw_special_arg<
+            init_if_iam_not_zero_the_base_with_me_minus_one>)
+      requires(init_if_iam_not_zero_the_base_with_me_minus_one !=0)
+    {
+      unsafe_create(
+          mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
+    }
+    constexpr inline simple_unsafe_init_obj_wrpr(
+        mjz_no_init_uw_special_arg<0>) {}
     template <class T0, class... Ts>
     constexpr inline simple_unsafe_init_obj_wrpr(T0 &&arg0, Ts &&...args) {
       unsafe_create(std::forward<T0>(arg0),
@@ -4027,13 +4081,13 @@ struct mjz_obj_manager_template_t
 };
 
  template <typename Type,bool destroy_on_destruction> 
-  using simple_unsafe_init_obj_wrpr_t =  std::conditional_t<destroy_on_destruction,
+  using mjz_simple_unsafe_init_obj_wrpr_t =  std::conditional_t<destroy_on_destruction,
       typename mjz_obj_manager_template_t<Type>::simple_unsafe_init_obj_wrpr_true,
       typename mjz_obj_manager_template_t<Type>::simple_unsafe_init_obj_wrpr_false>;
  template <typename Type> 
-  using simple_unsafe_init_obj_wrpr_false_t =  simple_unsafe_init_obj_wrpr_t<Type,false>;
+  using mjz_simple_unsafe_init_obj_wrpr_false_t =  mjz_simple_unsafe_init_obj_wrpr_t<Type,false>;
         template <typename Type > 
-  using simple_unsafe_init_obj_wrpr_true_t =  simple_unsafe_init_obj_wrpr_t<Type,true>;
+  using mjz_simple_unsafe_init_obj_wrpr_true_t =  mjz_simple_unsafe_init_obj_wrpr_t<Type,true>;
 
 template <typename Type,
           C_mjz_obj_manager my_constructor = mjz_obj_manager_template_t<Type>>
@@ -9774,6 +9828,29 @@ struct mjz_stack_obj_warper_template_class_t
       construct();
     }
   };
+  constexpr inline mjz_stack_obj_warper_template_class_t(mjz_init_optional_t ) {
+      construct();
+  };
+  
+  template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
+  constexpr inline mjz_stack_obj_warper_template_class_t(
+      mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one>)
+    requires(init_if_iam_not_zero_the_base_with_me_minus_one != 0)
+  {
+    static_assert(
+        requires {
+          construct(mjz_no_init_optional_t<
+                    init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
+        });
+    construct(
+        mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one -
+                               1>());
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t(
+      mjz_no_init_optional_t<0>) {
+    this->m_Has_data = 0;
+  };
+
   template <typename T0, typename... T_s>
   constexpr inline mjz_stack_obj_warper_template_class_t(T0 &&arg0,
                                                          T_s &&...args) {
@@ -16312,7 +16389,6 @@ using mjz_ref_return_helper_class_t =
 namespace have_mjz_ard_removed {
 using mjz_Str = mjz_Str;
 using mjz_str = mjz_Str;
-
 using mjz_estr = extended_mjz_Str;
 using mjz_eStr = extended_mjz_Str;
 using malloc_wrpr = malloc_wrapper;
@@ -16335,12 +16411,19 @@ using initilizer_in_constructor_helper_class=initilizer_in_constructor_helper_cl
 template<size_t N>
 using initilizer_in_constructor_helper_class_t=initilizer_in_constructor_helper_class_t<N>;
 template<class T ,bool destroy_afrer_destruction>
-using simple_unsafe_init_obj_wrpr_t=simple_unsafe_init_obj_wrpr_t<T,destroy_afrer_destruction>;
+using simple_unsafe_init_obj_wrpr_t=mjz_simple_unsafe_init_obj_wrpr_t<T,destroy_afrer_destruction>;
 template<class T >
-using simple_unsafe_init_obj_wrpr_true_t=simple_unsafe_init_obj_wrpr_true_t<T>;
+using simple_unsafe_init_obj_wrpr_true_t=mjz_simple_unsafe_init_obj_wrpr_true_t<T>;
 template<class T >
-using simple_unsafe_init_obj_wrpr_false_t=simple_unsafe_init_obj_wrpr_false_t<T>;
-using mjz_no_init_uw_special_arg=mjz_no_init_uw_special_arg;
+using simple_unsafe_init_obj_wrpr_false_t=mjz_simple_unsafe_init_obj_wrpr_false_t<T>;
+template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
+using  no_init_uw_special_arg_t=mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one>;
+using  no_init_uw_special_arg= no_init_uw_special_arg_t<0>;
+template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
+using no_init_optional_t =typename mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one>::me;
+using no_init_optional =no_init_optional_t<0>;
+using  init_optional=typename mjz_init_optional_t::me;
+
 
 template <typename T, class C_free_realloc>
 using mjz_C_allocator_warpper =
