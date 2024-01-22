@@ -108,9 +108,7 @@ class minimal_mjz_string_data:protected mjzt::algorithm {
     m_db = std::move(d.m_db);
     return *this;
   }
-  inline mjz::basic_mjz_Str_view  view() const {
-    return {(char*)get_str(), get_len()};
-  }
+  
 
 };
 /*
@@ -123,15 +121,7 @@ and the mess that is mjz_String
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  minimal_mjz_string_data d;
-  char* p = d.get_str();
-  size_t c = d.get_cap();
-  while (c--) {
-    *p++ = c +'0';
-  }
-  d.set_len(d.get_cap());
- auto view= d.view();
-  println(view);
+   
 
   return 0;
 }
