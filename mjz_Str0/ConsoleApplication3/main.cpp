@@ -16,7 +16,7 @@ class minimal_mjz_string_data:protected mjzt::algorithm {
   constexpr static const uint8_t is_external_array_v{255};
   struct static_DB_t {
     char internal_array[static_storage_cap+1]{};
-    char internal_array_length{};
+    uint8_t internal_array_length{};
     void reset( ) {
       mjz::mjz_obj_manager_template_t<static_DB_t>::obj_destructor_on(this);
       mjz::mjz_obj_manager_template_t<static_DB_t>::obj_constructor_on(this);
@@ -70,6 +70,10 @@ class minimal_mjz_string_data:protected mjzt::algorithm {
     ret.buffer = 0;
     ret.capacity = static_storage_cap;
     ret.length = m_db.db_s.internal_array_length;
+    m_db.db_s.internal_array_length = is_external_array_v;
+    m_db.db_d.buffer = buffer;
+    m_db.db_d.capacity = cap;
+    m_db.db_d.length = ret.length;
     return ret;
   }
   inline size_t get_cap() const {
@@ -121,7 +125,20 @@ and the mess that is mjz_String
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-   
+  minimal_mjz_string_data d;
+  char s[40+1]{};
+  {
+    char* ptr = d.get_str();
+    char* ptr_ = d.get_str();
+    for (const char& c : "1234567890abcdef") {
+    *ptr++ = c;
+    }
+    d.set_len(ptr - ptr_);
+    d.str_set_dynamic(s, NumberOf(s));
+  }
+  auto str=  std::string_view(d.get_str(), d.get_len());
+auto ptr= str.data();
+  println(str);
 
   return 0;
 }
