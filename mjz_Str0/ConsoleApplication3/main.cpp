@@ -1,24 +1,41 @@
 
 #include "my_main.h"
 namespace mjz_ard {
+template< uint8_t min_of_stack_string>
 class minimal_mjz_string_data : protected mjzt::algorithm {
-  struct dynamic_DB_t {
-    char *buffer{};
-    size_t length{};
-    size_t capacity{};
+  static_assert(sizeof(void *) == sizeof(uintptr_t),
+                " for this class this is not good");
+  typedef uintptr_t Size_t;
+  static_assert(requires(Size_t s,size_t s2) {
+                  { s } -> std::convertible_to<size_t>;
+                  { s2 } -> std::convertible_to<Size_t>;
+  });
+  static_assert(min_of_stack_string < 255);
+  struct dynamic_DB_t  {
+    alignas(Size_t) Size_t dummy{};
+    alignas(Size_t) char *buffer{};
+    alignas(Size_t) Size_t length{};
+    alignas(Size_t) Size_t capacity{};
   };
 
  private:
-  constexpr static const size_t power_of_2_offset = sizeof(size_t);
+  constexpr static const size_t min_size_of_minimal_mjz_string_data =
+      sizeof(dynamic_DB_t) - 2 * sizeof(char);
+  constexpr const static size_t delta_size_ =
+      (min_of_stack_string - min_size_of_minimal_mjz_string_data);
   constexpr static const size_t size_of_minimal_mjz_string_data =
-      sizeof(dynamic_DB_t) + power_of_2_offset - 2 * sizeof(char);
+      min_of_stack_string < min_size_of_minimal_mjz_string_data
+          ? min_size_of_minimal_mjz_string_data
+          : (min_size_of_minimal_mjz_string_data +
+             ((delta_size_ / sizeof(Size_t)) +!!(delta_size_% sizeof(Size_t))) * sizeof(Size_t));
+
   static_assert(size_of_minimal_mjz_string_data < 255);
-  constexpr static const uint8_t static_storage_cap =
-      size_of_minimal_mjz_string_data;
+  constexpr static const uint8_t static_storage_cap = size_of_minimal_mjz_string_data;
   constexpr static const uint8_t is_external_array_v{255};
+
   struct static_DB_t {
+    uint8_t internal_array_length{};// alings with dynamic_DB_t::dummy in below union
     char internal_array[static_storage_cap + 1]{};
-    uint8_t internal_array_length{};
     void reset() {
       mjz::mjz_obj_manager_template_t<static_DB_t>::obj_destructor_on(this);
       mjz::mjz_obj_manager_template_t<static_DB_t>::obj_constructor_on(this);
@@ -28,7 +45,7 @@ class minimal_mjz_string_data : protected mjzt::algorithm {
     union {
       dynamic_DB_t db_d;
       static_DB_t db_s{};
-      static_assert(sizeof(dynamic_DB_t) < sizeof(static_DB_t));
+      static_assert(sizeof(dynamic_DB_t) <= sizeof(static_DB_t));
     };
     DB_t() {}
     ~DB_t() {}
@@ -178,7 +195,8 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     return 1;
   }
   constexpr bool empty() const {
-    return (!get_length() || get_buffer() == empty_STRING_C_STR ||
+    return (!get_length() ||
+            get_buffer() == static_str_algo::empty_STRING_C_STR ||
             get_buffer() == nullptr);
   }
   constexpr inline size_t length(void) const { return get_length(); }
@@ -738,7 +756,8 @@ and the mess that is mjz_String
 }  // namespace mjz_ard
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  minimal_mjz_string_data d;
+  minimal_mjz_string_data<0> d;
+  println(d.get_cap());
   char s[40+1]{};
   {
     char* ptr = d.get_str();
@@ -746,6 +765,7 @@ int my_main::main(int argc, const char* const* const argv) {
     for (const char& c : "1234567890abcdef") {
     *ptr++ = c;
     }
+    ptr--;
     d.set_len(ptr - ptr_);
     d.str_set_dynamic(s, NumberOf(s));
   }

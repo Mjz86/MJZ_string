@@ -6496,6 +6496,22 @@ constexpr inline bool is_blank_characteres_default(char x_char_) {
 #define NO_IGNORE_CHAR '\4'  // a char not found in a valid ASCII numeric field
 
 class static_str_algo {
+  static constexpr int64_t the_reinterpreted_char_cca_size = 17;
+  static constexpr int64_t forbiden_chars_cnt_size = 3;
+  static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
+  static size_t constexpr DBL_MAX_DECIMAL_PLACES = 19;
+  static constexpr const char *empty_STRING_C_STR = "";
+  constexpr static const char forbiden_chars_cnt[forbiden_chars_cnt_size] = {
+      '\r', '\n', 0};
+  constexpr static const char
+      the_in_reinterpreted_char_cca[the_reinterpreted_char_cca_size] = {
+          'n', 'r', 'a',  'b',  't',  'v', 'f', 'e',
+          's', '@', '\\', '\"', '\'', 'p', 'c', '\0'};
+  constexpr static const char
+      the_out_reinterpreted_char_cca[the_reinterpreted_char_cca_size] = {
+          '\n', '\r', '\a', '\b', '\t', '\v', '\f', 'e',
+          ' ',  '@',  '\\', '\"', '\'', '"',  '\\', '\0'};
+
  public:
   template <class Type>
   static constexpr inline Type BL_min(Type a, Type b) {
