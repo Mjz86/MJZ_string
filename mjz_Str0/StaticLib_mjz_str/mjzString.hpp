@@ -13580,29 +13580,42 @@ struct SHA1_CTX : public SHA256_CTX {
   }
 };
 #endif  // SHA1_Hstatic
-class basic_mjz_Str_view : protected static_str_algo {
- public:
-  constexpr static size_t npos = -1;
-  constexpr inline const char *begining_of_str_ptr() const { return m_buffer; }
-  constexpr inline const char *ending_of_str_ptr() const {
-    return m_buffer + m_length;
-  }
-  constexpr inline char *begining_of_str_ptr() { return m_buffer; }
-  constexpr inline char *ending_of_str_ptr() { return m_buffer + m_length; }
 
+
+ 
+
+
+class basic_mjz_Str_view : protected static_str_algo {
  protected:  // the actual char array
   char *m_buffer;
+  constexpr inline   char *get_buffer() { return m_buffer; }
+  constexpr inline const char *get_buffer() const { return m_buffer; }
+  constexpr inline size_t get_length() const { return m_length; }
   // the ptr length (not counting the '\0')
   size_t m_length;
 
  public:
-  constexpr basic_mjz_Str_view(char *buffer, size_t length)
+  constexpr static size_t npos = -1;
+  constexpr inline const char *begining_of_str_ptr() const {
+    return get_buffer();
+  }
+  constexpr inline const char *ending_of_str_ptr() const {
+    return get_buffer() + get_length();
+  }
+  constexpr inline char *begining_of_str_ptr() { return  (get_buffer());
+  }
+  constexpr inline char *ending_of_str_ptr() {
+    return  (get_buffer() + get_length());
+  }
+
+ public:
+  constexpr basic_mjz_Str_view(  char *buffer, size_t length)
       : m_buffer(buffer), m_length(length) {}
   template <size_t N>
-  constexpr basic_mjz_Str_view(char (&a)[N])
+  constexpr basic_mjz_Str_view(const char( &a)[N])
       : m_buffer(a), m_length(N - (!a[N - 1])) {}
   template <size_t N>
-  constexpr basic_mjz_Str_view(const char (&a)[N])
+  constexpr basic_mjz_Str_view(  char (&a)[N])
       : m_buffer(a), m_length(N - (!a[N - 1])) {}
   constexpr basic_mjz_Str_view(const just_str_view_data &s)
       : m_buffer(s.buffer), m_length(s.len) {}
@@ -13621,13 +13634,11 @@ class basic_mjz_Str_view : protected static_str_algo {
   constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
   constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = default;
 
- public:
-  constexpr inline char *&buffer_ref() { return m_buffer; }
-  constexpr inline const char *buffer_ref() const { return m_buffer; }
+ public: 
   constexpr bool is_blank() const {
     size_t i{};
-    while (i < m_length) {
-      if (!is_blank_characteres_default(m_buffer[i])) {
+    while (i < get_length()) {
+      if (!is_blank_characteres_default(get_buffer()[i])) {
         return 0;
       }
       i++;
@@ -13635,43 +13646,44 @@ class basic_mjz_Str_view : protected static_str_algo {
     return 1;
   }
   constexpr bool empty() const {
-    return (!m_length || m_buffer == empty_STRING_C_STR || m_buffer == nullptr);
+    return (!get_length() || get_buffer() == empty_STRING_C_STR ||
+            get_buffer() == nullptr);
   }
-  constexpr inline size_t length(void) const { return m_length; }
-  constexpr inline char *data() { return m_buffer; }
-  constexpr inline const char *data() const { return m_buffer; }
+  constexpr inline size_t length(void) const { return get_length(); }
+  constexpr inline char *data() { return get_buffer(); }
+  constexpr inline const char *data() const { return get_buffer(); }
 
  public:
-  constexpr inline const char *c_str() const & { return buffer_ref(); }
-  constexpr inline const char *c_str() & { return buffer_ref(); }
-  constexpr inline char *C_str() & { return m_buffer; }
+  constexpr inline const char *c_str() const & { return get_buffer(); }
+  constexpr inline const char *c_str() & { return get_buffer(); }
+  constexpr inline char *C_str() & { return get_buffer(); }
 
  public:
   constexpr explicit operator const bool() const { return !is_blank(); }
   constexpr char operator[](int64_t index_) const {
     size_t index = signed_index_to_unsigned(index_);
-    if ((size_t)index >= m_length || !m_buffer) {
+    if ((size_t)index >= get_length() || !get_buffer()) {
       return 0;
     }
-    return m_buffer[index];
+    return get_buffer()[index];
   }
   constexpr char operator[](size_t index) const {
-    if (index >= m_length || !m_buffer) {
+    if (index >= get_length() || !get_buffer()) {
       return 0;
     }
-    return m_buffer[index];
+    return get_buffer()[index];
   }
   constexpr bool operator!() const { return is_blank(); }
   // parsing/conversion
   constexpr long long toLL(void) const {
-    if (m_buffer) {
+    if (get_buffer()) {
       return to_LL();
     }
     return 0;
   }
   constexpr long long to_LL(int radix = 10, bool *had_error = 0,
                             uint8_t error_level = 0) const {
-    if (m_buffer) {
+    if (get_buffer()) {
       return C_STR_to_LL(c_str(), (uint8_t)min(length(), (uint64_t)255), radix,
                          had_error, error_level);
     }
@@ -13683,9 +13695,9 @@ class basic_mjz_Str_view : protected static_str_algo {
     return float(toDouble());
   }
   constexpr double toDouble(void) const {
-    if (m_buffer) {
+    if (get_buffer()) {
       char *ptr{};
-      return strtod(m_buffer, &ptr);
+      return strtod(get_buffer(), &ptr);
     }
     return 0;
   }
@@ -13760,10 +13772,11 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
   constexpr hash_sha256 hash() const { return mjz_hash(0); }
   constexpr int64_t compareTo(const basic_mjz_Str_view &s) const {
-    return compare_two_str(m_buffer, m_length, s.m_buffer, s.m_length);
+    return compare_two_str(get_buffer(), get_length(), s.get_buffer(),
+                           s.get_length());
   }
   constexpr int64_t compareTo(const char *cstr) const {
-    return compare_two_str(m_buffer, m_length, cstr, strlen(cstr));
+    return compare_two_str(get_buffer(), get_length(), cstr, strlen(cstr));
   }
   constexpr inline int compare(const basic_mjz_Str_view &str) const {
     return compareTo(str);
@@ -13779,7 +13792,7 @@ class basic_mjz_Str_view : protected static_str_algo {
         str.substr_view_beg_n(subpos, sublen));
   }
   constexpr inline int compare(const char *s, size_t n) const {
-    return compare_two_str(m_buffer, m_length, s, n);
+    return compare_two_str(get_buffer(), get_length(), s, n);
   }
   constexpr inline int compare(size_t pos, size_t len, const char *s,
                                size_t n) const {
@@ -13821,7 +13834,7 @@ class basic_mjz_Str_view : protected static_str_algo {
     return indexOf_cstr(s2.data(), s2.length(), fromIndex);
   }
   constexpr inline int64_t lastIndexOf(const basic_mjz_Str_view &s2) const {
-    return lastIndexOf(s2, m_length - s2.m_length);
+    return lastIndexOf(s2, get_length() - s2.get_length());
   }
   constexpr inline int64_t lastIndexOf(const basic_mjz_Str_view &s2,
                                        size_t fromIndex) const {
@@ -13854,14 +13867,16 @@ class basic_mjz_Str_view : protected static_str_algo {
     return lastIndexOf(c, pos);
   }
   constexpr inline size_t find_first_of_in_str(const char *s, size_t n) const {
-    return static_str_algo::find_first_of_in_str(m_buffer, m_length, s, n);
+    return static_str_algo::find_first_of_in_str(get_buffer(), get_length(), s,
+                                                 n);
   }
   constexpr inline size_t find_last_of_in_str(const char *s, size_t n) const {
-    return static_str_algo::find_last_of_in_str(m_buffer, m_length, s, n);
+    return static_str_algo::find_last_of_in_str(get_buffer(), get_length(), s,
+                                                n);
   }
   constexpr inline size_t find_first_of_in_str(
       const basic_mjz_Str_view &str) const {
-    return find_first_of_in_str(str.m_buffer, str.m_length);
+    return find_first_of_in_str(str.get_buffer(), str.get_length());
   }
   constexpr inline size_t find_first_of(const basic_mjz_Str_view &str,
                                         size_t pos = 0) const {
@@ -13893,7 +13908,8 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
   constexpr inline size_t find_last_not_of_in_str(const char *s,
                                                   size_t n) const {
-    return static_str_algo::find_last_of_not_in_str(m_buffer, m_length, s, n);
+    return static_str_algo::find_last_of_not_in_str(get_buffer(), get_length(),
+                                                    s, n);
   }
   constexpr inline size_t find_last_not_of(const basic_mjz_Str_view &str,
                                            size_t pos = npos) const {
@@ -13912,7 +13928,8 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
   constexpr inline size_t find_first_not_of_in_str(const char *s,
                                                    size_t n) const {
-    return static_str_algo::find_first_of_not_in_str(m_buffer, m_length, s, n);
+    return static_str_algo::find_first_of_not_in_str(get_buffer(), get_length(),
+                                                     s, n);
   }
   constexpr inline size_t find_first_not_of(const basic_mjz_Str_view &str,
                                             size_t pos = 0) const {
@@ -13930,7 +13947,7 @@ class basic_mjz_Str_view : protected static_str_algo {
     return substr_view(pos).find_first_not_of_in_str(&c, 1);
   }
   constexpr bool equals(const char *cstr, size_t cstr_len) const {
-    return are_two_str_equale(m_buffer, m_length, cstr, cstr_len);
+    return are_two_str_equale(get_buffer(), get_length(), cstr, cstr_len);
   }
   constexpr bool equals(const basic_mjz_Str_view &s2) const {
     //
@@ -13949,11 +13966,11 @@ class basic_mjz_Str_view : protected static_str_algo {
     return index;
   }
   constexpr size_t UN_ORDERED_compare(const basic_mjz_Str_view &s) const {
-    return UN_ORDERED_compare(s.m_buffer, s.m_length);
+    return UN_ORDERED_compare(s.get_buffer(), s.get_length());
   }
   constexpr size_t UN_ORDERED_compare(const char *s, size_t s_len) const {
     const unsigned char *ucs_ = (const unsigned char *)s;
-    const unsigned char *ucbuffer_ = (const unsigned char *)this->m_buffer;
+    const unsigned char *ucbuffer_ = (const unsigned char *)this->get_buffer();
     size_t number_of_not_right{};
     size_t NUMBER_OF_EACH_char_array[2][256]{};
     for (size_t i{}; i < s_len; i++) {
@@ -13974,17 +13991,17 @@ class basic_mjz_Str_view : protected static_str_algo {
       //
       return true;
     }
-    if (m_length != s2.m_length) {
+    if (get_length() != s2.get_length()) {
       //
       return false;
     }
-    if (m_length == 0) {
+    if (get_length() == 0) {
       //
       return true;
     }
-    const char *p1 = m_buffer;
-    const char *p2 = s2.m_buffer;
-    const char *end_p1 = m_buffer + length();
+    const char *p1 = get_buffer();
+    const char *p2 = s2.get_buffer();
+    const char *end_p1 = get_buffer() + length();
     while (p1 < end_p1) {
       if (tolower(*p1++) != tolower(*p2++)) {
         //
@@ -13995,7 +14012,7 @@ class basic_mjz_Str_view : protected static_str_algo {
     return true;
   }
   constexpr bool startsWith(const basic_mjz_Str_view &s2) const {
-    if (m_length < s2.m_length) {
+    if (get_length() < s2.get_length()) {
       //
       return false;
     }
@@ -14003,21 +14020,23 @@ class basic_mjz_Str_view : protected static_str_algo {
     return startsWith(s2, 0);
   }
   constexpr bool startsWith(const basic_mjz_Str_view &s2, size_t offset) const {
-    if (offset > m_length - s2.m_length || !m_buffer || !s2.m_buffer) {
+    if (offset > get_length() - s2.get_length() || !get_buffer() ||
+        !s2.get_buffer()) {
       //
       return false;
     }
     //
-    return MJZ_STRnCMP(&m_buffer[offset], s2.m_buffer, s2.m_length) == 0;
+    return MJZ_STRnCMP(&get_buffer()[offset], s2.get_buffer(),
+                       s2.get_length()) == 0;
   }
   constexpr bool endsWith(const basic_mjz_Str_view &s2) const {
-    if (m_length < s2.m_length || !m_buffer || !s2.m_buffer) {
+    if (get_length() < s2.get_length() || !get_buffer() || !s2.get_buffer()) {
       //
       return false;
     }
     //
-    return MJZ_STRnCMP(&m_buffer[m_length - s2.m_length], s2.m_buffer,
-                       s2.m_length) == 0;
+    return MJZ_STRnCMP(&get_buffer()[get_length() - s2.get_length()],
+                       s2.get_buffer(), s2.get_length()) == 0;
   }
   // Function that return the length
   constexpr size_t size() const { return length(); }
@@ -14034,16 +14053,16 @@ class basic_mjz_Str_view : protected static_str_algo {
       //
       return;
     }
-    if (index >= m_length) {
+    if (index >= get_length()) {
       buf[0] = 0;
       //
       return;
     }
     size_t n = bufsize - 1;
-    if (n > m_length - index) {
-      n = m_length - index;
+    if (n > get_length() - index) {
+      n = get_length() - index;
     }
-    memmove((char *)buf, m_buffer + index, min_macro_(n, m_length));
+    memmove((char *)buf, get_buffer() + index, min_macro_(n, get_length()));
     buf[n] = 0;
     //
   }
@@ -14053,58 +14072,56 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
   constexpr int64_t indexOf(char c) const { return indexOf(c, 0); }
   constexpr int64_t indexOf(char ch, size_t fromIndex) const {
-    if (fromIndex >= m_length) {
+    if (fromIndex >= get_length()) {
       return -1;
     }
-    const char *temp = strchr(m_buffer + fromIndex, length() + fromIndex, ch);
+    const char *temp =
+        strchr(get_buffer() + fromIndex, length() + fromIndex, ch);
     if (temp == NULL) {
       return -1;
     }
-    return (int64_t)(temp - m_buffer);
+    return (int64_t)(temp - get_buffer());
   }
   constexpr int64_t indexOf_cstr(const char *c_str_, size_t len_str,
                                  size_t fromIndex) const {
-    if (fromIndex >= m_length) {
+    if (fromIndex >= get_length()) {
       return -1;
     }
     const char *found =
-        strstr(m_buffer + fromIndex, length() - fromIndex, c_str_, len_str);
+        strstr(get_buffer() + fromIndex, length() - fromIndex, c_str_, len_str);
     if (found == NULL) {
       return -1;
     }
-    return (int64_t)(found - m_buffer);
+    return (int64_t)(found - get_buffer());
   }
   constexpr int64_t lastIndexOf_cstr(const char *cstr__, size_t length__,
                                      size_t fromIndex) const {
-    if (fromIndex >= m_length) {
+    if (fromIndex >= get_length()) {
       return -1;
     }
-    const char *found =
-        r_strstr(m_buffer + fromIndex, length() - fromIndex, cstr__, length__);
+    const char *found = r_strstr(get_buffer() + fromIndex, length() - fromIndex,
+                                 cstr__, length__);
     if (found == NULL) {
       return -1;
     }
-    return (int64_t)(found - m_buffer);
+    return (int64_t)(found - get_buffer());
   }
   constexpr inline int64_t lastIndexOf_cstr(const char *cstr__,
                                             size_t length__) const {
     return lastIndexOf_cstr(cstr__, length__, 0);
   }
   constexpr int64_t lastIndexOf(char theChar) const {
-    return lastIndexOf(theChar, m_length - 1);
+    return lastIndexOf(theChar, get_length() - 1);
   }
   constexpr int64_t lastIndexOf(char ch, size_t fromIndex) const {
-    if (fromIndex >= m_length) {
+    if (fromIndex >= get_length()) {
       return -1;
     }
-    char tempchar = m_buffer[fromIndex + 1];
-    m_buffer[fromIndex + 1] = '\0';
-    char *temp = const_cast<char *>(strrchr(m_buffer, length(), ch));
-    m_buffer[fromIndex + 1] = tempchar;
+    const char *temp = strrchr(get_buffer() + fromIndex, length(), ch); 
     if (temp == NULL) {
       return -1;
     }
-    return (int64_t)(temp - m_buffer);
+    return (int64_t)(temp - get_buffer());
   };
   constexpr const char *substring_give_ptrULL(size_t left, size_t right,
                                               const char *&c_str_out,
@@ -14114,15 +14131,15 @@ class basic_mjz_Str_view : protected static_str_algo {
       right = left;
       left = temp;
     }
-    if (left >= m_length) {
+    if (left >= get_length()) {
       //
       len_out = 0;
-      return (c_str_out = 0);
+      return (c_str_out = 0); 
     }
-    if (right > m_length) {
-      right = m_length;
+    if (right > get_length()) {
+      right = get_length();
     }
-    c_str_out = m_buffer + left;
+    c_str_out = get_buffer() + left;
     len_out = right - left;
     return c_str_out;
   }
@@ -14135,7 +14152,7 @@ class basic_mjz_Str_view : protected static_str_algo {
   }
   friend class mjz_str_view;
   constexpr const char &at(int64_t i) const & { return operator[](i); }
-  constexpr const char &back() const & { return buffer_ref()[0]; }
+  constexpr const char &back() const & { return get_buffer()[0]; }
   constexpr const char &front() const & { return operator[]((int64_t)-1); }
   constexpr inline basic_mjz_Str_view substr_view(size_t beginIndex) {
     return substr_view(beginIndex, length() - beginIndex);
@@ -14182,32 +14199,6 @@ class basic_mjz_Str_view : protected static_str_algo {
                        signed_index_to_unsigned(beginIndex) + number);
   }
   constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
-
- public:
-  template <typename T = mjz_normal_allocator>
-  std::pair<hash_sha256, mjz_str_t<T>> hash_with_output(uint8_t n = 0) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring(size_t beginIndex);
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring(size_t beginIndex, size_t endIndex) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring_beg_n(size_t beginIndex, size_t number) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substr(size_t pos = 0, size_t len = npos) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring(int64_t beginIndex, int64_t endIndex) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring(int64_t beginIndex) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring(int beginIndex) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring(int beginIndex, int endIndex) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring_beg_n(int beginIndex, int number) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring(size_t beginIndex) const;
-  template <typename T = mjz_normal_allocator>
-  mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number) const;
 };
 
 class mjz_str_view;
@@ -14236,7 +14227,32 @@ class basic_mjz_String : public basic_mjz_Str_view {
   constexpr inline const basic_mjz_Str_view &sv() const { return *this; }
 
  public:
+  template <typename T = mjz_normal_allocator>
+  std::pair<hash_sha256, mjz_str_t<T>> hash_with_output(uint8_t n = 0) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring(size_t beginIndex);
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring(size_t beginIndex, size_t endIndex) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring_beg_n(size_t beginIndex, size_t number) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substr(size_t pos = 0, size_t len = npos) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring(int64_t beginIndex, int64_t endIndex) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring(int64_t beginIndex) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring(int beginIndex) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring(int beginIndex, int endIndex) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring_beg_n(int beginIndex, int number) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring(size_t beginIndex) const;
+  template <typename T = mjz_normal_allocator>
+  mjz_str_t<T> substring_beg_n(int64_t beginIndex, size_t number) const;
 };
+
 
 template <typename T>
 mjz_str_t<T> &&operator_plus(mjz_str_t<T> &&lhs, const basic_mjz_Str_view &rhs);
@@ -14640,6 +14656,8 @@ class mjz_Str : public basic_mjz_String,
   // invalid string (i.e.,"if (s)" will be true afterwards)
   constexpr inline const char *c_str() const & { return m_buffer; }
   constexpr inline char *C_str() & { return m_buffer; }
+  constexpr inline const char *&buffer_ref() const & { return m_buffer; }
+  constexpr inline char *&buffer_ref() & { return m_buffer; }
   explicit operator char *() & { return buffer_ref(); }
   explicit operator const uint8_t *() const & {
     return (const uint8_t *)buffer_ref();
@@ -15069,7 +15087,7 @@ class mjz_Str : public basic_mjz_String,
   template <typename... arguments_types>
   int scanf(const basic_mjz_Str_view &format,
             arguments_types &&...arguments_arr) {
-    int ret = sscanf((char *)buffer_ref(), format.buffer_ref(),
+    int ret = sscanf((char *)get_buffer(), format.get_buffer(),
                      std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
@@ -15082,7 +15100,7 @@ class mjz_Str : public basic_mjz_String,
   template <typename... arguments_types>
   int scanf_s(const basic_mjz_Str_view &format,
               arguments_types &&...arguments_arr) {
-    int ret = sscanf_s((char *)buffer_ref(), format.buffer_ref(),
+    int ret = sscanf_s((char *)get_buffer(), format.get_buffer(),
                        std::forward<arguments_types>(arguments_arr)...);
     return ret;
   }
@@ -15319,8 +15337,7 @@ please dont use mjz_str_view with temporary strings
 */
 class mjz_str_view : public basic_mjz_Str_view {
  protected:
-  constexpr char *&buffer_ref(void) & { return m_buffer; }
-  using basic_mjz_Str_view::buffer_ref;
+  constexpr char *&buffer_ref(void) & { return m_buffer; } 
   using basic_mjz_Str_view::C_str;
   using basic_mjz_Str_view::c_str;
   constexpr mjz_str_view &copy(const basic_mjz_Str_view &s) {
@@ -17583,7 +17600,7 @@ void mjz_ard::mjz_str_t<T>::find_and_replace(char find, char replace_) {
 template <typename T>
 void mjz_ard::mjz_str_t<T>::find_and_replace(
     const basic_mjz_Str_view &find, const basic_mjz_Str_view &replace_) {
-  find_and_replace(find.buffer_ref(), find.length(), replace_.buffer_ref(),
+  find_and_replace(find.get_buffer(), find.length(), replace_.get_buffer(),
                    replace_.length());
 }
 template <typename T>
@@ -18914,14 +18931,14 @@ mjz_str_t<T> &getline(mjz_str_t<T> &is, mjz_str_t<T> &str) {
 
 template <typename T>
 std::pair<mjz_ard::hash_sha256, mjz_str_t<T>>
-mjz_ard::basic_mjz_Str_view::hash_with_output(uint8_t n) const {
+mjz_ard::basic_mjz_String::hash_with_output(uint8_t n) const {
   mjz_ard::hash_sha256 hash_;
   mjz_str_t<T> output(*this);
   hash_ = hash_msg_to_sha_512_n_with_output(c_str(), length(), n, output);
   return {hash_, output};
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(size_t beginIndex,
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring_beg_n(size_t beginIndex,
                                                           size_t number) const {
   size_t endIndex = beginIndex + number;
   if (!number || length() < endIndex) {
@@ -18930,42 +18947,42 @@ mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(size_t beginIndex,
   return substring(beginIndex, beginIndex + number);
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(size_t beginIndex) const {
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring(size_t beginIndex) const {
   return substring(beginIndex, m_length);
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(int beginIndex,
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring_beg_n(int beginIndex,
                                                           int number) const {
   return substring_beg_n((int64_t)beginIndex, (int64_t)number);
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int beginIndex,
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring(int beginIndex,
                                                     int endIndex) const {
   return substring((int64_t)beginIndex, (int64_t)endIndex);
 };
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int beginIndex) const {
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring(int beginIndex) const {
   return substring((int64_t)beginIndex);
 }
 
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring_beg_n(int64_t beginIndex,
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring_beg_n(int64_t beginIndex,
                                                           size_t number) const {
   return substring_beg_n(signed_index_to_unsigned(beginIndex), number);
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int64_t beginIndex,
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring(int64_t beginIndex,
                                                     int64_t endIndex) const {
   return substring(signed_index_to_unsigned(beginIndex),
                    signed_index_to_unsigned(endIndex));
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(int64_t beginIndex) const {
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring(int64_t beginIndex) const {
   beginIndex = signed_index_to_unsigned(beginIndex);
   return substring((size_t)beginIndex, length());
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(size_t left,
+mjz_str_t<T> mjz_ard::basic_mjz_String::substring(size_t left,
                                                     size_t right) const {
   const char *c_str_out{};
   size_t len_out{};
@@ -18978,7 +18995,7 @@ mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substring(size_t left,
   return out;
 }
 template <typename T>
-mjz_str_t<T> mjz_ard::basic_mjz_Str_view::substr(size_t pos, size_t len) const {
+mjz_str_t<T> mjz_ard::basic_mjz_String::substr(size_t pos, size_t len) const {
   if (len == npos) {
     len = length();
   }
