@@ -26,11 +26,7 @@ class main_class {
         return_val = ptr->main(argc, argv);
       } catch (std::exception ex) {
         std::cout << "\n\n\n EXEPTION : " << ex.what();
-      } catch (mjz_ard::StringSumHelper ex) {
-        std::cout << "\n\n\n EXEPTION : " << ex;
-      } catch (mjz_ard::mjz_Str ex) {
-        std::cout << "\n\n\n EXEPTION : " << ex;
-      } catch (mjz_ard::basic_mjz_Str_view ex) {
+      } catch (const char*const ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
       } catch (void* ex) {
         std::cout << "\n\n\n EXEPTION : " << ex;
