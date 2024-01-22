@@ -6496,6 +6496,7 @@ constexpr inline bool is_blank_characteres_default(char x_char_) {
 #define NO_IGNORE_CHAR '\4'  // a char not found in a valid ASCII numeric field
 
 class static_str_algo {
+  public:
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
   static constexpr int64_t forbiden_chars_cnt_size = 3;
   static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;

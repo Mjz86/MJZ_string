@@ -48,6 +48,7 @@ class minimal_mjz_string_data : protected mjzt::algorithm {
       static_assert(sizeof(dynamic_DB_t) <= sizeof(static_DB_t));
     };
     DB_t() {}
+   
     ~DB_t() {}
     DB_t(DB_t &&other) : db_s(other.db_s) {
       // deafult copy
@@ -65,8 +66,17 @@ class minimal_mjz_string_data : protected mjzt::algorithm {
   constexpr static const uint8_t real_size = sizeof(DB_t);
   static_assert(real_static_size == real_size);
   DB_t m_db;
-
+   
+  static_assert(sizeof(DB_t) == real_size,
+                "what happened  to you that you got a padding");
+  static_assert(!(sizeof(DB_t) % sizeof(Size_t)),
+                "what happened  to you that you got a padding");
  public:
+  minimal_mjz_string_data(const char *s, size_t n) {
+    if (!s || !can_have_len(n)) return;
+    memcpy(get_str(), s, n);
+    add_len(n);
+  }
   minimal_mjz_string_data() {}
   inline bool is_dynamic() const {
     return m_db.db_s.internal_array_length == is_external_array_v;
@@ -132,6 +142,10 @@ class minimal_mjz_string_data : protected mjzt::algorithm {
     m_db = std::move(d.m_db);
     return *this;
   }
+
+  char *get_buffer() { return get_str();}
+  const char *get_buffer() const { return get_str(); }
+  size_t get_length() const { return get_len(); }
 };
 
 template <typename T>
@@ -152,9 +166,8 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
  protected:
   using Base_t::get_buffer;
   using Base_t::get_length;  // the ptr length (not counting the '\0')
-  using static_str_algo;
-  Base_t &get_base() { return *this; }
-  const Base_t &get_base() const { return *this; }
+ 
+ 
 
  public:
   constexpr static size_t npos = -1;
@@ -756,22 +769,43 @@ and the mess that is mjz_String
 }  // namespace mjz_ard
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  minimal_mjz_string_data<0> d;
-  println(d.get_cap());
-  char s[40+1]{};
   {
-    char* ptr = d.get_str();
-    char* ptr_ = d.get_str();
-    for (const char& c : "1234567890abcdef") {
-    *ptr++ = c;
+    minimal_mjz_string_data<32> d;
+    println(d.get_cap(), '\n', sizeof d);
+    char s[40 + 1]{};
+    {
+      char *ptr = d.get_str();
+      char *ptr_ = d.get_str();
+      for (const char &c : "1234567890abcdef") {
+        *ptr++ = c;
+      }
+      ptr--;
+      d.set_len(ptr - ptr_);
+      d.str_set_dynamic(s, NumberOf(s));
     }
-    ptr--;
-    d.set_len(ptr - ptr_);
-    d.str_set_dynamic(s, NumberOf(s));
+    auto str = std::string_view(d.get_str(), d.get_len());
+    auto ptr = str.data();
+    println(str);
   }
-  auto str=  std::string_view(d.get_str(), d.get_len());
-auto ptr= str.data();
-  println(str);
+  {
+    mjz_simple_unsafe_init_obj_wrpr_true_t<
+        basic_mjz_Str_view<decltype(minimal_mjz_string_data<1>())> >
+        f;
+    {
+      Scoped_speed_Timer tm{"tm"};
+      tm("c");
+      f.unsafe_create("abcdefghijklmnop");
+    }
+    println(sizeof f, "         ", f().data(), "     ", f(), "     ",
+            f().substr_view(5, 8));
+    Scoped_speed_Timer tm{"tm"};
+    tm("d");
+  }
+  { Scoped_speed_Timer tm{"tm"};
+    tm("c");
+    std::string s = "abcdefghijklmp";
+    tm("d");
+  }
 
   return 0;
 }
