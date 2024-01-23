@@ -16328,33 +16328,21 @@ inline void scanln() {
 }
 
 template <typename... argT>
-void scan(argT &...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        scan(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+void scan(argT &...args) { 
+      (void)std::initializer_list<char>{(
+        scan(args),0
+      )...};
 }
 
 template <typename... argT>
-void scanln(argT &...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        scan(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+void scanln(argT &...args) {(void)
+      std::initializer_list<char>{(
+        scan(args),0)...};  // do all tasks in thr rigth order
   scanln();
 }
 template <typename... argT>
 void scanln_FE(argT &...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        scanln(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+(void) std::initializer_list<char>{(scanln(args),0)...};  // do all tasks in thr rigth order
 }
 
 template <typename T>
@@ -16371,12 +16359,8 @@ inline void print() {}
 inline void println() { std::cout << '\n'; }
 template <typename... argT>
 void print(argT &&...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        std::cout << std::forward<argT>(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+  (void)std::initializer_list<char>{
+      ((std::cout << std::forward<argT>(args)), '0')...};
 }
 template <typename... argT>
 void print_arr(argT &&...args) {
