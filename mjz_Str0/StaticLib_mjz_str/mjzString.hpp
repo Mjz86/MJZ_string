@@ -11511,6 +11511,9 @@ struct mjz_stack_obj_warper_with_error_template_class_t : public OPTIONAL_type {
   OPTIONAL_error_type optional_error;
 };
 
+
+
+
 template <typename my_iner_Type_, typename error_t,
           bool construct_obj_on_constructor = true,
           class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
@@ -11562,6 +11565,59 @@ using O_mjz_stack_obj_warper_with_error_template_t =
             do_error_check, use_object_in_union>,
         OU_mjz_stack_obj_warper_template_t<
             static_str_algo::remove_reference_t<error_t>>>;
+
+template <size_t my_index,typename T, typename Type0,typename... Types>
+struct mjz_get_type_index_helper_class_t {
+  constexpr static const size_t Index =
+      mjz_get_type_index_helper_class_t<my_index + 1, T, Types...>::Index;
+};
+
+template <size_t my_index, typename T, typename... Types>
+struct mjz_get_type_index_helper_class_t<my_index, T, T, Types...> {
+  constexpr static const size_t Index = my_index;
+};
+template <size_t my_index, typename T>
+struct mjz_get_type_index_helper_class_t<my_index, T,T> {
+  constexpr static const size_t Index = my_index;
+};
+template <size_t my_index, typename T,typename U>
+struct mjz_get_type_index_helper_class_t<my_index, T,U > {
+  constexpr static const size_t Index = -1;
+};
+
+template <typename T, typename... Types>
+constexpr static const  size_t  mjz_get_type_index_v= mjz_get_type_index_helper_class_t<0,T,Types...>::Index;
+
+
+template <size_t my_index, template <typename> class is_valid, typename Type0,
+          typename... Types>
+struct mjz_get_first_object_with_f_true_index_helper_class_t {
+  constexpr static const size_t Index =
+      (is_valid<Type0>::value)
+          ? (my_index)
+          : (mjz_get_first_object_with_f_true_index_helper_class_t<
+                my_index + 1, is_valid, Types...>::Index);
+};
+
+template <size_t my_index, template <typename> class is_valid, typename Type>
+struct mjz_get_first_object_with_f_true_index_helper_class_t<my_index,is_valid,Type> {
+  constexpr static const size_t Index =
+      (is_valid<Type>::value) ? (my_index) : (size_t(-1));
+};
+template <template <typename> class is_valid, typename... Types>
+constexpr static const size_t mjz_get_first_valid_obj_index_v =
+    mjz_get_first_object_with_f_true_index_helper_class_t<0, is_valid,
+                                                          Types...>::Index;
+
+
+
+
+
+
+
+
+
+
 
 template <typename T, size_t m_size,
           class obj_cnstructor_t = mjz_temp_type_obj_algorithims_warpper_t<T>>
