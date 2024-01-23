@@ -3325,8 +3325,14 @@ concept C_mjz_obj_manager_helper =
              args_t &&...args) {
       { T::alignment } -> std::convertible_to<size_t>;
       { T::size_of_type_v } -> std::convertible_to<size_t>;
+      typename T::simple_unsafe_init_obj_wrpr_true_false;
+      typename T::simple_unsafe_init_obj_wrpr_false_false;
       typename T::simple_unsafe_init_obj_wrpr_true;
       typename T::simple_unsafe_init_obj_wrpr_false;
+     typename T::template  simple_unsafe_init_obj_wrpr<true, true> ;
+      typename T::template simple_unsafe_init_obj_wrpr<true, false>;
+     typename T::template simple_unsafe_init_obj_wrpr<false, true>;
+      typename T::template simple_unsafe_init_obj_wrpr<false, false>;
       typename T::alignment_t;
       typename T::Alignment_t;
       requires !std::is_array_v<Type>;
@@ -3675,9 +3681,11 @@ struct mjz_internal_obj_manager_template_t {
     destroy_at(obj_that_will_be_destroyed);
   }
 
-  template <bool destroy_on_destruction = true>
+  template <bool destroy_on_destruction = true,bool create_on_construction=true>
   union simple_unsafe_init_obj_wrpr {
-    constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
+    constexpr inline simple_unsafe_init_obj_wrpr() {
+        if constexpr(create_on_construction)
+        unsafe_create();
     }
     template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
     constexpr inline simple_unsafe_init_obj_wrpr(
@@ -3732,6 +3740,13 @@ struct mjz_internal_obj_manager_template_t {
     Type obj;
     alignas(Type) volatile char NO_USE_NO_INITILIZATION_[sizeof(Type)];
   };
+
+  // template <  destroy_on_destruction = false,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_false_false =
+      typename simple_unsafe_init_obj_wrpr<false, false>;
+  // template <  destroy_on_destruction = true,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_true_false =
+      typename simple_unsafe_init_obj_wrpr<true, false>;
   // template <bool destroy_on_destruction = false>
   using simple_unsafe_init_obj_wrpr_false =
       typename simple_unsafe_init_obj_wrpr<false>;
@@ -3890,9 +3905,12 @@ struct mjz_non_internal_obj_manager_template_t {
     destroy_at(obj_that_will_be_destroyed);
   }
 
-  template <bool destroy_on_destruction = true>
+  template <bool destroy_on_destruction = true,
+            bool create_on_construction = false>
   union simple_unsafe_init_obj_wrpr {
-    constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
+    constexpr inline simple_unsafe_init_obj_wrpr() {
+        if constexpr(create_on_construction)
+        unsafe_create();
     }
     template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
     constexpr inline simple_unsafe_init_obj_wrpr(
@@ -3939,6 +3957,12 @@ struct mjz_non_internal_obj_manager_template_t {
     Type obj;
    alignas(Type) volatile char NO_USE_NO_INITILIZATION_[sizeof(Type)];
   };
+  // template <  destroy_on_destruction = false,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_false_false =
+      typename simple_unsafe_init_obj_wrpr<false, false>;
+  // template <  destroy_on_destruction = true,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_true_false =
+      typename simple_unsafe_init_obj_wrpr<true, false>;
   // template <bool destroy_on_destruction = false>
   using simple_unsafe_init_obj_wrpr_false =
       typename simple_unsafe_init_obj_wrpr<false>;
@@ -4080,14 +4104,9 @@ struct mjz_obj_manager_template_t
   };
 };
 
- template <typename Type,bool destroy_on_destruction> 
-  using mjz_simple_unsafe_init_obj_wrpr_t =  std::conditional_t<destroy_on_destruction,
-      typename mjz_obj_manager_template_t<Type>::simple_unsafe_init_obj_wrpr_true,
-      typename mjz_obj_manager_template_t<Type>::simple_unsafe_init_obj_wrpr_false>;
- template <typename Type> 
-  using mjz_simple_unsafe_init_obj_wrpr_false_t =  mjz_simple_unsafe_init_obj_wrpr_t<Type,false>;
-        template <typename Type > 
-  using mjz_simple_unsafe_init_obj_wrpr_true_t =  mjz_simple_unsafe_init_obj_wrpr_t<Type,true>;
+ template <typename Type, bool destroy_on_destruction,bool create_on_construction=true> 
+  using mjz_simple_unsafe_init_obj_wrpr_t = typename mjz_obj_manager_template_t<Type>::template simple_unsafe_init_obj_wrpr<destroy_on_destruction,
+                                                     create_on_construction>;
 
 template <typename Type,
           C_mjz_obj_manager my_constructor = mjz_obj_manager_template_t<Type>>
@@ -6494,7 +6513,59 @@ constexpr inline bool is_blank_characteres_default(char x_char_) {
 #define OCT 8
 #define BIN 2
 #define NO_IGNORE_CHAR '\4'  // a char not found in a valid ASCII numeric field
+namespace calucate {
 
+template <typename T, typename U>
+inline constexpr uint64_t BMM_algo(T a_, U b_) {
+  uint64_t a{}, b{};
+  if (a_ < b_) {
+    a = b_;
+    b = a_;
+  } else {
+    a = a_;
+    b = b_;
+  }
+  if (!a || !b) return 0;
+  if ((a - b) == 1) return 1;
+  uint64_t remainder = a % b;
+  if (!remainder) return b;
+  a = b;
+  b = remainder;
+  return BMM_algo(a, b);
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t BMM_algo(T0 arg0, T1 arg1, Ts... args) {
+  return BMM_algo(arg0, BMM_algo(arg1, args...));
+}
+template <typename T, typename U>
+inline constexpr uint64_t KMM_algo(T a_, U b_) {
+  uint64_t a{(uint64_t)a_}, b{(uint64_t)b_};
+  uint64_t bmm = BMM_algo(a, b);
+  return a * b / bmm;
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t KMM_algo(T0 arg0, T1 arg1, Ts... args) {
+  return KMM_algo((uint64_t)arg0,
+                  KMM_algo((uint64_t)arg1, ((uint64_t)args)...));
+}
+
+template <typename T, typename U>
+inline constexpr uint64_t min(T a, U b) {
+  return a < b ? a : b;
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t min(T0 arg0, T1 arg1, Ts... args) {
+  return min((uint64_t)arg0, min((uint64_t)arg1, ((uint64_t)args)...));
+}
+template <typename T, typename U>
+inline constexpr uint64_t max(T a, U b) {
+  return a > b ? a : b;
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t max(T0 arg0, T1 arg1, Ts... args) {
+  return max((uint64_t)arg0, max((uint64_t)arg1, ((uint64_t)args)...));
+}
+}  // namespace calucate
 class static_str_algo {
   public:
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
@@ -14834,12 +14905,10 @@ using array = mjz_Array<T, size>;
 using initilizer_in_constructor_helper_class=initilizer_in_constructor_helper_class_t<0>;
 template<size_t N>
 using initilizer_in_constructor_helper_class_t=initilizer_in_constructor_helper_class_t<N>;
-template<class T ,bool destroy_afrer_destruction>
-using simple_unsafe_init_obj_wrpr_t=mjz_simple_unsafe_init_obj_wrpr_t<T,destroy_afrer_destruction>;
-template<class T >
-using simple_unsafe_init_obj_wrpr_true_t=mjz_simple_unsafe_init_obj_wrpr_true_t<T>;
-template<class T >
-using simple_unsafe_init_obj_wrpr_false_t=mjz_simple_unsafe_init_obj_wrpr_false_t<T>;
+template <typename Type, bool destroy_on_destruction = true,
+          bool create_on_construction = true>
+using  simple_unsafe_init_obj_wrpr_t =mjz_simple_unsafe_init_obj_wrpr_t<Type,destroy_on_destruction,
+                                                     create_on_construction>;
 template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
 using  no_init_uw_special_arg_t=mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one>;
 using  no_init_uw_special_arg= no_init_uw_special_arg_t<0>;
