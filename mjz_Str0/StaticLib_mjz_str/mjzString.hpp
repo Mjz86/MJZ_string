@@ -3743,16 +3743,16 @@ struct mjz_internal_obj_manager_template_t {
 
   // template <  destroy_on_destruction = false,create_on_construction=false>
   using simple_unsafe_init_obj_wrpr_false_false =
-      typename simple_unsafe_init_obj_wrpr<false, false>;
+        simple_unsafe_init_obj_wrpr<false, false>;
   // template <  destroy_on_destruction = true,create_on_construction=false>
   using simple_unsafe_init_obj_wrpr_true_false =
-      typename simple_unsafe_init_obj_wrpr<true, false>;
+        simple_unsafe_init_obj_wrpr<true, false>;
   // template <bool destroy_on_destruction = false>
   using simple_unsafe_init_obj_wrpr_false =
-      typename simple_unsafe_init_obj_wrpr<false>;
+        simple_unsafe_init_obj_wrpr<false>;
   // template <bool destroy_on_destruction = true>
   using simple_unsafe_init_obj_wrpr_true =
-      typename simple_unsafe_init_obj_wrpr<true>;
+        simple_unsafe_init_obj_wrpr<true>;
   template <class T, class Args>
   static constexpr inline void construct(me &a, T *p, Args &&args) {
     a.construct_at(p, std::forward<Args>(args));
@@ -3959,16 +3959,16 @@ struct mjz_non_internal_obj_manager_template_t {
   };
   // template <  destroy_on_destruction = false,create_on_construction=false>
   using simple_unsafe_init_obj_wrpr_false_false =
-      typename simple_unsafe_init_obj_wrpr<false, false>;
+        simple_unsafe_init_obj_wrpr<false, false>;
   // template <  destroy_on_destruction = true,create_on_construction=false>
   using simple_unsafe_init_obj_wrpr_true_false =
-      typename simple_unsafe_init_obj_wrpr<true, false>;
+        simple_unsafe_init_obj_wrpr<true, false>;
   // template <bool destroy_on_destruction = false>
   using simple_unsafe_init_obj_wrpr_false =
-      typename simple_unsafe_init_obj_wrpr<false>;
+        simple_unsafe_init_obj_wrpr<false>;
   // template <bool destroy_on_destruction = true>
   using simple_unsafe_init_obj_wrpr_true =
-      typename simple_unsafe_init_obj_wrpr<true>;
+        simple_unsafe_init_obj_wrpr<true>;
   template <class T, class... Args>
   static constexpr inline void construct(me &a, T *p, Args &&...args) {
     a.construct_at(p, std::forward<Args>(args)...);
