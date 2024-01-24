@@ -171,12 +171,5 @@ using  inizilizer_t= mjz::mjz_obj_manager_template_t<T>;
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS(); 
-if (optional<operation_reporter> o = init_optional()) {
-    o()++;
-
-
-
-}
-
   return 0;
 }

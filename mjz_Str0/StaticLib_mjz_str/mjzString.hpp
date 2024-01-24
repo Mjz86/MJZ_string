@@ -8885,438 +8885,664 @@ NOTE THIS CLASS IS JUST A (REFRENCE / POINTER ) YOU SHALL USE IT LIKE ONE aka
 LAST USE - {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }  ... DESTRUCTION
 ... {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }
 */
-
-template <typename T_ref, typename condition_t = void>
-class optional_pointer_refrence_class_template_t : private not_a_type_if<true> {
+enum class optional_pointer_refrence_has_to_be_valid_on_construction_level {
+  NONE = 0,
+  not_null_if_is_ref_and_is_const,
+  not_null_if_is_ref,
+  not_null_if_is_const,
+  not_null_if_is_ref_or_is_const,
 };
 
-template <typename T_ref>
-class optional_pointer_refrence_class_template_t<
-    T_ref,
-    std::enable_if_t<
-        std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
-                       std::remove_cvref_t<T_ref>>,
-        void>>
+template <
+    typename T_ref, bool is_mutable_ptr_,
+    optional_pointer_refrence_has_to_be_valid_on_construction_level
+        has_to_be_valid_on_construction =
+            optional_pointer_refrence_has_to_be_valid_on_construction_level::
+                NONE>
+class optional_pointer_refrence_class_template_t
     : private mjz_obj_manager_template_t<std::remove_cvref_t<T_ref>> {
  public:
-  using Type = std::remove_volatile_t<std::remove_reference_t<T_ref>>;
-  static_assert(std::is_same_v<Type &, T_ref>);
+  using Type = std::remove_cvref_t<T_ref>;
+  using bare_Type = std::remove_volatile_t<std::remove_reference_t<T_ref>>;
+  constexpr static const bool is_mutable_ptr = is_mutable_ptr_;
+  constexpr static const bool is_const_type =
+      std::is_same_v<bare_Type &, const Type &>;
+
+ private:
+  using level_t =
+      optional_pointer_refrence_has_to_be_valid_on_construction_level;
+  constexpr const static level_t level = has_to_be_valid_on_construction;
+  constexpr const static bool Throw_on_null =
+      ((level == level_t::not_null_if_is_ref_and_is_const) && is_const_type &&
+       is_mutable_ptr) ||
+      ((level == level_t::not_null_if_is_ref_or_is_const) && (is_const_type ||
+       is_mutable_ptr)) ||
+      ((level == level_t::not_null_if_is_const) && is_const_type) ||
+      ((level == level_t::not_null_if_is_ref) && is_mutable_ptr);
+  inline constexpr void construction_check() const {
+    if (m_ptr != 0) return;
+
+    if constexpr (Throw_on_null) Throw(" is null ");
+    return;
+  }
+
+ public:
   inline constexpr mjz_obj_manager_template_t<std::remove_const_t<Type>>
-      &get_obj_creator() {
+      &get_obj_creator()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *this;
   }
   inline constexpr const mjz_obj_manager_template_t<std::remove_const_t<Type>>
-      &get_obj_creator() const {
+      &get_obj_creator() const
+    requires(!is_const_type)
+  {
     return *this;
   }
 
  private:
-  Type *m_ptr{};
+  bare_Type *m_ptr{};
 
  public:
-  template <typename T = Type>
+  template <typename T = Type, bool B = true>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw() = delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<void, !is_const_type && is_mutable_ptr>() {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<Type, !is_const_type && is_mutable_ptr>() {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-  template <typename T = Type>
+  template <typename T = Type, bool B = true>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw() const =
       delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() const {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<void, !is_const_type>() const {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() const {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<Type, !is_const_type>() const {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-
-  inline constexpr optional_pointer_refrence_class_template_t() {}
+  inline constexpr optional_pointer_refrence_class_template_t()
+    requires(!is_const_type && is_mutable_ptr)
+  {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
-      std::nullptr_t nullp) {}
+      std::nullptr_t nullp)
+    requires(!is_const_type && is_mutable_ptr)
+  {
+    construction_check();
+  }
 
   inline constexpr optional_pointer_refrence_class_template_t(
       Type *valid_pointer_to_object_that_meates_the_requirements)
-      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
+    requires(!is_const_type)
+      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type)
       : optional_pointer_refrence_class_template_t(this->addressof(
-            valid_refrence_to_object_that_meates_the_requirements)) {}
-
+            valid_refrence_to_object_that_meates_the_requirements)) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(Type &&) = delete;
   optional_pointer_refrence_class_template_t &operator=(Type &&) = delete;
   inline constexpr optional_pointer_refrence_class_template_t(const Type &&) =
       delete;
   optional_pointer_refrence_class_template_t &operator=(const Type &&) = delete;
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type *valid_pointer_to_object_that_meates_the_requirements) {
+      Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type &valid_refrence_to_object_that_meates_the_requirements) {
+      Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr =
         this->addressof(valid_refrence_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
       optional_pointer_refrence_class_template_t
-          &valid_refrence_to_object_that_meates_the_requirements) {
+          &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
       optional_pointer_refrence_class_template_t
-          &&valid_refrence_to_object_that_meates_the_requirements) {
+          &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
+    construction_check();
+
     return *this;
   }
-
-  inline constexpr ~optional_pointer_refrence_class_template_t() {}
-
-  inline constexpr explicit operator bool() const {
+  inline constexpr explicit operator bool() const
+    requires(!is_const_type)
+  {
     return !!get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr bool operator!() const {
+  inline constexpr bool operator!() const
+    requires(!is_const_type)
+  {
     return !get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr operator Type *() {
+  inline constexpr operator Type *()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr operator Type *() const {
+  inline constexpr operator Type *() const
+    requires(!is_const_type)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-
-  inline constexpr Type *ptr() {
+  inline constexpr Type *ptr()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr Type *ptr() const {
+  inline constexpr Type *ptr() const
+    requires(!is_const_type)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
   inline constexpr optional_pointer_refrence_class_template_t &set_ptr(
-      Type *p = 0) {
+      Type *p = 0)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = p;
+    construction_check();
     return *this;
   }
-
-  inline constexpr Type &get() { return *get_ptr_to_valid_object_or_throw(); }
-  inline constexpr Type &get() const {
+  inline constexpr Type &get()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr operator Type &() {
+  inline constexpr Type &get() const
+    requires(!is_const_type)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr operator Type &() const {
+  inline constexpr operator Type &()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type *operator->() {
+  inline constexpr operator Type &() const
+    requires(!is_const_type)
+  {
+    return *get_ptr_to_valid_object_or_throw();
+  }
+  inline constexpr Type *operator->()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type &operator*() {
+  inline constexpr Type &operator*()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type *operator->() const {
+  inline constexpr Type *operator->() const
+    requires(!is_const_type)
+  {
     return get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type &operator*() const {
+  inline constexpr Type &operator*() const
+    requires(!is_const_type)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-
-  inline constexpr Type &operator()() {
+  inline constexpr Type &operator()()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-
-  inline constexpr void operator()(std::function<void(Type &)> f) {
+  inline constexpr void operator()(std::function<void(Type &)> f)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     if (m_ptr) {
       f(*m_ptr);
     }
   }
-
-  inline constexpr Type &operator()() const {
+  inline constexpr Type &operator()() const
+    requires(!is_const_type)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr void operator~() { m_ptr = 0; }
-
+  inline constexpr void operator~()
+    requires((!Throw_on_null)&& is_mutable_ptr)
+  {
+    m_ptr = 0;
+  }
+  template <bool B>
   inline constexpr operator optional_pointer_refrence_class_template_t<
-      std::add_const_t<Type> &>() {
+      std::add_const_t<Type> &, B>()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return {m_ptr};
   }
-  using merf = optional_pointer_refrence_class_template_t &;
-  inline constexpr friend bool operator==(merf a, merf b) { return *a == *b; }
-  inline constexpr friend bool operator!=(merf a, merf b) { return *a != *b; }
-  inline constexpr friend bool operator<=(merf a, merf b) { return *a <= *b; }
-  inline constexpr friend bool operator>=(merf a, merf b) { return *a >= *b; }
-  inline constexpr friend bool operator<(merf a, merf b) { return *a < *b; }
-  inline constexpr friend bool operator>(merf a, merf b) { return *a > *b; }
-  inline constexpr friend auto operator&(merf a, merf b) { return *a & *b; }
-  inline constexpr friend auto operator|(merf a, merf b) { return *a | *b; }
-  inline constexpr friend auto operator^(merf a, merf b) { return *a ^ *b; }
-  inline constexpr friend auto operator%(merf a, merf b) { return *a % *b; }
-  inline constexpr friend auto operator*(merf a, merf b) { return *a * *b; }
-  inline constexpr friend auto operator/(merf a, merf b) { return *a / *b; }
-  inline constexpr friend auto operator-(merf a, merf b) { return *a - *b; }
-  inline constexpr friend auto operator+(merf a, merf b) { return *a + *b; }
-  inline constexpr auto operator&=(merf b) { return (**this) &= *b; }
-  inline constexpr auto operator|=(merf b) { return (**this) |= *b; }
-  inline constexpr auto operator^=(merf b) { return (**this) ^= *b; }
-  inline constexpr auto operator%=(merf b) { return (**this) %= *b; }
-  inline constexpr auto operator*=(merf b) { return (**this) *= *b; }
-  inline constexpr auto operator/=(merf b) { return (**this) /= *b; }
-  inline constexpr auto operator-=(merf b) { return (**this) -= *b; }
-  inline constexpr auto operator+=(merf b) { return (**this) += *b; }
-};
-
-template <typename T_ref>
-class optional_pointer_refrence_class_template_t<
-    T_ref,
-    std::enable_if_t<
-        std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
-                       const std::remove_cvref_t<T_ref>>,
-        void>>
-    : private mjz_obj_manager_template_t<std::remove_cvref_t<T_ref>> {
- public:
-  using Type = const std::remove_cvref_t<T_ref>;
-  static_assert(std::is_same_v<Type &, T_ref>);
-
- private:
-  Type *m_ptr{};
 
  public:
-  template <typename T = Type>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw() = delete;
+  using const_Type = const std::remove_cvref_t<T_ref>;
+
+ public:
+  template <typename T = const_Type, bool B = true>
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw() =
+      delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() {
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw<
+      void, is_mutable_ptr && is_const_type>() {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() {
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw<
+      const_Type, is_mutable_ptr && is_const_type>() {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-  template <typename T = Type>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw() const =
-      delete;
+  template <typename T = const_Type, bool B = true>
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw()
+      const = delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() const {
+  inline constexpr const_Type *const
+  get_ptr_to_valid_const_object_or_throw<void, is_const_type>() const {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() const {
+  inline constexpr const_Type *const
+  get_ptr_to_valid_const_object_or_throw<const_Type, is_const_type>() const {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-  inline constexpr optional_pointer_refrence_class_template_t() {}
-  inline constexpr optional_pointer_refrence_class_template_t(
-      std::nullptr_t nullp) {}
-
-  using NC_type = std::remove_const_t<Type>;
-  inline constexpr optional_pointer_refrence_class_template_t(
-      NC_type *valid_pointer_to_object_that_meates_the_requirements)
-      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
-  inline constexpr optional_pointer_refrence_class_template_t(
-      NC_type &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_class_template_t(this->addressof(
-            valid_refrence_to_object_that_meates_the_requirements)) {}
-
-  inline constexpr optional_pointer_refrence_class_template_t(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
-  inline constexpr optional_pointer_refrence_class_template_t(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &&valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
-  inline constexpr optional_pointer_refrence_class_template_t(NC_type &&) =
-      delete;
-
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      NC_type *valid_pointer_to_object_that_meates_the_requirements) {
-    m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
-    return *this;
+  inline constexpr optional_pointer_refrence_class_template_t()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    construction_check();
   }
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      NC_type &valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr =
-        this->addressof(valid_refrence_to_object_that_meates_the_requirements);
-    return *this;
+  inline constexpr optional_pointer_refrence_class_template_t(
+      std::nullptr_t nullp)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    construction_check();
   }
-  optional_pointer_refrence_class_template_t &operator=(NC_type &&) = delete;
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &&valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
-
+  using Type = std::remove_const_t<const_Type>;
   inline constexpr optional_pointer_refrence_class_template_t(
       Type *valid_pointer_to_object_that_meates_the_requirements)
-      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
+    requires(is_const_type)
+      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
       : optional_pointer_refrence_class_template_t(this->addressof(
-            valid_refrence_to_object_that_meates_the_requirements)) {}
+            valid_refrence_to_object_that_meates_the_requirements)) {
+    construction_check();
+  }
 
+  inline constexpr optional_pointer_refrence_class_template_t(Type &&)
+    requires(is_const_type)
+  = delete;
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
+    construction_check();
+
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr =
+        this->addressof(valid_refrence_to_object_that_meates_the_requirements);
+    construction_check();
+
+    return *this;
+  }
+  optional_pointer_refrence_class_template_t &operator=(Type &&)
+    requires(is_const_type)
+  = delete;
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
+          &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr = valid_refrence_to_object_that_meates_the_requirements
+                .get_ptr_to_valid_const_object_or_throw();
+    construction_check();
+
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
+          &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr = valid_refrence_to_object_that_meates_the_requirements
+                .get_ptr_to_valid_const_object_or_throw();
+    construction_check();
+
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t(
+      const_Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(is_const_type)
+      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {
+    construction_check();
+  }
+  inline constexpr optional_pointer_refrence_class_template_t(
+      const_Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
+      : optional_pointer_refrence_class_template_t(this->addressof(
+            valid_refrence_to_object_that_meates_the_requirements)) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
-  inline constexpr optional_pointer_refrence_class_template_t(Type &&) = delete;
-
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
+  inline constexpr optional_pointer_refrence_class_template_t(const_Type &&)
+    requires(is_const_type)
+  = delete;
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type *valid_pointer_to_object_that_meates_the_requirements) {
+      const_Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
     m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type &valid_refrence_to_object_that_meates_the_requirements) {
+      const_Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
     m_ptr =
         this->addressof(valid_refrence_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
-  optional_pointer_refrence_class_template_t &operator=(Type &&) = delete;
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t
-          &valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t
-          &&valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
+  optional_pointer_refrence_class_template_t &operator=(const_Type &&)
+    requires(is_const_type)
+  = delete;
 
-  inline constexpr ~optional_pointer_refrence_class_template_t() {}
-
-  inline constexpr explicit operator bool() const {
-    return !!get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr ~optional_pointer_refrence_class_template_t() { m_ptr = 0; }
+  inline constexpr explicit operator bool() const
+    requires(is_const_type)
+  {
+    return !!get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr bool operator!() const {
-    return !get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr bool operator!() const
+    requires(is_const_type)
+  {
+    return !get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr operator Type *() {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr operator const_Type *()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr operator Type *() const {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr operator const_Type *() const
+    requires(is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
-
-  inline constexpr Type *ptr() {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr const_Type *ptr()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr Type *ptr() const {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr const_Type *ptr() const
+    requires(is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
   inline constexpr optional_pointer_refrence_class_template_t &set_ptr(
-      Type *p = 0) {
+      const_Type *p = 0)
+    requires(is_mutable_ptr && is_const_type)
+  {
     m_ptr = p;
+    construction_check();
+
     return *this;
   }
-
-  inline constexpr Type &get() { return *get_ptr_to_valid_object_or_throw(); }
-  inline constexpr Type &get() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &get()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr operator Type &() {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &get() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr operator Type &() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr operator const_Type &()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type *operator->() {
-    return get_ptr_to_valid_object_or_throw();
+  inline constexpr operator const_Type &() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type &operator*() {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type *operator->()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type *operator->() const {
-    return get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &operator*()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type &operator*() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type *operator->() const
+    requires(is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw();
   }
-
-  inline constexpr Type &operator()() {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &operator*() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-
-  inline constexpr void operator()(std::function<void(Type &)> f) {
+  inline constexpr const_Type &operator()()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
+  }
+  inline constexpr void operator()(std::function<void(const_Type &)> f)
+    requires(is_mutable_ptr && is_const_type)
+  {
     if (m_ptr) {
       f(*m_ptr);
     }
   }
-
-  inline constexpr Type &operator()() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &operator()() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr void operator~() { m_ptr = 0; }
+
   using merf = optional_pointer_refrence_class_template_t &;
-  inline constexpr friend bool operator==(merf a, merf b) { return *a == *b; }
-  inline constexpr friend bool operator!=(merf a, merf b) { return *a != *b; }
-  inline constexpr friend bool operator<=(merf a, merf b) { return *a <= *b; }
-  inline constexpr friend bool operator>=(merf a, merf b) { return *a >= *b; }
-  inline constexpr friend bool operator<(merf a, merf b) { return *a < *b; }
-  inline constexpr friend bool operator>(merf a, merf b) { return *a > *b; }
-  inline constexpr friend auto operator&(merf a, merf b) { return *a & *b; }
-  inline constexpr friend auto operator|(merf a, merf b) { return *a | *b; }
-  inline constexpr friend auto operator^(merf a, merf b) { return *a ^ *b; }
-  inline constexpr friend auto operator%(merf a, merf b) { return *a % *b; }
-  inline constexpr friend auto operator*(merf a, merf b) { return *a * *b; }
-  inline constexpr friend auto operator/(merf a, merf b) { return *a / *b; }
-  inline constexpr friend auto operator-(merf a, merf b) { return *a - *b; }
-  inline constexpr friend auto operator+(merf a, merf b) { return *a + *b; }
-  inline constexpr auto operator&=(merf b) { return (**this) &= *b; }
-  inline constexpr auto operator|=(merf b) { return (**this) |= *b; }
-  inline constexpr auto operator^=(merf b) { return (**this) ^= *b; }
-  inline constexpr auto operator%=(merf b) { return (**this) %= *b; }
-  inline constexpr auto operator*=(merf b) { return (**this) *= *b; }
-  inline constexpr auto operator/=(merf b) { return (**this) /= *b; }
-  inline constexpr auto operator-=(merf b) { return (**this) -= *b; }
-  inline constexpr auto operator+=(merf b) { return (**this) += *b; }
+  inline constexpr friend bool operator==(merf a, merf b)
+
+  {
+    return *a == *b;
+  }
+  inline constexpr friend bool operator!=(merf a, merf b)
+
+  {
+    return *a != *b;
+  }
+  inline constexpr friend bool operator<=(merf a, merf b)
+
+  {
+    return *a <= *b;
+  }
+  inline constexpr friend bool operator>=(merf a, merf b)
+
+  {
+    return *a >= *b;
+  }
+  inline constexpr friend bool operator<(merf a, merf b)
+
+  {
+    return *a < *b;
+  }
+  inline constexpr friend bool operator>(merf a, merf b)
+
+  {
+    return *a > *b;
+  }
+  inline constexpr friend auto operator&(merf a, merf b)
+
+  {
+    return *a & *b;
+  }
+  inline constexpr friend auto operator|(merf a, merf b)
+
+  {
+    return *a | *b;
+  }
+  inline constexpr friend auto operator^(merf a, merf b)
+
+  {
+    return *a ^ *b;
+  }
+  inline constexpr friend auto operator%(merf a, merf b)
+
+  {
+    return *a % *b;
+  }
+  inline constexpr friend auto operator*(merf a, merf b)
+
+  {
+    return *a * *b;
+  }
+  inline constexpr friend auto operator/(merf a, merf b)
+
+  {
+    return *a / *b;
+  }
+  inline constexpr friend auto operator-(merf a, merf b)
+
+  {
+    return *a - *b;
+  }
+  inline constexpr friend auto operator+(merf a, merf b)
+
+  {
+    return *a + *b;
+  }
+  inline constexpr auto operator&=(merf b)
+
+  {
+    return (**this) &= *b;
+  }
+  inline constexpr auto operator|=(merf b)
+
+  {
+    return (**this) |= *b;
+  }
+  inline constexpr auto operator^=(merf b)
+
+  {
+    return (**this) ^= *b;
+  }
+  inline constexpr auto operator%=(merf b)
+
+  {
+    return (**this) %= *b;
+  }
+  inline constexpr auto operator*=(merf b)
+
+  {
+    return (**this) *= *b;
+  }
+  inline constexpr auto operator/=(merf b)
+
+  {
+    return (**this) /= *b;
+  }
+  inline constexpr auto operator-=(merf b)
+
+  {
+    return (**this) -= *b;
+  }
+  inline constexpr auto operator+=(merf b)
+
+  {
+    return (**this) += *b;
+  }
 };
 
-template <typename T_ref>
+template <typename T_ref, bool mutable_ptr,
+    optional_pointer_refrence_has_to_be_valid_on_construction_level level =
+        optional_pointer_refrence_has_to_be_valid_on_construction_level::NONE>
 using optional_pointer_refrence_template_t =
     optional_pointer_refrence_class_template_t<std::remove_volatile_t<T_ref>,
-                                               void>;
+                                               mutable_ptr,level>;
 
 template <bool B, class T, class BS>
 struct mjz_stack_obj_warper_template_t_data : public BS {
@@ -11736,8 +11962,8 @@ class safe_array_template_t {
 
   constexpr inline ~safe_array_template_t() {}
 
-  using ref_t = optional_pointer_refrence_template_t<Type &>;
-  using cref_t = optional_pointer_refrence_template_t<const Type &>;
+  using ref_t = optional_pointer_refrence_template_t<Type &,true>;
+  using cref_t = optional_pointer_refrence_template_t<const Type &,true>;
 
   template <size_t I>
       constexpr inline std::enable_if_t < I<m_size, Type &> at() noexcept {
@@ -14873,13 +15099,14 @@ using functions_return_value_t =
 template <class T>
 struct mjz_ref_return_helper_class {
   using type = optional_pointer_refrence_template_t<functions_return_value_t<
-      std::remove_reference_t<std::remove_volatile_t<T>>> &>;
+      std::remove_reference_t<std::remove_volatile_t<T>>> &,false>;
 };
 template <class T>
 struct mjz_ref_return_helper_class<const T> {
   using type =
       optional_pointer_refrence_template_t<const functions_return_value_t<
-          std::remove_reference_t<std::remove_volatile_t<T>>> &>;
+          std::remove_reference_t<std::remove_volatile_t<T>>> &,
+      false>;
 };
 template <class T>
 using mjz_ref_return_helper_class_t =
@@ -15119,14 +15346,18 @@ using safe_array =
     safe_array_template_t<T, n, mjz_temp_type_obj_algorithims_warpper_t<T>>;
 
 template <typename T_ref>
-using mjz_optional_ref = optional_pointer_refrence_template_t<T_ref>;
+using mjz_optional_ref = optional_pointer_refrence_template_t<T_ref,false>;
 template <typename T_ref>
 using optional_ref = mjz_optional_ref<T_ref>;
+template <typename T_ref>
+using mjz_safe_ref = optional_pointer_refrence_template_t<T_ref,false,optional_pointer_refrence_has_to_be_valid_on_construction_level::not_null_if_is_ref>;
+template <typename T_ref>
+using safe_ref = mjz_optional_ref<T_ref>;
 template <typename T_ptr>
 using mjz_optional_ptr = optional_pointer_refrence_template_t<std::enable_if_t<
     std::is_same_v<std::remove_pointer_t<std::remove_cvref_t<T_ptr>> *,
                    std::remove_cvref_t<T_ptr>>,
-    std::remove_pointer_t<T_ptr> &>>;
+    std::remove_pointer_t<T_ptr> &>,true>;
 template <typename T_ptr>
 using optional_ptr = mjz_optional_ptr<T_ptr>;
 
