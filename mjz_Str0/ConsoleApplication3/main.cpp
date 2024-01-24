@@ -170,6 +170,7 @@ using  inizilizer_t= mjz::mjz_obj_manager_template_t<T>;
 }; 
 
 int my_main::main(int argc, const char* const* const argv) {
-  USE_MJZ_NS(); 
+  USE_MJZ_NS();
+
   return 0;
 }

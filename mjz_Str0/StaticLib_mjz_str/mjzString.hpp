@@ -15350,9 +15350,9 @@ using mjz_optional_ref = optional_pointer_refrence_template_t<T_ref,false>;
 template <typename T_ref>
 using optional_ref = mjz_optional_ref<T_ref>;
 template <typename T_ref>
-using mjz_safe_ref = optional_pointer_refrence_template_t<T_ref,false,optional_pointer_refrence_has_to_be_valid_on_construction_level::not_null_if_is_ref>;
+using mjz_var_ref = optional_pointer_refrence_template_t<T_ref,false,optional_pointer_refrence_has_to_be_valid_on_construction_level::not_null_if_is_ref>;
 template <typename T_ref>
-using safe_ref = mjz_optional_ref<T_ref>;
+using var_ref = mjz_var_ref<T_ref>;
 template <typename T_ptr>
 using mjz_optional_ptr = optional_pointer_refrence_template_t<std::enable_if_t<
     std::is_same_v<std::remove_pointer_t<std::remove_cvref_t<T_ptr>> *,
