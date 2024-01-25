@@ -3724,7 +3724,7 @@ struct mjz_internal_obj_manager_template_t {
     constexpr inline const Type &operator()() const { return get(); }
     constexpr inline const Type &operator*() const { return get(); }
     constexpr inline const Type *operator->() const { return ptr(); }
-    constexpr inline const static bool has_destroy( ) {
+    constexpr inline   static bool has_destroy( ) {
       return destroy_on_destruction;
     }
 

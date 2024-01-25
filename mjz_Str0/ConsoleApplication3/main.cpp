@@ -261,7 +261,7 @@ struct type_safe_union{
   };
   // the type complexity is O(n^2) that n=sizeof...(Types);
   type_safe_union& operator=(type_safe_union&& other) {
-     if (!u_runtime_init_with(other.m_data,other.current_type_index))
+     if (!u_runtime_move_init_with(other.m_data,other.current_type_index))
      uruntime_do<move_assinement_op>(other);
      return *this;
   }
@@ -276,7 +276,7 @@ struct type_safe_union{
      return *this;
   }
   type_safe_union& operator=(const type_safe_union&& other) {
-     if (!u_runtime_init_with(other.m_data, other.current_type_index))
+     if (!u_runtime_move_init_with(other.m_data, other.current_type_index))
      uruntime_do<temp_copy_assinement_op>(other);
      return *this;
   }
