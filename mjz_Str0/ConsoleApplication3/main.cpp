@@ -8,6 +8,13 @@ concept mjz_is_one_of = mjz::mjz_get_type_index_v<T, Ts...> != size_t(-1);
 template <bool B>
 concept to_concept = B;
 
+template <typename T,template<typename>typename B>
+concept t_to_concept = B<T>::value;
+/*
+TODO: 
+ use type_safe_union.operator=(...);
+ when it is uninitialized
+*/
 template<typename...Types>
 struct type_safe_union{
   static const constexpr size_t max_alinement =
@@ -25,25 +32,239 @@ struct type_safe_union{
   template <size_t I>
   static const constexpr bool is_one_of_indexes = is_one_of_types<to_type<I>>;
   template <class T>
-using  inizilizer_t= mjz::mjz_obj_manager_template_t<T>;
+  using inizilizer_t = mjz::mjz_obj_manager_template_t<T>;
+  template <class T>
+  struct is_one_of_types_t {
+    static const constexpr bool value = is_one_of_types<T>;
+  };
 	union {
     alignas(max_alinement) uint8_t m_data[max_size];
   };
   size_t current_type_index{no_content};
   type_safe_union() {}
-  type_safe_union(type_safe_union&&) { }
-  type_safe_union(const type_safe_union&) {}
-  type_safe_union(type_safe_union&) {}
-  type_safe_union(const type_safe_union&&) {}
-  ~type_safe_union() { destroy();}
-  bool runtime_is_one_of_indexes(size_t i) { return i < sizeof...(Types);
+  template <class T>
+  struct move_construct_op {
+    void*
+    operator()(T* p, void* to_place) {
+      inizilizer_t<T>::construct_at((T*)to_place, std::move(*p));
+      return to_place;
+    }
+  };
+  template <class T>
+  struct copy_construct_op {
+    void* operator()(const T* p, void* to_place) {
+      inizilizer_t<T>::construct_at((T*)to_place, *p);
+      return to_place;
+    }
+  };
+  template <class T>
+  struct temp_copy_construct_op {
+    void* operator()(const T* p, void* to_place) {
+      inizilizer_t<T>::construct_at((T*)to_place, (const T&&)std::move(*p));
+      return to_place;
+    }
+  };
+  template <class T>
+  struct mut_copy_construct_op {
+    void* operator()(  T* p, void* to_place) {
+      inizilizer_t<T>::construct_at((T*)to_place, *p);
+      return to_place;
+    }
+  };
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T&& other) {
+    move_construct_op<T>()(inizilizer_t<T>::addressof(other),
+                        m_data);
   }
-  template<template<class>class temp_function>
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T const& other) {
+    copy_construct_op<T>()(inizilizer_t<T>::addressof(other),
+                        m_data);
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T& other) {
+    mut_copy_construct_op<T>()(inizilizer_t<T>::addressof(other),
+                            m_data);
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T const&& other) {
+    temp_copy_construct_op<T>()(inizilizer_t<T>::addressof(other),
+                             m_data);
+  }
+
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& operator=(T&& other) {
+    uruntime_do_at_rev<move_assinement_op>(inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& operator=(const T& other) {
+    uruntime_do_at_rev<copy_assinement_op>(inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& operator=(T& other) {
+    uruntime_do_at_rev<mut_copy_assinement_op>(
+        inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& operator=(const T&& other) {
+    uruntime_do_at_rev<temp_copy_assinement_op>(
+        inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  type_safe_union(type_safe_union&&other) { 
+     if (other.uruntime_do<move_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  type_safe_union(const type_safe_union& other) {
+     if (other.uruntime_do<copy_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  type_safe_union(type_safe_union& other) {
+     if (other.uruntime_do<mut_copy_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  type_safe_union(const type_safe_union&& other) {
+     if (other.uruntime_do<temp_copy_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  template <class T, class U>
+  struct move_assinement_op {
+     void* operator()(T* p, U* o) {
+      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+      return p;
+     }
+  };
+  template <class T, class U>
+  struct copy_assinement_op {
+     void* operator()(const T* p, U* o) {
+      inizilizer_t<T>::obj_equals(*p, (*o));
+      return p;
+  }
+  };
+  template <class T, class U>
+  struct temp_copy_assinement_op {
+     void* operator()(const T* p, U* o) {
+      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+      return p;
+     }
+  };
+  template <class T, class U>
+  struct mut_copy_assinement_op {
+     void* operator()(T* p, U* o) {
+      inizilizer_t<T>::obj_equals(*p, *o);
+      return p;
+     }
+  };
+  template <class T, class U>
+  struct move_rev_assinement_op {
+     void* operator()(T* o, U* p) {
+      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+      return p;
+     }
+  };
+  template <class T, class U>
+  struct copy_rev_assinement_op {
+     void* operator()(T* o, const U* p) {
+      inizilizer_t<T>::obj_equals(*p, (*o));
+      return p;
+     }
+  };
+  template <class T, class U>
+  struct temp_copy_rev_assinement_op {
+     void* operator()(T* o, const U* p) {
+      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+      return p;
+     }
+  };
+  template <class T, class U>
+  struct mut_copy_rev_assinement_op {
+     void* operator()(T* o, U* p) {
+      inizilizer_t<T>::obj_equals(*p, *o);
+      return p;
+     }
+  };
+  // the type complexity is O(n^2) that n=sizeof...(Types);
+  type_safe_union& operator=(type_safe_union&& other) {
+     uruntime_do<move_assinement_op>(other);
+     return *this;
+  }
+  type_safe_union& operator=(const type_safe_union& other) {
+     uruntime_do<copy_assinement_op>(other);
+     return *this;
+  }
+  type_safe_union& operator=(type_safe_union& other) {
+     uruntime_do<mut_copy_assinement_op>(other);
+     return *this;
+  }
+  type_safe_union& operator=(const type_safe_union&& other) {
+     uruntime_do<temp_copy_assinement_op>(other);
+     return *this;
+  }
+  ~type_safe_union() { destroy();}
+  bool runtime_is_one_of_indexes(size_t i) { return i < sizeof...(Types); }
+  template <template <class, class> class temp_function, class T0>
+ void* uruntime_do_at_rev(T0* ptr) {
+     if (runtime_is_one_of_indexes(current_type_index))
+      return uruntime_do_at_helper<temp_function>(ptr,current_type_index,m_data);
+     return 0;
+  }
+  template <template <class, class> class temp_function, class T0>
+static  void* uruntime_do_at_helper(T0* ptr, size_t j, void* other) {
+     using fn_ptr = void* (*)(T0*, void*);
+     fn_ptr list[] = {[](T0* ptr, void* other_) -> void* {
+return       temp_function<T0, Types>()(ptr, (Types*)other_);
+     }...};
+     return list[j](ptr, other);
+  }
+  template <template <class,class> class temp_function>
+   void* uruntime_do_at(size_t i, size_t j, void* other) {
+     using fn_ptr = void* (*)(void*, void*, size_t j);
+     fn_ptr list[] = {[](void* ptr, void* other, size_t j) -> void* {
+return       uruntime_do_at_helper<temp_function, Types>((Types*)ptr,j, other);
+     }...};
+     return list[i](m_data, other, j);
+  }
+
+  template <template <class> class temp_function>
   void uruntime_do_at(size_t i) {
-      using fn_ptr=void(*)(void*);
+      using fn_ptr=void(*)(void* );
     fn_ptr list[] = {
-          [](void* ptr) { temp_function<Types>()((Types*)ptr);}...};
-    list[i](m_data);
+          [](void* ptr) { temp_function<Types>()((Types*)ptr); }...};
+      list[i](m_data);
+  }
+  template <template <class> class temp_function>
+  void* uruntime_do_at(size_t i, void* other) {
+      using fn_ptr = void* (*)(void*, void*);
+      fn_ptr list[] = {[](void* ptr, void* other_) -> void* {
+        temp_function<Types>()((Types*)ptr, other_);
+      }...};
+     return list[i](m_data, other);
+  }
+  template <template <class> class temp_function>
+ inline void uruntime_do() {
+    if (runtime_is_one_of_indexes(current_type_index))
+      return uruntime_do_at <temp_function>(current_type_index);
+  }
+  template <template <class> class temp_function>
+  inline void* uruntime_do(void*other) {
+    if (runtime_is_one_of_indexes(current_type_index))
+      return uruntime_do_at<temp_function>(current_type_index, other);
+  }
+  template <template <class,class> class temp_function>
+  inline void* uruntime_do(type_safe_union& other) {
+    if (runtime_is_one_of_indexes(current_type_index)&&runtime_is_one_of_indexes(other.current_type_index))
+      return uruntime_do_at<temp_function>(current_type_index,
+                                           other.current_type_index, other.m_data);
+  }
+  template <template <class, class> class temp_function>
+  inline void* uruntime_do(const type_safe_union& other) {
+    if (runtime_is_one_of_indexes(current_type_index) &&
+        runtime_is_one_of_indexes(other.current_type_index))
+      return uruntime_do_at<temp_function>(current_type_index,
+                                           other.current_type_index, other);
   }
   
   template <size_t I>
@@ -171,6 +392,10 @@ using  inizilizer_t= mjz::mjz_obj_manager_template_t<T>;
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-
+  type_safe_union<double, char, int> u=49;
+  type_safe_union<double, char, int> i;
+  u.to_type_as<int>();
+  i = u;
+  println(u.ref_as<int>());
   return 0;
 }

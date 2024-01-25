@@ -3395,6 +3395,10 @@ concept C_mjz_obj_manager_helper =
                            static_cast<const Type *>(ptr))
         } -> std::same_as<Type &>;
       {
+        T::obj_temp_copy_to_obj(static_cast<ref_t>(ref),
+                                static_cast<const rv_ref_t>(ref))
+        } -> std::same_as<Type &>;
+      {
         T::obj_go_to_obj(static_cast<ref_t>(ref), static_cast<const ref_t>(ref))
         } -> std::same_as<Type &>;
       {
@@ -3776,6 +3780,13 @@ struct mjz_internal_obj_manager_template_t {
   static constexpr inline Type &obj_copy_to_obj(Type *dest, const Type *src) {
     return obj_copy_to_obj(*dest, *src);
   }
+  static constexpr inline Type &obj_temp_copy_to_obj(Type &dest,
+                                                     const Type &&src) {
+    return dest = (std::move(src));
+  }
+  static constexpr inline Type &obj_go_to_obj(Type &dest, const Type &&src) {
+    return obj_temp_copy_to_obj(dest, std::move(src));
+  }
   static constexpr inline Type &obj_go_to_obj(Type &dest, const Type &src) {
     return obj_copy_to_obj(dest, src);
   }
@@ -3787,8 +3798,9 @@ struct mjz_internal_obj_manager_template_t {
   }
   template <typename Args>
   static constexpr inline Type &obj_equals(Type &dest, Args &&args) {
-    return dest.operator=(std::forward<Args>(args));
+    return dest=(std::forward<Args>(args));
   }
+
 
  public:
   static constexpr inline const Type *addressof(const Type &&obj) = delete;
@@ -3976,6 +3988,9 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline Type &obj_move_to_obj(Type &dest, Type &&src) {
     return dest = (std::move(src));
   }
+  static constexpr inline Type &obj_temp_copy_to_obj(Type &dest,const Type &&src) {
+    return dest = (std::move(src));
+  }
   static constexpr inline Type &obj_copy_to_obj(Type &dest, Type &src) {
     return dest = (src);
   }
@@ -4001,9 +4016,16 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline Type &obj_go_to_obj(Type &dest, Type &&src) {
     return obj_move_to_obj(dest, std::move(src));
   }
+  static constexpr inline Type &obj_go_to_obj(Type &dest,const Type &&src) {
+    return obj_temp_copy_to_obj(dest, std::move(src));
+  }
   template <typename... Args>
   static constexpr inline Type &obj_equals(Type &dest, Args &&...args) {
     return dest.operator=(std::forward<Args>(args)...);
+  }
+  template <typename  Args>
+  static constexpr inline Type &obj_equals(Type &dest, Args && args) {
+    return dest=(std::forward<Args>(args) );
   }
 
  public:
