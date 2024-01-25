@@ -94,23 +94,25 @@ struct type_safe_union{
 
   template <t_to_concept<is_one_of_types_t> T>
   type_safe_union& operator=(T&& other) {
-    uruntime_do_at_rev<move_assinement_op>(inizilizer_t<T>::addressof(other));
+    uruntime_do_at_rev<move_rev_assinement_op>(
+        inizilizer_t<T>::addressof(other));
     return *this;
   }
   template <t_to_concept<is_one_of_types_t> T>
   type_safe_union& operator=(const T& other) {
-    uruntime_do_at_rev<copy_assinement_op>(inizilizer_t<T>::addressof(other));
+    uruntime_do_at_rev<copy_rev_assinement_op>(
+        inizilizer_t<T>::addressof(other));
     return *this;
   }
   template <t_to_concept<is_one_of_types_t> T>
   type_safe_union& operator=(T& other) {
-    uruntime_do_at_rev<mut_copy_assinement_op>(
+    uruntime_do_at_rev<mut_copy_rev_assinement_op>(
         inizilizer_t<T>::addressof(other));
     return *this;
   }
   template <t_to_concept<is_one_of_types_t> T>
   type_safe_union& operator=(const T&& other) {
-    uruntime_do_at_rev<temp_copy_assinement_op>(
+    uruntime_do_at_rev<temp_copy_rev_assinement_op>(
         inizilizer_t<T>::addressof(other));
     return *this;
   }
