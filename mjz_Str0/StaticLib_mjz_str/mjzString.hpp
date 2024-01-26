@@ -3798,7 +3798,7 @@ struct mjz_internal_obj_manager_template_t {
   }
   template <typename Args>
   static constexpr inline Type &obj_equals(Type &dest, Args &&args) {
-    return dest=(std::forward<Args>(args));
+    return dest=std::forward<Args>(args);
   }
 
 

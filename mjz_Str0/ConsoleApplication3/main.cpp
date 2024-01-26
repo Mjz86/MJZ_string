@@ -11,9 +11,8 @@ concept to_concept = B;
 template <typename T,template<typename>typename B>
 concept t_to_concept = B<T>::value;
 /*
-TODO: 
- use type_safe_union.operator=(...);
- when it is uninitialized
+* TODO:
+* add invalid operations for the moment that they aren't convertible  
 */
 template<typename...Types>
 struct type_safe_union{
@@ -96,7 +95,7 @@ struct type_safe_union{
   template <t_to_concept<is_one_of_types_t> T>
   bool u_init_with(T&&obj) {
     if (runtime_is_one_of_indexes(current_type_index)) return false;
-    if (inizilizer_t<T>::construct_at((T*)m_data, std::forward<T>(obj))) {
+    if (inizilizer_t<T>::construct_at((std::remove_cvref_t<T>*)m_data, std::forward<T>(obj))) {
       uto_type_as<T>();
       return true;
     }
@@ -160,6 +159,34 @@ struct type_safe_union{
     return false;
   }
   template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& set(T&& other) {
+    if (!u_init_with(std::move(other)))
+      uruntime_do_at_rev<move_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& set(const T& other) {
+    if (!u_init_with(other))
+      uruntime_do_at_rev<copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& set(T& other) {
+    if (!u_init_with(other))
+      uruntime_do_at_rev<mut_copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union& set(const T&& other) {
+    if (!u_init_with(std::move(other)))
+      uruntime_do_at_rev<temp_copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
   type_safe_union& operator=(T&& other) {
     if (!u_init_with(std::move(other)))
     uruntime_do_at_rev<move_rev_assinement_op>(
@@ -212,14 +239,14 @@ struct type_safe_union{
   };
   template <class T, class U>
   struct copy_assinement_op {
-     void* operator()(const T* p, U* o) {
+     void* operator()(T* p, const U* o) {
       inizilizer_t<T>::obj_equals(*p, (*o));
       return p;
   }
   };
   template <class T, class U>
   struct temp_copy_assinement_op {
-     void* operator()(const T* p, U* o) {
+  void* operator()(T* p, const U* o) {
       inizilizer_t<T>::obj_equals(*p, std::move(*o));
       return p;
      }
@@ -234,28 +261,28 @@ struct type_safe_union{
   template <class T, class U>
   struct move_rev_assinement_op {
      void* operator()(T* o, U* p) {
-      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+      inizilizer_t<U>::obj_equals(*p, std::move(*o));
       return p;
      }
   };
   template <class T, class U>
   struct copy_rev_assinement_op {
-     void* operator()(T* o, const U* p) {
-      inizilizer_t<T>::obj_equals(*p, (*o));
+     void* operator()(const T* o, U* p) {
+      inizilizer_t<U>::obj_equals(*p, (*o));
       return p;
      }
   };
   template <class T, class U>
   struct temp_copy_rev_assinement_op {
-     void* operator()(T* o, const U* p) {
-      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+       void* operator()(const T* o, U* p) {
+      inizilizer_t<U>::obj_equals(*p, std::move(*o));
       return p;
      }
   };
   template <class T, class U>
   struct mut_copy_rev_assinement_op {
      void* operator()(T* o, U* p) {
-      inizilizer_t<T>::obj_equals(*p, *o);
+      inizilizer_t<U>::obj_equals(*p, *o);
       return p;
      }
   };
@@ -292,7 +319,8 @@ struct type_safe_union{
 static  void* uruntime_do_at_helper(T0* ptr, size_t j, void* other) {
      using fn_ptr = void* (*)(T0*, void*);
      fn_ptr list[] = {[](T0* ptr, void* other_) -> void* {
-return       temp_function<T0, Types>()(ptr, (Types*)other_);
+       return mjz::remove_const(
+           temp_function<T0, Types>()(ptr, (Types*)other_));
      }...};
      return list[j](ptr, other);
   }
@@ -471,8 +499,8 @@ int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   type_safe_union<double, char, int> u=49;
   type_safe_union<double, char, int> i;
-  u.to_type_as<int>();
+  u.set<int>(99999);
   i = u;
-  println(u.ref_as<int>());
+  println(u.ref_as<int>(), " ", i.ref_as<int>());
   return 0;
 }
