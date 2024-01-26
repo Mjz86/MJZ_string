@@ -502,5 +502,8 @@ int my_main::main(int argc, const char* const* const argv) {
   u.set<int>(99999);
   i = u;
   println(u.ref_as<int>(), " ", i.ref_as<int>());
+
+  optional<operation_reporter> o{init_optional()};
+  
   return 0;
 }
