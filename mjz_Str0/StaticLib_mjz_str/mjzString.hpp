@@ -9577,11 +9577,13 @@ template <class T, class BS>
 struct mjz_stack_obj_warper_template_t_data<true, T, BS> : public BS {
   static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
 
- public:
+ protected:
   union {
     bool m_Has_data{false};
     mutable bool mm_Has_data;
   };
+
+ public:
   union UDB_t {
     alignas(BS::alignment) /*aliens with T */ mutable uint8_t
         mm_data[BS::size_of_type()];
@@ -9607,11 +9609,13 @@ template <class T, class BS>
 struct mjz_stack_obj_warper_template_t_data<false, T, BS> : public BS {
   static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
 
- public:
+ protected:
   union {
     bool m_Has_data{false};
     mutable bool mm_Has_data;
   };
+
+ public:
   union UDB_t {
     alignas(1) /*no alinement*/ mutable uint8_t mm_data[BS::size_of_type()];
     alignas(1) uint8_t m_data[BS::size_of_type()];
@@ -9628,6 +9632,7 @@ template <typename T, class obj_crtr>
 struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, false>
     : protected mjz_stack_obj_warper_template_t_data<std::is_fundamental_v<T>,
                                                      T, obj_crtr> {
+  constexpr bool static const has_data_v = 1;
  protected:
   template <typename ret_t>
   constexpr inline ret_t *mm_data() {
@@ -9642,19 +9647,38 @@ struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, false>
   constexpr inline ret_t *m_data() {
     return (ret_t *)this->m_data_b();
   }
+
+ public:
+  constexpr inline bool get_has_data() const volatile noexcept {
+    return this->m_Has_data == has_data_v;
+  }
+  constexpr inline bool get_has_data() const noexcept {
+    return this->m_Has_data == has_data_v;
+  }
+  constexpr  inline bool set_has_data(bool B) volatile noexcept {
+    if (B) this->m_Has_data = has_data_v;
+    return B;
+  }
+  constexpr inline bool set_has_data(bool B) noexcept {
+    if (B) this->m_Has_data = has_data_v;
+    return B;
+  }
 };
 template <typename T, class obj_crtr>
 struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, true>
     : protected obj_crtr {
+  constexpr bool static const has_data_v = 1;
   using Type = T;
   using BS = obj_crtr;
   static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
 
- public:
+ protected:
   union {
     bool m_Has_data{false};
     mutable bool mm_Has_data;
   };
+
+ public:
   union UDB_t {
     uint8_t f;
     mutable uint8_t mm_data[BS::size_of_type()];
@@ -9705,6 +9729,22 @@ struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, true>
   constexpr inline uint8_t *m_data<uint8_t>() {
     return &m_obj_buf.f;
   }
+
+ public:
+  constexpr inline bool get_has_data() const volatile noexcept {
+    return this->m_Has_data == has_data_v;
+  }
+  constexpr inline bool get_has_data() const noexcept {
+    return this->m_Has_data == has_data_v;
+  }
+  constexpr inline bool set_has_data(bool B) volatile noexcept {
+    if (B) this->m_Has_data = has_data_v;
+    return B;
+  }
+  constexpr inline bool set_has_data(bool B) noexcept {
+    if (B) this->m_Has_data = has_data_v;
+    return B;
+  }
 };
 
 template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
@@ -9715,7 +9755,7 @@ template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
           typename = std::enable_if_t<std::negation_v<
               std::is_array<std::remove_cvref_t<my_iner_Type_>>>>>
 struct mjz_stack_obj_warper_template_class_t
-    : private mjz_stack_obj_warper_template_t_helper<
+    : protected mjz_stack_obj_warper_template_t_helper<
           std::remove_cvref_t<my_iner_Type_>, my_obj_creator_t,
           use_object_in_union>  // for that 1 exetera
                                 // (compiler added ) memory
@@ -9731,6 +9771,19 @@ struct mjz_stack_obj_warper_template_class_t
   }
 
  protected:
+  using my_obj_helper_t =
+      mjz_stack_obj_warper_template_t_helper<std::remove_cvref_t<my_iner_Type_>,
+                                             my_obj_creator_t,
+                                             use_object_in_union>;
+  constexpr inline const my_obj_helper_t &m_obj_helper() const & {
+    return *this;
+  }
+  constexpr inline my_obj_helper_t &m_obj_helper() & { return *this; }
+  constexpr inline const my_obj_helper_t &&m_obj_helper() const && {
+    return move_me();
+  }
+  constexpr inline my_obj_helper_t &&m_obj_helper() && { return move_me(); }
+
   constexpr inline const my_obj_creator_t &m_obj_creator() const & {
     return *this;
   }
@@ -9818,19 +9871,19 @@ struct mjz_stack_obj_warper_template_class_t
   template <typename... args_t>
   constexpr inline void construct(args_t &&...args) {
     if (pointer_to_unsafe_data() ==
-        construct_in_place(pointer_to_unsafe_data(), this->m_Has_data,
+        construct_in_place(pointer_to_unsafe_data(), get_has_data(),
                            std::forward<args_t>(args)...)) {
-      this->m_Has_data = 1;
+      set_has_data(1);
     } else {
-      this->m_Has_data = 0;
+      set_has_data(0);
     }
   }
   constexpr inline void destroy() {
-    if (this->m_Has_data) destroy_at_place(pointer_to_unsafe_data());
-    this->m_Has_data = 0;
+    if (get_has_data()) destroy_at_place(pointer_to_unsafe_data());
+    set_has_data(0);
   }
   constexpr inline Type *init_with_unsafe_data(bool initialized) {
-    this->m_Has_data = initialized;
+    set_has_data(initialized);
     return OP();
   }
   constexpr inline Type *move_to_place(Type *dest, bool dest_has_obj) {
@@ -9859,12 +9912,12 @@ struct mjz_stack_obj_warper_template_class_t
 
   constexpr inline Type &uo() &noexcept { return *uop(); }
   constexpr inline Type *uop() &noexcept {
-    if (this->m_Has_data) return OP();
+    if (get_has_data()) return OP();
     return nullptr;
   }
   constexpr inline const Type &uo() const &noexcept { return *uop(); }
   constexpr inline const Type *uop() const &noexcept {
-    if (this->m_Has_data) return OP();
+    if (get_has_data()) return OP();
     return nullptr;
   }
   constexpr inline Type &&uo() &&noexcept { return std::move(uo()); }
@@ -10013,10 +10066,10 @@ struct mjz_stack_obj_warper_template_class_t
       construct();
     }
   };
-  constexpr inline mjz_stack_obj_warper_template_class_t(mjz_init_optional_t ) {
-      construct();
+  constexpr inline mjz_stack_obj_warper_template_class_t(mjz_init_optional_t) {
+    construct();
   };
-  
+
   template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
   constexpr inline mjz_stack_obj_warper_template_class_t(
       mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one>)
@@ -10033,7 +10086,7 @@ struct mjz_stack_obj_warper_template_class_t
   }
   constexpr inline mjz_stack_obj_warper_template_class_t(
       mjz_no_init_optional_t<0>) {
-    this->m_Has_data = 0;
+    set_has_data(0);
   };
 
   template <typename T0, typename... T_s>
@@ -10369,11 +10422,11 @@ struct mjz_stack_obj_warper_template_class_t
  public:
  public:
   constexpr inline Type &if_no_obj_then_create() & {
-    if (!this->m_Has_data) construct();
+    if (!get_has_data()) construct();
     return *pointer_to_unsafe_data();
   }
   Type &&if_no_obj_then_create() && {
-    if (!this->m_Has_data) construct();
+    if (!get_has_data()) construct();
     return std::move(move_me().O());
   }
 
@@ -10383,7 +10436,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const Type *throw_if_no_data_or_give_data() const && =
       delete;
   constexpr inline const Type *throw_if_no_data_or_give_data() const & {
-    if (!this->m_Has_data) {
+    if (!get_has_data()) {
       if constexpr (do_error_check) {
         Throw<std::out_of_range>(
             "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data "
@@ -11382,11 +11435,26 @@ return **this<=> (*other);
 return **this<=> (*other);
 }
 #endif  // ! Arduino
-  constexpr inline bool has_data() const noexcept { return this->m_Has_data; }
-  constexpr inline bool has_data() const volatile noexcept {
-    return this->m_Has_data;
+ protected:
+  constexpr inline bool get_has_data() const volatile noexcept {
+    return m_obj_helper().get_has_data();
   }
-  constexpr inline bool operator!() const noexcept { return !this->m_Has_data; }
+  constexpr inline bool get_has_data() const noexcept {
+    return m_obj_helper().get_has_data();
+  }
+  constexpr inline bool set_has_data(bool B)   volatile noexcept {
+    return m_obj_helper().set_has_data(B);
+  }
+  constexpr inline bool set_has_data(bool B)   noexcept {
+    return m_obj_helper().set_has_data(B);
+  }
+
+ public:
+  constexpr inline bool has_data() const noexcept { return get_has_data(); }
+  constexpr inline bool has_data() const volatile noexcept {
+    return get_has_data();
+  }
+  constexpr inline bool operator!() const noexcept { return !get_has_data(); }
   constexpr inline operator Type *() & { return pointer_to_data(); }
   constexpr inline operator const Type *() & { return pointer_to_data(); }
   constexpr inline operator const Type *() const & { return pointer_to_data(); }
