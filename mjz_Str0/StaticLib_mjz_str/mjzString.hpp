@@ -1,21 +1,4 @@
-/*
-String library for Wiring & Arduino
- ...mostly rewritten by Paul Stoffregen...
-Copyright (c) 2009-10 Hernando Barragan. All right reserved.
-Copyright 2011, Paul Stoffregen, paul@pjrc.com
-
-This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-*/
+// removed  the arduino string
 /*
 this is a simple fast implementation/fork of arduino string and much more...
 written by mjz https://github.com/Mjz86
@@ -10070,6 +10053,185 @@ struct mjz_stack_obj_warper_template_class_t
   }
 
 
+
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_deinit_in(
+        function_type &&inner_function,
+      Ts... args) & {
+    
+      notify_unsafe_in(false, std::forward<function_type>(inner_function),
+                       std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&notify_unsafe_deinit_in(
+        function_type &&inner_function,
+      Ts... args) && {
+    
+      move_me().notify_unsafe_in(false,
+                                 std::forward<function_type>(inner_function),
+                                 std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+    template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_deinit_in( 
+                         function_type &&inner_function, Ts... args) & {
+    
+      me_notify_unsafe_in(false, std::forward<function_type>(inner_function),
+                          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_deinit_in( 
+                         function_type &&inner_function, Ts... args) && {
+    
+      move_me().me_notify_unsafe_in(false,
+                                    std::forward<function_type>(inner_function),
+                                    std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+    template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_init_in(
+        function_type &&inner_function,
+      Ts... args) & {
+    
+      notify_unsafe_in(true, std::forward<function_type>(inner_function),
+                       std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&notify_unsafe_init_in(
+        function_type &&inner_function,
+      Ts... args) && {
+    
+      move_me().notify_unsafe_in(true,
+                                 std::forward<function_type>(inner_function),
+                                 std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+    template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_init_in( 
+                         function_type &&inner_function, Ts... args) & {
+    
+      me_notify_unsafe_in(true, std::forward<function_type>(inner_function),
+                          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_init_in( 
+                         function_type &&inner_function, Ts... args) && {
+    
+      move_me().me_notify_unsafe_in(true,
+                                    std::forward<function_type>(inner_function),
+                                    std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_deinit_in_if(
+      bool do_notify,  function_type &&inner_function,
+      Ts... args) & {
+    if (do_notify)
+      notify_unsafe_in(false, std::forward<function_type>(inner_function),
+                       std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&notify_unsafe_deinit_in_if(
+      bool do_notify,  function_type &&inner_function,
+      Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_in(false,
+                                 std::forward<function_type>(inner_function),
+                                 std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+    template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_deinit_in_if(bool do_notify, 
+                         function_type &&inner_function, Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_in(false, std::forward<function_type>(inner_function),
+                          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_deinit_in_if(bool do_notify, 
+                         function_type &&inner_function, Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_in(false,
+                                    std::forward<function_type>(inner_function),
+                                    std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+    template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_init_in_if(
+      bool do_notify,  function_type &&inner_function,
+      Ts... args) & {
+    if (do_notify)
+      notify_unsafe_in(true, std::forward<function_type>(inner_function),
+                       std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&notify_unsafe_init_in_if(
+      bool do_notify,  function_type &&inner_function,
+      Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_in(true,
+                                 std::forward<function_type>(inner_function),
+                                 std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+    template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_init_in_if(bool do_notify, 
+                         function_type &&inner_function, Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_in(true, std::forward<function_type>(inner_function),
+                          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_init_in_if(bool do_notify, 
+                         function_type &&inner_function, Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_in(true,
+                                    std::forward<function_type>(inner_function),
+                                    std::forward<Ts>(args)...);
+    return move_me();
+  }
+  
+  
+  
+  
+  
+  
+  
+  
 
 
 
