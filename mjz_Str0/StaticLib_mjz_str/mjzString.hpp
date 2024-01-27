@@ -1135,6 +1135,20 @@ using mjz_no_init_optional_t = special_arg_no_init_constructor_t<
     init_if_iam_not_zero_the_base_with_me_minus_one>;
 using mjz_init_optional_t =
     special_arg<special_arg_init_for_mjz_optional_value>;
+struct mjz_init_optional_if_t:private
+    special_arg<special_arg_init_for_mjz_optional_value+1> {
+ private:
+  bool do_init{};
+  public:
+  inline constexpr
+  mjz_init_optional_if_t(bool do_init_=0) : do_init(do_init_) {
+
+  }
+  ~mjz_init_optional_if_t(){}
+  inline constexpr
+      operator bool( )const { return do_init;}
+    inline constexpr bool operator !() const { return !do_init; }
+  };
 
 template <size_t arg_Index, class U_F, class... U>
 struct mjz_get_template_argument_class_helper_t {
@@ -1496,7 +1510,7 @@ class iterator_template_t {
   using size_type = size_t;
   // using iterator_concept = std::contiguous_iterator_tag;
   constexpr inline iterator_template_t() noexcept
-      : iterator_template_t(nullptr, nullptr, (Type *)-1) {}
+      : iterator_template_t(nullptr, nullptr, nullptr) {}
   // iterator_template(Type *iter ) noexcept: m_iterator { iter } { }
   constexpr inline iterator_template_t(Type *iter, Type *min_end,
                                        Type *max_end) noexcept
@@ -10436,6 +10450,12 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t(mjz_init_optional_t) {
     construct();
   };
+  constexpr inline mjz_stack_obj_warper_template_class_t(
+      mjz_init_optional_if_t do_init) {
+   if(do_init)
+    construct();
+  };
+  
 
   template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
   constexpr inline mjz_stack_obj_warper_template_class_t(
@@ -10965,21 +10985,30 @@ struct mjz_stack_obj_warper_template_class_t
   but use iter_me because its more readable.)
   */
 
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() & {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() & {
     return {*this};
   }
 
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() const & {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() const & {
     return {*this};
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() && {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() && {
     return {move_me()};
   }
 
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() const && {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() const && {
     return {move_me()};
   }
-
+  constexpr inline 
+  iterator_template_t<Type> get_iter() & {
+    if (!!*this) return {uop(), uop(), uop() + 1};
+    return {};
+  }
+  constexpr inline 
+  iterator_template_t<const Type> get_iter() const&{
+      if(!!*this) return {uop(), uop(), uop() + 1};
+      return{};
+  }
   constexpr inline mjz_stack_obj_warper_template_class_t *begin() & {
     return this;
   }
@@ -15576,6 +15605,7 @@ using no_init_optional_t = typename mjz_no_init_optional_t<
     init_if_iam_not_zero_the_base_with_me_minus_one>::me;
 using no_init_optional = no_init_optional_t<0>;
 using init_optional = typename mjz_init_optional_t::me;
+using init_optional_if =  mjz_init_optional_if_t;
 
 template <typename T, class C_free_realloc>
 using mjz_C_allocator_warpper =

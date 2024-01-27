@@ -494,10 +494,30 @@ return       uruntime_do_at_helper<temp_function, Types>((Types*)ptr,j, other);
 
 
 }; 
-
-int my_main::main(int argc, const char* const* const argv) {
+void show_if_with_optional() {
   USE_MJZ_NS();
 
-
+  if (optional<operation_reporter> op; op) {
+    op()++;
+  } else {
+    op.init()()--;
+  }
+  if (optional<operation_reporter> op; !op) {
+    op.init()()++;
+  } else {
+    op()--;
+  }
+  for (optional<operation_reporter> op; auto& o : op.get_iter()) {
+    if (o) o++;
+  }
+  for (optional<operation_reporter> op; auto& o : op) {
+    if (o) o()++;
+  }
+  for (auto op : optional<operation_reporter>()) {
+    if (op) op()++;
+  }
+}
+int my_main::main(int argc, const char* const* const argv) {
+  USE_MJZ_NS();
   return 0;
 }
