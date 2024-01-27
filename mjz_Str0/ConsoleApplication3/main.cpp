@@ -497,13 +497,7 @@ return       uruntime_do_at_helper<temp_function, Types>((Types*)ptr,j, other);
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  type_safe_union<double, char, int> u=49;
-  type_safe_union<double, char, int> i;
-  u.set<int>(99999);
-  i = u;
-  println(u.ref_as<int>(), " ", i.ref_as<int>());
 
-  optional<operation_reporter> o{init_optional()};
-  
+
   return 0;
 }
