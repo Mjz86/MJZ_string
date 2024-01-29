@@ -521,9 +521,5 @@ void show_if_with_optional() {
 #include <iostream>
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  using type= operation_reporter;
-   RAII_t<type> o_([](type&& temp) { ~temp; });
-  type& o = o_.obj;
-  o++;
   return 0;
 }
