@@ -519,22 +519,10 @@ void show_if_with_optional() {
 }
 #include <fstream>
 #include <iostream>
-template<typename T>
-struct RAII_warper{
-  T obj;
-  std::function<void(T&&)>destructor;
-  template<typename...Ts>
-  inline   RAII_warper(std::function<void(T&&)> destructor_function,Ts&&...args )
-      : obj(std::forward<Ts>(args)...),
-        destructor(std::move(destructor_function)) {}
-  inline ~RAII_warper() { 
-      destructor(std::move(obj));
-  }
-};
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   using type= operation_reporter;
-  RAII_warper<type> o_([](type&& temp) { ~temp;});
+   RAII_t<type> o_([](type&& temp) { ~temp; });
   type& o = o_.obj;
   o++;
   return 0;

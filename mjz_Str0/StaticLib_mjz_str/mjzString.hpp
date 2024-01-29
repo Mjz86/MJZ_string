@@ -1082,6 +1082,23 @@ class initilizer_in_constructor_helper_class_t {
   }
 };
 
+
+
+template <typename T>
+struct mjz_resource_acquisition_is_initialization_template {
+  T obj;
+  std::function<void(T &&)> destructor;
+  template <typename... Ts>
+  inline mjz_resource_acquisition_is_initialization_template(
+      std::function<void(T &&)> destructor_function, Ts &&...args)
+      : obj(std::forward<Ts>(args)...),
+        destructor(std::move(destructor_function)) {}
+  inline ~mjz_resource_acquisition_is_initialization_template() {
+    destructor(std::move(obj));
+  }
+};
+
+
 template <size_t N>
 using initilizer_helper_class_t = initilizer_in_constructor_helper_class_t<N>;
 template <size_t N>
@@ -15609,6 +15626,11 @@ using mjz_ref_return_helper_class_t =
     typename mjz_ref_return_helper_class<T>::type;
 
 namespace have_mjz_ard_removed {
+template<class T>
+using mjz_RAII_t =mjz_resource_acquisition_is_initialization_template<T>;
+template<class T>
+using RAII_t =mjz_RAII_t<T>;
+
 using malloc_wrpr = malloc_wrapper;
 using algorithm = static_str_algo;
 template <typename T, size_t size>
