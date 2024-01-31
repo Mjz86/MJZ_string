@@ -35,8 +35,31 @@ void show_lifetime() {
     println("w_ptr_s0.use_count():", w_ptr_s0.use_count());
   };
   optional_var = "optional_var";
-  ptr_show({});
+  ptr_show(no_init_optional{});
   ptr_show(std::make_shared<operation_reporter>());
+}
+void show_if_with_optional() {
+  USE_MJZ_NS();
+
+  if (optional<operation_reporter> op; op) {
+    op()++;
+  } else {
+    op.init()()--;
+  }
+  if (optional<operation_reporter> op; !op) {
+    op.init()()++;
+  } else {
+    op()--;
+  }
+  for (optional<operation_reporter> op; auto& o : op.get_iter()) {
+    if (o) o++;
+  }
+  for (optional<operation_reporter> op; auto& o : op) {
+    if (o) o()++;
+  }
+  for (auto op : optional<operation_reporter>()) {
+    if (op) op()++;
+  }
 }
 void function_for_knowledge(char* volatile a) {
   USE_MJZ_NS();
