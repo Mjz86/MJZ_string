@@ -11,6 +11,8 @@ concept to_concept = B;
 template <typename T,template<typename>typename B>
 concept t_to_concept = B<T>::value;
 /*
+* NOTE :
+* i think this class was a failure beacuse of the big memory and time complecity mem= O(n^2)  time=O(n^2)
 * TODO:
 * add invalid operations for the moment that they aren't convertible  
 */
@@ -522,6 +524,17 @@ void show_if_with_optional() {
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   optional<operation_reporter> o;
+  /*
+  * PLANS :
+  *for some unknown reason the auto complete doesn't work on my msvc for big classes like this  
+  *the error part of the optional is in construction and may take a while to complete because of the mjz optional complexity 
+  *and powerful unsafe-safe  user API functions .
+  *
+  *time is limited so  the minimal  mjz string should wait a bit  for the optional / Result  class to complete
+  *and then for the revamp of the allocators and some mess that should be cleaned 
+  *and then for the vectors and the classes dependent on dynamic allocators to update api and finally then 
+  *the minimal mjz string will be written 
+  */
   return 0;
-  
+ 
 }
