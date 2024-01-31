@@ -521,5 +521,7 @@ void show_if_with_optional() {
 #include <iostream>
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
+  optional<operation_reporter> o;
   return 0;
+  
 }

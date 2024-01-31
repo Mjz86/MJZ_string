@@ -1082,8 +1082,6 @@ class initilizer_in_constructor_helper_class_t {
   }
 };
 
-
-
 template <typename T>
 struct mjz_resource_acquisition_is_initialization_template {
   T obj;
@@ -1097,7 +1095,6 @@ struct mjz_resource_acquisition_is_initialization_template {
     destructor(std::move(obj));
   }
 };
-
 
 template <size_t N>
 using initilizer_helper_class_t = initilizer_in_constructor_helper_class_t<N>;
@@ -9579,63 +9576,99 @@ template <
 using optional_pointer_refrence_template_t =
     optional_pointer_refrence_class_template_t<std::remove_volatile_t<T_ref>,
                                                mutable_ptr, level>;
+enum mjz_stack_obj_warper_template_t_data_states : uint8_t {
+  in_union,
+  in_aligned_chars,
+  in_chars
+};
+template <typename Error_T>
+struct mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t {
+  using Error_t = Error_T;
+  constexpr static const bool class_has_Error = true;
+};
+template <>
+struct mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
+    void> {
+  using Error_t = bool;
+  constexpr static const bool class_has_Error = false;
+};
 
-template <typename T, class obj_crtr, bool m_in_uinion,
+template <typename T, C_mjz_obj_manager obj_crtr, C_mjz_obj_manager err_crtr,
+          mjz_stack_obj_warper_template_t_data_states m_in_uinion,
           typename in_Error_t = void>
-struct mjz_stack_obj_warper_template_t_helper : protected obj_crtr {
+struct mjz_stack_obj_warper_deafualt_data_storage_template_t
+    : protected obj_crtr,
+      protected err_crtr {
  private:
   template <typename Error_T>
-  struct select_err_t {
-    using Error_t = Error_T;
-    constexpr static const bool class_has_Error = true;
-  };
-  template <>
-  struct select_err_t<void> {
-    using Error_t = bool;
-    constexpr static const bool class_has_Error = false;
-  };
+  using select_err_t =
+      mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
+          Error_T>;
   using BS = obj_crtr;
-  template <bool is_in_uinion, bool condition = true>
-  union UDB_t {};
-  template <>
-  union UDB_t<false, std::is_fundamental_v<T>> {
-    uint8_t f;
-    alignas(BS::alignment) /*aliens with T */ mutable uint8_t
-        mm_data[BS::size_of_type()];
-    alignas(BS::alignment) uint8_t m_data[BS::size_of_type()];
-    constexpr inline T &obj_ref() { return *(T *)m_data; }
-    constexpr inline const T &obj_ref() const { return *(const T *)m_data; }
-    UDB_t() {}   // no init
-    ~UDB_t() {}  // no deinit
-  };
-  template <>
-  union UDB_t<false, !std::is_fundamental_v<T>> {
-    uint8_t f;
-    alignas(1) /*no alinement*/ mutable uint8_t mm_data[BS::size_of_type()];
-    alignas(1) uint8_t m_data[BS::size_of_type()];
-    constexpr inline T &obj_ref() { return *(T *)m_data; }
-    constexpr inline const T &obj_ref() const { return *(const T *)m_data; }
-    UDB_t() {}   // no init
-    ~UDB_t() {}  // no deinit
-  };
-  template <>
-  union UDB_t<true, true> {
-    uint8_t f;
-    mutable uint8_t mm_data[BS::size_of_type()];
-    uint8_t m_data[BS::size_of_type()];
-    constexpr inline T &obj_ref() { return obj; }
-    constexpr inline const T &obj_ref() const { return obj; }
-    T obj;
-    UDB_t() {}   // no init
-    ~UDB_t() {}  // no deinit
-  };
-  UDB_t<m_in_uinion, true> m_obj_buf{};
-  enum class data_state : uint8_t { none = 0, value, error };
 
  public:
   using Error_t = typename select_err_t<in_Error_t>::Error_t;
   constexpr static const bool class_has_Error =
       select_err_t<in_Error_t>::class_has_Error;
+
+ private:
+  using err_crtr_t = err_crtr;
+  using obj_crtr_t = obj_crtr;
+  using unsafe_err_t =
+      typename err_crtr_t::template simple_unsafe_init_obj_wrpr<false, false>;
+  template <mjz_stack_obj_warper_template_t_data_states is_in_uinion>
+  union UDB_t {};
+  template <>
+  union UDB_t<mjz_stack_obj_warper_template_t_data_states::in_aligned_chars> {
+    const constexpr static size_t alinement_v =
+        calucate::KMM_algo(BS::alignment, alignof(unsafe_err_t));
+    uint8_t f;
+    alignas(alinement_v) /*aliens with T */ mutable uint8_t
+        mm_data[BS::size_of_type()];
+    alignas(alinement_v) uint8_t m_data[BS::size_of_type()];
+    constexpr inline T &obj_ref() { return *(T *)m_data; }
+    constexpr inline const T &obj_ref() const { return *(const T *)m_data; }
+    constexpr inline unsafe_err_t &err_ref() { return *(unsafe_err_t *)m_data; }
+    constexpr inline const unsafe_err_t &err_ref() const {
+      return *(const unsafe_err_t *)m_data;
+    }
+    UDB_t() {}   // no init
+    ~UDB_t() {}  // no deinit
+  };
+  template <>
+  union UDB_t<mjz_stack_obj_warper_template_t_data_states::in_chars> {
+    uint8_t f;
+    alignas(1) /*no alinement*/ mutable uint8_t mm_data[BS::size_of_type()];
+    alignas(1) uint8_t m_data[BS::size_of_type()];
+    constexpr inline T &obj_ref() { return *(T *)m_data; }
+    constexpr inline const T &obj_ref() const { return *(const T *)m_data; }
+
+    constexpr inline unsafe_err_t &err_ref() { return *(unsafe_err_t *)m_data; }
+    constexpr inline const unsafe_err_t &err_ref() const {
+      return *(const unsafe_err_t *)m_data;
+    }
+    UDB_t() {}   // no init
+    ~UDB_t() {}  // no deinit
+  };
+  template <>
+  union UDB_t<mjz_stack_obj_warper_template_t_data_states::in_union> {
+    uint8_t f;
+    mutable uint8_t mm_data[BS::size_of_type()];
+    uint8_t m_data[BS::size_of_type()];
+    constexpr inline T &obj_ref() { return obj; }
+    constexpr inline const T &obj_ref() const { return obj; }
+
+    constexpr inline unsafe_err_t &err_ref() { return error; }
+    constexpr inline const unsafe_err_t &err_ref() const { return error; }
+    T obj;
+    unsafe_err_t error;
+    UDB_t() {}   // no init
+    ~UDB_t() {}  // no deinit
+  };
+  UDB_t<m_in_uinion> m_obj_buf{};
+
+ public:
+  enum class data_state : uint8_t { none = 0, value, error };
   using Type = T;
   using BS = obj_crtr;
   static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
@@ -9665,12 +9698,26 @@ struct mjz_stack_obj_warper_template_t_helper : protected obj_crtr {
   }
   template <>
   constexpr inline const Type *m_data<Type>() const {
-    return this->addressof(m_obj_buf.obj_ref());
+    return obj_crtr_t::addressof(m_obj_buf.obj_ref());
   }
 
   template <>
   constexpr inline Type *m_data<Type>() {
-    return this->addressof(m_obj_buf.obj_ref());
+    return obj_crtr_t::addressof(m_obj_buf.obj_ref());
+  }
+
+  template <>
+  constexpr inline Error_t *mm_data<Error_t>() {
+    return m_obj_buf.err_ref().ptr();
+  }
+  template <>
+  constexpr inline const Error_t *m_data<Error_t>() const {
+    return m_obj_buf.err_ref().ptr();
+  }
+
+  template <>
+  constexpr inline Error_t *m_data<Error_t>() {
+    return m_obj_buf.err_ref().ptr();
   }
 
   template <>
@@ -9700,34 +9747,143 @@ struct mjz_stack_obj_warper_template_t_helper : protected obj_crtr {
   constexpr inline bool get_has_data() const noexcept {
     return m_state == data_state::value;
   }
-  constexpr inline void base_notify_unsafe_init_start() {}
-  constexpr inline void base_notify_unsafe_deinit_start() {}
-  constexpr inline void base_notify_unsafe_init_fail() {
+  mjz_stack_obj_warper_deafualt_data_storage_template_t() {}
+  ~mjz_stack_obj_warper_deafualt_data_storage_template_t() {
+    if (get_has_data()) {
+      obj_crtr_t::destroy_at(m_data<Type>());
+      /* i really dont like this condition*/
+      /*Throw<const char*const>(" unexpected leaked object ");*/
+    } else if constexpr (!class_has_Error) {
+      m_state = data_state::none;
+      return;
+    }
+    if (get_has_error())
+      destrouy_err();
+    else
+      m_state = data_state::none;
+  }
+
+ private:
+  constexpr inline void destrouy_err() {
+    if constexpr (!class_has_Error) {
+      data_state::none;
+      return;
+    }
+    if (get_has_error()) {
+      m_obj_buf.err_ref().unsafe_destroy();
+      m_state = data_state::none;
+    }
+  }
+
+ public:
+  constexpr inline void base_unsafe_unsafe_set_type(data_state cast_to_type) {
+    m_state = cast_to_type;
+  }
+
+ public:
+  constexpr inline void base_notify_value_unsafe_init_start() {
+    if (get_has_data()) {
+      obj_crtr_t::destroy_at(m_data<Type>());
+    } else if constexpr (!class_has_Error)
+      return;
+    else if (get_has_error())
+      destrouy_err();
     m_state = data_state::none;
   }
-  constexpr inline void base_notify_unsafe_deinit_fail() {}
-  constexpr inline void base_notify_unsafe_init_end() {
+  constexpr inline void base_notify_value_unsafe_deinit_start() {
+    if constexpr (!class_has_Error) {
+      return;
+    }
+    if (get_has_error()) {
+      m_obj_buf.err_ref().unsafe_destroy();
+    }
+    /* else if (!get_has_data()) {
+    * i really dont like this condition
+    *Throw<const char*const>(" unexpected leaked object ");
+    }*/
+  }
+  constexpr inline void base_notify_value_unsafe_init_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_value_unsafe_deinit_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_value_unsafe_init_end() {
     m_state = data_state::value;
   }
-  constexpr inline void base_notify_unsafe_deinit_end() {
+  constexpr inline void base_notify_value_unsafe_deinit_end() {
+    m_state = data_state::none;
+  }
+
+  constexpr inline void base_notify_error_unsafe_init_start() {
+    if (get_has_data()) {
+      obj_crtr_t::destroy_at(m_data<Type>());
+    } else if constexpr (!class_has_Error)
+      return;
+    else if (get_has_error())
+      destrouy_err();
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_error_unsafe_deinit_start() {
+    if constexpr (!class_has_Error) {
+      return;
+    }
+    if (get_has_error()) {
+      m_obj_buf.err_ref().unsafe_destroy();
+    }
+    /* else if (!get_has_data()) {
+    * i really dont like this condition
+    *Throw<const char*const>(" unexpected leaked object ");
+    }*/
+  }
+  constexpr inline void base_notify_error_unsafe_init_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_error_unsafe_deinit_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_error_unsafe_init_end() {
+    m_state = data_state::error;
+  }
+  constexpr inline void base_notify_error_unsafe_deinit_end() {
     m_state = data_state::none;
   }
 };
-template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
-          C_mjz_temp_type_obj_algorithims_warpper my_obj_creator_t =
-              mjz_temp_type_obj_algorithims_warpper_t<
-                  std::remove_cvref_t<my_iner_Type_>>,
-          bool do_error_check = 1, bool use_object_in_union = false,
-          typename = std::enable_if_t<std::negation_v<
-              std::is_array<std::remove_cvref_t<my_iner_Type_>>>>>
+template <typename T, bool can_be_void>
+concept C_is_valid_optional_type_helper =
+    requires() {
+      requires std::is_same_v<std::remove_cvref_t<T>, T>;
+      requires !std::is_array_v<T>;
+    };
+template <typename T, bool can_be_void = 0>
+concept C_is_valid_optional_type =
+    C_is_valid_optional_type_helper<T, can_be_void> ||
+    (can_be_void && std::is_same_v<void, T>);
+
+template <
+    C_is_valid_optional_type my_iner_Type_,
+    bool construct_obj_on_constructor = true,
+    C_mjz_temp_type_obj_algorithims_warpper my_obj_creator_t =
+        mjz_temp_type_obj_algorithims_warpper_t<my_iner_Type_>,
+    bool do_error_check = 1, bool use_object_in_union = false,
+    template <typename, class, class,
+              mjz_stack_obj_warper_template_t_data_states, class>
+    class mjz_stack_obj_warper_data_storage_template_t =
+        mjz_stack_obj_warper_deafualt_data_storage_template_t,
+    C_is_valid_optional_type<1> data_strorage_in_Error_t = void,
+    C_mjz_temp_type_obj_algorithims_warpper my_err_creator_t =
+        mjz_temp_type_obj_algorithims_warpper_t<
+            mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
+                data_strorage_in_Error_t>>>
 struct mjz_stack_obj_warper_template_class_t
-    : protected mjz_stack_obj_warper_template_t_helper<
-          std::remove_cvref_t<my_iner_Type_>, my_obj_creator_t,
-          use_object_in_union>  // for that 1 exetera
-                                // (compiler added ) memory
-{
+    : private mjz_stack_obj_warper_data_storage_template_t<
+          my_iner_Type_, my_obj_creator_t, my_err_creator_t,
+          use_object_in_union
+              ? mjz_stack_obj_warper_template_t_data_states::in_union
+              : mjz_stack_obj_warper_template_t_data_states::in_aligned_chars,
+          data_strorage_in_Error_t> {
  public:
-  using Type = std::remove_cvref_t<my_iner_Type_>;
+  using Type = my_iner_Type_;
   using my_totaly_uniuqe_type_name_of_content_type = Type;
   using my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t =
       Type;
@@ -9737,12 +9893,16 @@ struct mjz_stack_obj_warper_template_class_t
   }
 
  protected:
-  using my_obj_helper_t =
-      mjz_stack_obj_warper_template_t_helper<std::remove_cvref_t<my_iner_Type_>,
-                                             my_obj_creator_t,
-                                             use_object_in_union>;
+  using my_obj_helper_t = mjz_stack_obj_warper_data_storage_template_t<
+      my_iner_Type_, my_obj_creator_t, my_err_creator_t,
+      use_object_in_union
+          ? mjz_stack_obj_warper_template_t_data_states::in_union
+          : mjz_stack_obj_warper_template_t_data_states::in_aligned_chars,
+      data_strorage_in_Error_t>;
+  using my_err_helper_t = my_obj_helper_t;
 
  public:
+  using err_crtr_t = my_obj_helper_t::err_crtr_t;
   using Error_t = my_obj_helper_t::Error_t;
   constexpr static const bool class_has_Error =
       my_obj_helper_t::class_has_Error;
@@ -9757,6 +9917,15 @@ struct mjz_stack_obj_warper_template_class_t
   }
   constexpr inline my_obj_helper_t &&m_obj_helper() && { return move_me(); }
 
+  constexpr inline const my_err_helper_t &m_err_helper() const & {
+    return *this;
+  }
+  constexpr inline my_err_helper_t &m_err_helper() & { return *this; }
+  constexpr inline const my_err_helper_t &&m_err_helper() const && {
+    return move_me();
+  }
+  constexpr inline my_err_helper_t &&m_err_helper() && { return move_me(); }
+
   constexpr inline const my_obj_creator_t &m_obj_creator() const & {
     return *this;
   }
@@ -9765,6 +9934,15 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
   constexpr inline my_obj_creator_t &&m_obj_creator() && { return move_me(); }
+
+  constexpr inline const my_err_creator_t &m_err_creator() const & {
+    return *this;
+  }
+  constexpr inline my_err_creator_t &m_err_creator() & { return *this; }
+  constexpr inline const my_err_creator_t &&m_err_creator() const && {
+    return move_me();
+  }
+  constexpr inline my_err_creator_t &&m_err_creator() && { return move_me(); }
 
  private:
   constexpr inline Type *OP() & { return m_obj_helper().m_data<Type>(); }
@@ -9779,6 +9957,19 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const Type &&O() const && {
     return std::move(*m_obj_helper().m_data<Type>());
   }
+  constexpr inline Error_t *EP() & { return m_err_helper().m_data<Error_t>(); }
+  constexpr inline Error_t &E() & { return *EP(); }
+  constexpr inline const Error_t *EP() const & {
+    return m_err_helper().m_data<Error_t>();
+  }
+  constexpr inline const Error_t &E() const & { return *EP(); }
+  constexpr inline Error_t &&E() && {
+    return std::move(*m_err_helper().m_data<Error_t>());
+  }
+  constexpr inline const Error_t &&E() const && {
+    return std::move(*m_err_helper().m_data<Error_t>());
+  }
+
   constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                             Type &&src) {
     if (plc_has_obj) {
@@ -9807,7 +9998,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                             args_t &&...args) {
     if (plc_has_obj) {
-      uint8_t buf[sizeof_Type];
+      alignas(my_obj_creator_t::alignment) uint8_t buf[sizeof_Type];
       Type *that = (Type *)buf;
       m_obj_creator().construct_at(that, std::forward<args_t>(args)...);
       m_obj_creator().obj_go_to_obj(*place, std::move(*that));
@@ -9847,14 +10038,14 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <typename... args_t>
   constexpr inline void construct(args_t &&...args) {
-    notify_unsafe_init_in([&](const auto &) {
+    notify_unsafe_value_init_in([&](const auto &) {
       return pointer_to_unsafe_data() ==
              construct_in_place(pointer_to_unsafe_data(), get_has_data(),
                                 std::forward<args_t>(args)...);
     });
   }
   constexpr inline void destroy() {
-    notify_unsafe_deinit_in_if(get_has_data(), [&](const auto &) {
+    notify_unsafe_value_deinit_in_if(get_has_data(), [&](const auto &) {
       destroy_at_place(pointer_to_unsafe_data());
       return true;
     });
@@ -9869,6 +10060,106 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline Type *copy_to_place(Type *dest, bool dest_has_obj) {
     if (has_data())
       return construct_in_place(dest, dest_has_obj, *pointer_to_unsafe_data());
+    return 0;
+  }
+
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   Error_t &&src) {
+    if (plc_has_obj) {
+      m_err_creator().obj_go_to_obj(*place, std::move(src));
+      return place;
+    }
+    return m_err_creator().construct_at(place, std::move(src));
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   Error_t &src) {
+    if (plc_has_obj) {
+      m_err_creator().obj_go_to_obj(*place, src);
+      return place;
+    }
+    return m_err_creator().construct_at(place, src);
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   const Error_t &src) {
+    if (plc_has_obj) {
+      m_err_creator().obj_go_to_obj(*place, src);
+      return place;
+    }
+    return m_err_creator().construct_at(place, src);
+  }
+  template <typename... args_t>
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   args_t &&...args) {
+    if (plc_has_obj) {
+      alignas(my_err_creator_t::alignment) uint8_t buf[sizeof_Type];
+      Error_t *that = (Error_t *)buf;
+      m_err_creator().construct_at(that, std::forward<args_t>(args)...);
+      m_err_creator().obj_go_to_obj(*place, std::move(*that));
+      m_err_creator().destroy_at(that);
+      return place;
+    }
+    return m_err_creator().construct_at(place, std::forward<args_t>(args)...);
+  }
+  template <typename U,
+            typename = std::enable_if_t<std::is_fundamental<Error_t>>>
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj, U &&arg) {
+    if (plc_has_obj) {
+      Error_t buf = m_err_creator().constructor(std::forward<U>(arg));
+      m_err_creator().obj_go_to_obj(*place, std::move(buf));
+      return place;
+    }
+    return m_err_creator().construct_at(place, std::forward<U>(arg));
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj) {
+    if (plc_has_obj) {
+      m_err_creator().destroy_at(place);
+      m_err_creator().construct_at(place);
+      return place;
+    }
+    return m_err_creator().construct_at(place);
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   Error_t *src) {
+    return err_construct_in_place(place, *src);
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   const Error_t *src) {
+    return err_construct_in_place(place, *src);
+  }
+  constexpr inline void err_destroy_at_place(Error_t *place) {
+    m_err_creator().destroy_at(place);
+  }
+  template <typename... args_t>
+  constexpr inline void err_construct(args_t &&...args) {
+    notify_unsafe_error_init_in([&](const auto &) {
+      return EP() == err_construct_in_place(EP(), get_has_error(),
+                                            std::forward<args_t>(args)...);
+    });
+  }
+  constexpr inline void err_destroy() {
+    notify_unsafe_error_deinit_in_if(get_has_error(), [&](const auto &) {
+      err_destroy_at_place(EP());
+      return true;
+    });
+  }
+  constexpr inline Error_t *err_move_to_place(Error_t *dest,
+                                              bool dest_has_obj) {
+    if (has_error())
+      return err_construct_in_place(dest, dest_has_obj, std::move(*EP()));
+    err_destroy();
+    return 0;
+  }
+  constexpr inline Error_t *err_copy_to_place(Error_t *dest,
+                                              bool dest_has_obj) {
+    if (has_error()) return err_construct_in_place(dest, dest_has_obj, *EP());
     return 0;
   }
 
@@ -9901,74 +10192,149 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const Type *uop() const && = delete;
 
   // Ultra nunsafe
+  using data_state_t = typename my_obj_helper_t::data_state;
+  using data_state = data_state_t;
+  constexpr const static data_state_t cast_to_none = data_state_t::none;
+
+  constexpr const static data_state_t cast_to_value = data_state_t::value;
+
+  constexpr const static data_state_t cast_to_error = data_state_t::error;
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_init_start() & {
-    m_obj_helper().base_notify_unsafe_init_start();
+  unsafe_unsafe_set_type(data_state cast_to_state) & {
+    m_obj_helper().base_unsafe_unsafe_set_type(cast_to_state);
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_deinit_start() & {
-    m_obj_helper().base_notify_unsafe_deinit_start();
+  unsafe_notify_value_unsafe_init_start() & {
+    m_obj_helper().base_notify_value_unsafe_init_start();
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_init_start() && {
-    m_obj_helper().base_notify_unsafe_init_start();
+  unsafe_notify_value_unsafe_deinit_start() & {
+    m_obj_helper().base_notify_value_unsafe_deinit_start();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_init_start() && {
+    m_obj_helper().base_notify_value_unsafe_init_start();
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_deinit_start() && {
-    m_obj_helper().base_notify_unsafe_deinit_start();
+  unsafe_notify_value_unsafe_deinit_start() && {
+    m_obj_helper().base_notify_value_unsafe_deinit_start();
     return move_me();
   }
 
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_init_fail() & {
-    m_obj_helper().base_notify_unsafe_init_fail();
+  unsafe_notify_value_unsafe_init_fail() & {
+    m_obj_helper().base_notify_value_unsafe_init_fail();
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_deinit_fail() & {
-    m_obj_helper().base_notify_unsafe_deinit_fail();
+  unsafe_notify_value_unsafe_deinit_fail() & {
+    m_obj_helper().base_notify_value_unsafe_deinit_fail();
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_init_fail() && {
-    m_obj_helper().base_notify_unsafe_init_fail();
+  unsafe_notify_value_unsafe_init_fail() && {
+    m_obj_helper().base_notify_value_unsafe_init_fail();
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_deinit_fail() && {
-    m_obj_helper().base_notify_unsafe_deinit_fail();
+  unsafe_notify_value_unsafe_deinit_fail() && {
+    m_obj_helper().base_notify_value_unsafe_deinit_fail();
     return move_me();
   }
 
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_init_end() & {
-    m_obj_helper().base_notify_unsafe_init_end();
+  unsafe_notify_value_unsafe_init_end() & {
+    m_obj_helper().base_notify_value_unsafe_init_end();
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_deinit_end() & {
-    m_obj_helper().base_notify_unsafe_deinit_end();
+  unsafe_notify_value_unsafe_deinit_end() & {
+    m_obj_helper().base_notify_value_unsafe_deinit_end();
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_init_end() && {
-    m_obj_helper().base_notify_unsafe_init_end();
+  unsafe_notify_value_unsafe_init_end() && {
+    m_obj_helper().base_notify_value_unsafe_init_end();
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  unsafe_notify_unsafe_deinit_end() && {
-    m_obj_helper().base_notify_unsafe_deinit_end();
+  unsafe_notify_value_unsafe_deinit_end() && {
+    m_obj_helper().base_notify_value_unsafe_deinit_end();
+    return move_me();
+  }
+
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_start() & {
+    m_err_helper().base_notify_error_unsafe_init_start();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_start() & {
+    m_err_helper().base_notify_error_unsafe_deinit_start();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_start() && {
+    m_err_helper().base_notify_error_unsafe_init_start();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_start() && {
+    m_err_helper().base_notify_error_unsafe_deinit_start();
+    return move_me();
+  }
+
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_fail() & {
+    m_err_helper().base_notify_error_unsafe_init_fail();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_fail() & {
+    m_err_helper().base_notify_error_unsafe_deinit_fail();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_fail() && {
+    m_err_helper().base_notify_error_unsafe_init_fail();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_fail() && {
+    m_err_helper().base_notify_error_unsafe_deinit_fail();
+    return move_me();
+  }
+
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_end() & {
+    m_err_helper().base_notify_error_unsafe_init_end();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_end() & {
+    m_err_helper().base_notify_error_unsafe_deinit_end();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_end() && {
+    m_err_helper().base_notify_error_unsafe_init_end();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_end() && {
+    m_err_helper().base_notify_error_unsafe_deinit_end();
     return move_me();
   }
 
   template <class function_type, typename... Ts>
       constexpr inline mjz_stack_obj_warper_template_class_t &
-      me_notify_unsafe_init_or_deinit_in(bool is_init,
-                                         function_type &&inner_function,
-                                         Ts... args) &
+      me_notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &
         requires requires(function_type &&inner_function) {
                    {
                      inner_function(*this, std::forward<Ts>(args)...)
@@ -9976,29 +10342,29 @@ struct mjz_stack_obj_warper_template_class_t
                  }
   {
     if (is_init) {
-      unsafe_notify_unsafe_init_start();
+      unsafe_notify_value_unsafe_init_start();
       if (std::forward<function_type>(inner_function)(
               *this, std::forward<Ts>(args)...)) {
-        unsafe_notify_unsafe_init_end();
+        unsafe_notify_value_unsafe_init_end();
       } else {
-        unsafe_notify_unsafe_init_fail();
+        unsafe_notify_value_unsafe_init_fail();
       }
       return *this;
     }
-    unsafe_notify_unsafe_deinit_start();
+    unsafe_notify_value_unsafe_deinit_start();
     if (std::forward<function_type>(inner_function)(
             *this, std::forward<Ts>(args)...)) {
-      unsafe_notify_unsafe_deinit_end();
+      unsafe_notify_value_unsafe_deinit_end();
     } else {
-      unsafe_notify_unsafe_deinit_fail();
+      unsafe_notify_value_unsafe_deinit_fail();
     }
     return *this;
   }
   template <class function_type, typename... Ts>
       constexpr inline mjz_stack_obj_warper_template_class_t &&
-      me_notify_unsafe_init_or_deinit_in(bool is_init,
-                                         function_type &&inner_function,
-                                         Ts... args) &&
+      me_notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &&
         requires requires(function_type &&inner_function) {
                    {
                      inner_function(this->move_me(), std::forward<Ts>(args)...)
@@ -10006,42 +10372,42 @@ struct mjz_stack_obj_warper_template_class_t
                  }
   {
     if (is_init) {
-      unsafe_notify_unsafe_init_start();
+      unsafe_notify_value_unsafe_init_start();
       if (std::forward<function_type>(inner_function)(
               move_me(), std::forward<Ts>(args)...)) {
-        unsafe_notify_unsafe_init_end();
+        unsafe_notify_value_unsafe_init_end();
       } else {
-        unsafe_notify_unsafe_init_fail();
+        unsafe_notify_value_unsafe_init_fail();
       }
       return move_me();
     }
-    unsafe_notify_unsafe_deinit_start();
+    unsafe_notify_value_unsafe_deinit_start();
     if (std::forward<function_type>(inner_function)(
             move_me(), std::forward<Ts>(args)...)) {
-      unsafe_notify_unsafe_deinit_end();
+      unsafe_notify_value_unsafe_deinit_end();
     } else {
-      unsafe_notify_unsafe_deinit_fail();
+      unsafe_notify_value_unsafe_deinit_fail();
     }
     return move_me();
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  me_notify_unsafe_init_or_deinit_in_if(bool do_notify, bool is_init,
-                                        function_type &&inner_function,
-                                        Ts... args) & {
+  me_notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) & {
     if (do_notify)
-      me_notify_unsafe_init_or_deinit_in(
+      me_notify_unsafe_value_init_or_deinit_in(
           is_init, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  me_notify_unsafe_init_or_deinit_in_if(bool do_notify, bool is_init,
-                                        function_type &&inner_function,
-                                        Ts... args) && {
+  me_notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) && {
     if (do_notify)
-      move_me().me_notify_unsafe_init_or_deinit_in(
+      move_me().me_notify_unsafe_value_init_or_deinit_in(
           is_init, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return move_me();
@@ -10049,16 +10415,16 @@ struct mjz_stack_obj_warper_template_class_t
 
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  notify_unsafe_deinit_in(function_type &&inner_function, Ts... args) & {
-    notify_unsafe_init_or_deinit_in(false,
-                                    std::forward<function_type>(inner_function),
-                                    std::forward<Ts>(args)...);
+  notify_unsafe_value_deinit_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_value_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  notify_unsafe_deinit_in(function_type &&inner_function, Ts... args) && {
-    move_me().notify_unsafe_init_or_deinit_in(
+  notify_unsafe_value_deinit_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_value_init_or_deinit_in(
         false, std::forward<function_type>(inner_function),
         std::forward<Ts>(args)...);
     return move_me();
@@ -10066,33 +10432,35 @@ struct mjz_stack_obj_warper_template_class_t
 
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  me_notify_unsafe_deinit_in(function_type &&inner_function, Ts... args) & {
-    me_notify_unsafe_init_or_deinit_in(
+  me_notify_unsafe_value_deinit_in(function_type &&inner_function,
+                                   Ts... args) & {
+    me_notify_unsafe_value_init_or_deinit_in(
         false, std::forward<function_type>(inner_function),
         std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  me_notify_unsafe_deinit_in(function_type &&inner_function, Ts... args) && {
-    move_me().me_notify_unsafe_init_or_deinit_in(
+  me_notify_unsafe_value_deinit_in(function_type &&inner_function,
+                                   Ts... args) && {
+    move_me().me_notify_unsafe_value_init_or_deinit_in(
         false, std::forward<function_type>(inner_function),
         std::forward<Ts>(args)...);
     return move_me();
   }
 
   template <class function_type, typename... Ts>
-  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_init_in(
-      function_type &&inner_function, Ts... args) & {
-    notify_unsafe_init_or_deinit_in(true,
-                                    std::forward<function_type>(inner_function),
-                                    std::forward<Ts>(args)...);
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_value_init_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_value_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  notify_unsafe_init_in(function_type &&inner_function, Ts... args) && {
-    move_me().notify_unsafe_init_or_deinit_in(
+  notify_unsafe_value_init_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_value_init_or_deinit_in(
         true, std::forward<function_type>(inner_function),
         std::forward<Ts>(args)...);
     return move_me();
@@ -10100,16 +10468,17 @@ struct mjz_stack_obj_warper_template_class_t
 
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  me_notify_unsafe_init_in(function_type &&inner_function, Ts... args) & {
-    me_notify_unsafe_init_or_deinit_in(
+  me_notify_unsafe_value_init_in(function_type &&inner_function, Ts... args) & {
+    me_notify_unsafe_value_init_or_deinit_in(
         true, std::forward<function_type>(inner_function),
         std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  me_notify_unsafe_init_in(function_type &&inner_function, Ts... args) && {
-    move_me().me_notify_unsafe_init_or_deinit_in(
+  me_notify_unsafe_value_init_in(function_type &&inner_function,
+                                 Ts... args) && {
+    move_me().me_notify_unsafe_value_init_or_deinit_in(
         true, std::forward<function_type>(inner_function),
         std::forward<Ts>(args)...);
     return move_me();
@@ -10117,41 +10486,22 @@ struct mjz_stack_obj_warper_template_class_t
 
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  notify_unsafe_deinit_in_if(bool do_notify, function_type &&inner_function,
-                             Ts... args) & {
+  notify_unsafe_value_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) & {
     if (do_notify)
-      notify_unsafe_init_or_deinit_in(
+      notify_unsafe_value_init_or_deinit_in(
           false, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  notify_unsafe_deinit_in_if(bool do_notify, function_type &&inner_function,
-                             Ts... args) && {
+  notify_unsafe_value_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) && {
     if (do_notify)
-      move_me().notify_unsafe_init_or_deinit_in(
-          false, std::forward<function_type>(inner_function),
-          std::forward<Ts>(args)...);
-    return move_me();
-  }
-
-  template <class function_type, typename... Ts>
-  constexpr inline mjz_stack_obj_warper_template_class_t &
-  me_notify_unsafe_deinit_in_if(bool do_notify, function_type &&inner_function,
-                                Ts... args) & {
-    if (do_notify)
-      me_notify_unsafe_init_or_deinit_in(
-          false, std::forward<function_type>(inner_function),
-          std::forward<Ts>(args)...);
-    return *this;
-  }
-  template <class function_type, typename... Ts>
-  constexpr inline mjz_stack_obj_warper_template_class_t &&
-  me_notify_unsafe_deinit_in_if(bool do_notify, function_type &&inner_function,
-                                Ts... args) && {
-    if (do_notify)
-      move_me().me_notify_unsafe_init_or_deinit_in(
+      move_me().notify_unsafe_value_init_or_deinit_in(
           false, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return move_me();
@@ -10159,20 +10509,43 @@ struct mjz_stack_obj_warper_template_class_t
 
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  notify_unsafe_init_in_if(bool do_notify, function_type &&inner_function,
-                           Ts... args) & {
+  me_notify_unsafe_value_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) & {
     if (do_notify)
-      notify_unsafe_init_or_deinit_in(
+      me_notify_unsafe_value_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_value_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_value_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_value_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) & {
+    if (do_notify)
+      notify_unsafe_value_init_or_deinit_in(
           true, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  notify_unsafe_init_in_if(bool do_notify, function_type &&inner_function,
-                           Ts... args) && {
+  notify_unsafe_value_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) && {
     if (do_notify)
-      move_me().notify_unsafe_init_or_deinit_in(
+      move_me().notify_unsafe_value_init_or_deinit_in(
           true, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return move_me();
@@ -10180,20 +10553,22 @@ struct mjz_stack_obj_warper_template_class_t
 
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  me_notify_unsafe_init_in_if(bool do_notify, function_type &&inner_function,
-                              Ts... args) & {
+  me_notify_unsafe_value_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) & {
     if (do_notify)
-      me_notify_unsafe_init_or_deinit_in(
+      me_notify_unsafe_value_init_or_deinit_in(
           true, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  me_notify_unsafe_init_in_if(bool do_notify, function_type &&inner_function,
-                              Ts... args) && {
+  me_notify_unsafe_value_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) && {
     if (do_notify)
-      move_me().me_notify_unsafe_init_or_deinit_in(
+      move_me().me_notify_unsafe_value_init_or_deinit_in(
           true, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return move_me();
@@ -10201,9 +10576,9 @@ struct mjz_stack_obj_warper_template_class_t
 
   template <class function_type, typename... Ts>
       constexpr inline mjz_stack_obj_warper_template_class_t &
-      notify_unsafe_init_or_deinit_in(bool is_init,
-                                      function_type &&inner_function,
-                                      Ts... args) &
+      notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &
         requires requires(function_type &&inner_function) {
                    {
                      inner_function(this->uuop(), std::forward<Ts>(args)...)
@@ -10211,29 +10586,29 @@ struct mjz_stack_obj_warper_template_class_t
                  }
   {
     if (is_init) {
-      unsafe_notify_unsafe_init_start();
+      unsafe_notify_value_unsafe_init_start();
       if (std::forward<function_type>(inner_function)(
               uuop(), std::forward<Ts>(args)...)) {
-        unsafe_notify_unsafe_init_end();
+        unsafe_notify_value_unsafe_init_end();
       } else {
-        unsafe_notify_unsafe_init_fail();
+        unsafe_notify_value_unsafe_init_fail();
       }
       return *this;
     }
-    unsafe_notify_unsafe_deinit_start();
+    unsafe_notify_value_unsafe_deinit_start();
     if (std::forward<function_type>(inner_function)(
             uuop(), std::forward<Ts>(args)...)) {
-      unsafe_notify_unsafe_deinit_end();
+      unsafe_notify_value_unsafe_deinit_end();
     } else {
-      unsafe_notify_unsafe_deinit_fail();
+      unsafe_notify_value_unsafe_deinit_fail();
     }
     return *this;
   }
   template <class function_type, typename... Ts>
       constexpr inline mjz_stack_obj_warper_template_class_t &&
-      notify_unsafe_init_or_deinit_in(bool is_init,
-                                      function_type &&inner_function,
-                                      Ts... args) &&
+      notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &&
         requires requires(function_type &&inner_function) {
                    {
                      inner_function(this->uuop(), std::forward<Ts>(args)...)
@@ -10241,42 +10616,369 @@ struct mjz_stack_obj_warper_template_class_t
                  }
   {
     if (is_init) {
-      unsafe_notify_unsafe_init_start();
+      unsafe_notify_value_unsafe_init_start();
       if (std::forward<function_type>(inner_function)(
               uuop(), std::forward<Ts>(args)...)) {
-        unsafe_notify_unsafe_init_end();
+        unsafe_notify_value_unsafe_init_end();
       } else {
-        unsafe_notify_unsafe_init_fail();
+        unsafe_notify_value_unsafe_init_fail();
       }
       return move_me();
     }
-    unsafe_notify_unsafe_deinit_start();
+    unsafe_notify_value_unsafe_deinit_start();
     if (std::forward<function_type>(inner_function)(
             uuop(), std::forward<Ts>(args)...)) {
-      unsafe_notify_unsafe_deinit_end();
+      unsafe_notify_value_unsafe_deinit_end();
     } else {
-      unsafe_notify_unsafe_deinit_fail();
+      unsafe_notify_value_unsafe_deinit_fail();
     }
     return move_me();
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &
-  notify_unsafe_init_or_deinit_in_if(bool do_notify, bool is_init,
-                                     function_type &&inner_function,
-                                     Ts... args) & {
+  notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) & {
     if (do_notify)
-      notify_unsafe_init_or_deinit_in(
+      notify_unsafe_value_init_or_deinit_in(
           is_init, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return *this;
   }
   template <class function_type, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&
-  notify_unsafe_init_or_deinit_in_if(bool do_notify, bool is_init,
-                                     function_type &&inner_function,
-                                     Ts... args) && {
+  notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) && {
     if (do_notify)
-      move_me().notify_unsafe_init_or_deinit_in(
+      move_me().notify_unsafe_value_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &
+      me_notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(*this, std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              *this, std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return *this;
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            *this, std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &&
+      me_notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &&
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->move_me(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              move_me(), std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return move_me();
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            move_me(), std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_error_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_error_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_deinit_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_deinit_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_deinit_in(function_type &&inner_function,
+                                   Ts... args) & {
+    me_notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_deinit_in(function_type &&inner_function,
+                                   Ts... args) && {
+    move_me().me_notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_init_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_init_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_init_in(function_type &&inner_function, Ts... args) & {
+    me_notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_init_in(function_type &&inner_function,
+                                 Ts... args) && {
+    move_me().me_notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) & {
+    if (do_notify)
+      notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) & {
+    if (do_notify)
+      notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &
+      notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->uuop(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              uuop(), std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return *this;
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            uuop(), std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &&
+      notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &&
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->uuop(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              uuop(), std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return move_me();
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            uuop(), std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) & {
+    if (do_notify)
+      notify_unsafe_error_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_error_init_or_deinit_in(
           is_init, std::forward<function_type>(inner_function),
           std::forward<Ts>(args)...);
     return move_me();
@@ -10416,7 +11118,7 @@ struct mjz_stack_obj_warper_template_class_t
   }
   constexpr inline mjz_stack_obj_warper_template_class_t(
       mjz_no_init_optional_t<0>) {
-    notify_unsafe_deinit_in([&](const auto &) {});
+    notify_unsafe_value_deinit_in([&](const auto &) {});
   };
 
   template <typename T0, typename... T_s>
@@ -11787,7 +12489,7 @@ return **this<=> (*other);
   constexpr inline bool get_has_error() const noexcept {
     return m_obj_helper().get_has_error();
   }
- 
+
  public:
   constexpr inline Error_t &uue() &noexcept { return *uuep(); }
   constexpr inline Error_t *uuep() &noexcept { return EP(); }
@@ -11799,20 +12501,6 @@ return **this<=> (*other);
   }
   constexpr inline const Error_t *uuep() const && = delete;
   constexpr inline Error_t *uuep() && = delete;
-
- private:
-  constexpr inline Error_t *EP() & { return m_obj_helper().m_data<Error_t>(); }
-  constexpr inline Error_t &E() & { return *EP(); }
-  constexpr inline const Error_t *EP() const & {
-    return m_obj_helper().m_data<Error_t>();
-  }
-  constexpr inline const Error_t &E() const & { return *EP(); }
-  constexpr inline Error_t &&E() && {
-    return std::move(*m_obj_helper().m_data<Error_t>());
-  }
-  constexpr inline const Error_t &&E() const && {
-    return std::move(*m_obj_helper().m_data<Error_t>());
-  }
 
  public:
   constexpr inline Error_t &e() & { return *ep(); }
@@ -11956,7 +12644,7 @@ return **this<=> (*other);
   constexpr inline mjz_stack_obj_warper_template_class_t &&fn_emplace(
       std::function<bool(T *, Args...)> construct_at_fn, Args &&...args) && {
     ~*this;
-    notify_unsafe_init_in([&](const auto &) {
+    notify_unsafe_value_init_in([&](const auto &) {
       return construct_at_fn(uuop(), std::forward<Args>(args)...);
     });
     return move_me();
@@ -11965,7 +12653,7 @@ return **this<=> (*other);
   constexpr inline mjz_stack_obj_warper_template_class_t &fn_emplace(
       std::function<bool(T *, Args...)> construct_at_fn, Args &&...args) & {
     ~*this;
-    notify_unsafe_init_in([&](const auto &) {
+    notify_unsafe_value_init_in([&](const auto &) {
       return construct_at_fn(uuop(), std::forward<Args>(args)...);
     });
     return *this;
@@ -11975,7 +12663,7 @@ return **this<=> (*other);
       std::function<bool(T *)> construct_at_fn =
           deafult_construct_at_fn<void>()) && {
     ~*this;
-    notify_unsafe_init_in(
+    notify_unsafe_value_init_in(
         [&](const auto &) { return (construct_at_fn(uuop())); });
     return move_me();
   }
@@ -11983,7 +12671,7 @@ return **this<=> (*other);
       std::function<bool(T *)> construct_at_fn =
           deafult_construct_at_fn<void>()) & {
     ~*this;
-    notify_unsafe_init_in(
+    notify_unsafe_value_init_in(
         [&](const auto &) { return (construct_at_fn(uuop())); });
     return *this;
   }
@@ -12179,7 +12867,7 @@ return **this<=> (*other);
   constexpr inline mjz_stack_obj_warper_template_class_t &copy_to(
       mjz_stack_obj_warper_template_class_t &dest) & {
     if (this != &dest)
-      dest.notify_unsafe_init_in([&](const auto &) {
+      dest.notify_unsafe_value_init_in([&](const auto &) {
         return copy_to(dest.pointer_to_unsafe_data(), dest.has_data()) ==
                dest.pointer_to_unsafe_data();
       });
@@ -12188,7 +12876,7 @@ return **this<=> (*other);
   constexpr inline mjz_stack_obj_warper_template_class_t &move_to(
       mjz_stack_obj_warper_template_class_t &dest) {
     if (this != &dest)
-      dest.notify_unsafe_init_in([&](const auto &) {
+      dest.notify_unsafe_value_init_in([&](const auto &) {
         return move_to(dest.pointer_to_unsafe_data(), dest.has_data()) ==
                dest.pointer_to_unsafe_data();
       });
@@ -15626,10 +16314,10 @@ using mjz_ref_return_helper_class_t =
     typename mjz_ref_return_helper_class<T>::type;
 
 namespace have_mjz_ard_removed {
-template<class T>
-using mjz_RAII_t =mjz_resource_acquisition_is_initialization_template<T>;
-template<class T>
-using RAII_t =mjz_RAII_t<T>;
+template <class T>
+using mjz_RAII_t = mjz_resource_acquisition_is_initialization_template<T>;
+template <class T>
+using RAII_t = mjz_RAII_t<T>;
 
 using malloc_wrpr = malloc_wrapper;
 using algorithm = static_str_algo;
