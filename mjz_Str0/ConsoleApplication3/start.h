@@ -6,6 +6,8 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <iostream>
 extern void get_main_argguments(int& argc, const char* const*& argv);
 
 class main_class {

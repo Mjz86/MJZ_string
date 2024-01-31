@@ -1,21 +1,4 @@
-/*
-String library for Wiring & Arduino
- ...mostly rewritten by Paul Stoffregen...
-Copyright (c) 2009-10 Hernando Barragan. All right reserved.
-Copyright 2011, Paul Stoffregen, paul@pjrc.com
-
-This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-*/
+// removed  the arduino string
 /*
 this is a simple fast implementation/fork of arduino string and much more...
 written by mjz https://github.com/Mjz86
@@ -86,6 +69,7 @@ constexpr inline int sprintf_alt_(char *const buffer_for_print,
 #endif
 }
 
+#define MJZ_EXPRESSION_TO_STR(HTML_TEXT) #HTML_TEXT
 /* a=target variable, b=bit number to act upon 0-n */
 #define MJZ_logic_BIT_SET(a, b) ((a) |= (1ULL << (b)))
 #define MJZ_logic_BIT_CLEAR(a, b) ((a) &= ~(1ULL << (b)))
@@ -1007,6 +991,11 @@ inline uint32_t usteejtgk_millis() { return millis(); }
 class __FlashStringHelper;
 
 namespace mjz_ard {
+typedef bool succsess_t;
+
+typedef bool failure_t;
+
+
 struct mjz_std_termenator {
   mjz_std_termenator() {}
   ~mjz_std_termenator() noexcept(false) {
@@ -1094,6 +1083,20 @@ class initilizer_in_constructor_helper_class_t {
   }
 };
 
+template <typename T>
+struct mjz_resource_acquisition_is_initialization_template {
+  T obj;
+  std::function<void(T &&)> destructor;
+  template <typename... Ts>
+  inline mjz_resource_acquisition_is_initialization_template(
+      std::function<void(T &&)> destructor_function, Ts &&...args)
+      : obj(std::forward<Ts>(args)...),
+        destructor(std::move(destructor_function)) {}
+  inline ~mjz_resource_acquisition_is_initialization_template() {
+    destructor(std::move(obj));
+  }
+};
+
 template <size_t N>
 using initilizer_helper_class_t = initilizer_in_constructor_helper_class_t<N>;
 template <size_t N>
@@ -1102,50 +1105,68 @@ using initilizer_class_t = initilizer_in_constructor_helper_class_t<N>;
 this argument shall not be used in any non mjz object or function as argument
 this is a separator just for the compiler
 */
-template <size_t NUM >
+template <size_t NUM>
 struct special_arg {
-    using me=special_arg<NUM>;
+  using me = special_arg<NUM>;
   static constexpr const size_t N = NUM;
- inline constexpr special_arg() {}
+  inline constexpr special_arg() {}
   inline constexpr special_arg(const special_arg &) {}
- inline constexpr special_arg &operator=(special_arg) { return *this; }
+  inline constexpr special_arg &operator=(special_arg) { return *this; }
 };
 template <const char *const what_function>
-struct special_arg_c   {};
+struct special_arg_c {};
 template <typename T>
-struct special_arg_t  {};
+struct special_arg_t {};
 template <size_t NUM, size_t init_if_iam_not_zero_the_base_with_me_minus_one_>
 struct special_arg_no_init_constructor_t {
-    using me=special_arg_no_init_constructor_t<NUM,init_if_iam_not_zero_the_base_with_me_minus_one_>;
-    static constexpr const size_t N=NUM;
+  using me = special_arg_no_init_constructor_t<
+      NUM, init_if_iam_not_zero_the_base_with_me_minus_one_>;
+  static constexpr const size_t N = NUM;
   static constexpr const size_t
       init_if_iam_not_zero_the_base_with_me_minus_one =
           init_if_iam_not_zero_the_base_with_me_minus_one_;
-    inline constexpr special_arg_no_init_constructor_t() {}
+  inline constexpr special_arg_no_init_constructor_t() {}
   inline constexpr special_arg_no_init_constructor_t(
       const special_arg_no_init_constructor_t &) {}
-    inline constexpr special_arg_no_init_constructor_t &operator=(
-      const special_arg_no_init_constructor_t &) {return*this;}
+  inline constexpr special_arg_no_init_constructor_t &operator=(
+      const special_arg_no_init_constructor_t &) {
+    return *this;
+  }
 };
 static const constexpr size_t
     special_arg_no_init_constructor_for_unsafe_warper_value =
-        0x0242ac12f0a285;//   just a random number
+        0x0242ac12f0a285;  //   just a random number
 template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
-using mjz_no_init_uw_special_arg=special_arg_no_init_constructor_t<special_arg_no_init_constructor_for_unsafe_warper_value,init_if_iam_not_zero_the_base_with_me_minus_one>;
+using mjz_no_init_uw_special_arg = special_arg_no_init_constructor_t<
+    special_arg_no_init_constructor_for_unsafe_warper_value,
+    init_if_iam_not_zero_the_base_with_me_minus_one>;
 
 static const constexpr size_t
-    special_arg_no_init_constructor_for_mjz_optional_value = 0x4E58B994E905F5;  //   just a random number
+    special_arg_no_init_constructor_for_mjz_optional_value =
+        0x4E58B994E905F5;  //   just a random number
 
-static const constexpr size_t
-    special_arg_init_for_mjz_optional_value =
+static const constexpr size_t special_arg_init_for_mjz_optional_value =
     (~special_arg_no_init_constructor_for_mjz_optional_value) >> 1;  //   just a
-                                                                  //   random
-                                                                  //   number
-template <size_t init_if_iam_not_zero_the_base_with_me_minus_one=0>
+                                                                     //   random
+                                                                     //   number
+template <size_t init_if_iam_not_zero_the_base_with_me_minus_one = 0>
 using mjz_no_init_optional_t = special_arg_no_init_constructor_t<
     special_arg_no_init_constructor_for_mjz_optional_value,
     init_if_iam_not_zero_the_base_with_me_minus_one>;
-using mjz_init_optional_t=special_arg<special_arg_init_for_mjz_optional_value>;
+using mjz_init_optional_t =
+    special_arg<special_arg_init_for_mjz_optional_value>;
+struct mjz_init_optional_if_t
+    : private special_arg<special_arg_init_for_mjz_optional_value + 1> {
+ private:
+  bool do_init{};
+
+ public:
+  inline constexpr mjz_init_optional_if_t(bool do_init_ = 0)
+      : do_init(do_init_) {}
+  ~mjz_init_optional_if_t() {}
+  inline constexpr operator bool() const { return do_init; }
+  inline constexpr bool operator!() const { return !do_init; }
+};
 
 template <size_t arg_Index, class U_F, class... U>
 struct mjz_get_template_argument_class_helper_t {
@@ -1507,7 +1528,7 @@ class iterator_template_t {
   using size_type = size_t;
   // using iterator_concept = std::contiguous_iterator_tag;
   constexpr inline iterator_template_t() noexcept
-      : iterator_template_t(nullptr, nullptr, (Type *)-1) {}
+      : iterator_template_t(nullptr, nullptr, nullptr) {}
   // iterator_template(Type *iter ) noexcept: m_iterator { iter } { }
   constexpr inline iterator_template_t(Type *iter, Type *min_end,
                                        Type *max_end) noexcept
@@ -3325,8 +3346,14 @@ concept C_mjz_obj_manager_helper =
              args_t &&...args) {
       { T::alignment } -> std::convertible_to<size_t>;
       { T::size_of_type_v } -> std::convertible_to<size_t>;
+      typename T::simple_unsafe_init_obj_wrpr_true_false;
+      typename T::simple_unsafe_init_obj_wrpr_false_false;
       typename T::simple_unsafe_init_obj_wrpr_true;
       typename T::simple_unsafe_init_obj_wrpr_false;
+      typename T::template simple_unsafe_init_obj_wrpr<true, true>;
+      typename T::template simple_unsafe_init_obj_wrpr<true, false>;
+      typename T::template simple_unsafe_init_obj_wrpr<false, true>;
+      typename T::template simple_unsafe_init_obj_wrpr<false, false>;
       typename T::alignment_t;
       typename T::Alignment_t;
       requires !std::is_array_v<Type>;
@@ -3387,6 +3414,10 @@ concept C_mjz_obj_manager_helper =
       {
         T::obj_copy_to_obj(static_cast<Type *>(ptr),
                            static_cast<const Type *>(ptr))
+        } -> std::same_as<Type &>;
+      {
+        T::obj_temp_copy_to_obj(static_cast<ref_t>(ref),
+                                static_cast<const rv_ref_t>(ref))
         } -> std::same_as<Type &>;
       {
         T::obj_go_to_obj(static_cast<ref_t>(ref), static_cast<const ref_t>(ref))
@@ -3675,9 +3706,11 @@ struct mjz_internal_obj_manager_template_t {
     destroy_at(obj_that_will_be_destroyed);
   }
 
-  template <bool destroy_on_destruction = true>
+  template <bool destroy_on_destruction = true,
+            bool create_on_construction = true>
   union simple_unsafe_init_obj_wrpr {
-    constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
+    constexpr inline simple_unsafe_init_obj_wrpr() {
+      if constexpr (create_on_construction) unsafe_create();
     }
     template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
     constexpr inline simple_unsafe_init_obj_wrpr(
@@ -3687,11 +3720,12 @@ struct mjz_internal_obj_manager_template_t {
     {
       static_assert(
           requires {
-          unsafe_create(
-              mjz_no_init_uw_special_arg<
-                  init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
-      });
-      unsafe_create(mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one-1>());
+            unsafe_create(
+                mjz_no_init_uw_special_arg<
+                    init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
+          });
+      unsafe_create(mjz_no_init_uw_special_arg<
+                    init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
     }
     constexpr inline simple_unsafe_init_obj_wrpr(
         mjz_no_init_uw_special_arg<0>) {}
@@ -3712,7 +3746,7 @@ struct mjz_internal_obj_manager_template_t {
     constexpr inline const Type &operator()() const { return get(); }
     constexpr inline const Type &operator*() const { return get(); }
     constexpr inline const Type *operator->() const { return ptr(); }
-    constexpr inline const static bool has_destroy( ) {
+    constexpr inline static bool has_destroy() {
       return destroy_on_destruction;
     }
 
@@ -3720,24 +3754,25 @@ struct mjz_internal_obj_manager_template_t {
     constexpr inline Type *unsafe_create(T &&args) {
       return obj_constructor_on(ptr(), std::forward<T>(args));
     }
-    constexpr inline Type *unsafe_create() {
-      return obj_constructor_on(ptr());
-    }
+    constexpr inline Type *unsafe_create() { return obj_constructor_on(ptr()); }
 
-    constexpr inline void unsafe_destroy() {
-      obj_destructor_on(ptr());
-    }
+    constexpr inline void unsafe_destroy() { obj_destructor_on(ptr()); }
 
    private:
     Type obj;
     alignas(Type) volatile char NO_USE_NO_INITILIZATION_[sizeof(Type)];
   };
+
+  // template <  destroy_on_destruction = false,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_false_false =
+      simple_unsafe_init_obj_wrpr<false, false>;
+  // template <  destroy_on_destruction = true,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_true_false =
+      simple_unsafe_init_obj_wrpr<true, false>;
   // template <bool destroy_on_destruction = false>
-  using simple_unsafe_init_obj_wrpr_false =
-      typename simple_unsafe_init_obj_wrpr<false>;
+  using simple_unsafe_init_obj_wrpr_false = simple_unsafe_init_obj_wrpr<false>;
   // template <bool destroy_on_destruction = true>
-  using simple_unsafe_init_obj_wrpr_true =
-      typename simple_unsafe_init_obj_wrpr<true>;
+  using simple_unsafe_init_obj_wrpr_true = simple_unsafe_init_obj_wrpr<true>;
   template <class T, class Args>
   static constexpr inline void construct(me &a, T *p, Args &&args) {
     a.construct_at(p, std::forward<Args>(args));
@@ -3761,6 +3796,13 @@ struct mjz_internal_obj_manager_template_t {
   static constexpr inline Type &obj_copy_to_obj(Type *dest, const Type *src) {
     return obj_copy_to_obj(*dest, *src);
   }
+  static constexpr inline Type &obj_temp_copy_to_obj(Type &dest,
+                                                     const Type &&src) {
+    return dest = (std::move(src));
+  }
+  static constexpr inline Type &obj_go_to_obj(Type &dest, const Type &&src) {
+    return obj_temp_copy_to_obj(dest, std::move(src));
+  }
   static constexpr inline Type &obj_go_to_obj(Type &dest, const Type &src) {
     return obj_copy_to_obj(dest, src);
   }
@@ -3772,7 +3814,7 @@ struct mjz_internal_obj_manager_template_t {
   }
   template <typename Args>
   static constexpr inline Type &obj_equals(Type &dest, Args &&args) {
-    return dest.operator=(std::forward<Args>(args));
+    return dest = std::forward<Args>(args);
   }
 
  public:
@@ -3890,25 +3932,26 @@ struct mjz_non_internal_obj_manager_template_t {
     destroy_at(obj_that_will_be_destroyed);
   }
 
-  template <bool destroy_on_destruction = true>
+  template <bool destroy_on_destruction = true,
+            bool create_on_construction = false>
   union simple_unsafe_init_obj_wrpr {
-    constexpr inline simple_unsafe_init_obj_wrpr() { unsafe_create();
+    constexpr inline simple_unsafe_init_obj_wrpr() {
+      if constexpr (create_on_construction) unsafe_create();
     }
     template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
     constexpr inline simple_unsafe_init_obj_wrpr(
         mjz_no_init_uw_special_arg<
             init_if_iam_not_zero_the_base_with_me_minus_one>)
-      requires(init_if_iam_not_zero_the_base_with_me_minus_one !=0)
+      requires(init_if_iam_not_zero_the_base_with_me_minus_one != 0)
     {
-      unsafe_create(
-          mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
+      unsafe_create(mjz_no_init_uw_special_arg<
+                    init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
     }
     constexpr inline simple_unsafe_init_obj_wrpr(
         mjz_no_init_uw_special_arg<0>) {}
     template <class T0, class... Ts>
     constexpr inline simple_unsafe_init_obj_wrpr(T0 &&arg0, Ts &&...args) {
-      unsafe_create(std::forward<T0>(arg0),
-                         std::forward<Ts>(args)...);
+      unsafe_create(std::forward<T0>(arg0), std::forward<Ts>(args)...);
     }
     constexpr inline ~simple_unsafe_init_obj_wrpr() {
       if constexpr (destroy_on_destruction) unsafe_destroy();
@@ -3928,28 +3971,34 @@ struct mjz_non_internal_obj_manager_template_t {
     }
     template <class... Ts>
     constexpr inline Type *unsafe_create(Ts &&...args) {
-     return  obj_constructor_on(ptr(), std::forward<Ts>(args)...);
+      return obj_constructor_on(ptr(), std::forward<Ts>(args)...);
     }
 
-
-    constexpr inline void unsafe_destroy() { obj_destructor_on(ptr());
-    }
+    constexpr inline void unsafe_destroy() { obj_destructor_on(ptr()); }
 
    private:
     Type obj;
-   alignas(Type) volatile char NO_USE_NO_INITILIZATION_[sizeof(Type)];
+    alignas(Type) volatile char NO_USE_NO_INITILIZATION_[sizeof(Type)];
   };
+  // template <  destroy_on_destruction = false,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_false_false =
+      simple_unsafe_init_obj_wrpr<false, false>;
+  // template <  destroy_on_destruction = true,create_on_construction=false>
+  using simple_unsafe_init_obj_wrpr_true_false =
+      simple_unsafe_init_obj_wrpr<true, false>;
   // template <bool destroy_on_destruction = false>
-  using simple_unsafe_init_obj_wrpr_false =
-      typename simple_unsafe_init_obj_wrpr<false>;
+  using simple_unsafe_init_obj_wrpr_false = simple_unsafe_init_obj_wrpr<false>;
   // template <bool destroy_on_destruction = true>
-  using simple_unsafe_init_obj_wrpr_true =
-      typename simple_unsafe_init_obj_wrpr<true>;
+  using simple_unsafe_init_obj_wrpr_true = simple_unsafe_init_obj_wrpr<true>;
   template <class T, class... Args>
   static constexpr inline void construct(me &a, T *p, Args &&...args) {
     a.construct_at(p, std::forward<Args>(args)...);
   }
   static constexpr inline Type &obj_move_to_obj(Type &dest, Type &&src) {
+    return dest = (std::move(src));
+  }
+  static constexpr inline Type &obj_temp_copy_to_obj(Type &dest,
+                                                     const Type &&src) {
     return dest = (std::move(src));
   }
   static constexpr inline Type &obj_copy_to_obj(Type &dest, Type &src) {
@@ -3977,9 +4026,16 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline Type &obj_go_to_obj(Type &dest, Type &&src) {
     return obj_move_to_obj(dest, std::move(src));
   }
+  static constexpr inline Type &obj_go_to_obj(Type &dest, const Type &&src) {
+    return obj_temp_copy_to_obj(dest, std::move(src));
+  }
   template <typename... Args>
   static constexpr inline Type &obj_equals(Type &dest, Args &&...args) {
     return dest.operator=(std::forward<Args>(args)...);
+  }
+  template <typename Args>
+  static constexpr inline Type &obj_equals(Type &dest, Args &&args) {
+    return dest = (std::forward<Args>(args));
   }
 
  public:
@@ -4080,14 +4136,11 @@ struct mjz_obj_manager_template_t
   };
 };
 
- template <typename Type,bool destroy_on_destruction> 
-  using mjz_simple_unsafe_init_obj_wrpr_t =  std::conditional_t<destroy_on_destruction,
-      typename mjz_obj_manager_template_t<Type>::simple_unsafe_init_obj_wrpr_true,
-      typename mjz_obj_manager_template_t<Type>::simple_unsafe_init_obj_wrpr_false>;
- template <typename Type> 
-  using mjz_simple_unsafe_init_obj_wrpr_false_t =  mjz_simple_unsafe_init_obj_wrpr_t<Type,false>;
-        template <typename Type > 
-  using mjz_simple_unsafe_init_obj_wrpr_true_t =  mjz_simple_unsafe_init_obj_wrpr_t<Type,true>;
+template <typename Type, bool destroy_on_destruction,
+          bool create_on_construction = true>
+using mjz_simple_unsafe_init_obj_wrpr_t = typename mjz_obj_manager_template_t<
+    Type>::template simple_unsafe_init_obj_wrpr<destroy_on_destruction,
+                                                create_on_construction>;
 
 template <typename Type,
           C_mjz_obj_manager my_constructor = mjz_obj_manager_template_t<Type>>
@@ -4625,7 +4678,7 @@ union M_DATA_U {
 
 // this will crash the program
 [[noreturn]] static inline void trap_crash(void) noexcept(false) {
-  *(volatile char *)0 = (volatile char)0;  // address 0 is invalid
+  *(volatile char *)nullptr = 0;  // address 0 is invalid
   // this will crash the program
 }
 
@@ -6494,9 +6547,61 @@ constexpr inline bool is_blank_characteres_default(char x_char_) {
 #define OCT 8
 #define BIN 2
 #define NO_IGNORE_CHAR '\4'  // a char not found in a valid ASCII numeric field
+namespace calucate {
 
+template <typename T, typename U>
+inline constexpr uint64_t BMM_algo(T a_, U b_) {
+  uint64_t a{}, b{};
+  if (a_ < b_) {
+    a = b_;
+    b = a_;
+  } else {
+    a = a_;
+    b = b_;
+  }
+  if (!a || !b) return 0;
+  if ((a - b) == 1) return 1;
+  uint64_t remainder = a % b;
+  if (!remainder) return b;
+  a = b;
+  b = remainder;
+  return BMM_algo(a, b);
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t BMM_algo(T0 arg0, T1 arg1, Ts... args) {
+  return BMM_algo(arg0, BMM_algo(arg1, args...));
+}
+template <typename T, typename U>
+inline constexpr uint64_t KMM_algo(T a_, U b_) {
+  uint64_t a{(uint64_t)a_}, b{(uint64_t)b_};
+  uint64_t bmm = BMM_algo(a, b);
+  return a * b / bmm;
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t KMM_algo(T0 arg0, T1 arg1, Ts... args) {
+  return KMM_algo((uint64_t)arg0,
+                  KMM_algo((uint64_t)arg1, ((uint64_t)args)...));
+}
+
+template <typename T, typename U>
+inline constexpr uint64_t min(T a, U b) {
+  return a < b ? a : b;
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t min(T0 arg0, T1 arg1, Ts... args) {
+  return min((uint64_t)arg0, min((uint64_t)arg1, ((uint64_t)args)...));
+}
+template <typename T, typename U>
+inline constexpr uint64_t max(T a, U b) {
+  return a > b ? a : b;
+}
+template <typename T0, typename T1, typename... Ts>
+inline constexpr uint64_t max(T0 arg0, T1 arg1, Ts... args) {
+  return max((uint64_t)arg0, max((uint64_t)arg1, ((uint64_t)args)...));
+}
+}  // namespace calucate
 class static_str_algo {
-  public:
+ public:
   static constexpr int64_t the_reinterpreted_char_cca_size = 17;
   static constexpr int64_t forbiden_chars_cnt_size = 3;
   static size_t constexpr FLT_MAX_DECIMAL_PLACES = 10;
@@ -6532,7 +6637,7 @@ class static_str_algo {
 
  public:
   static constexpr inline int MJZ__STRnCMP(const char *p1, const char *p2,
-                                          size_t length_) {
+                                           size_t length_) {
     const unsigned char *s1 = (const unsigned char *)p1;
     const unsigned char *s2 = (const unsigned char *)p2;
     bool b{1};
@@ -6659,7 +6764,7 @@ class static_str_algo {
   constexpr inline static const char *strrchr(const char *str, size_t len_,
                                               char ch) {
     const char *str_end{str - 1};
-    const char *ptr = str + len_ - 1;
+    const char *ptr = str_end + len_;
     while (ptr < str_end && (*ptr != ch)) --ptr;
     if (ptr != str) return ptr;
     return NULL;
@@ -6859,7 +6964,7 @@ class static_str_algo {
   }
   template <typename cmpr_type>
   constexpr inline MJZ_memcmp_data MJZ__strcmp(const void *ptr_1,
-                                              const void *ptr_2) {
+                                               const void *ptr_2) {
     size_t len_1_ = strlen((const char *)ptr_1);
     size_t len_2_ = strlen((const char *)ptr_2);
     if (len_2_ != len_1_) {
@@ -8182,7 +8287,6 @@ class static_str_algo {
   }
 
  public:
-  
   template <typename T2, typename T1>
   inline static constexpr T2 bit_cast(const T1 &data) {
     union MyUnion {
@@ -8790,7 +8894,7 @@ class static_str_algo {
     return r;
   }
 };
-  
+
 enum Dealocation_state : uint8_t {
   dont_deallocate_on_free = MJZ_logic_BIT(0),
   is_moved = MJZ_logic_BIT(1)
@@ -8814,539 +8918,767 @@ NOTE THIS CLASS IS JUST A (REFRENCE / POINTER ) YOU SHALL USE IT LIKE ONE aka
 LAST USE - {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }  ... DESTRUCTION
 ... {THE REFRENED OBJECT COULD SAFELY DESTROY HEARE }
 */
-
-template <typename T_ref, typename condition_t = void>
-class optional_pointer_refrence_class_template_t : private not_a_type_if<true> {
+enum class optional_pointer_refrence_has_to_be_valid_on_construction_level {
+  NONE = 0,
+  not_null_if_is_ref_and_is_const,
+  not_null_if_is_ref,
+  not_null_if_is_const,
+  not_null_if_is_ref_or_is_const,
 };
 
-template <typename T_ref>
-class optional_pointer_refrence_class_template_t<
-    T_ref,
-    std::enable_if_t<
-        std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
-                       std::remove_cvref_t<T_ref>>,
-        void>>
+template <
+    typename T_ref, bool is_mutable_ptr_,
+    optional_pointer_refrence_has_to_be_valid_on_construction_level
+        has_to_be_valid_on_construction =
+            optional_pointer_refrence_has_to_be_valid_on_construction_level::
+                NONE>
+class optional_pointer_refrence_class_template_t
     : private mjz_obj_manager_template_t<std::remove_cvref_t<T_ref>> {
  public:
-  using Type = std::remove_volatile_t<std::remove_reference_t<T_ref>>;
-  static_assert(std::is_same_v<Type &, T_ref>);
+  using Type = std::remove_cvref_t<T_ref>;
+  using bare_Type = std::remove_volatile_t<std::remove_reference_t<T_ref>>;
+  constexpr static const bool is_mutable_ptr = is_mutable_ptr_;
+  constexpr static const bool is_const_type =
+      std::is_same_v<bare_Type &, const Type &>;
+
+ private:
+  using level_t =
+      optional_pointer_refrence_has_to_be_valid_on_construction_level;
+  constexpr const static level_t level = has_to_be_valid_on_construction;
+  constexpr const static bool Throw_on_null =
+      ((level == level_t::not_null_if_is_ref_and_is_const) && is_const_type &&
+       is_mutable_ptr) ||
+      ((level == level_t::not_null_if_is_ref_or_is_const) &&
+       (is_const_type || is_mutable_ptr)) ||
+      ((level == level_t::not_null_if_is_const) && is_const_type) ||
+      ((level == level_t::not_null_if_is_ref) && is_mutable_ptr);
+  inline constexpr void construction_check() const {
+    if (m_ptr != 0) return;
+
+    if constexpr (Throw_on_null) Throw(" is null ");
+    return;
+  }
+
+ public:
   inline constexpr mjz_obj_manager_template_t<std::remove_const_t<Type>>
-      &get_obj_creator() {
+      &get_obj_creator()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *this;
   }
   inline constexpr const mjz_obj_manager_template_t<std::remove_const_t<Type>>
-      &get_obj_creator() const {
+      &get_obj_creator() const
+    requires(!is_const_type)
+  {
     return *this;
   }
 
  private:
-  Type *m_ptr{};
+  bare_Type *m_ptr{};
 
  public:
-  template <typename T = Type>
+  template <typename T = Type, bool B = true>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw() = delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<void, !is_const_type && is_mutable_ptr>() {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<Type, !is_const_type && is_mutable_ptr>() {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-  template <typename T = Type>
+  template <typename T = Type, bool B = true>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw() const =
       delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() const {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<void, !is_const_type>() const {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() const {
+  inline constexpr Type *const
+  get_ptr_to_valid_object_or_throw<Type, !is_const_type>() const {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-
-  inline constexpr optional_pointer_refrence_class_template_t() {}
+  inline constexpr optional_pointer_refrence_class_template_t()
+    requires(!is_const_type && is_mutable_ptr)
+  {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
-      std::nullptr_t nullp) {}
+      std::nullptr_t nullp)
+    requires(!is_const_type && is_mutable_ptr)
+  {
+    construction_check();
+  }
 
   inline constexpr optional_pointer_refrence_class_template_t(
       Type *valid_pointer_to_object_that_meates_the_requirements)
-      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
+    requires(!is_const_type)
+      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type)
       : optional_pointer_refrence_class_template_t(this->addressof(
-            valid_refrence_to_object_that_meates_the_requirements)) {}
-
+            valid_refrence_to_object_that_meates_the_requirements)) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(Type &&) = delete;
   optional_pointer_refrence_class_template_t &operator=(Type &&) = delete;
   inline constexpr optional_pointer_refrence_class_template_t(const Type &&) =
       delete;
   optional_pointer_refrence_class_template_t &operator=(const Type &&) = delete;
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type *valid_pointer_to_object_that_meates_the_requirements) {
+      Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type &valid_refrence_to_object_that_meates_the_requirements) {
+      Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr =
         this->addressof(valid_refrence_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
       optional_pointer_refrence_class_template_t
-          &valid_refrence_to_object_that_meates_the_requirements) {
+          &valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
       optional_pointer_refrence_class_template_t
-          &&valid_refrence_to_object_that_meates_the_requirements) {
+          &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = valid_refrence_to_object_that_meates_the_requirements
                 .get_ptr_to_valid_object_or_throw();
+    construction_check();
+
     return *this;
   }
-
-  inline constexpr ~optional_pointer_refrence_class_template_t() {}
-
-  inline constexpr explicit operator bool() const {
+  inline constexpr explicit operator bool() const
+    requires(!is_const_type)
+  {
     return !!get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr bool operator!() const {
+  inline constexpr bool operator!() const
+    requires(!is_const_type)
+  {
     return !get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr operator Type *() {
+  inline constexpr operator Type *()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr operator Type *() const {
+  inline constexpr operator Type *() const
+    requires(!is_const_type)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-
-  inline constexpr Type *ptr() {
+  inline constexpr Type *ptr()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
-  inline constexpr Type *ptr() const {
+  inline constexpr Type *ptr() const
+    requires(!is_const_type)
+  {
     return get_ptr_to_valid_object_or_throw<void>();
   }
   inline constexpr optional_pointer_refrence_class_template_t &set_ptr(
-      Type *p = 0) {
+      Type *p = 0)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     m_ptr = p;
+    construction_check();
     return *this;
   }
-
-  inline constexpr Type &get() { return *get_ptr_to_valid_object_or_throw(); }
-  inline constexpr Type &get() const {
+  inline constexpr Type &get()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr operator Type &() {
+  inline constexpr Type &get() const
+    requires(!is_const_type)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr operator Type &() const {
+  inline constexpr operator Type &()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type *operator->() {
+  inline constexpr operator Type &() const
+    requires(!is_const_type)
+  {
+    return *get_ptr_to_valid_object_or_throw();
+  }
+  inline constexpr Type *operator->()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type &operator*() {
+  inline constexpr Type &operator*()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type *operator->() const {
+  inline constexpr Type *operator->() const
+    requires(!is_const_type)
+  {
     return get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr Type &operator*() const {
+  inline constexpr Type &operator*() const
+    requires(!is_const_type)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-
-  inline constexpr Type &operator()() {
+  inline constexpr Type &operator()()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-
-  inline constexpr void operator()(std::function<void(Type &)> f) {
+  inline constexpr void operator()(std::function<void(Type &)> f)
+    requires(!is_const_type && is_mutable_ptr)
+  {
     if (m_ptr) {
       f(*m_ptr);
     }
   }
-
-  inline constexpr Type &operator()() const {
+  inline constexpr Type &operator()() const
+    requires(!is_const_type)
+  {
     return *get_ptr_to_valid_object_or_throw();
   }
-  inline constexpr void operator~() { m_ptr = 0; }
-
+  inline constexpr void operator~()
+    requires((!Throw_on_null) && is_mutable_ptr)
+  {
+    m_ptr = 0;
+  }
+  template <bool B>
   inline constexpr operator optional_pointer_refrence_class_template_t<
-      std::add_const_t<Type> &>() {
+      std::add_const_t<Type> &, B>()
+    requires(!is_const_type && is_mutable_ptr)
+  {
     return {m_ptr};
   }
-  using merf = optional_pointer_refrence_class_template_t &;
-  inline constexpr friend bool operator==(merf a, merf b) { return *a == *b; }
-  inline constexpr friend bool operator!=(merf a, merf b) { return *a != *b; }
-  inline constexpr friend bool operator<=(merf a, merf b) { return *a <= *b; }
-  inline constexpr friend bool operator>=(merf a, merf b) { return *a >= *b; }
-  inline constexpr friend bool operator<(merf a, merf b) { return *a < *b; }
-  inline constexpr friend bool operator>(merf a, merf b) { return *a > *b; }
-  inline constexpr friend auto operator&(merf a, merf b) { return *a & *b; }
-  inline constexpr friend auto operator|(merf a, merf b) { return *a | *b; }
-  inline constexpr friend auto operator^(merf a, merf b) { return *a ^ *b; }
-  inline constexpr friend auto operator%(merf a, merf b) { return *a % *b; }
-  inline constexpr friend auto operator*(merf a, merf b) { return *a * *b; }
-  inline constexpr friend auto operator/(merf a, merf b) { return *a / *b; }
-  inline constexpr friend auto operator-(merf a, merf b) { return *a - *b; }
-  inline constexpr friend auto operator+(merf a, merf b) { return *a + *b; }
-  inline constexpr auto operator&=(merf b) { return (**this) &= *b; }
-  inline constexpr auto operator|=(merf b) { return (**this) |= *b; }
-  inline constexpr auto operator^=(merf b) { return (**this) ^= *b; }
-  inline constexpr auto operator%=(merf b) { return (**this) %= *b; }
-  inline constexpr auto operator*=(merf b) { return (**this) *= *b; }
-  inline constexpr auto operator/=(merf b) { return (**this) /= *b; }
-  inline constexpr auto operator-=(merf b) { return (**this) -= *b; }
-  inline constexpr auto operator+=(merf b) { return (**this) += *b; }
-};
-
-template <typename T_ref>
-class optional_pointer_refrence_class_template_t<
-    T_ref,
-    std::enable_if_t<
-        std::is_same_v<std::remove_volatile_t<std::remove_reference_t<T_ref>>,
-                       const std::remove_cvref_t<T_ref>>,
-        void>>
-    : private mjz_obj_manager_template_t<std::remove_cvref_t<T_ref>> {
- public:
-  using Type = const std::remove_cvref_t<T_ref>;
-  static_assert(std::is_same_v<Type &, T_ref>);
-
- private:
-  Type *m_ptr{};
 
  public:
-  template <typename T = Type>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw() = delete;
+  using const_Type = const std::remove_cvref_t<T_ref>;
+
+ public:
+  template <typename T = const_Type, bool B = true>
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw() =
+      delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() {
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw<
+      void, is_mutable_ptr && is_const_type>() {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() {
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw<
+      const_Type, is_mutable_ptr && is_const_type>() {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-  template <typename T = Type>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw() const =
-      delete;
+  template <typename T = const_Type, bool B = true>
+  inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw()
+      const = delete;
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<void>() const {
+  inline constexpr const_Type *const
+  get_ptr_to_valid_const_object_or_throw<void, is_const_type>() const {
     return m_ptr;
   }
   template <>
-  inline constexpr Type *const get_ptr_to_valid_object_or_throw<Type>() const {
+  inline constexpr const_Type *const
+  get_ptr_to_valid_const_object_or_throw<const_Type, is_const_type>() const {
     if (m_ptr) return m_ptr;
     Throw<const char *>("no object ");
   }
-  inline constexpr optional_pointer_refrence_class_template_t() {}
-  inline constexpr optional_pointer_refrence_class_template_t(
-      std::nullptr_t nullp) {}
-
-  using NC_type = std::remove_const_t<Type>;
-  inline constexpr optional_pointer_refrence_class_template_t(
-      NC_type *valid_pointer_to_object_that_meates_the_requirements)
-      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
-  inline constexpr optional_pointer_refrence_class_template_t(
-      NC_type &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_class_template_t(this->addressof(
-            valid_refrence_to_object_that_meates_the_requirements)) {}
-
-  inline constexpr optional_pointer_refrence_class_template_t(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
-  inline constexpr optional_pointer_refrence_class_template_t(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &&valid_refrence_to_object_that_meates_the_requirements)
-      : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
-  inline constexpr optional_pointer_refrence_class_template_t(NC_type &&) =
-      delete;
-
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      NC_type *valid_pointer_to_object_that_meates_the_requirements) {
-    m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
-    return *this;
+  inline constexpr optional_pointer_refrence_class_template_t()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    construction_check();
   }
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      NC_type &valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr =
-        this->addressof(valid_refrence_to_object_that_meates_the_requirements);
-    return *this;
+  inline constexpr optional_pointer_refrence_class_template_t(
+      std::nullptr_t nullp)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    construction_check();
   }
-  optional_pointer_refrence_class_template_t &operator=(NC_type &&) = delete;
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t<NC_type &>
-          &&valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
-
+  using Type = std::remove_const_t<const_Type>;
   inline constexpr optional_pointer_refrence_class_template_t(
       Type *valid_pointer_to_object_that_meates_the_requirements)
-      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {}
+    requires(is_const_type)
+      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
       : optional_pointer_refrence_class_template_t(this->addressof(
-            valid_refrence_to_object_that_meates_the_requirements)) {}
+            valid_refrence_to_object_that_meates_the_requirements)) {
+    construction_check();
+  }
 
+  inline constexpr optional_pointer_refrence_class_template_t(Type &&)
+    requires(is_const_type)
+  = delete;
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
+    construction_check();
+
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr =
+        this->addressof(valid_refrence_to_object_that_meates_the_requirements);
+    construction_check();
+
+    return *this;
+  }
+  optional_pointer_refrence_class_template_t &operator=(Type &&)
+    requires(is_const_type)
+  = delete;
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
+          &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr = valid_refrence_to_object_that_meates_the_requirements
+                .get_ptr_to_valid_const_object_or_throw();
+    construction_check();
+
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t &operator=(
+      optional_pointer_refrence_class_template_t
+          &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
+    m_ptr = valid_refrence_to_object_that_meates_the_requirements
+                .get_ptr_to_valid_const_object_or_throw();
+    construction_check();
+
+    return *this;
+  }
+  inline constexpr optional_pointer_refrence_class_template_t(
+      const_Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(is_const_type)
+      : m_ptr(valid_pointer_to_object_that_meates_the_requirements) {
+    construction_check();
+  }
+  inline constexpr optional_pointer_refrence_class_template_t(
+      const_Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
+      : optional_pointer_refrence_class_template_t(this->addressof(
+            valid_refrence_to_object_that_meates_the_requirements)) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
   inline constexpr optional_pointer_refrence_class_template_t(
       optional_pointer_refrence_class_template_t
           &&valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_const_type)
       : optional_pointer_refrence_class_template_t(
-            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {}
-  inline constexpr optional_pointer_refrence_class_template_t(Type &&) = delete;
-
+            valid_refrence_to_object_that_meates_the_requirements.m_ptr) {
+    construction_check();
+  }
+  inline constexpr optional_pointer_refrence_class_template_t(const_Type &&)
+    requires(is_const_type)
+  = delete;
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type *valid_pointer_to_object_that_meates_the_requirements) {
+      const_Type *valid_pointer_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
     m_ptr = (valid_pointer_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
   inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      Type &valid_refrence_to_object_that_meates_the_requirements) {
+      const_Type &valid_refrence_to_object_that_meates_the_requirements)
+    requires(is_mutable_ptr && is_const_type)
+  {
     m_ptr =
         this->addressof(valid_refrence_to_object_that_meates_the_requirements);
+    construction_check();
+
     return *this;
   }
-  optional_pointer_refrence_class_template_t &operator=(Type &&) = delete;
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t
-          &valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
-  inline constexpr optional_pointer_refrence_class_template_t &operator=(
-      optional_pointer_refrence_class_template_t
-          &&valid_refrence_to_object_that_meates_the_requirements) {
-    m_ptr = valid_refrence_to_object_that_meates_the_requirements
-                .get_ptr_to_valid_object_or_throw();
-    return *this;
-  }
+  optional_pointer_refrence_class_template_t &operator=(const_Type &&)
+    requires(is_const_type)
+  = delete;
 
-  inline constexpr ~optional_pointer_refrence_class_template_t() {}
-
-  inline constexpr explicit operator bool() const {
-    return !!get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr ~optional_pointer_refrence_class_template_t() { m_ptr = 0; }
+  inline constexpr explicit operator bool() const
+    requires(is_const_type)
+  {
+    return !!get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr bool operator!() const {
-    return !get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr bool operator!() const
+    requires(is_const_type)
+  {
+    return !get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr operator Type *() {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr operator const_Type *()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr operator Type *() const {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr operator const_Type *() const
+    requires(is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
-
-  inline constexpr Type *ptr() {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr const_Type *ptr()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
-  inline constexpr Type *ptr() const {
-    return get_ptr_to_valid_object_or_throw<void>();
+  inline constexpr const_Type *ptr() const
+    requires(is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw<void>();
   }
   inline constexpr optional_pointer_refrence_class_template_t &set_ptr(
-      Type *p = 0) {
+      const_Type *p = 0)
+    requires(is_mutable_ptr && is_const_type)
+  {
     m_ptr = p;
+    construction_check();
+
     return *this;
   }
-
-  inline constexpr Type &get() { return *get_ptr_to_valid_object_or_throw(); }
-  inline constexpr Type &get() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &get()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr operator Type &() {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &get() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr operator Type &() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr operator const_Type &()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type *operator->() {
-    return get_ptr_to_valid_object_or_throw();
+  inline constexpr operator const_Type &() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type &operator*() {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type *operator->()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type *operator->() const {
-    return get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &operator*()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr Type &operator*() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type *operator->() const
+    requires(is_const_type)
+  {
+    return get_ptr_to_valid_const_object_or_throw();
   }
-
-  inline constexpr Type &operator()() {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &operator*() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-
-  inline constexpr void operator()(std::function<void(Type &)> f) {
+  inline constexpr const_Type &operator()()
+    requires(is_mutable_ptr && is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
+  }
+  inline constexpr void operator()(std::function<void(const_Type &)> f)
+    requires(is_mutable_ptr && is_const_type)
+  {
     if (m_ptr) {
       f(*m_ptr);
     }
   }
-
-  inline constexpr Type &operator()() const {
-    return *get_ptr_to_valid_object_or_throw();
+  inline constexpr const_Type &operator()() const
+    requires(is_const_type)
+  {
+    return *get_ptr_to_valid_const_object_or_throw();
   }
-  inline constexpr void operator~() { m_ptr = 0; }
+
   using merf = optional_pointer_refrence_class_template_t &;
-  inline constexpr friend bool operator==(merf a, merf b) { return *a == *b; }
-  inline constexpr friend bool operator!=(merf a, merf b) { return *a != *b; }
-  inline constexpr friend bool operator<=(merf a, merf b) { return *a <= *b; }
-  inline constexpr friend bool operator>=(merf a, merf b) { return *a >= *b; }
-  inline constexpr friend bool operator<(merf a, merf b) { return *a < *b; }
-  inline constexpr friend bool operator>(merf a, merf b) { return *a > *b; }
-  inline constexpr friend auto operator&(merf a, merf b) { return *a & *b; }
-  inline constexpr friend auto operator|(merf a, merf b) { return *a | *b; }
-  inline constexpr friend auto operator^(merf a, merf b) { return *a ^ *b; }
-  inline constexpr friend auto operator%(merf a, merf b) { return *a % *b; }
-  inline constexpr friend auto operator*(merf a, merf b) { return *a * *b; }
-  inline constexpr friend auto operator/(merf a, merf b) { return *a / *b; }
-  inline constexpr friend auto operator-(merf a, merf b) { return *a - *b; }
-  inline constexpr friend auto operator+(merf a, merf b) { return *a + *b; }
-  inline constexpr auto operator&=(merf b) { return (**this) &= *b; }
-  inline constexpr auto operator|=(merf b) { return (**this) |= *b; }
-  inline constexpr auto operator^=(merf b) { return (**this) ^= *b; }
-  inline constexpr auto operator%=(merf b) { return (**this) %= *b; }
-  inline constexpr auto operator*=(merf b) { return (**this) *= *b; }
-  inline constexpr auto operator/=(merf b) { return (**this) /= *b; }
-  inline constexpr auto operator-=(merf b) { return (**this) -= *b; }
-  inline constexpr auto operator+=(merf b) { return (**this) += *b; }
+  inline constexpr friend bool operator==(merf a, merf b)
+
+  {
+    return *a == *b;
+  }
+  inline constexpr friend bool operator!=(merf a, merf b)
+
+  {
+    return *a != *b;
+  }
+  inline constexpr friend bool operator<=(merf a, merf b)
+
+  {
+    return *a <= *b;
+  }
+  inline constexpr friend bool operator>=(merf a, merf b)
+
+  {
+    return *a >= *b;
+  }
+  inline constexpr friend bool operator<(merf a, merf b)
+
+  {
+    return *a < *b;
+  }
+  inline constexpr friend bool operator>(merf a, merf b)
+
+  {
+    return *a > *b;
+  }
+  inline constexpr friend auto operator&(merf a, merf b)
+
+  {
+    return *a & *b;
+  }
+  inline constexpr friend auto operator|(merf a, merf b)
+
+  {
+    return *a | *b;
+  }
+  inline constexpr friend auto operator^(merf a, merf b)
+
+  {
+    return *a ^ *b;
+  }
+  inline constexpr friend auto operator%(merf a, merf b)
+
+  {
+    return *a % *b;
+  }
+  inline constexpr friend auto operator*(merf a, merf b)
+
+  {
+    return *a * *b;
+  }
+  inline constexpr friend auto operator/(merf a, merf b)
+
+  {
+    return *a / *b;
+  }
+  inline constexpr friend auto operator-(merf a, merf b)
+
+  {
+    return *a - *b;
+  }
+  inline constexpr friend auto operator+(merf a, merf b)
+
+  {
+    return *a + *b;
+  }
+  inline constexpr auto operator&=(merf b)
+
+  {
+    return (**this) &= *b;
+  }
+  inline constexpr auto operator|=(merf b)
+
+  {
+    return (**this) |= *b;
+  }
+  inline constexpr auto operator^=(merf b)
+
+  {
+    return (**this) ^= *b;
+  }
+  inline constexpr auto operator%=(merf b)
+
+  {
+    return (**this) %= *b;
+  }
+  inline constexpr auto operator*=(merf b)
+
+  {
+    return (**this) *= *b;
+  }
+  inline constexpr auto operator/=(merf b)
+
+  {
+    return (**this) /= *b;
+  }
+  inline constexpr auto operator-=(merf b)
+
+  {
+    return (**this) -= *b;
+  }
+  inline constexpr auto operator+=(merf b)
+
+  {
+    return (**this) += *b;
+  }
 };
 
-template <typename T_ref>
+template <
+    typename T_ref, bool mutable_ptr,
+    optional_pointer_refrence_has_to_be_valid_on_construction_level level =
+        optional_pointer_refrence_has_to_be_valid_on_construction_level::NONE>
 using optional_pointer_refrence_template_t =
     optional_pointer_refrence_class_template_t<std::remove_volatile_t<T_ref>,
-                                               void>;
-
-template <bool B, class T, class BS>
-struct mjz_stack_obj_warper_template_t_data : public BS {
-  static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
-  static_assert(B);
-  static_assert(!B);
+                                               mutable_ptr, level>;
+enum mjz_stack_obj_warper_template_t_data_states : uint8_t {
+  in_union,
+  in_aligned_chars,
+  in_chars
+};
+template <typename Error_T>
+struct mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t {
+  using Error_t = Error_T;
+  constexpr static const bool class_has_Error = true;
+};
+template <>
+struct mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
+    void> {
+  using Error_t = bool;
+  constexpr static const bool class_has_Error = false;
 };
 
-template <class T, class BS>
-struct mjz_stack_obj_warper_template_t_data<true, T, BS> : public BS {
-  static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
+template <typename T, C_mjz_obj_manager obj_crtr, C_mjz_obj_manager err_crtr,
+          mjz_stack_obj_warper_template_t_data_states m_in_uinion,
+          typename in_Error_t = void>
+struct mjz_stack_obj_warper_deafualt_data_storage_template_t
+    : protected obj_crtr,
+      protected err_crtr {
+ private:
+  template <typename Error_T>
+  using select_err_t =
+      mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
+          Error_T>;
+  using BS = obj_crtr;
 
  public:
-  union {
-    bool m_Has_data{false};
-    mutable bool mm_Has_data;
-  };
-  union UDB_t {
-    alignas(BS::alignment) /*aliens with T */ mutable uint8_t
+  using Error_t = typename select_err_t<in_Error_t>::Error_t;
+  constexpr static const bool class_has_Error =
+      select_err_t<in_Error_t>::class_has_Error;
+
+ private:
+  using err_crtr_t = err_crtr;
+  using obj_crtr_t = obj_crtr;
+  using unsafe_err_t =
+      typename err_crtr_t::template simple_unsafe_init_obj_wrpr<false, false>;
+  template <mjz_stack_obj_warper_template_t_data_states is_in_uinion>
+  union UDB_t {};
+  template <>
+  union UDB_t<mjz_stack_obj_warper_template_t_data_states::in_aligned_chars> {
+    const constexpr static size_t alinement_v =
+        calucate::KMM_algo(BS::alignment, alignof(unsafe_err_t));
+    uint8_t f;
+    alignas(alinement_v) /*aliens with T */ mutable uint8_t
         mm_data[BS::size_of_type()];
-    alignas(BS::alignment) uint8_t m_data[BS::size_of_type()];
-    T m_obj____;
-    mutable T mm_obj____;
+    alignas(alinement_v) uint8_t m_data[BS::size_of_type()];
+    constexpr inline T &obj_ref() { return *(T *)m_data; }
+    constexpr inline const T &obj_ref() const { return *(const T *)m_data; }
+    constexpr inline unsafe_err_t &err_ref() { return *(unsafe_err_t *)m_data; }
+    constexpr inline const unsafe_err_t &err_ref() const {
+      return *(const unsafe_err_t *)m_data;
+    }
+    UDB_t() {}   // no init
+    ~UDB_t() {}  // no deinit
   };
-  UDB_t m_obj_buf{};
-
-  constexpr inline uint8_t *mm_data_b() {
-    return (uint8_t *)&m_obj_buf.mm_obj____;
-  }
-
-  constexpr inline const uint8_t *m_data_b() const {
-    return (const uint8_t *)&m_obj_buf.m_obj____;
-  }
-
-  constexpr inline uint8_t *m_data_b() {
-    return (uint8_t *)&m_obj_buf.m_obj____;
-  }
-};
-template <class T, class BS>
-struct mjz_stack_obj_warper_template_t_data<false, T, BS> : public BS {
-  static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
-
- public:
-  union {
-    bool m_Has_data{false};
-    mutable bool mm_Has_data;
-  };
-  union UDB_t {
+  template <>
+  union UDB_t<mjz_stack_obj_warper_template_t_data_states::in_chars> {
+    uint8_t f;
     alignas(1) /*no alinement*/ mutable uint8_t mm_data[BS::size_of_type()];
     alignas(1) uint8_t m_data[BS::size_of_type()];
+    constexpr inline T &obj_ref() { return *(T *)m_data; }
+    constexpr inline const T &obj_ref() const { return *(const T *)m_data; }
+    constexpr inline unsafe_err_t &err_ref() { return *(unsafe_err_t *)m_data; }
+    constexpr inline const unsafe_err_t &err_ref() const {
+      return *(const unsafe_err_t *)m_data;
+    }
+    UDB_t() {}   // no init
+    ~UDB_t() {}  // no deinit
   };
-  UDB_t m_obj_buf{};
-  constexpr inline uint8_t *mm_data_b() { return m_obj_buf.mm_data; }
-  constexpr inline const uint8_t *m_data_b() const { return m_obj_buf.m_data; }
-  constexpr inline uint8_t *m_data_b() { return m_obj_buf.m_data; }
-};
+  template <>
+  union UDB_t<mjz_stack_obj_warper_template_t_data_states::in_union> {
+    uint8_t f;
+    mutable uint8_t mm_data[BS::size_of_type()];
+    uint8_t m_data[BS::size_of_type()];
+    constexpr inline T &obj_ref() { return obj; }
+    constexpr inline const T &obj_ref() const { return obj; }
+    constexpr inline unsafe_err_t &err_ref() { return error; }
+    constexpr inline const unsafe_err_t &err_ref() const { return error; }
+    T obj;
+    unsafe_err_t error;
+    UDB_t() {}   // no init
+    ~UDB_t() {}  // no deinit
+  };
+  UDB_t<m_in_uinion> m_obj_buf{};
 
-template <typename T, class obj_crtr, bool use_object_in_union>
-struct mjz_stack_obj_warper_template_t_helper {};
-template <typename T, class obj_crtr>
-struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, false>
-    : protected mjz_stack_obj_warper_template_t_data<std::is_fundamental_v<T>,
-                                                     T, obj_crtr> {
- protected:
-  template <typename ret_t>
-  constexpr inline ret_t *mm_data() {
-    return (ret_t *)this->mm_data_b();
-  }
-  template <typename ret_t>
-  constexpr inline const ret_t *m_data() const {
-    return (const ret_t *)this->m_data_b();
-  }
-
-  template <typename ret_t>
-  constexpr inline ret_t *m_data() {
-    return (ret_t *)this->m_data_b();
-  }
-};
-template <typename T, class obj_crtr>
-struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, true>
-    : protected obj_crtr {
+ public:
+  enum class data_state : uint8_t { none = 0, value, error };
   using Type = T;
   using BS = obj_crtr;
   static_assert(BS::size_of_type() && sizeof(T) <= BS::size_of_type());
 
- public:
-  union {
-    bool m_Has_data{false};
-    mutable bool mm_Has_data;
-  };
-  union UDB_t {
-    uint8_t f;
-    mutable uint8_t mm_data[BS::size_of_type()];
-    uint8_t m_data[BS::size_of_type()];
-    T obj;
-    UDB_t() {}   // no init
-    ~UDB_t() {}  // no deinit
-  };
-  UDB_t m_obj_buf{};
-
  protected:
+  union {
+    data_state m_state{false};
+    mutable data_state mm_state;
+  };
+
+ public:
   template <typename ret_t>
   constexpr inline ret_t *mm_data() {
     return (ret_t *)&m_obj_buf.f;
@@ -9361,18 +9693,28 @@ struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, true>
   }
   template <>
   constexpr inline Type *mm_data<Type>() {
-    return this->addressof(m_obj_buf.obj);
+    return this->addressof(m_obj_buf.obj_ref());
   }
   template <>
   constexpr inline const Type *m_data<Type>() const {
-    return this->addressof(m_obj_buf.obj);
+    return obj_crtr_t::addressof(m_obj_buf.obj_ref());
   }
-
   template <>
   constexpr inline Type *m_data<Type>() {
-    return this->addressof(m_obj_buf.obj);
+    return obj_crtr_t::addressof(m_obj_buf.obj_ref());
   }
-
+  template <>
+  constexpr inline Error_t *mm_data<Error_t>() {
+    return m_obj_buf.err_ref().ptr();
+  }
+  template <>
+  constexpr inline const Error_t *m_data<Error_t>() const {
+    return m_obj_buf.err_ref().ptr();
+  }
+  template <>
+  constexpr inline Error_t *m_data<Error_t>() {
+    return m_obj_buf.err_ref().ptr();
+  }
   template <>
   constexpr inline uint8_t *mm_data<uint8_t>() {
     return &m_obj_buf.f;
@@ -9381,28 +9723,159 @@ struct mjz_stack_obj_warper_template_t_helper<T, obj_crtr, true>
   constexpr inline const uint8_t *m_data<uint8_t>() const {
     return &m_obj_buf.f;
   }
-
   template <>
   constexpr inline uint8_t *m_data<uint8_t>() {
     return &m_obj_buf.f;
   }
-};
 
-template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
-          C_mjz_temp_type_obj_algorithims_warpper my_obj_creator_t =
-              mjz_temp_type_obj_algorithims_warpper_t<
-                  std::remove_cvref_t<my_iner_Type_>>,
-          bool do_error_check = 1, bool use_object_in_union = false,
-          typename = std::enable_if_t<std::negation_v<
-              std::is_array<std::remove_cvref_t<my_iner_Type_>>>>>
-struct mjz_stack_obj_warper_template_class_t
-    : private mjz_stack_obj_warper_template_t_helper<
-          std::remove_cvref_t<my_iner_Type_>, my_obj_creator_t,
-          use_object_in_union>  // for that 1 exetera
-                                // (compiler added ) memory
-{
  public:
-  using Type = std::remove_cvref_t<my_iner_Type_>;
+  constexpr inline bool get_has_error() const volatile noexcept {
+    return m_state == data_state::error;
+  }
+  constexpr inline bool get_has_error() const noexcept {
+    return m_state == data_state::error;
+  }
+  constexpr inline bool get_has_data() const volatile noexcept {
+    return m_state == data_state::value;
+  }
+  constexpr inline bool get_has_data() const noexcept {
+    return m_state == data_state::value;
+  }
+  mjz_stack_obj_warper_deafualt_data_storage_template_t() {}
+  ~mjz_stack_obj_warper_deafualt_data_storage_template_t() {
+    if (get_has_data()) {
+      obj_crtr_t::destroy_at(m_data<Type>());
+      /* i really dont like this condition*/
+      /*Throw<const char*const>(" unexpected leaked object ");*/
+    } else if constexpr (!class_has_Error) {
+      m_state = data_state::none;
+      return;
+    }
+    if (get_has_error())
+      destrouy_err();
+    else
+      m_state = data_state::none;
+  }
+
+ private:
+  constexpr inline void destrouy_err() {
+    if constexpr (!class_has_Error) {
+      data_state::none;
+      return;
+    }
+    if (get_has_error()) {
+      m_obj_buf.err_ref().unsafe_destroy();
+      m_state = data_state::none;
+    }
+  }
+
+ public:
+  constexpr inline void base_unsafe_unsafe_set_type(data_state cast_to_type) {
+    m_state = cast_to_type;
+  }
+
+ public:
+  constexpr inline void base_notify_value_unsafe_init_start() {
+    if (get_has_data()) {
+      obj_crtr_t::destroy_at(m_data<Type>());
+    } else if constexpr (!class_has_Error)
+      return;
+    else if (get_has_error())
+      destrouy_err();
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_value_unsafe_deinit_start() {
+    if constexpr (!class_has_Error) {
+      return;
+    }
+    if (get_has_error()) {
+      m_obj_buf.err_ref().unsafe_destroy();
+    }
+    /* else if (!get_has_data()) {
+     * i really dont like this condition
+     *Throw<const char*const>(" unexpected leaked object ");}*/
+  }
+  constexpr inline void base_notify_value_unsafe_init_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_value_unsafe_deinit_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_value_unsafe_init_end() {
+    m_state = data_state::value;
+  }
+  constexpr inline void base_notify_value_unsafe_deinit_end() {
+    m_state = data_state::none;
+  }
+
+  constexpr inline void base_notify_error_unsafe_init_start() {
+    if (get_has_data()) {
+      obj_crtr_t::destroy_at(m_data<Type>());
+    } else if constexpr (!class_has_Error)
+      return;
+    else if (get_has_error())
+      destrouy_err();
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_error_unsafe_deinit_start() {
+    if constexpr (!class_has_Error) {
+      return;
+    }
+    if (get_has_error()) {
+      m_obj_buf.err_ref().unsafe_destroy();
+    }
+    /* else if (!get_has_data()) {
+     * i really dont like this condition
+     *Throw<const char*const>(" unexpected leaked object ");}*/
+  }
+  constexpr inline void base_notify_error_unsafe_init_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_error_unsafe_deinit_fail() {
+    m_state = data_state::none;
+  }
+  constexpr inline void base_notify_error_unsafe_init_end() {
+    m_state = data_state::error;
+  }
+  constexpr inline void base_notify_error_unsafe_deinit_end() {
+    m_state = data_state::none;
+  }
+};
+template <typename T, bool can_be_void>
+concept C_is_valid_optional_type_helper =
+    requires() {
+      requires std::is_same_v<std::remove_cvref_t<T>, T>;
+      requires !std::is_array_v<T>;
+    };
+template <typename T, bool can_be_void = 0>
+concept C_is_valid_optional_type =
+    C_is_valid_optional_type_helper<T, can_be_void> ||
+    (can_be_void && std::is_same_v<void, T>);
+
+template <
+    C_is_valid_optional_type my_iner_Type_,
+    bool construct_obj_on_constructor = true,
+    C_mjz_temp_type_obj_algorithims_warpper my_obj_creator_t =
+        mjz_temp_type_obj_algorithims_warpper_t<my_iner_Type_>,
+    bool do_error_check = 1, bool use_object_in_union = false,
+    template <typename, class, class,
+              mjz_stack_obj_warper_template_t_data_states, class>
+    class mjz_stack_obj_warper_data_storage_template_t =
+        mjz_stack_obj_warper_deafualt_data_storage_template_t,
+    C_is_valid_optional_type<1> data_strorage_in_Error_t = void,
+    C_mjz_temp_type_obj_algorithims_warpper my_err_creator_t =
+        mjz_temp_type_obj_algorithims_warpper_t<
+            mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
+                data_strorage_in_Error_t>>>
+struct mjz_stack_obj_warper_template_class_t
+    : private mjz_stack_obj_warper_data_storage_template_t<
+          my_iner_Type_, my_obj_creator_t, my_err_creator_t,
+          use_object_in_union
+              ? mjz_stack_obj_warper_template_t_data_states::in_union
+              : mjz_stack_obj_warper_template_t_data_states::in_aligned_chars,
+          data_strorage_in_Error_t> {
+ public:
+  using Type = my_iner_Type_;
   using my_totaly_uniuqe_type_name_of_content_type = Type;
   using my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t =
       Type;
@@ -9412,6 +9885,38 @@ struct mjz_stack_obj_warper_template_class_t
   }
 
  protected:
+  using my_obj_helper_t = mjz_stack_obj_warper_data_storage_template_t<
+      my_iner_Type_, my_obj_creator_t, my_err_creator_t,
+      use_object_in_union
+          ? mjz_stack_obj_warper_template_t_data_states::in_union
+          : mjz_stack_obj_warper_template_t_data_states::in_aligned_chars,
+      data_strorage_in_Error_t>;
+  using my_err_helper_t = my_obj_helper_t;
+
+ public:
+  using err_crtr_t = my_obj_helper_t::err_crtr_t;
+  using Error_t = my_obj_helper_t::Error_t;
+  constexpr static const bool class_has_Error =
+      my_obj_helper_t::class_has_Error;
+
+ protected:
+  constexpr inline const my_obj_helper_t &m_obj_helper() const & {
+    return *this;
+  }
+  constexpr inline my_obj_helper_t &m_obj_helper() & { return *this; }
+  constexpr inline const my_obj_helper_t &&m_obj_helper() const && {
+    return move_me();
+  }
+  constexpr inline my_obj_helper_t &&m_obj_helper() && { return move_me(); }
+  constexpr inline const my_err_helper_t &m_err_helper() const & {
+    return *this;
+  }
+  constexpr inline my_err_helper_t &m_err_helper() & { return *this; }
+  constexpr inline const my_err_helper_t &&m_err_helper() const && {
+    return move_me();
+  }
+  constexpr inline my_err_helper_t &&m_err_helper() && { return move_me(); }
+
   constexpr inline const my_obj_creator_t &m_obj_creator() const & {
     return *this;
   }
@@ -9420,16 +9925,46 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
   constexpr inline my_obj_creator_t &&m_obj_creator() && { return move_me(); }
-
- private:
-  constexpr inline Type *OP() & { return this->m_data<Type>(); }
-  constexpr inline Type &O() & { return *OP(); }
-  constexpr inline const Type *OP() const & { return this->m_data<Type>(); }
-  constexpr inline const Type &O() const & { return *OP(); }
-  constexpr inline Type &&O() && { return std::move(*this->m_data<Type>()); }
-  constexpr inline const Type &&O() const && {
-    return std::move(*this->m_data<Type>());
+  constexpr inline const my_err_creator_t &m_err_creator() const & {
+    return *this;
   }
+  constexpr inline my_err_creator_t &m_err_creator() & { return *this; }
+  constexpr inline const my_err_creator_t &&m_err_creator() const && {
+    return move_me();
+  }
+  constexpr inline my_err_creator_t &&m_err_creator() && { return move_me(); }
+  public:
+  constexpr inline const my_obj_creator_t &obj_creator() const { return *this; }
+  constexpr inline my_obj_creator_t &obj_creator() { return *this; }
+  constexpr inline const my_err_creator_t &err_creator() const { return *this; }
+  constexpr inline my_err_creator_t &err_creator() { return *this; }  
+ private:
+
+  constexpr inline Type *OP() & { return m_obj_helper().m_data<Type>(); }
+  constexpr inline Type &O() & { return *OP(); }
+  constexpr inline const Type *OP() const & {
+    return m_obj_helper().m_data<Type>();
+  }
+  constexpr inline const Type &O() const & { return *OP(); }
+  constexpr inline Type &&O() && {
+    return std::move(*m_obj_helper().m_data<Type>());
+  }
+  constexpr inline const Type &&O() const && {
+    return std::move(*m_obj_helper().m_data<Type>());
+  }
+  constexpr inline Error_t *EP() & { return m_err_helper().m_data<Error_t>(); }
+  constexpr inline Error_t &E() & { return *EP(); }
+  constexpr inline const Error_t *EP() const & {
+    return m_err_helper().m_data<Error_t>();
+  }
+  constexpr inline const Error_t &E() const & { return *EP(); }
+  constexpr inline Error_t &&E() && {
+    return std::move(*m_err_helper().m_data<Error_t>());
+  }
+  constexpr inline const Error_t &&E() const && {
+    return std::move(*m_err_helper().m_data<Error_t>());
+  }
+
   constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                             Type &&src) {
     if (plc_has_obj) {
@@ -9458,7 +9993,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline Type *construct_in_place(Type *place, bool plc_has_obj,
                                             args_t &&...args) {
     if (plc_has_obj) {
-      uint8_t buf[sizeof_Type];
+      alignas(my_obj_creator_t::alignment) uint8_t buf[sizeof_Type];
       Type *that = (Type *)buf;
       m_obj_creator().construct_at(that, std::forward<args_t>(args)...);
       m_obj_creator().obj_go_to_obj(*place, std::move(*that));
@@ -9498,21 +10033,17 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <typename... args_t>
   constexpr inline void construct(args_t &&...args) {
-    if (pointer_to_unsafe_data() ==
-        construct_in_place(pointer_to_unsafe_data(), this->m_Has_data,
-                           std::forward<args_t>(args)...)) {
-      this->m_Has_data = 1;
-    } else {
-      this->m_Has_data = 0;
-    }
+    notify_unsafe_value_init_in([&](const auto &) {
+      return pointer_to_unsafe_data() ==
+             construct_in_place(pointer_to_unsafe_data(), get_has_data(),
+                                std::forward<args_t>(args)...);
+    });
   }
   constexpr inline void destroy() {
-    if (this->m_Has_data) destroy_at_place(pointer_to_unsafe_data());
-    this->m_Has_data = 0;
-  }
-  constexpr inline Type *init_with_unsafe_data(bool initialized) {
-    this->m_Has_data = initialized;
-    return OP();
+    notify_unsafe_value_deinit_in_if(get_has_data(), [&](const auto &) {
+      destroy_at_place(pointer_to_unsafe_data());
+      return true;
+    });
   }
   constexpr inline Type *move_to_place(Type *dest, bool dest_has_obj) {
     if (has_data())
@@ -9527,11 +10058,111 @@ struct mjz_stack_obj_warper_template_class_t
     return 0;
   }
 
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   Error_t &&src) {
+    if (plc_has_obj) {
+      m_err_creator().obj_go_to_obj(*place, std::move(src));
+      return place;
+    }
+    return m_err_creator().construct_at(place, std::move(src));
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   Error_t &src) {
+    if (plc_has_obj) {
+      m_err_creator().obj_go_to_obj(*place, src);
+      return place;
+    }
+    return m_err_creator().construct_at(place, src);
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   const Error_t &src) {
+    if (plc_has_obj) {
+      m_err_creator().obj_go_to_obj(*place, src);
+      return place;
+    }
+    return m_err_creator().construct_at(place, src);
+  }
+  template <typename... args_t>
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   args_t &&...args) {
+    if (plc_has_obj) {
+      alignas(my_err_creator_t::alignment) uint8_t buf[sizeof_Type];
+      Error_t *that = (Error_t *)buf;
+      m_err_creator().construct_at(that, std::forward<args_t>(args)...);
+      m_err_creator().obj_go_to_obj(*place, std::move(*that));
+      m_err_creator().destroy_at(that);
+      return place;
+    }
+    return m_err_creator().construct_at(place, std::forward<args_t>(args)...);
+  }
+  template <typename U,
+            typename = std::enable_if_t<std::is_fundamental<Error_t>>>
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj, U &&arg) {
+    if (plc_has_obj) {
+      Error_t buf = m_err_creator().constructor(std::forward<U>(arg));
+      m_err_creator().obj_go_to_obj(*place, std::move(buf));
+      return place;
+    }
+    return m_err_creator().construct_at(place, std::forward<U>(arg));
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj) {
+    if (plc_has_obj) {
+      m_err_creator().destroy_at(place);
+      m_err_creator().construct_at(place);
+      return place;
+    }
+    return m_err_creator().construct_at(place);
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   Error_t *src) {
+    return err_construct_in_place(place, *src);
+  }
+  constexpr inline Error_t *err_construct_in_place(Error_t *place,
+                                                   bool plc_has_obj,
+                                                   const Error_t *src) {
+    return err_construct_in_place(place, *src);
+  }
+  constexpr inline void err_destroy_at_place(Error_t *place) {
+    m_err_creator().destroy_at(place);
+  }
+  template <typename... args_t>
+  constexpr inline void err_construct(args_t &&...args) {
+    notify_unsafe_error_init_in([&](const auto &) {
+      return EP() == err_construct_in_place(EP(), get_has_error(),
+                                            std::forward<args_t>(args)...);
+    });
+  }
+  constexpr inline void err_destroy() {
+    notify_unsafe_error_deinit_in_if(get_has_error(), [&](const auto &) {
+      err_destroy_at_place(EP());
+      return true;
+    });
+  }
+  constexpr inline Error_t *err_move_to_place(Error_t *dest,
+                                              bool dest_has_obj) {
+    if (has_error())
+      return err_construct_in_place(dest, dest_has_obj, std::move(*EP()));
+    err_destroy();
+    return 0;
+  }
+  constexpr inline Error_t *err_copy_to_place(Error_t *dest,
+                                              bool dest_has_obj) {
+    if (has_error()) return err_construct_in_place(dest, dest_has_obj, *EP());
+    return 0;
+  }
+
  public:
   constexpr inline Type &o() & { return **this; }
-  constexpr inline Type *op() & { return this->operator->(); }
+  constexpr inline Type *op() & { return operator->(); }
   constexpr inline const Type &o() const & { return **this; }
-  constexpr inline const Type *op() const & { return this->operator->(); }
+  constexpr inline const Type *op() const & { return operator->(); }
   constexpr inline Type &&o() && { return std::move(*move_me()); }
   constexpr inline Type *op() && = delete;
   constexpr inline const Type &&o() const && { return std::move(*move_me()); }
@@ -9540,12 +10171,12 @@ struct mjz_stack_obj_warper_template_class_t
 
   constexpr inline Type &uo() &noexcept { return *uop(); }
   constexpr inline Type *uop() &noexcept {
-    if (this->m_Has_data) return OP();
+    if (get_has_data()) return OP();
     return nullptr;
   }
   constexpr inline const Type &uo() const &noexcept { return *uop(); }
   constexpr inline const Type *uop() const &noexcept {
-    if (this->m_Has_data) return OP();
+    if (get_has_data()) return OP();
     return nullptr;
   }
   constexpr inline Type &&uo() &&noexcept { return std::move(uo()); }
@@ -9554,43 +10185,780 @@ struct mjz_stack_obj_warper_template_class_t
     return std::move(uo());
   }
   constexpr inline const Type *uop() const && = delete;
-
   // Ultra nunsafe
+  using data_state_t = typename my_obj_helper_t::data_state;
+  using data_state = data_state_t;
+  constexpr const static data_state_t cast_to_none = data_state_t::none;
+  constexpr const static data_state_t cast_to_value = data_state_t::value;
+  constexpr const static data_state_t cast_to_error = data_state_t::error;
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_unsafe_set_type(data_state cast_to_state) & {
+    m_obj_helper().base_unsafe_unsafe_set_type(cast_to_state);
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_init_start() & {
+    m_obj_helper().base_notify_value_unsafe_init_start();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_deinit_start() & {
+    m_obj_helper().base_notify_value_unsafe_deinit_start();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_init_start() && {
+    m_obj_helper().base_notify_value_unsafe_init_start();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_deinit_start() && {
+    m_obj_helper().base_notify_value_unsafe_deinit_start();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_init_fail() & {
+    m_obj_helper().base_notify_value_unsafe_init_fail();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_deinit_fail() & {
+    m_obj_helper().base_notify_value_unsafe_deinit_fail();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_init_fail() && {
+    m_obj_helper().base_notify_value_unsafe_init_fail();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_deinit_fail() && {
+    m_obj_helper().base_notify_value_unsafe_deinit_fail();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_init_end() & {
+    m_obj_helper().base_notify_value_unsafe_init_end();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_deinit_end() & {
+    m_obj_helper().base_notify_value_unsafe_deinit_end();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_init_end() && {
+    m_obj_helper().base_notify_value_unsafe_init_end();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_value_unsafe_deinit_end() && {
+    m_obj_helper().base_notify_value_unsafe_deinit_end();
+    return move_me();
+  }
 
-  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_init()
-      & {
-    init_with_unsafe_data(true);
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_start() & {
+    m_err_helper().base_notify_error_unsafe_init_start();
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_deinit()
-      & {
-    init_with_unsafe_data(false);
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_start() & {
+    m_err_helper().base_notify_error_unsafe_deinit_start();
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_init()
-      && {
-    init_with_unsafe_data(true);
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_start() && {
+    m_err_helper().base_notify_error_unsafe_init_start();
     return move_me();
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t &notify_unsafe_deinit()
-      && {
-    init_with_unsafe_data(false);
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_start() && {
+    m_err_helper().base_notify_error_unsafe_deinit_start();
     return move_me();
   }
-  constexpr inline Type *pointer_to_unsafe_data_for_unsafe_placement_new(
-      Type *ptr) & {
-    destroy();
-    return pointer_to_unsafe_data();
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_fail() & {
+    m_err_helper().base_notify_error_unsafe_init_fail();
+    return *this;
   }
-  constexpr inline Type *init_with_unsafe_placement_new(
-      Type *ptr) & {  // placement new "new (ptr) Type();"
-    return init_with_unsafe_data(ptr == pointer_to_unsafe_data());
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_fail() & {
+    m_err_helper().base_notify_error_unsafe_deinit_fail();
+    return *this;
   }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_fail() && {
+    m_err_helper().base_notify_error_unsafe_init_fail();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_fail() && {
+    m_err_helper().base_notify_error_unsafe_deinit_fail();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_end() & {
+    m_err_helper().base_notify_error_unsafe_init_end();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_end() & {
+    m_err_helper().base_notify_error_unsafe_deinit_end();
+    return *this;
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_init_end() && {
+    m_err_helper().base_notify_error_unsafe_init_end();
+    return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  unsafe_notify_error_unsafe_deinit_end() && {
+    m_err_helper().base_notify_error_unsafe_deinit_end();
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &
+      me_notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(*this, std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_value_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              *this, std::forward<Ts>(args)...)) {
+        unsafe_notify_value_unsafe_init_end();
+      } else {
+        unsafe_notify_value_unsafe_init_fail();
+      }
+      return *this;
+    }
+    unsafe_notify_value_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            *this, std::forward<Ts>(args)...)) {
+      unsafe_notify_value_unsafe_deinit_end();
+    } else {
+      unsafe_notify_value_unsafe_deinit_fail();
+    }
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &&
+      me_notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &&
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->move_me(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_value_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              move_me(), std::forward<Ts>(args)...)) {
+        unsafe_notify_value_unsafe_init_end();
+      } else {
+        unsafe_notify_value_unsafe_init_fail();
+      }
+      return move_me();
+    }
+    unsafe_notify_value_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            move_me(), std::forward<Ts>(args)...)) {
+      unsafe_notify_value_unsafe_deinit_end();
+    } else {
+      unsafe_notify_value_unsafe_deinit_fail();
+    }
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_value_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_value_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_value_deinit_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_value_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_value_deinit_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_value_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_value_deinit_in(function_type &&inner_function,
+                                   Ts... args) & {
+    me_notify_unsafe_value_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_value_deinit_in(function_type &&inner_function,
+                                   Ts... args) && {
+    move_me().me_notify_unsafe_value_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_value_init_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_value_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_value_init_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_value_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_value_init_in(function_type &&inner_function, Ts... args) & {
+    me_notify_unsafe_value_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_value_init_in(function_type &&inner_function,
+                                 Ts... args) && {
+    move_me().me_notify_unsafe_value_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_value_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) & {
+    if (do_notify)
+      notify_unsafe_value_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_value_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_value_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_value_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_value_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_value_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_value_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_value_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) & {
+    if (do_notify)
+      notify_unsafe_value_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_value_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_value_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_value_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_value_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_value_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_value_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &
+      notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->uuop(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_value_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              uuop(), std::forward<Ts>(args)...)) {
+        unsafe_notify_value_unsafe_init_end();
+      } else {
+        unsafe_notify_value_unsafe_init_fail();
+      }
+      return *this;
+    }
+    unsafe_notify_value_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            uuop(), std::forward<Ts>(args)...)) {
+      unsafe_notify_value_unsafe_deinit_end();
+    } else {
+      unsafe_notify_value_unsafe_deinit_fail();
+    }
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &&
+      notify_unsafe_value_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &&
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->uuop(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_value_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              uuop(), std::forward<Ts>(args)...)) {
+        unsafe_notify_value_unsafe_init_end();
+      } else {
+        unsafe_notify_value_unsafe_init_fail();
+      }
+      return move_me();
+    }
+    unsafe_notify_value_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            uuop(), std::forward<Ts>(args)...)) {
+      unsafe_notify_value_unsafe_deinit_end();
+    } else {
+      unsafe_notify_value_unsafe_deinit_fail();
+    }
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) & {
+    if (do_notify)
+      notify_unsafe_value_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_value_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_value_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &
+      me_notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(*this, std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              *this, std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return *this;
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            *this, std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &&
+      me_notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                               function_type &&inner_function,
+                                               Ts... args) &&
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->move_me(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              move_me(), std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return move_me();
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            move_me(), std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_error_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                              function_type &&inner_function,
+                                              Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_error_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_deinit_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_deinit_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_deinit_in(function_type &&inner_function,
+                                   Ts... args) & {
+    me_notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_deinit_in(function_type &&inner_function,
+                                   Ts... args) && {
+    move_me().me_notify_unsafe_error_init_or_deinit_in(
+        false, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_init_in(function_type &&inner_function, Ts... args) & {
+    notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_init_in(function_type &&inner_function, Ts... args) && {
+    move_me().notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_init_in(function_type &&inner_function, Ts... args) & {
+    me_notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_init_in(function_type &&inner_function,
+                                 Ts... args) && {
+    move_me().me_notify_unsafe_error_init_or_deinit_in(
+        true, std::forward<function_type>(inner_function),
+        std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) & {
+    if (do_notify)
+      notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_deinit_in_if(bool do_notify,
+                                   function_type &&inner_function,
+                                   Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_deinit_in_if(bool do_notify,
+                                      function_type &&inner_function,
+                                      Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_error_init_or_deinit_in(
+          false, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) & {
+    if (do_notify)
+      notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_init_in_if(bool do_notify, function_type &&inner_function,
+                                 Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  me_notify_unsafe_error_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) & {
+    if (do_notify)
+      me_notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  me_notify_unsafe_error_init_in_if(bool do_notify,
+                                    function_type &&inner_function,
+                                    Ts... args) && {
+    if (do_notify)
+      move_me().me_notify_unsafe_error_init_or_deinit_in(
+          true, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &
+      notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->uuop(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              uuop(), std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return *this;
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            uuop(), std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+      constexpr inline mjz_stack_obj_warper_template_class_t &&
+      notify_unsafe_error_init_or_deinit_in(bool is_init,
+                                            function_type &&inner_function,
+                                            Ts... args) &&
+        requires requires(function_type &&inner_function) {
+                   {
+                     inner_function(this->uuop(), std::forward<Ts>(args)...)
+                     } -> std::convertible_to<bool>;
+                 }
+  {
+    if (is_init) {
+      unsafe_notify_error_unsafe_init_start();
+      if (std::forward<function_type>(inner_function)(
+              uuop(), std::forward<Ts>(args)...)) {
+        unsafe_notify_error_unsafe_init_end();
+      } else {
+        unsafe_notify_error_unsafe_init_fail();
+      }
+      return move_me();
+    }
+    unsafe_notify_error_unsafe_deinit_start();
+    if (std::forward<function_type>(inner_function)(
+            uuop(), std::forward<Ts>(args)...)) {
+      unsafe_notify_error_unsafe_deinit_end();
+    } else {
+      unsafe_notify_error_unsafe_deinit_fail();
+    }
+    return move_me();
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &
+  notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) & {
+    if (do_notify)
+      notify_unsafe_error_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return *this;
+  }
+  template <class function_type, typename... Ts>
+  constexpr inline mjz_stack_obj_warper_template_class_t &&
+  notify_unsafe_error_init_or_deinit_in_if(bool do_notify, bool is_init,
+                                           function_type &&inner_function,
+                                           Ts... args) && {
+    if (do_notify)
+      move_me().notify_unsafe_error_init_or_deinit_in(
+          is_init, std::forward<function_type>(inner_function),
+          std::forward<Ts>(args)...);
+    return move_me();
+  }
+
   constexpr inline uint8_t *pointer_to_unsafe_data_buffer() & {
-    return (uint8_t *)(this->m_data<uint8_t>());
+    return (uint8_t *)(m_obj_helper().m_data<uint8_t>());
   }
   constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() const & {
-    return (uint8_t *)(this->m_data<uint8_t>());
+    return (uint8_t *)(m_obj_helper().m_data<uint8_t>());
   }
   constexpr inline const uint8_t *pointer_to_unsafe_data_buffer() && = delete;
   constexpr inline const uint8_t *pointer_to_unsafe_data() && = delete;
@@ -9599,11 +10967,15 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const uint8_t *pointer_to_unsafe_data() const && = delete;
   constexpr inline Type *pointer_to_unsafe_data() & { return OP(); }
   constexpr inline const Type *pointer_to_unsafe_data() const & { return OP(); }
-
+  constexpr inline const uint8_t *pointer_to_unsafe_error() && = delete;
+  constexpr inline const uint8_t *pointer_to_unsafe_error() const && = delete;
+  constexpr inline Type *pointer_to_unsafe_error() & { return EP(); }
+  constexpr inline const Type *pointer_to_unsafe_error() const & {
+    return EP();
+  }
   constexpr inline mjz_stack_obj_warper_template_class_t &&move_me() {
     return std::move(*this);
   }
-
   constexpr inline const mjz_stack_obj_warper_template_class_t &&move_me()
       const {
     return std::move(*this);
@@ -9611,7 +10983,6 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() & {
     return *this;
   }
-
   constexpr inline const mjz_stack_obj_warper_template_class_t &copy_me()
       const & {
     return *this;
@@ -9619,27 +10990,22 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() && {
     return *this;
   }
-
   constexpr inline const mjz_stack_obj_warper_template_class_t &copy_me()
       const && {
     return *this;
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t clone_me() & {
     return {*this};
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t clone_me() const & {
     return {*this};
   }
   constexpr inline mjz_stack_obj_warper_template_class_t clone_me() && {
     return {move_me()};
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t clone_me() const && {
     return {move_me()};
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t temp_me() const {
     return *this;
   }
@@ -9658,17 +11024,32 @@ struct mjz_stack_obj_warper_template_class_t
   mjz_stack_obj_warper_template_class_t &&remove_const() && {
     return std::move(*this);
   }
-  Type &remove_const_obj() const & { return *this->mm_data<Type>(); }
+  Type &remove_const_obj() const & { return *m_obj_helper().mm_data<Type>(); }
   Type &&remove_const_obj() const && {
-    return std::move(*this->mm_data<Type>());
+    return std::move(*m_obj_helper().mm_data<Type>());
   }
-  Type &remove_const_obj() & { return *this->mm_data<Type>(); }
-  Type &&remove_const_obj() && { return std::move(*this->mm_data<Type>()); }
+  Type &remove_const_obj() & { return *m_obj_helper().mm_data<Type>(); }
+  Type &&remove_const_obj() && {
+    return std::move(*m_obj_helper().mm_data<Type>());
+  }
   const Type &&move() const & { return std::move(o()); }
   const Type &&move() const && { return std::move(o()); }
   Type &&move() & { return std::move(o()); }
   Type &&move() && { return std::move(o()); }
-
+  Error_t &remove_const_err() const & {
+    return *m_err_helper().mm_data<Error_t>();
+  }
+  Error_t &&remove_const_err() const && {
+    return std::move(*m_err_helper().mm_data<Error_t>());
+  }
+  Error_t &remove_const_err() & { return *m_err_helper().mm_data<Error_t>(); }
+  Error_t &&remove_const_err() && {
+    return std::move(*m_err_helper().mm_data<Error_t>());
+  }
+  const Error_t &&move_err() const & { return std::move(e()); }
+  const Error_t &&move_err() const && { return std::move(e()); }
+  Error_t &&move_err() & { return std::move(e()); }
+  Error_t &&move_err() && { return std::move(e()); }
   constexpr inline Type &uuo() &noexcept { return *uuop(); }
   constexpr inline Type *uuop() &noexcept { return OP(); }
   constexpr inline const Type &uuo() const &noexcept { return *uuop(); }
@@ -9679,14 +11060,16 @@ struct mjz_stack_obj_warper_template_class_t
   }
   constexpr inline const Type *uuop() const && = delete;
   constexpr inline Type *uuop() && = delete;
-
   // no safe use case
   constexpr inline const Type *invalid_object_pointer() const && {
     return uuop();
   };
   // no safe use case
   constexpr inline Type *invalid_object_pointer() && { return uuop(); }
-
+  constexpr inline const Error_t *invalid_error_pointer() const && {
+    return uuep();
+  };
+  constexpr inline Error_t *invalid_error_pointer() && { return uuep(); }
   // unsafe object functions end
 
   constexpr inline mjz_stack_obj_warper_template_class_t() {
@@ -9694,10 +11077,13 @@ struct mjz_stack_obj_warper_template_class_t
       construct();
     }
   };
-  constexpr inline mjz_stack_obj_warper_template_class_t(mjz_init_optional_t ) {
-      construct();
+  constexpr inline mjz_stack_obj_warper_template_class_t(mjz_init_optional_t) {
+    construct();
   };
-  
+  constexpr inline mjz_stack_obj_warper_template_class_t(
+      mjz_init_optional_if_t do_init) {
+    if (do_init) construct();
+  };
   template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
   constexpr inline mjz_stack_obj_warper_template_class_t(
       mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one>)
@@ -9712,11 +11098,7 @@ struct mjz_stack_obj_warper_template_class_t
         mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one -
                                1>());
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t(
-      mjz_no_init_optional_t<0>) {
-    this->m_Has_data = 0;
-  };
-
+  constexpr inline mjz_stack_obj_warper_template_class_t(mjz_no_init_optional_t<0>) {};
   template <typename T0, typename... T_s>
   constexpr inline mjz_stack_obj_warper_template_class_t(T0 &&arg0,
                                                          T_s &&...args) {
@@ -9732,7 +11114,7 @@ struct mjz_stack_obj_warper_template_class_t
                                                          T_s &&...args) {
     construct(arg0, std::forward<T_s>(args)...);
   };
-  constexpr inline ~mjz_stack_obj_warper_template_class_t() { de_init(); }
+  constexpr inline ~mjz_stack_obj_warper_template_class_t() { destroy(); }
   constexpr inline mjz_stack_obj_warper_template_class_t(
       mjz_stack_obj_warper_template_class_t &&s_obj_w) {
     if (s_obj_w.has_data()) construct(std::move(s_obj_w.operator*()));
@@ -9827,7 +11209,6 @@ struct mjz_stack_obj_warper_template_class_t
     std::forward<Func_t>(Func)(move_me(), std::forward<Ts>(args)...);
     return move_me();
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t(const Type &obj) {
     construct(obj);
   }
@@ -9878,7 +11259,6 @@ struct mjz_stack_obj_warper_template_class_t
     construct(std::forward<U>(Obj));
     return *this;
   }
-
   template <class U>
   inline constexpr typename std::enable_if<
       std::conjunction_v<
@@ -9890,7 +11270,6 @@ struct mjz_stack_obj_warper_template_class_t
     operator=(mjz_stack_obj_warper_template_class_t(std::forward<U>(Obj)));
     return *this;
   }
-
   template <class U>
   inline constexpr
       typename std::enable_if<std::conjunction_v<std::is_constructible<Type, U>,
@@ -9900,7 +11279,6 @@ struct mjz_stack_obj_warper_template_class_t
     construct(std::forward<U>(Obj));
     return move_me();
   }
-
   template <class U>
   inline constexpr typename std::enable_if<
       std::conjunction_v<
@@ -9912,7 +11290,6 @@ struct mjz_stack_obj_warper_template_class_t
     operator=(mjz_stack_obj_warper_template_class_t(std::forward<U>(Obj)));
     return move_me();
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t &&operator=(
       mjz_stack_obj_warper_template_class_t &&s_obj_w) && {
     if (!!s_obj_w) operator=(std::move(s_obj_w.operator*()));
@@ -9928,7 +11305,6 @@ struct mjz_stack_obj_warper_template_class_t
     if (!!s_obj_w) operator=(s_obj_w.operator*());
     return move_me();
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t &operator=(
       mjz_stack_obj_warper_template_class_t &&s_obj_w) & {
     if (!!s_obj_w) operator=(std::move(s_obj_w.operator*()));
@@ -9974,10 +11350,8 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &init(
       arguments_types &&...args) & {
     construct(std::forward<arguments_types>(args)...);
-
     return *this;
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t &&init(
       const mjz_stack_obj_warper_template_class_t &obj) && {
     operator=(obj);
@@ -10009,7 +11383,6 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &&init(
       arguments_types &&...args) && {
     construct(std::forward<arguments_types>(args)...);
-
     return move_me();
   }
 
@@ -10021,20 +11394,19 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &de_init(
       int fill_VAL) & {
     destroy();
-    static_str_algo::memset(this->m_data<uint8_t>(), fill_VAL, sizeof_Type);
+    static_str_algo::memset(m_obj_helper().m_data<uint8_t>(), fill_VAL,
+                            sizeof_Type);
     return *this;
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t &&de_init() && {
     destroy();
-
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &&de_init(
       int fill_VAL) && {
     destroy();
-    static_str_algo::memset(this->m_data<uint8_t>(), fill_VAL, sizeof_Type);
-
+    static_str_algo::memset(m_obj_helper().m_data<uint8_t>(), fill_VAL,
+                            sizeof_Type);
     return move_me();
   }
 
@@ -10050,11 +11422,11 @@ struct mjz_stack_obj_warper_template_class_t
  public:
  public:
   constexpr inline Type &if_no_obj_then_create() & {
-    if (!this->m_Has_data) construct();
+    if (!get_has_data()) construct();
     return *pointer_to_unsafe_data();
   }
   Type &&if_no_obj_then_create() && {
-    if (!this->m_Has_data) construct();
+    if (!get_has_data()) construct();
     return std::move(move_me().O());
   }
 
@@ -10064,7 +11436,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const Type *throw_if_no_data_or_give_data() const && =
       delete;
   constexpr inline const Type *throw_if_no_data_or_give_data() const & {
-    if (!this->m_Has_data) {
+    if (!get_has_data()) {
       if constexpr (do_error_check) {
         Throw<std::out_of_range>(
             "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data "
@@ -10118,7 +11490,6 @@ struct mjz_stack_obj_warper_template_class_t
     return std::move(move_me().operator->());
   }
   constexpr inline Type &operator*() & { return *operator->(); }
-
   constexpr inline const Type *operator->() const & {
     return pointer_to_data();
   }
@@ -10130,7 +11501,6 @@ struct mjz_stack_obj_warper_template_class_t
   }
   constexpr inline Type &operator()() & { return **this; }
   using my_Type_t = mjz_stack_obj_warper_template_class_t;
-
   constexpr inline my_Type_t &destroy_if_valid() & {
     de_init();
     return *this;
@@ -10169,7 +11539,6 @@ struct mjz_stack_obj_warper_template_class_t
     construct();
     return move_me();
   }
-
   constexpr inline my_Type_t &operator~() & { return destroy_if_valid(); }
   constexpr inline my_Type_t &operator+() & { return create_if_empty(); }
   constexpr inline my_Type_t &operator-() & {
@@ -10218,29 +11587,32 @@ struct mjz_stack_obj_warper_template_class_t
     construct();
     return temp;
   }
-
   /*
   IMPORTANT NOTE :
   use iter_me to set up an iterator
   (or clone_me because they are the same .
   but use iter_me because its more readable.)
   */
-
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() & {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() & {
     return {*this};
   }
-
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() const & {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() const & {
     return {*this};
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() && {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() && {
     return {move_me()};
   }
-
-  constexpr inline mjz_stack_obj_warper_template_class_t iter_me() const && {
+  constexpr inline mjz_stack_obj_warper_template_class_t new_me() const && {
     return {move_me()};
   }
-
+  constexpr inline iterator_template_t<Type> get_iter() & {
+    if (!!*this) return {uop(), uop(), uop() + 1};
+    return {};
+  }
+  constexpr inline iterator_template_t<const Type> get_iter() const & {
+    if (!!*this) return {uop(), uop(), uop() + 1};
+    return {};
+  }
   constexpr inline mjz_stack_obj_warper_template_class_t *begin() & {
     return this;
   }
@@ -10310,7 +11682,6 @@ struct mjz_stack_obj_warper_template_class_t
     emplace(moved);
     return move_me();
   }
-
   template <class return_type = (decltype(auto)), class function_type,
             typename... args_t>
   constexpr inline return_type do_or_throw(function_type f,
@@ -10348,7 +11719,6 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline const mjz_stack_obj_warper_template_class_t &&operator[](
       std::function<void(const Type &&)> f) const && {
     if (has_data()) f(std::move(move_me().O()));
-
     return move_me();
   }
   constexpr inline const mjz_stack_obj_warper_template_class_t &operator[](
@@ -10492,7 +11862,6 @@ struct mjz_stack_obj_warper_template_class_t
     no_data_function(std::forward<args_t>(args)...);
     return move_me();
   }
-
   template <class return_type = (decltype(auto)), class has_data_function_type,
             class no_data_function_type, typename... args_t>
   constexpr inline return_type me_do_first_if_true_or_second_if_false_ret(
@@ -10585,7 +11954,6 @@ struct mjz_stack_obj_warper_template_class_t
     no_data_function(move_me(), std::forward<args_t>(args)...);
     return move_me();
   }
-
   template <class return_type = (decltype(auto)), class has_data_function_type,
             typename... args_t>
   constexpr inline return_type do_if_valid_ret(
@@ -10630,55 +11998,42 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) const & {
+      has_data_function_type has_data_function, args_t &&...args) const & {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) & {
+      has_data_function_type has_data_function, args_t &&...args) & {
     if (has_data()) {
       has_data_function(O(), std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &&do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) && {
+      has_data_function_type has_data_function, args_t &&...args) && {
     if (has_data()) {
       has_data_function(std::move(move_me().O()),
                         std::forward<args_t>(args)...);
       return move_me();
     }
-
     return move_me();
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &&do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) const && {
+      has_data_function_type has_data_function, args_t &&...args) const && {
     if (has_data()) {
       has_data_function(std::move(move_me().O()),
                         std::forward<args_t>(args)...);
       return move_me();
     }
-
     return move_me();
   }
-
   template <class return_type = (decltype(auto)), class no_data_function_type,
             typename... args_t>
   constexpr inline return_type do_if_empty_ret(
@@ -10721,52 +12076,40 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) const & {
+      no_data_function_type no_data_function, args_t &&...args) const & {
     if (!has_data()) {
       no_data_function(std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) & {
+      no_data_function_type no_data_function, args_t &&...args) & {
     if (!has_data()) {
       no_data_function(std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &&do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) && {
+      no_data_function_type no_data_function, args_t &&...args) && {
     if (!has_data()) {
       no_data_function(std::forward<args_t>(args)...);
       return move_me();
     }
-
     return move_me();
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &&do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) const && {
+      no_data_function_type no_data_function, args_t &&...args) const && {
     if (!has_data()) {
       no_data_function(std::forward<args_t>(args)...);
       return move_me();
     }
     return move_me();
   }
-
   template <class return_type = (decltype(auto)), class has_data_function_type,
             typename... args_t>
   constexpr inline return_type me_do_if_valid_ret(
@@ -10809,53 +12152,40 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &me_do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) const & {
+      has_data_function_type has_data_function, args_t &&...args) const & {
     if (has_data()) {
       has_data_function(*this, std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &me_do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) & {
+      has_data_function_type has_data_function, args_t &&...args) & {
     if (has_data()) {
       has_data_function(*this, std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &&me_do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) && {
+      has_data_function_type has_data_function, args_t &&...args) && {
     if (has_data()) {
       has_data_function(move_me(), std::forward<args_t>(args)...);
       return move_me();
     }
-
     return move_me();
   }
   template <class has_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &&me_do_if_valid(
-      has_data_function_type has_data_function,
-
-      args_t &&...args) const && {
+      has_data_function_type has_data_function, args_t &&...args) const && {
     if (has_data()) {
       has_data_function(move_me(), std::forward<args_t>(args)...);
       return move_me();
     }
-
     return move_me();
   }
-
   template <class return_type = (decltype(auto)), class no_data_function_type,
             typename... args_t>
   constexpr inline return_type me_do_if_empty_ret(
@@ -10898,45 +12228,34 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &me_do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) const & {
+      no_data_function_type no_data_function, args_t &&...args) const & {
     if (!has_data()) {
       no_data_function(*this, std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &me_do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) & {
+      no_data_function_type no_data_function, args_t &&...args) & {
     if (!has_data()) {
       no_data_function(*this, std::forward<args_t>(args)...);
       return *this;
     }
-
     return *this;
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline mjz_stack_obj_warper_template_class_t &&me_do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) && {
+      no_data_function_type no_data_function, args_t &&...args) && {
     if (!has_data()) {
       no_data_function(move_me(), std::forward<args_t>(args)...);
       return move_me();
     }
-
     return move_me();
   }
   template <class no_data_function_type, typename... args_t>
   constexpr inline const mjz_stack_obj_warper_template_class_t &&me_do_if_empty(
-      no_data_function_type no_data_function,
-
-      args_t &&...args) const && {
+      no_data_function_type no_data_function, args_t &&...args) const && {
     if (!has_data()) {
       no_data_function(move_me(), std::forward<args_t>(args)...);
       return move_me();
@@ -10969,105 +12288,187 @@ struct mjz_stack_obj_warper_template_class_t
       const mjz_stack_obj_warper_template_class_t &other) const {
     return **this >= (*other);
   }
-#if 0
- constexpr inline bool operator<=>(const mjz_stack_obj_warper_template_class_t &other) const {
-return **this<=> (*other);
-}
-#endif  // ! Arduino
+  constexpr inline bool operator<=>(
+      const mjz_stack_obj_warper_template_class_t &other) const {
+    return **this <=> (*other);
+  }
+  constexpr inline bool operator==(
+      mjz_stack_obj_warper_template_class_t &other) const {
+    return **this == *other;
+  }
+  constexpr inline bool operator!=(
+      mjz_stack_obj_warper_template_class_t &other) const {
+    return **this != *other;
+  }
+  constexpr inline bool operator<(
+      mjz_stack_obj_warper_template_class_t &other) const {
+    return **this < (*other);
+  }
+  constexpr inline bool operator<=(
+      mjz_stack_obj_warper_template_class_t &other) const {
+    return **this <= (*other);
+  }
+  constexpr inline bool operator>(
+      mjz_stack_obj_warper_template_class_t &other) const {
+    return **this > (*other);
+  }
+  constexpr inline bool operator>=(
+      mjz_stack_obj_warper_template_class_t &other) const {
+    return **this >= (*other);
+  }
+  constexpr inline bool operator<=>(
+      mjz_stack_obj_warper_template_class_t &other) const {
+    return **this <=> (*other);
+  }
+  constexpr inline bool operator==(
+      const mjz_stack_obj_warper_template_class_t &other) {
+    return **this == *other;
+  }
+  constexpr inline bool operator!=(
+      const mjz_stack_obj_warper_template_class_t &other) {
+    return **this != *other;
+  }
+  constexpr inline bool operator<(
+      const mjz_stack_obj_warper_template_class_t &other) {
+    return **this < (*other);
+  }
+  constexpr inline bool operator<=(
+      const mjz_stack_obj_warper_template_class_t &other) {
+    return **this <= (*other);
+  }
+  constexpr inline bool operator>(
+      const mjz_stack_obj_warper_template_class_t &other) {
+    return **this > (*other);
+  }
+  constexpr inline bool operator>=(
+      const mjz_stack_obj_warper_template_class_t &other) {
+    return **this >= (*other);
+  }
+  constexpr inline bool operator<=>(
+      const mjz_stack_obj_warper_template_class_t &other) {
+    return **this <=> (*other);
+  }
+  constexpr inline bool operator==(
+      mjz_stack_obj_warper_template_class_t &other) {
+    return **this == *other;
+  }
+  constexpr inline bool operator!=(
+      mjz_stack_obj_warper_template_class_t &other) {
+    return **this != *other;
+  }
+  constexpr inline bool operator<(
+      mjz_stack_obj_warper_template_class_t &other) {
+    return **this < (*other);
+  }
+  constexpr inline bool operator<=(
+      mjz_stack_obj_warper_template_class_t &other) {
+    return **this <= (*other);
+  }
+  constexpr inline bool operator>(
+      mjz_stack_obj_warper_template_class_t &other) {
+    return **this > (*other);
+  }
+  constexpr inline bool operator>=(
+      mjz_stack_obj_warper_template_class_t &other) {
+    return **this >= (*other);
+  }
+  constexpr inline bool operator<=>(
+      mjz_stack_obj_warper_template_class_t &other) {
+    return **this <=> (*other);
+  }
 
-  constexpr inline bool operator==(
-      mjz_stack_obj_warper_template_class_t &other) const {
-    return **this == *other;
+ protected:
+  constexpr inline bool get_has_data() const volatile noexcept {
+    return m_obj_helper().get_has_data();
   }
-  constexpr inline bool operator!=(
-      mjz_stack_obj_warper_template_class_t &other) const {
-    return **this != *other;
+  constexpr inline bool get_has_data() const noexcept {
+    return m_obj_helper().get_has_data();
   }
-  constexpr inline bool operator<(
-      mjz_stack_obj_warper_template_class_t &other) const {
-    return **this < (*other);
+  constexpr inline bool get_has_error() const volatile noexcept {
+    return m_obj_helper().get_has_error();
   }
-  constexpr inline bool operator<=(
-      mjz_stack_obj_warper_template_class_t &other) const {
-    return **this <= (*other);
+  constexpr inline bool get_has_error() const noexcept {
+    return m_obj_helper().get_has_error();
   }
-  constexpr inline bool operator>(
-      mjz_stack_obj_warper_template_class_t &other) const {
-    return **this > (*other);
-  }
-  constexpr inline bool operator>=(
-      mjz_stack_obj_warper_template_class_t &other) const {
-    return **this >= (*other);
-  }
-#if 0
- constexpr inline bool operator<=>( mjz_stack_obj_warper_template_class_t &other) const {
-return **this<=> (*other);
-}
-#endif  // ! Arduino
 
-  constexpr inline bool operator==(
-      const mjz_stack_obj_warper_template_class_t &other) {
-    return **this == *other;
+ public:
+  constexpr inline Error_t &uue() &noexcept { return *uuep(); }
+  constexpr inline Error_t *uuep() &noexcept { return EP(); }
+  constexpr inline const Error_t &uue() const &noexcept { return *uuep(); }
+  constexpr inline const Error_t *uuep() const &noexcept { return EP(); }
+  constexpr inline Error_t &&uue() &&noexcept { return std::move(E()); }
+  constexpr inline const Error_t &&uue() const &&noexcept {
+    return std::move(E());
   }
-  constexpr inline bool operator!=(
-      const mjz_stack_obj_warper_template_class_t &other) {
-    return **this != *other;
+  constexpr inline const Error_t *uuep() const && = delete;
+  constexpr inline Error_t *uuep() && = delete;
+
+ public:
+  constexpr inline Error_t &e() & { return *ep(); }
+  constexpr inline Error_t *ep() & { return throw_if_no_error_or_give_error(); }
+  constexpr inline const Error_t &e() const & { return *ep(); }
+  constexpr inline const Error_t *ep() const & {
+    return throw_if_no_error_or_give_error();
   }
-  constexpr inline bool operator<(
-      const mjz_stack_obj_warper_template_class_t &other) {
-    return **this < (*other);
+  constexpr inline Error_t &&e() && { return std::move(*move_me()); }
+  constexpr inline Error_t *ep() && = delete;
+  constexpr inline const Error_t &&e() const && {
+    return std::move(*move_me());
   }
-  constexpr inline bool operator<=(
-      const mjz_stack_obj_warper_template_class_t &other) {
-    return **this <= (*other);
+  constexpr inline const Error_t *ep() const && = delete;
+  // unsafe object functions begin
+
+  constexpr inline Error_t &ue() &noexcept { return *uep(); }
+  constexpr inline Error_t *uep() &noexcept {
+    if (get_has_error()) return ep();
+    return nullptr;
   }
-  constexpr inline bool operator>(
-      const mjz_stack_obj_warper_template_class_t &other) {
-    return **this > (*other);
+  constexpr inline const Error_t &ue() const &noexcept { return *uep(); }
+  constexpr inline const Error_t *uep() const &noexcept {
+    if (get_has_error()) return ep();
+    return nullptr;
   }
-  constexpr inline bool operator>=(
-      const mjz_stack_obj_warper_template_class_t &other) {
-    return **this >= (*other);
+  constexpr inline Error_t &&ue() &&noexcept { return std::move(ue()); }
+  constexpr inline Error_t *uep() && = delete;
+  constexpr inline const Error_t &&ue() const &&noexcept {
+    return std::move(ue());
   }
-#if 0
- constexpr inline bool operator<=>(const mjz_stack_obj_warper_template_class_t &other) {
-return **this<=> (*other);
-}
-#endif  // ! Arduino
-  constexpr inline bool operator==(
-      mjz_stack_obj_warper_template_class_t &other) {
-    return **this == *other;
+  constexpr inline const Error_t *uep() const && = delete;
+  constexpr inline const Error_t *throw_if_no_error_or_give_error() const & {
+    if (!get_has_error()) {
+      if constexpr (do_error_check) {
+        Throw<std::out_of_range>(
+            "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data "
+            "bad "
+            "access");
+      } else {
+        return (const Error_t *)nullptr;  // :(
+      }
+    }
+    return uuep();
   }
-  constexpr inline bool operator!=(
-      mjz_stack_obj_warper_template_class_t &other) {
-    return **this != *other;
+  constexpr inline Error_t *throw_if_no_error_or_give_error() & {
+    if (!get_has_error()) {
+      if constexpr (do_error_check) {
+        Throw<std::out_of_range>(
+            "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data "
+            "bad "
+            "access");
+      } else {
+        return (Error_t *)nullptr;  // :(
+      }
+    }
+    return uuep();
   }
-  constexpr inline bool operator<(
-      mjz_stack_obj_warper_template_class_t &other) {
-    return **this < (*other);
+  constexpr inline bool has_error() const noexcept { return get_has_error(); }
+  constexpr inline bool has_error() const volatile noexcept {
+    return get_has_error();
   }
-  constexpr inline bool operator<=(
-      mjz_stack_obj_warper_template_class_t &other) {
-    return **this <= (*other);
-  }
-  constexpr inline bool operator>(
-      mjz_stack_obj_warper_template_class_t &other) {
-    return **this > (*other);
-  }
-  constexpr inline bool operator>=(
-      mjz_stack_obj_warper_template_class_t &other) {
-    return **this >= (*other);
-  }
-#if 0
- constexpr inline bool operator<=>( mjz_stack_obj_warper_template_class_t &other) {
-return **this<=> (*other);
-}
-#endif  // ! Arduino
-  constexpr inline bool has_data() const noexcept { return this->m_Has_data; }
+  constexpr inline bool has_data() const noexcept { return get_has_data(); }
   constexpr inline bool has_data() const volatile noexcept {
-    return this->m_Has_data;
+    return get_has_data();
   }
-  constexpr inline bool operator!() const noexcept { return !this->m_Has_data; }
+  constexpr inline bool operator!() const noexcept { return !get_has_data(); }
   constexpr inline operator Type *() & { return pointer_to_data(); }
   constexpr inline operator const Type *() & { return pointer_to_data(); }
   constexpr inline operator const Type *() const & { return pointer_to_data(); }
@@ -11097,7 +12498,6 @@ return **this<=> (*other);
   constexpr explicit operator bool() &&noexcept { return has_data(); }
   constexpr explicit operator bool() const &noexcept { return has_data(); }
   constexpr explicit operator bool() const &&noexcept { return has_data(); }
-
   constexpr inline mjz_stack_obj_warper_template_class_t &
   remove_volatile() volatile &noexcept {
     return *const_cast<mjz_stack_obj_warper_template_class_t *>(this);
@@ -11125,7 +12525,6 @@ return **this<=> (*other);
     return has_data();
   }
   constexpr bool has_value() const noexcept { return has_data(); }
-
   template <typename... Ts>
   struct deafult_construct_at_fn : private my_obj_creator_t {
     inline constexpr bool operator()(T *dest, Ts &&...args) {
@@ -11142,34 +12541,36 @@ return **this<=> (*other);
   constexpr inline mjz_stack_obj_warper_template_class_t &&fn_emplace(
       std::function<bool(T *, Args...)> construct_at_fn, Args &&...args) && {
     ~*this;
-    if (construct_at_fn(uuop(), std::forward<Args>(args)...))
-      notify_unsafe_init();
+    notify_unsafe_value_init_in([&](const auto &) {
+      return construct_at_fn(uuop(), std::forward<Args>(args)...);
+    });
     return move_me();
   }
   template <class... Args>
   constexpr inline mjz_stack_obj_warper_template_class_t &fn_emplace(
       std::function<bool(T *, Args...)> construct_at_fn, Args &&...args) & {
     ~*this;
-    if (construct_at_fn(uuop(), std::forward<Args>(args)...))
-      notify_unsafe_init();
+    notify_unsafe_value_init_in([&](const auto &) {
+      return construct_at_fn(uuop(), std::forward<Args>(args)...);
+    });
     return *this;
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t &&fn_emplace(
       std::function<bool(T *)> construct_at_fn =
           deafult_construct_at_fn<void>()) && {
     ~*this;
-    if (construct_at_fn(uuop())) notify_unsafe_init();
+    notify_unsafe_value_init_in(
+        [&](const auto &) { return (construct_at_fn(uuop())); });
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &fn_emplace(
       std::function<bool(T *)> construct_at_fn =
           deafult_construct_at_fn<void>()) & {
     ~*this;
-    if (construct_at_fn(uuop())) notify_unsafe_init();
+    notify_unsafe_value_init_in(
+        [&](const auto &) { return (construct_at_fn(uuop())); });
     return *this;
   }
-
   template <class... Args>
   constexpr inline mjz_stack_obj_warper_template_class_t &&dfn_emplace(
       Args &&...args) && {
@@ -11182,7 +12583,6 @@ return **this<=> (*other);
     return fn_emplace<Args...>(deafult_construct_at_fn<Args...>(),
                                std::forward<Args>(args)...);
   }
-
   constexpr inline mjz_stack_obj_warper_template_class_t &&dfn_emplace() && {
     return move_me().fn_emplace(deafult_construct_at_fn<void>());
   }
@@ -11196,7 +12596,6 @@ return **this<=> (*other);
     return o();
   }
   template <class U, class... Args>
-
   constexpr inline T &emplace(std::initializer_list<U> ilist,
                               Args &&...args) & {
     ~*this;
@@ -11210,7 +12609,6 @@ return **this<=> (*other);
     return move_me().o();
   }
   template <class U, class... Args>
-
   constexpr inline T &&emplace(std::initializer_list<U> ilist,
                                Args &&...args) && {
     ~*this;
@@ -11247,7 +12645,6 @@ return **this<=> (*other);
     return has_data() ? std::move(*move_me())
                       : static_cast<T>(std::forward<U>(default_value));
   }
-
   template <class... Ts>
   inline constexpr Type &value_or_emplace(Ts &&...args) & {
     if (!!*this) return o();
@@ -11260,7 +12657,6 @@ return **this<=> (*other);
     emplace(std::forward<Ts>(args)...);
     return std::move(o());
   }
-
   template <class... Ts>
   inline constexpr mjz_stack_obj_warper_template_class_t &optional_or_emplace(
       Ts &&...args) & {
@@ -11275,7 +12671,6 @@ return **this<=> (*other);
     emplace(std::forward<Ts>(args)...);
     return move_me();
   }
-
   template <class F>
   constexpr auto transform(F &&f) & {
     if (has_data()) {
@@ -11361,15 +12756,19 @@ return **this<=> (*other);
   constexpr inline mjz_stack_obj_warper_template_class_t &copy_to(
       mjz_stack_obj_warper_template_class_t &dest) & {
     if (this != &dest)
-      dest.init_with_unsafe_placement_new(
-          copy_to(dest.pointer_to_unsafe_data(), dest.has_data()));
+      dest.notify_unsafe_value_init_in([&](const auto &) {
+        return copy_to(dest.pointer_to_unsafe_data(), dest.has_data()) ==
+               dest.pointer_to_unsafe_data();
+      });
     return dest;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &move_to(
       mjz_stack_obj_warper_template_class_t &dest) {
     if (this != &dest)
-      dest.init_with_unsafe_placement_new(
-          move_to(dest.pointer_to_unsafe_data(), dest.has_data()));
+      dest.notify_unsafe_value_init_in([&](const auto &) {
+        return move_to(dest.pointer_to_unsafe_data(), dest.has_data()) ==
+               dest.pointer_to_unsafe_data();
+      });
     return dest;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t *copy_to(
@@ -11563,6 +12962,60 @@ using O_mjz_stack_obj_warper_with_error_template_t =
         OU_mjz_stack_obj_warper_template_t<
             static_str_algo::remove_reference_t<error_t>>>;
 
+template <size_t my_index, typename T, typename Type0, typename... Types>
+struct mjz_get_type_index_helper_class_t {
+  constexpr static const size_t Index =
+      mjz_get_type_index_helper_class_t<my_index + 1, T, Types...>::Index;
+};
+
+template <size_t my_index, typename T, typename... Types>
+struct mjz_get_type_index_helper_class_t<my_index, T, T, Types...> {
+  constexpr static const size_t Index = my_index;
+};
+template <size_t my_index, typename T>
+struct mjz_get_type_index_helper_class_t<my_index, T, T> {
+  constexpr static const size_t Index = my_index;
+};
+template <size_t my_index, typename T, typename U>
+struct mjz_get_type_index_helper_class_t<my_index, T, U> {
+  constexpr static const size_t Index = -1;
+};
+
+template <typename T, typename... Types>
+constexpr static const size_t mjz_get_type_index_v =
+    mjz_get_type_index_helper_class_t<0, T, Types...>::Index;
+
+template <class T, class... Ts>
+concept mjz_is_one_of = mjz_get_type_index_v<T, Ts...> !=
+size_t(-1);
+
+template <bool B>
+concept to_concept = B;
+
+template <typename T, template <typename> typename B>
+concept t_to_concept = B<T>::value;
+
+template <size_t my_index, template <typename> class is_valid, typename Type0,
+          typename... Types>
+struct mjz_get_first_object_with_f_true_index_helper_class_t {
+  constexpr static const size_t Index =
+      (is_valid<Type0>::value)
+          ? (my_index)
+          : (mjz_get_first_object_with_f_true_index_helper_class_t<
+                my_index + 1, is_valid, Types...>::Index);
+};
+
+template <size_t my_index, template <typename> class is_valid, typename Type>
+struct mjz_get_first_object_with_f_true_index_helper_class_t<my_index, is_valid,
+                                                             Type> {
+  constexpr static const size_t Index =
+      (is_valid<Type>::value) ? (my_index) : (size_t(-1));
+};
+template <template <typename> class is_valid, typename... Types>
+constexpr static const size_t mjz_get_first_valid_obj_index_v =
+    mjz_get_first_object_with_f_true_index_helper_class_t<0, is_valid,
+                                                          Types...>::Index;
+
 template <typename T, size_t m_size,
           class obj_cnstructor_t = mjz_temp_type_obj_algorithims_warpper_t<T>>
 class safe_array_template_t {
@@ -11609,8 +13062,8 @@ class safe_array_template_t {
 
   constexpr inline ~safe_array_template_t() {}
 
-  using ref_t = optional_pointer_refrence_template_t<Type &>;
-  using cref_t = optional_pointer_refrence_template_t<const Type &>;
+  using ref_t = optional_pointer_refrence_template_t<Type &, true>;
+  using cref_t = optional_pointer_refrence_template_t<const Type &, true>;
 
   template <size_t I>
       constexpr inline std::enable_if_t < I<m_size, Type &> at() noexcept {
@@ -13447,9 +14900,6 @@ struct SHA1_CTX : public SHA256_CTX {
 };
 #endif  // SHA1_Hstatic
 
-
- 
-  
 template <uint64_t V>
 constexpr uint64_t make_binary() {
   return V;
@@ -13463,7 +14913,7 @@ template <char... Cs>
 uint64_t operator"" _b() {
   static_assert(sizeof...(Cs) <= 64, "overflow");
   return make_binary<0, Cs...>();
-} 
+}
 /************************************************************
 Author: Charlie Murphy
  Email: tm507211@ohio.edu
@@ -13898,6 +15348,7 @@ mjz_vector unlike 2D and non-member versions */
                          v1.x * v2.y - v1.y * v2.x);
   }
 };
+
 /******************************************************************************************
 Author: Charlie Murphy
  Email: tm507211@ohio.edu
@@ -13940,6 +15391,791 @@ class Point3D {
   }
   constexpr inline Point3D &operator=(Point3D &&p) { return operator=(p); }
 };
+
+template <uint8_t min_of_stack_string>
+class minimal_mjz_string_data : protected static_str_algo {
+  static_assert(sizeof(void *) == sizeof(uintptr_t),
+                " for this class this is not good");
+  typedef uintptr_t Size_t;
+  static_assert(requires(Size_t s, size_t s2) {
+                  { s } -> std::convertible_to<size_t>;
+                  { s2 } -> std::convertible_to<Size_t>;
+                });
+  static_assert(min_of_stack_string < 255);
+  struct dynamic_DB_t {
+    alignas(Size_t) volatile Size_t
+        dummy_no_init_with_internal_array_length_inside;
+    alignas(Size_t) char *buffer{};
+    alignas(Size_t) Size_t length{};
+    alignas(Size_t) Size_t capacity{};
+  };
+
+ private:
+  constexpr static const size_t min_size_of_minimal_mjz_string_data =
+      sizeof(dynamic_DB_t) - 2 * sizeof(char);
+  constexpr const static size_t delta_size_ =
+      (min_of_stack_string - min_size_of_minimal_mjz_string_data);
+  constexpr static const size_t size_of_minimal_mjz_string_data =
+      min_of_stack_string < min_size_of_minimal_mjz_string_data
+          ? min_size_of_minimal_mjz_string_data
+          : (min_size_of_minimal_mjz_string_data +
+             ((delta_size_ / sizeof(Size_t)) +
+              !!(delta_size_ % sizeof(Size_t))) *
+                 sizeof(Size_t));
+
+  static_assert(size_of_minimal_mjz_string_data < 255);
+  constexpr static const uint8_t static_storage_cap =
+      size_of_minimal_mjz_string_data;
+  constexpr static const uint8_t is_external_array_v{255};
+
+  struct static_DB_t {
+    uint8_t internal_array_length{};  // alings with dynamic_DB_t::dummy in
+                                      // below union
+    char internal_array[static_storage_cap + 1]{};
+    void reset() {
+      mjz_obj_manager_template_t<static_DB_t>::obj_destructor_on(this);
+      mjz_obj_manager_template_t<static_DB_t>::obj_constructor_on(this);
+    }
+  };
+  struct DB_t {
+    union {
+      dynamic_DB_t db_d;
+      static_DB_t db_s{};
+      static_assert(sizeof(dynamic_DB_t) <= sizeof(static_DB_t));
+    };
+    DB_t() {}
+
+    ~DB_t() {}
+    DB_t(DB_t &&other) : db_s(other.db_s) {
+      // deafult copy
+      other.db_s.reset();
+    }
+    DB_t &operator=(DB_t &&other) {
+      db_s = other.db_s;
+      other.db_s.reset();
+    }
+    DB_t &operator=(DB_t const &) = delete;
+
+    DB_t(DB_t const &) = delete;
+  };
+  // no need for "__attribute__((packed));"
+  // i have done it maually  :)
+  constexpr static const uint8_t real_static_size = sizeof(static_DB_t);
+  constexpr static const uint8_t real_size = sizeof(DB_t);
+  static_assert(real_static_size == real_size);
+  DB_t m_db;
+
+  static_assert(sizeof(DB_t) == real_size,
+                "what happened  to you that you got a padding?!");
+  static_assert(!(sizeof(DB_t) % sizeof(Size_t)),
+                "what happened  to you that you got a padding?!");
+
+ public:
+  minimal_mjz_string_data(const char *s, size_t n) {
+    if (!s || !can_have_len(n)) return;
+    memcpy(get_str(), s, n);
+    add_len(n);
+  }
+  minimal_mjz_string_data() {}
+  inline bool is_dynamic() const {
+    return m_db.db_s.internal_array_length == is_external_array_v;
+  }
+  inline dynamic_DB_t str_set_dynamic(char *buffer, size_t cap) {
+    if (!buffer || !cap) return {};
+    if (is_dynamic()) {
+      dynamic_DB_t per = m_db.db_d;
+      if (cap < per.length) return {};
+      if (!per.buffer || !per.length || !per.capacity || per.buffer == buffer)
+        return per;
+      memmove(buffer, per.buffer, per.length);
+      m_db.db_d.buffer = buffer;
+      m_db.db_d.capacity = cap;
+      return per;
+    }
+    if (m_db.db_s.internal_array_length)
+      memmove(buffer, m_db.db_s.internal_array,
+              m_db.db_s.internal_array_length);
+    dynamic_DB_t ret;
+    ret.buffer = 0;
+    ret.capacity = static_storage_cap;
+    ret.length = m_db.db_s.internal_array_length;
+    m_db.db_s.internal_array_length = is_external_array_v;
+    m_db.db_d.buffer = buffer;
+    m_db.db_d.capacity = cap;
+    m_db.db_d.length = ret.length;
+    return ret;
+  }
+  inline size_t get_cap() const {
+    if (is_dynamic()) return m_db.db_d.capacity;
+    return static_storage_cap;
+  }
+  inline const char *get_str() const {
+    if (is_dynamic()) return m_db.db_d.buffer;
+    return m_db.db_s.internal_array;
+  }
+  inline char *get_str() {
+    if (is_dynamic()) return m_db.db_d.buffer;
+    return m_db.db_s.internal_array;
+  }
+  inline size_t get_len() const {
+    if (is_dynamic()) return m_db.db_d.length;
+    return m_db.db_s.internal_array_length;
+  }
+  inline bool set_len(size_t length) {
+    if (!can_have_len(length)) return false;
+    if (is_dynamic()) {
+      m_db.db_d.length = length;
+      return true;
+    }
+    m_db.db_s.internal_array_length = length;
+    return true;
+  }
+  inline bool add_len(size_t add_length) {
+    return set_len(get_len() + add_length);
+  }
+  inline bool can_have_len(size_t length) const { return length <= get_cap(); }
+  inline bool can_add_len(size_t add_length) const {
+    return can_have_len(get_len() + add_length);
+  }
+  inline minimal_mjz_string_data &move_to_me(minimal_mjz_string_data &&d) {
+    m_db = std::move(d.m_db);
+    return *this;
+  }
+
+  char *get_buffer() { return get_str(); }
+  const char *get_buffer() const { return get_str(); }
+  size_t get_length() const { return get_len(); }
+};
+
+template <typename T>
+concept no_decay_c_str =
+    requires {
+      requires(std::is_same_v<T, const char *> || std::is_same_v<T, char *>);
+    };
+template <typename T>
+concept mjz_Str_data_strorage =
+    requires(T obj, const T cobj, char *a, const char *ca, size_t n) {
+      obj.get_buffer();
+      cobj.get_buffer();
+      obj.get_length();
+      cobj.get_length();
+      T(ca, n);
+      T(a, n);
+    };
+struct deafult_mjz_Str_data_strorage {
+  const char *str_view{};
+  size_t len_view{};
+  inline constexpr const char *get_buffer() const { return str_view; }
+  inline constexpr size_t get_length() const { return len_view; }
+  inline constexpr deafult_mjz_Str_data_strorage(const char *s, size_t n)
+      : str_view(s), len_view(n) {}
+};
+
+template <mjz_Str_data_strorage Base_t>
+class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
+ protected:
+  using Base_t::get_buffer;
+  using Base_t::get_length;  // the ptr length (not counting the '\0')
+
+ public:
+  constexpr static size_t npos = -1;
+  constexpr inline const char *begining_of_str_ptr() const {
+    return get_buffer();
+  }
+  constexpr inline const char *ending_of_str_ptr() const {
+    return get_buffer() + get_length();
+  }
+
+ public:
+  constexpr basic_mjz_Str_view(const char *const buffer, size_t length)
+      : Base_t(buffer, length) {}
+  template <size_t N>
+  constexpr basic_mjz_Str_view(const char (&const a)[N])
+      : basic_mjz_Str_view(a, N - (!a[N - 1])) {}
+  constexpr basic_mjz_Str_view(const just_str_view_data &s)
+      : basic_mjz_Str_view(s.buffer, s.len) {}
+  constexpr explicit inline basic_mjz_Str_view(no_decay_c_str auto c_string)
+      : basic_mjz_Str_view(c_string, strlen(c_string)) {}
+  constexpr basic_mjz_Str_view()
+      : basic_mjz_Str_view(static_str_algo::empty_STRING_C_STR, 0) {}
+  constexpr inline ~basic_mjz_Str_view() = default;
+  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = default;
+  constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = default;
+  constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
+  constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = default;
+
+ public:
+  constexpr bool is_blank() const {
+    size_t i{};
+    while (i < get_length()) {
+      if (!is_blank_characteres_default(get_buffer()[i])) {
+        return 0;
+      }
+      i++;
+    }
+    return 1;
+  }
+  constexpr bool empty() const {
+    return (!get_length() ||
+            get_buffer() == static_str_algo::empty_STRING_C_STR ||
+            get_buffer() == nullptr);
+  }
+  static constexpr const bool is_const_view =
+      requires(Base_t o) {
+        { o.get_buffer() } -> std::convertible_to<char *>;
+      };
+  constexpr inline size_t length(void) const { return get_length(); }
+  constexpr inline char *data()
+    requires(is_const_view)
+  {
+    return get_buffer();
+  }
+  constexpr inline const char *data() const { return get_buffer(); }
+
+ public:
+  constexpr inline const char *c_str() const & { return get_buffer(); }
+  constexpr inline const char *c_str() & { return get_buffer(); }
+  constexpr inline char *C_str() & { return get_buffer(); }
+
+ public:
+  constexpr explicit operator const bool() const { return !is_blank(); }
+  constexpr char operator[](int64_t index_) const {
+    size_t index = signed_index_to_unsigned(index_);
+    if ((size_t)index >= get_length() || !get_buffer()) {
+      return 0;
+    }
+    return get_buffer()[index];
+  }
+  constexpr char operator[](size_t index) const {
+    if (index >= get_length() || !get_buffer()) {
+      return 0;
+    }
+    return get_buffer()[index];
+  }
+  constexpr bool operator!() const { return is_blank(); }
+  // parsing/conversion
+  constexpr long long toLL(void) const {
+    if (get_buffer()) {
+      return to_LL();
+    }
+    return 0;
+  }
+  constexpr long long to_LL(int radix = 10, bool *had_error = 0,
+                            uint8_t error_level = 0) const {
+    if (get_buffer()) {
+      return C_STR_to_LL(c_str(), (uint8_t)min(length(), (uint64_t)255), radix,
+                         had_error, error_level);
+    }
+    return 0;
+  }
+  constexpr long toInt(void) const { return (long)toLL(); }
+  constexpr float toFloat(void) const {
+    //
+    return float(toDouble());
+  }
+  constexpr double toDouble(void) const {
+    if (get_buffer()) {
+      char *ptr{};
+      return strtod(get_buffer(), &ptr);
+    }
+    return 0;
+  }
+  constexpr friend bool operator==(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
+    return a.equals(b);
+  }
+  constexpr friend bool operator==(const basic_mjz_Str_view &a, const char *b) {
+    return a.equals(b);
+  }
+  constexpr friend bool operator==(const char *a, const basic_mjz_Str_view &b) {
+    return b == a;
+  }
+  constexpr friend bool operator<(const basic_mjz_Str_view &a,
+                                  const basic_mjz_Str_view &b) {
+    return a.compareTo(b) < 0;
+  }
+  constexpr friend bool operator<(const basic_mjz_Str_view &a, const char *b) {
+    return a.compareTo(b) < 0;
+  }
+  constexpr friend bool operator<(const char *a, const basic_mjz_Str_view &b) {
+    return b.compareTo(a) > 0;
+  }
+  constexpr friend bool operator!=(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
+    return !(a == b);
+  }
+  constexpr friend bool operator!=(const basic_mjz_Str_view &a, const char *b) {
+    return !(a == b);
+  }
+  constexpr friend bool operator!=(const char *a, const basic_mjz_Str_view &b) {
+    return !(a == b);
+  }
+  constexpr friend bool operator>(const basic_mjz_Str_view &a,
+                                  const basic_mjz_Str_view &b) {
+    return b < a;
+  }
+  constexpr friend bool operator>(const basic_mjz_Str_view &a, const char *b) {
+    return b < a;
+  }
+  constexpr friend bool operator>(const char *a, const basic_mjz_Str_view &b) {
+    return b < a;
+  }
+  constexpr friend bool operator<=(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
+    return !(b < a);
+  }
+  constexpr friend bool operator<=(const basic_mjz_Str_view &a, const char *b) {
+    return !(b < a);
+  }
+  constexpr friend bool operator<=(const char *a, const basic_mjz_Str_view &b) {
+    return !(b < a);
+  }
+  constexpr friend bool operator>=(const basic_mjz_Str_view &a,
+                                   const basic_mjz_Str_view &b) {
+    return !(a < b);
+  }
+  constexpr friend bool operator>=(const basic_mjz_Str_view &a, const char *b) {
+    return !(a < b);
+  }
+  constexpr friend bool operator>=(const char *a, const basic_mjz_Str_view &b) {
+    return !(a < b);
+  }
+  friend std::ostream &operator<<(std::ostream &COUT,
+                                  const basic_mjz_Str_view &s) {
+    COUT.write(s.data(), s.length());
+    return COUT;
+  }
+  // hash function
+  constexpr hash_sha256 mjz_hash(uint8_t n = 0) const {
+    return SHA256_CTX::hash_msg_to_sha_512_n(c_str(), length(), n);
+  }
+  constexpr hash_sha256 hash() const { return mjz_hash(0); }
+  constexpr int64_t compareTo(const basic_mjz_Str_view &s) const {
+    return compare_two_str(get_buffer(), get_length(), s.get_buffer(),
+                           s.get_length());
+  }
+  constexpr int64_t compareTo(const char *cstr) const {
+    return compare_two_str(get_buffer(), get_length(), cstr, strlen(cstr));
+  }
+  constexpr inline int compare(const basic_mjz_Str_view &str) const {
+    return compareTo(str);
+  }
+  constexpr inline int compare(size_t pos, size_t len,
+                               const basic_mjz_Str_view &str) const {
+    return substr_view_beg_n(pos, len).compareTo(str);
+  }
+  constexpr inline int compare(size_t pos, size_t len,
+                               const basic_mjz_Str_view &str, size_t subpos,
+                               size_t sublen) const {
+    return substr_view_beg_n(pos, len).compareTo(
+        str.substr_view_beg_n(subpos, sublen));
+  }
+  constexpr inline int compare(const char *s, size_t n) const {
+    return compare_two_str(get_buffer(), get_length(), s, n);
+  }
+  constexpr inline int compare(size_t pos, size_t len, const char *s,
+                               size_t n) const {
+    return substr_view_beg_n(pos, len).compare(s, n);
+  }
+  constexpr inline int compare(size_t pos, size_t len, const char *s) const {
+    return compare(pos, len, s, strlen(s));
+  }
+  constexpr inline int compare(const char *s) const {
+    return compare(s, strlen(s));
+  }
+  constexpr inline bool starts_with(const char *s, size_t n) const {
+    return substr_view(0ULL, n).equals(s, n);
+  }
+  constexpr inline bool starts_with(const basic_mjz_Str_view &s) const {
+    return starts_with(s.c_str(), s.length());
+  }
+  constexpr inline bool starts_with(char c) const { return c == *c_str(); }
+  constexpr inline bool starts_with(const char *s) const {
+    return starts_with(s, strlen(s));
+  }
+  constexpr inline bool ends_with(const char *s, size_t n) const {
+    return substr_view(length() - n, length()).equals(s, n);
+  }
+  constexpr inline bool ends_with(const basic_mjz_Str_view &s) const {
+    return ends_with(s.c_str(), s.length());
+  }
+  constexpr inline bool ends_with(char c) const {
+    return c == c_str()[length() - 1];
+  }
+  constexpr inline bool ends_with(const char *s) const {
+    return ends_with(s, strlen(s));
+  }
+  constexpr inline int64_t indexOf(const basic_mjz_Str_view &s2) const {
+    return indexOf(s2, 0);
+  }
+  constexpr inline int64_t indexOf(const basic_mjz_Str_view &s2,
+                                   size_t fromIndex) const {
+    return indexOf_cstr(s2.data(), s2.length(), fromIndex);
+  }
+  constexpr inline int64_t lastIndexOf(const basic_mjz_Str_view &s2) const {
+    return lastIndexOf(s2, get_length() - s2.get_length());
+  }
+  constexpr inline int64_t lastIndexOf(const basic_mjz_Str_view &s2,
+                                       size_t fromIndex) const {
+    return lastIndexOf_cstr(s2.c_str(), s2.length(), fromIndex);
+  }
+  constexpr inline size_t find(const basic_mjz_Str_view &str,
+                               size_t pos = 0) const {
+    return indexOf(str, pos);
+  }
+  constexpr inline size_t find(const char *s, size_t pos = 0) const {
+    return indexOf_cstr(s, strlen(s), pos);
+  }
+  constexpr inline size_t find(const char *s, size_t pos, size_t n) const {
+    return indexOf_cstr(s, n, pos);
+  }
+  constexpr inline size_t find(char c, size_t pos = 0) const {
+    return indexOf(c, pos);
+  }
+  constexpr inline size_t rfind(const basic_mjz_Str_view &str,
+                                size_t pos = npos) const {
+    return lastIndexOf(str, pos);
+  }
+  constexpr inline size_t rfind(const char *s, size_t pos = npos) const {
+    return lastIndexOf_cstr(s, strlen(s), pos);
+  }
+  constexpr inline size_t rfind(const char *s, size_t pos, size_t n) const {
+    return lastIndexOf_cstr(s, n, pos);
+  }
+  constexpr inline size_t rfind(char c, size_t pos = npos) const {
+    return lastIndexOf(c, pos);
+  }
+  constexpr inline size_t find_first_of_in_str(const char *s, size_t n) const {
+    return static_str_algo::find_first_of_in_str(get_buffer(), get_length(), s,
+                                                 n);
+  }
+  constexpr inline size_t find_last_of_in_str(const char *s, size_t n) const {
+    return static_str_algo::find_last_of_in_str(get_buffer(), get_length(), s,
+                                                n);
+  }
+  constexpr inline size_t find_first_of_in_str(
+      const basic_mjz_Str_view &str) const {
+    return find_first_of_in_str(str.get_buffer(), str.get_length());
+  }
+  constexpr inline size_t find_first_of(const basic_mjz_Str_view &str,
+                                        size_t pos = 0) const {
+    return substr_view(pos).find_first_of_in_str(str);
+  }
+  constexpr inline size_t find_first_of(const char *s, size_t pos,
+                                        size_t n) const {
+    return substr_view(pos).find_first_of_in_str(s, n);
+  }
+  constexpr inline size_t find_first_of(const char *s, size_t pos = 0) const {
+    return find_first_of(s, pos, strlen(s));
+  }
+  constexpr inline size_t find_first_of(char c, size_t pos = 0) const {
+    return find_first_of(&c, pos, 1);
+  }
+  constexpr inline size_t find_last_of(const basic_mjz_Str_view &str,
+                                       size_t pos = npos) const {
+    return substr_view(pos).find_last_of_in_str(str.data(), str.length());
+  }
+  constexpr inline size_t find_last_of(const char *s, size_t pos = npos) const {
+    return substr_view(pos).find_last_of_in_str(s, strlen(s));
+  }
+  constexpr inline size_t find_last_of(const char *s, size_t pos,
+                                       size_t n) const {
+    return substr_view(pos).find_last_of_in_str(s, n);
+  }
+  constexpr inline size_t find_last_of(char c, size_t pos = npos) const {
+    return find_last_of(&c, pos, 1);
+  }
+  constexpr inline size_t find_last_not_of_in_str(const char *s,
+                                                  size_t n) const {
+    return static_str_algo::find_last_of_not_in_str(get_buffer(), get_length(),
+                                                    s, n);
+  }
+  constexpr inline size_t find_last_not_of(const basic_mjz_Str_view &str,
+                                           size_t pos = npos) const {
+    return substr_view(pos).find_last_not_of_in_str(str.c_str(), str.length());
+  }
+  constexpr inline size_t find_last_not_of(const char *s,
+                                           size_t pos = npos) const {
+    return substr_view(pos).find_last_not_of_in_str(s, strlen(s));
+  }
+  constexpr inline size_t find_last_not_of(const char *s, size_t pos,
+                                           size_t n) const {
+    return substr_view(pos).find_last_not_of_in_str(s, n);
+  }
+  constexpr inline size_t find_last_not_of(char c, size_t pos = npos) const {
+    return substr_view(pos).find_last_not_of_in_str(&c, 1);
+  }
+  constexpr inline size_t find_first_not_of_in_str(const char *s,
+                                                   size_t n) const {
+    return static_str_algo::find_first_of_not_in_str(get_buffer(), get_length(),
+                                                     s, n);
+  }
+  constexpr inline size_t find_first_not_of(const basic_mjz_Str_view &str,
+                                            size_t pos = 0) const {
+    return substr_view(pos).find_first_not_of_in_str(str.c_str(), str.length());
+  }
+  constexpr inline size_t find_first_not_of(const char *s,
+                                            size_t pos = 0) const {
+    return substr_view(pos).find_first_not_of_in_str(s, strlen(s));
+  }
+  constexpr inline size_t find_first_not_of(const char *s, size_t pos,
+                                            size_t n) const {
+    return substr_view(pos).find_first_not_of_in_str(s, n);
+  }
+  constexpr inline size_t find_first_not_of(char c, size_t pos = 0) const {
+    return substr_view(pos).find_first_not_of_in_str(&c, 1);
+  }
+  constexpr bool equals(const char *cstr, size_t cstr_len) const {
+    return are_two_str_equale(get_buffer(), get_length(), cstr, cstr_len);
+  }
+  constexpr bool equals(const basic_mjz_Str_view &s2) const {
+    //
+    return equals(s2.data(), s2.length());
+  }
+  constexpr inline bool equals(const char *cstr) const {
+    return equals(cstr, strlen(cstr));
+  }
+  constexpr inline size_t signed_index_to_unsigned(int64_t input) const {
+    size_t index{length()};
+    if (input < 0) {
+      index = (size_t)(input + (int64_t)length());
+    } else if (input <= (int64_t)length()) {
+      index = (size_t)input;
+    }
+    return index;
+  }
+  constexpr size_t UN_ORDERED_compare(const basic_mjz_Str_view &s) const {
+    return UN_ORDERED_compare(s.get_buffer(), s.get_length());
+  }
+  constexpr size_t UN_ORDERED_compare(const char *s, size_t s_len) const {
+    const unsigned char *ucs_ = (const unsigned char *)s;
+    const unsigned char *ucbuffer_ = (const unsigned char *)this->get_buffer();
+    size_t number_of_not_right{};
+    size_t NUMBER_OF_EACH_char_array[2][256]{};
+    for (size_t i{}; i < s_len; i++) {
+      NUMBER_OF_EACH_char_array[0][ucs_[i]]++;
+    }
+    for (size_t i{}; i < this->length(); i++) {
+      NUMBER_OF_EACH_char_array[1][ucbuffer_[i]]++;
+    }
+    for (size_t i{}; i < 256; i++) {
+      number_of_not_right +=
+          (size_t)abs((int64_t)NUMBER_OF_EACH_char_array[1][i] -
+                      (int64_t)NUMBER_OF_EACH_char_array[0][i]);
+    }
+    return number_of_not_right;
+  }
+  constexpr bool equalsIgnoreCase(const basic_mjz_Str_view &s2) const {
+    if (this == &s2) {
+      //
+      return true;
+    }
+    if (get_length() != s2.get_length()) {
+      //
+      return false;
+    }
+    if (get_length() == 0) {
+      //
+      return true;
+    }
+    const char *p1 = get_buffer();
+    const char *p2 = s2.get_buffer();
+    const char *end_p1 = get_buffer() + length();
+    while (p1 < end_p1) {
+      if (tolower(*p1++) != tolower(*p2++)) {
+        //
+        return false;
+      }
+    }
+    //
+    return true;
+  }
+  constexpr bool startsWith(const basic_mjz_Str_view &s2) const {
+    if (get_length() < s2.get_length()) {
+      //
+      return false;
+    }
+    //
+    return startsWith(s2, 0);
+  }
+  constexpr bool startsWith(const basic_mjz_Str_view &s2, size_t offset) const {
+    if (offset > get_length() - s2.get_length() || !get_buffer() ||
+        !s2.get_buffer()) {
+      //
+      return false;
+    }
+    //
+    return MJZ_STRnCMP(&get_buffer()[offset], s2.get_buffer(),
+                       s2.get_length()) == 0;
+  }
+  constexpr bool endsWith(const basic_mjz_Str_view &s2) const {
+    if (get_length() < s2.get_length() || !get_buffer() || !s2.get_buffer()) {
+      //
+      return false;
+    }
+    //
+    return MJZ_STRnCMP(&get_buffer()[get_length() - s2.get_length()],
+                       s2.get_buffer(), s2.get_length()) == 0;
+  }
+  // Function that return the length
+  constexpr size_t size() const { return length(); }
+  constexpr char charAt(int64_t loc) const {
+    return operator[](signed_index_to_unsigned(loc));
+  }
+  constexpr char charAt(size_t loc) const {
+    //
+    return operator[](loc);
+  }
+  constexpr void getBytes(unsigned char *buf, size_t bufsize,
+                          size_t index = 0) const {
+    if (!bufsize || !buf) {
+      //
+      return;
+    }
+    if (index >= get_length()) {
+      buf[0] = 0;
+      //
+      return;
+    }
+    size_t n = bufsize - 1;
+    if (n > get_length() - index) {
+      n = get_length() - index;
+    }
+    memmove((char *)buf, get_buffer() + index, min_macro_(n, get_length()));
+    buf[n] = 0;
+    //
+  }
+  constexpr inline void toCharArray(char *buf, size_t bufsize,
+                                    size_t index = 0) const {
+    getBytes((unsigned char *)buf, bufsize, index);
+  }
+  constexpr int64_t indexOf(char c) const { return indexOf(c, 0); }
+  constexpr int64_t indexOf(char ch, size_t fromIndex) const {
+    if (fromIndex >= get_length()) {
+      return -1;
+    }
+    const char *temp =
+        strchr(get_buffer() + fromIndex, length() + fromIndex, ch);
+    if (temp == NULL) {
+      return -1;
+    }
+    return (int64_t)(temp - get_buffer());
+  }
+  constexpr int64_t indexOf_cstr(const char *c_str_, size_t len_str,
+                                 size_t fromIndex) const {
+    if (fromIndex >= get_length()) {
+      return -1;
+    }
+    const char *found =
+        strstr(get_buffer() + fromIndex, length() - fromIndex, c_str_, len_str);
+    if (found == NULL) {
+      return -1;
+    }
+    return (int64_t)(found - get_buffer());
+  }
+  constexpr int64_t lastIndexOf_cstr(const char *cstr__, size_t length__,
+                                     size_t fromIndex) const {
+    if (fromIndex >= get_length()) {
+      return -1;
+    }
+    const char *found = r_strstr(get_buffer() + fromIndex, length() - fromIndex,
+                                 cstr__, length__);
+    if (found == NULL) {
+      return -1;
+    }
+    return (int64_t)(found - get_buffer());
+  }
+  constexpr inline int64_t lastIndexOf_cstr(const char *cstr__,
+                                            size_t length__) const {
+    return lastIndexOf_cstr(cstr__, length__, 0);
+  }
+  constexpr int64_t lastIndexOf(char theChar) const {
+    return lastIndexOf(theChar, 0);
+  }
+  constexpr int64_t lastIndexOf(char ch, size_t fromIndex) const {
+    if (fromIndex >= get_length()) {
+      return -1;
+    }
+    const char *temp = strrchr(get_buffer() + fromIndex, length(), ch);
+    if (temp == NULL) {
+      return -1;
+    }
+    return (int64_t)(temp - get_buffer());
+  };
+  constexpr const char *substring_give_ptrULL(size_t left, size_t right,
+                                              const char *&c_str_out,
+                                              size_t &len_out) const {
+    if (left > right) {
+      size_t temp = right;
+      right = left;
+      left = temp;
+    }
+    if (left >= get_length()) {
+      //
+      len_out = 0;
+      return (c_str_out = 0);
+    }
+    if (right > get_length()) {
+      right = get_length();
+    }
+    c_str_out = get_buffer() + left;
+    len_out = right - left;
+    return c_str_out;
+  }
+  constexpr const char *substring_give_ptr(int64_t left, int64_t right,
+                                           const char *&c_str_out,
+                                           size_t &len_out) const {
+    return substring_give_ptrULL(signed_index_to_unsigned(left),
+                                 signed_index_to_unsigned(right), c_str_out,
+                                 len_out);
+  }
+  constexpr const char at(int64_t i) { return operator[](i); }
+  constexpr const char back() { return get_buffer()[0]; }
+  constexpr const char front() { return operator[]((int64_t)-1); }
+  constexpr inline basic_mjz_Str_view substr_view(size_t beginIndex,
+                                                  size_t endIndex) const {
+    const char *out_ptr{};
+    size_t out_len{};
+    substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
+    return out_len ? basic_mjz_Str_view(out_ptr, out_len)
+                   : basic_mjz_Str_view();
+  }
+  constexpr inline basic_mjz_Str_view substr_view(int64_t beginIndex,
+                                                  int64_t endIndex) const {
+    return substr_view(signed_index_to_unsigned(beginIndex),
+                       signed_index_to_unsigned(endIndex));
+  }
+  constexpr inline basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
+                                                        size_t number) {
+    return substr_view(signed_index_to_unsigned(beginIndex),
+                       signed_index_to_unsigned(beginIndex) + number);
+  }
+  constexpr inline basic_mjz_Str_view substr_view(int64_t beginIndex) const {
+    return substr_view(signed_index_to_unsigned(beginIndex));
+  }
+  constexpr inline basic_mjz_Str_view substr_view(int beginIndex,
+                                                  int endIndex) const {
+    return substr_view((int64_t)beginIndex, (int64_t)endIndex);
+  }
+  constexpr inline basic_mjz_Str_view substr_view_beg_n(int beginIndex,
+                                                        int number) const {
+    return substr_view_beg_n((int64_t)beginIndex, (size_t)number);
+  }
+  constexpr inline basic_mjz_Str_view substr_view_beg_n(size_t beginIndex,
+                                                        size_t number) const {
+    return substr_view(beginIndex, number + beginIndex);
+  }
+  constexpr inline basic_mjz_Str_view substr_view(size_t beginIndex) const {
+    return substr_view(beginIndex, length() - beginIndex);
+  }
+  constexpr inline basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
+                                                        size_t number) const {
+    return substr_view(signed_index_to_unsigned(beginIndex),
+                       signed_index_to_unsigned(beginIndex) + number);
+  }
+  constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
+};
+
 //
 // mjz_vector.h
 // Vector
@@ -13947,7 +16183,6 @@ class Point3D {
 // Created by Emilis Baliukonis on 05/05/2019.
 // Copyright   2019 Emilis Baliukonis. All rights reserved.
 //
-
 template <class T>
 struct functions_return_value_helper_class {
   using type = OU_mjz_stack_obj_warper_template_t<T>;
@@ -13961,20 +16196,28 @@ using functions_return_value_t =
     typename functions_return_value_helper_class<T>::type;
 template <class T>
 struct mjz_ref_return_helper_class {
-  using type = optional_pointer_refrence_template_t<functions_return_value_t<
-      std::remove_reference_t<std::remove_volatile_t<T>>> &>;
+  using type = optional_pointer_refrence_template_t<
+      functions_return_value_t<
+          std::remove_reference_t<std::remove_volatile_t<T>>> &,
+      false>;
 };
 template <class T>
 struct mjz_ref_return_helper_class<const T> {
-  using type =
-      optional_pointer_refrence_template_t<const functions_return_value_t<
-          std::remove_reference_t<std::remove_volatile_t<T>>> &>;
+  using type = optional_pointer_refrence_template_t<
+      const functions_return_value_t<
+          std::remove_reference_t<std::remove_volatile_t<T>>> &,
+      false>;
 };
 template <class T>
 using mjz_ref_return_helper_class_t =
     typename mjz_ref_return_helper_class<T>::type;
 
-namespace have_mjz_ard_removed { 
+namespace have_mjz_ard_removed {
+template <class T>
+using mjz_RAII_t = mjz_resource_acquisition_is_initialization_template<T>;
+template <class T>
+using RAII_t = mjz_RAII_t<T>;
+
 using malloc_wrpr = malloc_wrapper;
 using algorithm = static_str_algo;
 template <typename T, size_t size>
@@ -13991,23 +16234,26 @@ template <typename T>
 using Vector = mjz_Vector<T>;
 template <typename T, size_t size>
 using array = mjz_Array<T, size>;
-using initilizer_in_constructor_helper_class=initilizer_in_constructor_helper_class_t<0>;
-template<size_t N>
-using initilizer_in_constructor_helper_class_t=initilizer_in_constructor_helper_class_t<N>;
-template<class T ,bool destroy_afrer_destruction>
-using simple_unsafe_init_obj_wrpr_t=mjz_simple_unsafe_init_obj_wrpr_t<T,destroy_afrer_destruction>;
-template<class T >
-using simple_unsafe_init_obj_wrpr_true_t=mjz_simple_unsafe_init_obj_wrpr_true_t<T>;
-template<class T >
-using simple_unsafe_init_obj_wrpr_false_t=mjz_simple_unsafe_init_obj_wrpr_false_t<T>;
+using initilizer_in_constructor_helper_class =
+    initilizer_in_constructor_helper_class_t<0>;
+template <size_t N>
+using initilizer_in_constructor_helper_class_t =
+    initilizer_in_constructor_helper_class_t<N>;
+template <typename Type, bool destroy_on_destruction = true,
+          bool create_on_construction = true>
+using simple_unsafe_init_obj_wrpr_t =
+    mjz_simple_unsafe_init_obj_wrpr_t<Type, destroy_on_destruction,
+                                      create_on_construction>;
 template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
-using  no_init_uw_special_arg_t=mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one>;
-using  no_init_uw_special_arg= no_init_uw_special_arg_t<0>;
+using no_init_uw_special_arg_t =
+    mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one>;
+using no_init_uw_special_arg = no_init_uw_special_arg_t<0>;
 template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
-using no_init_optional_t =typename mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one>::me;
-using no_init_optional =no_init_optional_t<0>;
-using  init_optional=typename mjz_init_optional_t::me;
-
+using no_init_optional_t = typename mjz_no_init_optional_t<
+    init_if_iam_not_zero_the_base_with_me_minus_one>::me;
+using no_init_optional = no_init_optional_t<0>;
+using init_optional = typename mjz_init_optional_t::me;
+using init_optional_if = mjz_init_optional_if_t;
 
 template <typename T, class C_free_realloc>
 using mjz_C_allocator_warpper =
@@ -14210,14 +16456,23 @@ using safe_array =
     safe_array_template_t<T, n, mjz_temp_type_obj_algorithims_warpper_t<T>>;
 
 template <typename T_ref>
-using mjz_optional_ref = optional_pointer_refrence_template_t<T_ref>;
+using mjz_optional_ref = optional_pointer_refrence_template_t<T_ref, false>;
 template <typename T_ref>
 using optional_ref = mjz_optional_ref<T_ref>;
+template <typename T_ref>
+using mjz_var_ref = optional_pointer_refrence_template_t<
+    T_ref, false,
+    optional_pointer_refrence_has_to_be_valid_on_construction_level::
+        not_null_if_is_ref>;
+template <typename T_ref>
+using var_ref = mjz_var_ref<T_ref>;
 template <typename T_ptr>
-using mjz_optional_ptr = optional_pointer_refrence_template_t<std::enable_if_t<
-    std::is_same_v<std::remove_pointer_t<std::remove_cvref_t<T_ptr>> *,
-                   std::remove_cvref_t<T_ptr>>,
-    std::remove_pointer_t<T_ptr> &>>;
+using mjz_optional_ptr = optional_pointer_refrence_template_t<
+    std::enable_if_t<
+        std::is_same_v<std::remove_pointer_t<std::remove_cvref_t<T_ptr>> *,
+                       std::remove_cvref_t<T_ptr>>,
+        std::remove_pointer_t<T_ptr> &>,
+    true>;
 template <typename T_ptr>
 using optional_ptr = mjz_optional_ptr<T_ptr>;
 
@@ -14264,6 +16519,10 @@ using mjz_allocator_warpper = mjz_allocator_warpper<T>;
 using mlc_wrp = malloc_wrapper;
 using mjz_Vectorf3 = Vector3<float>;
 using mjz_Vectorf2 = Vector2<float>;
+
+typedef bool succsess_t;
+
+typedef bool failure_t;
 }  // namespace have_mjz_ard_removed
 }  // namespace mjz_ard
 namespace std {
@@ -14272,16 +16531,14 @@ template <typename Type>
 struct hash<mjz_ard::Vector3<Type>> {
   size_t operator()(const mjz_ard::Vector3<Type> &k) const {
     return hash<std::string_view>()(
-        std::string_view(
-        (const char *)&k, sizeof(mjz_ard::Vector3<Type>)));
+        std::string_view((const char *)&k, sizeof(mjz_ard::Vector3<Type>)));
   }
 };
 template <typename Type>
 struct hash<mjz_ard::Vector2<Type>> {
   size_t operator()(const mjz_ard::Vector2<Type> &k) const {
     return hash<std::string_view>()(
-        std::string_view(
-        (const char *)&k, sizeof(mjz_ard::Vector2<Type>)));
+        std::string_view((const char *)&k, sizeof(mjz_ard::Vector2<Type>)));
   }
 };
 template <typename Type>
@@ -14357,16 +16614,16 @@ struct hash<mjz_ard::hash_sha256> {
   }
 };
 }  // namespace std
- 
+
 #ifndef _NOT_USING_MJZ_ARD_
 namespace mjz_ard_types = mjz_ard::have_mjz_ard_removed;
 namespace mjz = mjz_ard;
 namespace mjzt = mjz_ard_types;
-#define USE_MJZ_NS()                                          \
-  using namespace mjz_ard;                                    \
-  using namespace mjz_ard::have_mjz_ard_removed;              \
-  using namespace mjz_ard::iostream;                          \
-  using namespace mjz_ard::util\
+#define USE_MJZ_NS()                             \
+  using namespace mjz_ard;                       \
+  using namespace mjz_ard::have_mjz_ard_removed; \
+  using namespace mjz_ard::iostream;             \
+  using namespace mjz_ard::util
 
 //  put semicolon
 
@@ -15420,32 +17677,19 @@ inline void scanln() {
 
 template <typename... argT>
 void scan(argT &...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        scan(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+  (void)std::initializer_list<char>{(scan(args), 0)...};
 }
 
 template <typename... argT>
 void scanln(argT &...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        scan(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+  (void)std::initializer_list<char>{
+      (scan(args), 0)...};  // do all tasks in thr rigth order
   scanln();
 }
 template <typename... argT>
 void scanln_FE(argT &...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        scanln(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+  (void)std::initializer_list<char>{
+      (scanln(args), 0)...};  // do all tasks in thr rigth order
 }
 
 template <typename T>
@@ -15462,12 +17706,8 @@ inline void print() {}
 inline void println() { std::cout << '\n'; }
 template <typename... argT>
 void print(argT &&...args) {
-  auto list =
-      std::initializer_list<std::function<void(void)>>{[&](void) -> void {
-        std::cout << std::forward<argT>(args);
-        return;
-      }...};  // do all tasks in thr rigth order
-  for (auto &f : list) f();
+  (void)std::initializer_list<char>{
+      ((std::cout << std::forward<argT>(args)), '0')...};
 }
 template <typename... argT>
 void print_arr(argT &&...args) {
@@ -15637,6 +17877,496 @@ inline void println(args_t &&...args) {
 }
 }  // namespace print_c_str_n
 }  // namespace mjz_ard
+namespace mjz_failures {
+
+template <class T, class... Ts>
+concept mjz_is_one_of = mjz::mjz_get_type_index_v<T, Ts...> !=
+size_t(-1);
+
+template <bool B>
+concept to_concept = B;
+
+template <typename T, template <typename> typename B>
+concept t_to_concept = B<T>::value;
+/*
+ * NOTE :
+ * i think this class was a failure beacuse of the big memory and time
+ * complecity mem= O(n^2)  time=O(n^2)
+ * TODO:
+ * add invalid operations for the moment that they aren't convertible
+ */
+template <typename... Types>
+struct type_safe_union {
+  static const constexpr size_t max_alinement =
+      mjz::calucate::KMM_algo(1, alignof(size_t), alignof(Types)...);
+  static const constexpr size_t max_size = mjz::calucate::max(sizeof(Types)...);
+  static const constexpr size_t no_content = size_t(-1) >> 1;
+
+  template <class T>
+  static const constexpr bool is_one_of_types =
+      mjz_is_one_of<std::remove_cvref_t<T>, Types...>;
+  template <class T>
+  static const constexpr size_t to_index =
+      mjz::mjz_get_type_index_v<std::remove_cvref_t<T>, Types...>;
+  template <size_t I>
+  using to_type = mjz::mjz_get_template_argument<I, Types...>;
+  template <size_t I>
+  static const constexpr bool is_one_of_indexes = is_one_of_types<to_type<I>>;
+  template <class T>
+  using inizilizer_t = mjz::mjz_obj_manager_template_t<std::remove_cvref_t<T>>;
+  template <class T>
+  struct is_one_of_types_t {
+    static const constexpr bool value = is_one_of_types<std::remove_cvref_t<T>>;
+  };
+  union {
+    alignas(max_alinement) uint8_t m_data[max_size];
+  };
+  size_t current_type_index{no_content};
+  type_safe_union() {}
+  template <class T>
+  struct move_construct_op {
+    void *operator()(T *p, void *to_place) {
+      inizilizer_t<T>::construct_at((T *)to_place, std::move(*p));
+      return to_place;
+    }
+  };
+  template <class T>
+  struct copy_construct_op {
+    void *operator()(const T *p, void *to_place) {
+      inizilizer_t<T>::construct_at((T *)to_place, *p);
+      return to_place;
+    }
+  };
+  template <class T>
+  struct temp_copy_construct_op {
+    void *operator()(const T *p, void *to_place) {
+      inizilizer_t<T>::construct_at((T *)to_place, (const T &&)std::move(*p));
+      return to_place;
+    }
+  };
+  template <class T>
+  struct mut_copy_construct_op {
+    void *operator()(T *p, void *to_place) {
+      inizilizer_t<T>::construct_at((T *)to_place, *p);
+      return to_place;
+    }
+  };
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T &&other) {
+    move_construct_op<T>()(inizilizer_t<T>::addressof(other), m_data);
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T const &other) {
+    copy_construct_op<T>()(inizilizer_t<T>::addressof(other), m_data);
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T &other) {
+    mut_copy_construct_op<T>()(inizilizer_t<T>::addressof(other), m_data);
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union(T const &&other) {
+    temp_copy_construct_op<T>()(inizilizer_t<T>::addressof(other), m_data);
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  bool u_init_with(T &&obj) {
+    if (runtime_is_one_of_indexes(current_type_index)) return false;
+    if (inizilizer_t<T>::construct_at((std::remove_cvref_t<T> *)m_data,
+                                      std::forward<T>(obj))) {
+      uto_type_as<T>();
+      return true;
+    }
+    return false;
+  }
+  bool u_runtime_init_with(void *obj, size_t index) {
+    if (runtime_is_one_of_indexes(current_type_index) ||
+        !runtime_is_one_of_indexes(index))
+      return false;
+    using fn_t = bool (*)(void *, void *);
+
+    fn_t list[] = {[](void *obj, void *m_data) -> bool {
+      return inizilizer_t<Types>::construct_at((Types *)m_data, *(Types *)obj);
+    }...};
+    if (list[index](obj, m_data)) {
+      current_type_index = index;
+      return true;
+    }
+    return false;
+  }
+  bool u_runtime_init_with(const void *obj, size_t index) {
+    if (runtime_is_one_of_indexes(current_type_index) ||
+        !runtime_is_one_of_indexes(index))
+      return false;
+    using fn_t = bool (*)(const void *, void *);
+    fn_t list[] = {[](const void *obj, void *m_data) -> bool {
+      return inizilizer_t<Types>::construct_at((Types *)m_data,
+                                               *(const Types *)obj);
+    }...};
+    if (list[index](obj, m_data)) {
+      current_type_index = index;
+      return true;
+    }
+    return false;
+  }
+  bool u_runtime_move_init_with(void *obj, size_t index) {
+    if (runtime_is_one_of_indexes(current_type_index) ||
+        !runtime_is_one_of_indexes(index))
+      return false;
+    using fn_t = bool (*)(void *, void *);
+    fn_t list[] = {[](void *obj, void *m_data) -> bool {
+      return inizilizer_t<Types>::construct_at((Types *)m_data,
+                                               std::move(*(Types *)obj));
+    }...};
+    if (list[index](obj, m_data)) {
+      current_type_index = index;
+      return true;
+    }
+    return false;
+  }
+  bool u_runtime_move_init_with(const void *obj, size_t index) {
+    if (runtime_is_one_of_indexes(current_type_index) ||
+        !runtime_is_one_of_indexes(index))
+      return false;
+    using fn_t = bool (*)(const void *, void *);
+    fn_t list[] = {[](const void *obj, void *m_data) -> bool {
+      return inizilizer_t<Types>::construct_at((Types *)m_data,
+                                               std::move(*(const Types *)obj));
+    }...};
+    if (list[index](obj, m_data)) {
+      current_type_index = index;
+      return true;
+    }
+    return false;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &set(T &&other) {
+    if (!u_init_with(std::move(other)))
+      uruntime_do_at_rev<move_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &set(const T &other) {
+    if (!u_init_with(other))
+      uruntime_do_at_rev<copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &set(T &other) {
+    if (!u_init_with(other))
+      uruntime_do_at_rev<mut_copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &set(const T &&other) {
+    if (!u_init_with(std::move(other)))
+      uruntime_do_at_rev<temp_copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &operator=(T &&other) {
+    if (!u_init_with(std::move(other)))
+      uruntime_do_at_rev<move_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &operator=(const T &other) {
+    if (!u_init_with(other))
+      uruntime_do_at_rev<copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &operator=(T &other) {
+    if (!u_init_with(other))
+      uruntime_do_at_rev<mut_copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  template <t_to_concept<is_one_of_types_t> T>
+  type_safe_union &operator=(const T &&other) {
+    if (!u_init_with(std::move(other)))
+      uruntime_do_at_rev<temp_copy_rev_assinement_op>(
+          inizilizer_t<T>::addressof(other));
+    return *this;
+  }
+  type_safe_union(type_safe_union &&other) {
+    if (other.uruntime_do<move_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  type_safe_union(const type_safe_union &other) {
+    if (other.uruntime_do<copy_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  type_safe_union(type_safe_union &other) {
+    if (other.uruntime_do<mut_copy_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  type_safe_union(const type_safe_union &&other) {
+    if (other.uruntime_do<temp_copy_construct_op>(m_data))
+      uto_type_at(other.current_type_index);
+  }
+  template <class T, class U>
+  struct move_assinement_op {
+    void *operator()(T *p, U *o) {
+      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+      return p;
+    }
+  };
+  template <class T, class U>
+  struct copy_assinement_op {
+    void *operator()(T *p, const U *o) {
+      inizilizer_t<T>::obj_equals(*p, (*o));
+      return p;
+    }
+  };
+  template <class T, class U>
+  struct temp_copy_assinement_op {
+    void *operator()(T *p, const U *o) {
+      inizilizer_t<T>::obj_equals(*p, std::move(*o));
+      return p;
+    }
+  };
+  template <class T, class U>
+  struct mut_copy_assinement_op {
+    void *operator()(T *p, U *o) {
+      inizilizer_t<T>::obj_equals(*p, *o);
+      return p;
+    }
+  };
+  template <class T, class U>
+  struct move_rev_assinement_op {
+    void *operator()(T *o, U *p) {
+      inizilizer_t<U>::obj_equals(*p, std::move(*o));
+      return p;
+    }
+  };
+  template <class T, class U>
+  struct copy_rev_assinement_op {
+    void *operator()(const T *o, U *p) {
+      inizilizer_t<U>::obj_equals(*p, (*o));
+      return p;
+    }
+  };
+  template <class T, class U>
+  struct temp_copy_rev_assinement_op {
+    void *operator()(const T *o, U *p) {
+      inizilizer_t<U>::obj_equals(*p, std::move(*o));
+      return p;
+    }
+  };
+  template <class T, class U>
+  struct mut_copy_rev_assinement_op {
+    void *operator()(T *o, U *p) {
+      inizilizer_t<U>::obj_equals(*p, *o);
+      return p;
+    }
+  };
+  // the type complexity is O(n^2) that n=sizeof...(Types);
+  type_safe_union &operator=(type_safe_union &&other) {
+    if (!u_runtime_move_init_with(other.m_data, other.current_type_index))
+      uruntime_do<move_assinement_op>(other);
+    return *this;
+  }
+  type_safe_union &operator=(const type_safe_union &other) {
+    if (!u_runtime_init_with(other.m_data, other.current_type_index))
+      uruntime_do<copy_assinement_op>(other);
+    return *this;
+  }
+  type_safe_union &operator=(type_safe_union &other) {
+    if (!u_runtime_init_with(other.m_data, other.current_type_index))
+      uruntime_do<mut_copy_assinement_op>(other);
+    return *this;
+  }
+  type_safe_union &operator=(const type_safe_union &&other) {
+    if (!u_runtime_move_init_with(other.m_data, other.current_type_index))
+      uruntime_do<temp_copy_assinement_op>(other);
+    return *this;
+  }
+  ~type_safe_union() { destroy(); }
+  bool runtime_is_one_of_indexes(size_t i) { return i < sizeof...(Types); }
+  template <template <class, class> class temp_function, class T0>
+  void *uruntime_do_at_rev(T0 *ptr) {
+    if (runtime_is_one_of_indexes(current_type_index))
+      return uruntime_do_at_helper<temp_function>(ptr, current_type_index,
+                                                  m_data);
+    return 0;
+  }
+  template <template <class, class> class temp_function, class T0>
+  static void *uruntime_do_at_helper(T0 *ptr, size_t j, void *other) {
+    using fn_ptr = void *(*)(T0 *, void *);
+    fn_ptr list[] = {[](T0 *ptr, void *other_) -> void * {
+      return mjz::remove_const(
+          temp_function<T0, Types>()(ptr, (Types *)other_));
+    }...};
+    return list[j](ptr, other);
+  }
+  template <template <class, class> class temp_function>
+  void *uruntime_do_at(size_t i, size_t j, void *other) {
+    using fn_ptr = void *(*)(void *, void *, size_t j);
+    fn_ptr list[] = {[](void *ptr, void *other, size_t j) -> void * {
+      return uruntime_do_at_helper<temp_function, Types>((Types *)ptr, j,
+                                                         other);
+    }...};
+    return list[i](m_data, other, j);
+  }
+
+  template <template <class> class temp_function>
+  void uruntime_do_at(size_t i) {
+    using fn_ptr = void (*)(void *);
+    fn_ptr list[] = {
+        [](void *ptr) { temp_function<Types>()((Types *)ptr); }...};
+    list[i](m_data);
+  }
+  template <template <class> class temp_function>
+  void *uruntime_do_at(size_t i, void *other) {
+    using fn_ptr = void *(*)(void *, void *);
+    fn_ptr list[] = {[](void *ptr, void *other_) -> void * {
+      temp_function<Types>()((Types *)ptr, other_);
+    }...};
+    return list[i](m_data, other);
+  }
+  template <template <class> class temp_function>
+  inline void uruntime_do() {
+    if (runtime_is_one_of_indexes(current_type_index))
+      return uruntime_do_at<temp_function>(current_type_index);
+  }
+  template <template <class> class temp_function>
+  inline void *uruntime_do(void *other) {
+    if (runtime_is_one_of_indexes(current_type_index))
+      return uruntime_do_at<temp_function>(current_type_index, other);
+  }
+  template <template <class, class> class temp_function>
+  inline void *uruntime_do(type_safe_union &other) {
+    if (runtime_is_one_of_indexes(current_type_index) &&
+        runtime_is_one_of_indexes(other.current_type_index))
+      return uruntime_do_at<temp_function>(
+          current_type_index, other.current_type_index, other.m_data);
+  }
+  template <template <class, class> class temp_function>
+  inline void *uruntime_do(const type_safe_union &other) {
+    if (runtime_is_one_of_indexes(current_type_index) &&
+        runtime_is_one_of_indexes(other.current_type_index))
+      return uruntime_do_at<temp_function>(current_type_index,
+                                           other.current_type_index, other);
+  }
+
+  template <size_t I>
+  to_type<I> *uptr_at()
+    requires(to_concept<is_one_of_indexes<I>>)
+  {
+    return reinterpret_cast<to_type<I> *>(&m_data[0]);
+  }
+  template <size_t I>
+  to_type<I> &uref_at()
+    requires(to_concept<is_one_of_indexes<I>>)
+  {
+    return *uptr_at<I>();
+  }
+  template <class T>
+  T *uptr_as()
+    requires(to_concept<is_one_of_types<T>>)
+  {
+    return reinterpret_cast<T *>(&m_data[0]);
+  }
+  template <class T>
+  T &uref_as()
+    requires(to_concept<is_one_of_types<T>>)
+  {
+    return *uptr_as<T>();
+  }
+  template <size_t I>
+  to_type<I> *ptr_at()
+    requires(to_concept<is_one_of_indexes<I>>)
+  {
+    if (current_type_index == I) return uptr_at<I>();
+    return nullptr;
+  }
+  template <size_t I>
+  to_type<I> &ref_at()
+    requires(to_concept<is_one_of_indexes<I>>)
+  {
+    if (current_type_index == to_index<I>) return *uptr_at<I>();
+    mjz::Throw("bad variant accsess !!");
+  }
+  template <class T>
+  T *ptr_as()
+    requires(to_concept<is_one_of_types<T>>)
+  {
+    if (current_type_index == to_index<T>) uptr_as<T>();
+    return nullptr;
+  }
+  template <class T>
+  T &ref_as()
+    requires(to_concept<is_one_of_types<T>>)
+  {
+    if (current_type_index == to_index<T>) return *uptr_as<T>();
+    mjz::Throw("bad variant accsess !!");
+  }
+  template <size_t I>
+  void uto_type_at()
+    requires(to_concept<is_one_of_indexes<I>>)
+  {
+    current_type_index = I;
+  }
+  void uruntime_to_type_at(size_t I) { current_type_index = I; }
+
+  template <class T>
+  void uto_type_as()
+    requires(to_concept<is_one_of_types<T>>)
+  {
+    current_type_index = to_index<T>;
+  }
+  template <size_t I>
+  void to_type_at()
+    requires(to_concept<is_one_of_indexes<I>>)
+  {
+    return to_type_as<to_type<I>>();
+  }
+  template <class T>
+  struct construct {
+    void operator()(T *p) { inizilizer_t<T>::construct_at(p); }
+  };
+  template <class T>
+  struct destruct {
+    void operator()(T *p) { inizilizer_t<T>::destroy_at(p); }
+  };
+  template <class T>
+  void to_type_as()
+    requires(to_concept<is_one_of_types<T>>)
+  {
+    constexpr size_t const new_index = to_index<T>;
+    size_t const per_index = current_type_index;
+    if (per_index == new_index) return;
+    if (per_index != no_content) {
+      uruntime_do_at<destruct>(per_index);
+    }
+    uto_type_at<new_index>();
+    construct<T>()((T *)m_data);
+  }
+
+  bool runtime_to_type_at(size_t new_index) {
+    if (!runtime_is_one_of_indexes(new_index)) return false;
+    size_t const per_index = current_type_index;
+    if (per_index == new_index) return true;
+    if (per_index != no_content) {
+      uruntime_do_at<destruct>(per_index);
+    }
+    uruntime_to_type_at(new_index);
+    uruntime_do_at<construct>(new_index);
+    return 1;
+  }
+  void destroy() {
+    size_t const per_index = current_type_index;
+    if (per_index == no_content) return;
+    uruntime_do_at<destruct>(per_index);
+    current_type_index = no_content;
+  }
+};
+};
 
 #endif  // !FREAMEWORK_FILE_HEDER
 
