@@ -9932,8 +9932,13 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
   constexpr inline my_err_creator_t &&m_err_creator() && { return move_me(); }
-
+  public:
+  constexpr inline const my_obj_creator_t &obj_creator() const { return *this; }
+  constexpr inline my_obj_creator_t &obj_creator() { return *this; }
+  constexpr inline const my_err_creator_t &err_creator() const { return *this; }
+  constexpr inline my_err_creator_t &err_creator() { return *this; }  
  private:
+
   constexpr inline Type *OP() & { return m_obj_helper().m_data<Type>(); }
   constexpr inline Type &O() & { return *OP(); }
   constexpr inline const Type *OP() const & {
@@ -11031,14 +11036,14 @@ struct mjz_stack_obj_warper_template_class_t
   Type &&move() & { return std::move(o()); }
   Type &&move() && { return std::move(o()); }
   Error_t &remove_const_err() const & {
-    return *m_errj_helper().mm_data<Error_t>();
+    return *m_err_helper().mm_data<Error_t>();
   }
   Error_t &&remove_const_err() const && {
-    return std::move(*m_errj_helper().mm_data<Error_t>());
+    return std::move(*m_err_helper().mm_data<Error_t>());
   }
-  Error_t &remove_const_err() & { return *m_errj_helper().mm_data<Error_t>(); }
+  Error_t &remove_const_err() & { return *m_err_helper().mm_data<Error_t>(); }
   Error_t &&remove_const_err() && {
-    return std::move(*m_errj_helper().mm_data<Error_t>());
+    return std::move(*m_err_helper().mm_data<Error_t>());
   }
   const Error_t &&move_err() const & { return std::move(e()); }
   const Error_t &&move_err() const && { return std::move(e()); }
