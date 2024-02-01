@@ -15,7 +15,7 @@ namespace mjz_ard {}  // namespace mjz_ard
 #include<variant>
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  tiny_scoped_timer t("main");
+  tiny_scoped_timer t("");
   in_union<result<int, std::string>> o = null_union;
   o.unsafe_create(valopt);
   return 0;

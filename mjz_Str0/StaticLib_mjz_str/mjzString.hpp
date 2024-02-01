@@ -3114,7 +3114,8 @@ concept C_simple_unsafe_init_obj_wrpr_helper =
 template <class T, typename Type, typename ref_t = Type &,
           typename rv_ref_t = Type &&, typename... args_t>
 concept C_mjz_obj_manager_helper =
-    requires(ref_t ref, rv_ref_t rvref, Type *ptr, size_t n, T &me_ref,
+    requires(ref_t ref, const ref_t cref, rv_ref_t rvref, Type *ptr, size_t n,
+             T &me_ref,
 
              args_t &&...args) {
       { T::alignment } -> std::convertible_to<size_t>;
@@ -3141,9 +3142,18 @@ concept C_mjz_obj_manager_helper =
         T::construct_array_at(static_cast<Type *>(ptr), static_cast<size_t>(n),
                               static_cast<args_t>(args)...)
         } -> std::same_as<Type *>;
+
+           {
+        T::ne_construct_at(static_cast<Type *>(ptr), static_cast<args_t>(args)...)
+        }noexcept -> std::same_as<Type *>;
+      {
+        T::ne_construct_array_at(static_cast<Type *>(ptr), static_cast<size_t>(n),
+                              static_cast<args_t>(args)...)
+        } noexcept -> std::same_as<Type *>;
+
       {
         T::destruct_array_at(static_cast<Type *>(ptr), static_cast<size_t>(n))
-        } -> std::same_as<bool>;
+        } noexcept -> std::same_as<bool>;
       {
         T::obj_constructor(static_cast<args_t>(args)...)
         } -> std::same_as<Type>;
@@ -3161,16 +3171,20 @@ concept C_mjz_obj_manager_helper =
         } -> std::same_as<Type *>;
       {
         T::obj_destructor_on(static_cast<rv_ref_t>(ref))
-        } -> std::same_as<void>;
-      { T::obj_destructor_on(static_cast<ref_t>(ref)) } -> std::same_as<void>;
-      { T::obj_destructor_on(static_cast<Type *>(ptr)) } -> std::same_as<void>;
+        } noexcept -> std::same_as<bool>;
+      {
+        T::obj_destructor_on(static_cast<ref_t>(ref))
+        } noexcept -> std::same_as<bool>;
+      {
+        T::obj_destructor_on(static_cast<Type *>(ptr))
+        } noexcept -> std::same_as<bool>;
       {
         T::construct(me_ref, static_cast<Type *>(ptr),
                      static_cast<args_t>(args)...)
         } -> std::same_as<void>;
       {
         T::obj_move_to_obj(static_cast<ref_t>(ref), static_cast<rv_ref_t>(ref))
-        } -> std::same_as<Type &>;
+        } noexcept -> std::same_as<Type &>;
       {
         T::obj_copy_to_obj(static_cast<ref_t>(ref), static_cast<ref_t>(ref))
         } -> std::same_as<Type &>;
@@ -3180,7 +3194,7 @@ concept C_mjz_obj_manager_helper =
         } -> std::same_as<Type &>;
       {
         T::obj_move_to_obj(static_cast<Type *>(ptr), static_cast<Type *>(ptr))
-        } -> std::same_as<Type &>;
+        } noexcept -> std::same_as<Type &>;
       {
         T::obj_copy_to_obj(static_cast<Type *>(ptr), static_cast<Type *>(ptr))
         } -> std::same_as<Type &>;
@@ -3204,31 +3218,42 @@ concept C_mjz_obj_manager_helper =
       {
         T::obj_equals(static_cast<ref_t>(ref), static_cast<args_t>(args)...)
         } -> std::same_as<Type &>;
-      { T::addressof(static_cast<ref_t>(ref)) } -> std::same_as<Type *>;
       {
-        T::addressof(static_cast<const Type &>(ref))
-        } -> std::same_as<const Type *>;
-      { T::to_address(static_cast<Type *>(ptr)) } -> std::same_as<Type *>;
+        T::addressof(ref)
+        } noexcept -> std::same_as<Type *>;
+      {
+        T::addressof(static_cast<const ref_t>(cref))
+        } noexcept -> std::convertible_to<const Type *>;
+      {
+        T::to_address(static_cast<Type *>(ptr))
+        } noexcept -> std::same_as<Type *>;
       {
         T::to_address(static_cast<const ref_t>(ref))
-        } -> std::convertible_to<const Type *>;
+        } noexcept -> std::convertible_to<const Type *>;
       {
         T::to_address(static_cast<const Type *>(ptr))
-        } -> std::convertible_to<const Type *>;
-      { T::to_address(static_cast<ref_t>(ref)) } -> std::same_as<Type *>;
-      { T::pointer_to(static_cast<ref_t>(ref)) } -> std::same_as<Type *>;
-      { T::destroy_at(static_cast<Type *>(ptr)) } -> std::same_as<bool>;
-      { T::destroy_at(static_cast<ref_t>(ref)) } -> std::same_as<bool>;
+        } noexcept -> std::convertible_to<const Type *>;
+      {
+        T::to_address(static_cast<ref_t>(ref))
+        } noexcept -> std::same_as<Type *>;
+      {
+        T::pointer_to(static_cast<ref_t>(ref))
+        } noexcept -> std::same_as<Type *>;
+      {
+        T::destroy_at(static_cast<Type *>(ptr))
+        } noexcept -> std::same_as<bool>;
+      { T::destroy_at(static_cast<ref_t>(ref)) } noexcept -> std::same_as<bool>;
       {
         T::destroy_n(static_cast<Type *>(ptr), static_cast<size_t>(n))
-        } -> std::same_as<Type *>;
+        } noexcept -> std::same_as<Type *>;
       {
         T::destroy(static_cast<T &>(me_ref), static_cast<Type *>(ptr))
-        } -> std::same_as<void>;
-      { T::destroy(static_cast<Type *>(ptr)) } -> std::same_as<void>;
+        } noexcept -> std::same_as<bool>;
+      { T::destroy(static_cast<Type *>(ptr)) 
+      } noexcept-> std::same_as<bool>;
       {
         T::destroy(static_cast<Type *>(ptr), static_cast<Type *>(ptr))
-        } -> std::same_as<void>;
+        } noexcept -> std::same_as<bool>;
     };
 
 template <class T, typename... args_t>
@@ -3437,6 +3462,27 @@ struct mjz_internal_obj_manager_template_t {
 
     return dest;
   }
+  template <typename args_t>
+  static constexpr inline Type *ne_construct_at(Type *ptr,
+                                             args_t &&args) noexcept {
+    *ptr = Type(std::forward<args_t>(args));
+    return ptr;
+  }
+  template <typename args_t>
+  static constexpr inline Type *ne_construct_array_at(Type *dest, size_t n,
+                                                   args_t &&args) noexcept {
+    return construct_array_at( dest,   n, std::forward<args_t>(args));
+
+  }
+  template <typename args_t>
+  static constexpr inline Type *ne_construct_at(Type *ptr) noexcept {
+    *ptr = {};
+    return ptr;
+  }
+  template <typename args_t>
+  static constexpr inline Type *ne_construct_array_at(Type *dest, size_t n) noexcept {
+    return construct_array_at(dest, n);
+  }
   static constexpr inline bool destruct_array_at(Type *dest,
                                                  size_t n) noexcept {
     Type *r_end = dest;
@@ -3466,17 +3512,17 @@ struct mjz_internal_obj_manager_template_t {
       Type *uninitilized_object, args_t &&args) {
     return construct_at(uninitilized_object, std::forward<args_t>(args));
   }
-  static constexpr inline void obj_destructor_on(
-      Type &&obj_that_will_be_destroyed) {
-    destroy_at(obj_that_will_be_destroyed);
+  static constexpr inline bool obj_destructor_on(
+      Type &&obj_that_will_be_destroyed) noexcept {
+  return  destroy_at(obj_that_will_be_destroyed);
   }
-  static constexpr inline void obj_destructor_on(
-      Type &obj_that_will_be_destroyed) {
-    destroy_at(obj_that_will_be_destroyed);
+  static constexpr inline bool obj_destructor_on(
+      Type &obj_that_will_be_destroyed) noexcept {
+  return destroy_at(obj_that_will_be_destroyed);
   }
-  static constexpr inline void obj_destructor_on(
-      Type *obj_that_will_be_destroyed) {
-    destroy_at(obj_that_will_be_destroyed);
+  static constexpr inline bool obj_destructor_on(
+      Type *obj_that_will_be_destroyed) noexcept {
+  return destroy_at(obj_that_will_be_destroyed);
   }
 
   template <bool destroy_on_destruction = true,
@@ -3550,7 +3596,8 @@ struct mjz_internal_obj_manager_template_t {
   static constexpr inline void construct(me &a, T *p, Args &&args) {
     a.construct_at(p, std::forward<Args>(args));
   }
-  static constexpr inline Type &obj_move_to_obj(Type &dest, Type &&src) {
+  static constexpr inline Type &obj_move_to_obj(Type &dest,
+                                                Type &&src) noexcept {
     return dest = (std::move(src));
   }
   static constexpr inline Type &obj_copy_to_obj(Type &dest, Type &src) {
@@ -3560,7 +3607,7 @@ struct mjz_internal_obj_manager_template_t {
     return dest = (src);
   }
   static constexpr inline Type &obj_move_to_obj(Type *dest,
-                                                Type *src) {  // src is &&
+      Type *src) noexcept {  // src is &&
     return obj_move_to_obj(*dest, std::move(*src));
   }
   static constexpr inline Type &obj_copy_to_obj(Type *dest, Type *src) {
@@ -3594,8 +3641,8 @@ struct mjz_internal_obj_manager_template_t {
   static constexpr inline const Type *addressof(const Type &&obj) = delete;
   static constexpr inline Type *addressof(Type &&obj) = delete;
 
-  static constexpr inline Type *addressof(Type &obj) { return &obj; }
-  static constexpr inline const Type *addressof(const Type &obj) {
+  static constexpr inline Type *addressof(Type &obj) noexcept { return &obj; }
+  static constexpr inline const Type *addressof(const Type &obj) noexcept {
     return &obj;
   }
   static constexpr inline Type *to_address(Type *p) noexcept { return p; }
@@ -3615,16 +3662,22 @@ struct mjz_internal_obj_manager_template_t {
     ptr = {};
     return true;
   }
-  static constexpr inline void destroy(me &a, Type *p) { a.destroy_at(p); }
-  static constexpr inline void destroy(Type *p) { me::destroy_at(p); }
+  static constexpr inline bool destroy(me &a, Type *p) noexcept {
+   return a.destroy_at(p);
+  }
+  static constexpr inline bool destroy(Type *p) noexcept {return me::destroy_at(p); }
   template <class ForwardIt, class Size>
-  static constexpr inline ForwardIt destroy_n(ForwardIt first, Size n) {
+  static constexpr inline ForwardIt destroy_n(ForwardIt first,
+                                              Size n) noexcept {
     for (; n > 0; (void)++first, --n) me::destroy_at(&(*first));
     return first;
   }
   template <class ForwardIt>
-  static constexpr inline void destroy(ForwardIt first, ForwardIt last) {
-    for (; first != last; ++first) me::destroy_at(&(*first));
+  static constexpr inline bool destroy(ForwardIt first,
+                                       ForwardIt last) noexcept {
+      bool s=1;
+    for (; first != last; ++first)s&= me::destroy_at(&(*first));
+      return s;
   }
 };
 template <typename Type_>
@@ -3634,8 +3687,8 @@ struct mjz_non_internal_obj_manager_template_t {
 
  public:
   template <typename... args_t>
-  static constexpr inline Type *construct_at(Type *dest,
-                                             args_t &&...args) noexcept {
+  static constexpr inline Type *ne_construct_at(Type *dest,
+                                                   args_t &&...args) noexcept {
     Type *ptr{};
     if constexpr (std::is_nothrow_constructible_v<Type, args_t...>)
       return new (dest) Type(std::forward<args_t>(args)...);
@@ -3646,23 +3699,37 @@ struct mjz_non_internal_obj_manager_template_t {
     return ptr;
   }
   template <typename... args_t>
-  static constexpr inline Type *construct_array_at(Type *dest, size_t n,
-                                                   args_t &&...args) noexcept {
+  static constexpr inline Type *ne_construct_array_at(
+      Type *dest, size_t n, args_t &&...args) noexcept {
     Type *ptr{dest};
     Type *end{dest + n - 1};
-    if constexpr(std::is_nothrow_constructible_v<Type, args_t...>) {
-      while (ptr < end) construct_at(ptr++, args...);
+    if constexpr (std::is_nothrow_constructible_v<Type, args_t...>) {
+      while (ptr < end) ne_construct_at_at(ptr++, args...);
       end++;
-      if (ptr < end) construct_at(ptr, std::forward<args_t>(args)...);
+      if (ptr < end) ne_construct_at_at(ptr, std::forward<args_t>(args)...);
       return dest;
     }
     try {
-      while (ptr < end) construct_at(ptr++, args...);
+      while (ptr < end) ne_construct_at_at(ptr++, args...);
       end++;
-      if (ptr < end) construct_at(ptr, std::forward<args_t>(args)...);
+      if (ptr < end) ne_construct_at_at(ptr, std::forward<args_t>(args)...);
     } catch (...) {
       return nullptr;
     }
+    return dest;
+  }
+  template <typename... args_t>
+  static constexpr inline Type *construct_at(Type *dest, args_t &&...args) {
+    return new (dest) Type(std::forward<args_t>(args)...);
+  }
+  template <typename... args_t>
+  static constexpr inline Type *construct_array_at(Type *dest, size_t n,
+                                                      args_t &&...args) {
+    Type *ptr{dest};
+    Type *end{dest + n - 1};
+    while (ptr < end) construct_at_at(ptr++, args...);
+    end++;
+    if (ptr < end) construct_at_at(ptr, std::forward<args_t>(args)...);
     return dest;
   }
   static constexpr inline bool destruct_array_at(Type *dest,
@@ -3696,17 +3763,17 @@ struct mjz_non_internal_obj_manager_template_t {
       Type *uninitilized_object, args_t &&...args) {
     return construct_at(uninitilized_object, std::forward<args_t>(args)...);
   }
-  static constexpr inline void obj_destructor_on(
-      Type &&obj_that_will_be_destroyed) {
-    destroy_at(obj_that_will_be_destroyed);
+  static constexpr inline bool obj_destructor_on(
+      Type &&obj_that_will_be_destroyed) noexcept{
+  return  destroy_at(obj_that_will_be_destroyed);
   }
-  static constexpr inline void obj_destructor_on(
-      Type &obj_that_will_be_destroyed) {
-    destroy_at(obj_that_will_be_destroyed);
+  static constexpr inline bool obj_destructor_on(
+      Type &obj_that_will_be_destroyed) noexcept {
+  return  destroy_at(obj_that_will_be_destroyed);
   }
-  static constexpr inline void obj_destructor_on(
-      Type *obj_that_will_be_destroyed) {
-    destroy_at(obj_that_will_be_destroyed);
+  static constexpr inline bool obj_destructor_on(
+      Type *obj_that_will_be_destroyed) noexcept {
+  return  destroy_at(obj_that_will_be_destroyed);
   }
 
   template <bool destroy_on_destruction = true,
@@ -3771,7 +3838,8 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline void construct(me &a, T *p, Args &&...args) {
     a.construct_at(p, std::forward<Args>(args)...);
   }
-  static constexpr inline Type &obj_move_to_obj(Type &dest, Type &&src) {
+  static constexpr inline Type &obj_move_to_obj(Type &dest,
+                                                Type &&src) noexcept {
     return dest = (std::move(src));
   }
   static constexpr inline Type &obj_temp_copy_to_obj(Type &dest,
@@ -3785,7 +3853,7 @@ struct mjz_non_internal_obj_manager_template_t {
     return dest = (src);
   }
   static constexpr inline Type &obj_move_to_obj(Type *dest,
-                                                Type *src) {  // src is &&
+      Type *src) noexcept {  // src is &&
     return obj_move_to_obj(*dest, std::move(*src));
   }
   static constexpr inline Type &obj_copy_to_obj(Type *dest, Type *src) {
@@ -3819,10 +3887,10 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline const Type *addressof(const Type &&obj) = delete;
   static constexpr inline Type *addressof(Type &&obj) = delete;
 
-  static constexpr inline Type *addressof(Type &obj) {
+  static constexpr inline Type *addressof(Type &obj) noexcept {
     return std::addressof(obj);
   }
-  static constexpr inline const Type *addressof(const Type &obj) {
+  static constexpr inline const Type *addressof(const Type &obj) noexcept {
     return std::addressof(obj);
   }
   static constexpr inline Type *to_address(Type *p) noexcept { return p; }
@@ -3859,16 +3927,23 @@ struct mjz_non_internal_obj_manager_template_t {
     }
     return true;
   }
-  static constexpr inline void destroy(me &a, Type *p) { a.destroy_at(p); }
-  static constexpr inline void destroy(Type *p) { me::destroy_at(p); }
+  static constexpr inline bool destroy(me &a, Type *p) noexcept {
+   return a.destroy_at(p);
+  }
+  static constexpr inline bool destroy(Type *p) noexcept {return me::destroy_at(p); }
   template <class ForwardIt, class Size>
-  static constexpr inline ForwardIt destroy_n(ForwardIt first, Size n) {
+  static constexpr inline ForwardIt destroy_n(ForwardIt first,
+                                              Size n) noexcept {
     for (; n > 0; (void)++first, --n) me::destroy_at(addressof(*first));
     return first;
   }
   template <class ForwardIt>
-  static constexpr inline void destroy(ForwardIt first, ForwardIt last) {
-    for (; first != last; ++first) me::destroy_at(addressof(*first));
+  static constexpr inline bool destroy(ForwardIt first,
+                                       ForwardIt last) noexcept {
+    bool s = 1;
+
+    for (; first != last; ++first)s&= me::destroy_at(addressof(*first));
+    return s;
   }
 };
 
@@ -3993,13 +4068,13 @@ struct mjz_temp_type_obj_algorithims_warpper_t
     : public mjz_temp_type_obj_creator_warpper_t<Type, my_constructor> {
   using me = mjz_temp_type_obj_algorithims_warpper_t;
   template <typename TTT>
-  static constexpr inline auto addressof(const TTT &obj) {
+  static constexpr inline auto addressof(const TTT &obj)noexcept {
     return my_constructor::addressof(obj);
   }
   template <typename TTT>
   static constexpr inline auto addressof(const TTT &&obj) = delete;
   template <typename TTT>
-  static constexpr inline auto addressof(TTT &obj) {
+  static constexpr inline auto addressof(TTT &obj) noexcept{
     return my_constructor::addressof(obj);
   }
   template <class InputIt, class Size, class NoThrowForwardIt>
@@ -15665,17 +15740,38 @@ class speed_Timer {
   std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
 };
 class tiny_scoped_timer {
+  static size_t tiny_scoped_timer_delay() {
+    static size_t first_timer_delay{};
+    if (first_timer_delay)
+      return first_timer_delay;
+    std::chrono::time_point<std::chrono::high_resolution_clock> Start =
+        std::chrono::high_resolution_clock::now();
+    std::cout << std::endl;
+long double first_timer_delay_ld = min(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                       std::chrono::high_resolution_clock::now() - Start)
+                             .count(),200);
+    if (first_timer_delay_ld <= 1) first_timer_delay=1;
+    else {
+      first_timer_delay = first_timer_delay_ld;
+    }
+    return first_timer_delay;
+  }
  private:
   std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
   const char *str = "";
 
  public:
   tiny_scoped_timer(const char *s)
-      : m_Start(std::chrono::high_resolution_clock::now()), str(s) {}
+      : m_Start(std::chrono::high_resolution_clock::now()), str(s) {
+    tiny_scoped_timer_delay();
+  }
   ~tiny_scoped_timer() {
     size_t time = (std::chrono::duration_cast<std::chrono::nanoseconds>(
                        std::chrono::high_resolution_clock::now() - m_Start)
-                       .count());
+                       .count()) ;
+    size_t delay = tiny_scoped_timer_delay();
+    if (time > delay) time -= delay;
+    else time=1;
     std::cout << str << " : " << time << " ns\n";
   }
 };
