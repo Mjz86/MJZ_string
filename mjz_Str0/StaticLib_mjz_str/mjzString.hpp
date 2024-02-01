@@ -16542,6 +16542,13 @@ template <typename T, typename E>
 using optional_err = OEU_mjz_stack_obj_warper_template_t<T, E>;
 template <typename T, typename E>
 using mjz_optional_err = OEU_mjz_stack_obj_warper_template_t<T, E>;
+
+template <typename T, typename E=char>
+using mjz_result = mjz_optional_err<T, E>;
+template <typename T, typename E = char>
+using  result= mjz_result<T, E>;
+template <typename T, typename E = char>
+using  Result= mjz_result<T, E>;
 template <typename T>
 using functions_return_value = functions_return_value_t<T>;
 template <typename T>

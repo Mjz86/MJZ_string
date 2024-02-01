@@ -17,5 +17,7 @@ namespace mjz_ard {}  // namespace mjz_ard
  */
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS(); 
+  optional_err<operation_reporter,std::string>o;
+  println(sizeof(o));
   return 0;
 }
