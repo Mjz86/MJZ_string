@@ -1141,7 +1141,6 @@ using mjz_no_init_uw_special_arg = special_arg_no_init_constructor_t<
     special_arg_no_init_constructor_for_unsafe_warper_value,
     init_if_iam_not_zero_the_base_with_me_minus_one>;
 
-using err_init_optional_t=special_arg_no_init_constructor_t<0x6423879607,0x6475869089>;
 static const constexpr size_t
     special_arg_no_init_constructor_for_mjz_optional_value =
         0x4E58B994E905F5;  //   just a random number
@@ -9865,9 +9864,9 @@ template <
         mjz_stack_obj_warper_deafualt_data_storage_template_t,
     C_is_valid_optional_type<1> data_strorage_in_Error_t = void,
     C_mjz_temp_type_obj_algorithims_warpper my_err_creator_t =
-        mjz_temp_type_obj_algorithims_warpper_t<typename
+        mjz_temp_type_obj_algorithims_warpper_t<
             mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
-                data_strorage_in_Error_t>::Error_t>>
+                data_strorage_in_Error_t>>>
 struct mjz_stack_obj_warper_template_class_t
     : private mjz_stack_obj_warper_data_storage_template_t<
           my_iner_Type_, my_obj_creator_t, my_err_creator_t,
@@ -9934,14 +9933,13 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
   constexpr inline my_err_creator_t &&m_err_creator() && { return move_me(); }
-
- public:
+  public:
   constexpr inline const my_obj_creator_t &obj_creator() const { return *this; }
   constexpr inline my_obj_creator_t &obj_creator() { return *this; }
   constexpr inline const my_err_creator_t &err_creator() const { return *this; }
-  constexpr inline my_err_creator_t &err_creator() { return *this; }
-
+  constexpr inline my_err_creator_t &err_creator() { return *this; }  
  private:
+
   constexpr inline Type *OP() & { return m_obj_helper().m_data<Type>(); }
   constexpr inline Type &O() & { return *OP(); }
   constexpr inline const Type *OP() const & {
@@ -11100,8 +11098,7 @@ struct mjz_stack_obj_warper_template_class_t
         mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one -
                                1>());
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t(
-      mjz_no_init_optional_t<0>){};
+  constexpr inline mjz_stack_obj_warper_template_class_t(mjz_no_init_optional_t<0>) {};
   template <typename T0, typename... T_s>
   constexpr inline mjz_stack_obj_warper_template_class_t(T0 &&arg0,
                                                          T_s &&...args) {
@@ -11117,101 +11114,18 @@ struct mjz_stack_obj_warper_template_class_t
                                                          T_s &&...args) {
     construct(arg0, std::forward<T_s>(args)...);
   };
+  constexpr inline ~mjz_stack_obj_warper_template_class_t() { destroy(); }
   constexpr inline mjz_stack_obj_warper_template_class_t(
       mjz_stack_obj_warper_template_class_t &&s_obj_w) {
-    if (s_obj_w.has_data())
-      construct(std::move(s_obj_w.operator*()));
-    else if (s_obj_w.has_error())
-      err_construct(std::move(s_obj_w.e()));
+    if (s_obj_w.has_data()) construct(std::move(s_obj_w.operator*()));
   }
   constexpr inline mjz_stack_obj_warper_template_class_t(
       const mjz_stack_obj_warper_template_class_t &s_obj_w) {
-    if (s_obj_w.has_data())
-      construct(s_obj_w.operator*());
-    else if (s_obj_w.has_error())
-      err_construct(s_obj_w.e());
+    if (s_obj_w.has_data()) construct(s_obj_w.operator*());
   }
   constexpr inline mjz_stack_obj_warper_template_class_t(
       mjz_stack_obj_warper_template_class_t &s_obj_w) {
-    if (s_obj_w.has_data())
-      construct(s_obj_w.operator*());
-    else if (s_obj_w.has_error())
-      err_construct(s_obj_w.e());
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t(const Type &obj) {
-    construct(obj);
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t(Type &obj) {
-    construct(obj);
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t(Type &&obj) {
-    construct(std::move(obj));
-  }
-
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t) {
-    if constexpr (construct_obj_on_constructor) {
-      err_construct();
-    }
-  };
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t,
-                                                         mjz_init_optional_t) {
-    err_construct();
-  };
-  constexpr inline mjz_stack_obj_warper_template_class_t(
-      err_init_optional_t, mjz_init_optional_if_t do_init) {
-    if (do_init) err_construct();
-  };
-  template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
-  constexpr inline mjz_stack_obj_warper_template_class_t(
-      err_init_optional_t,
-      mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one>)
-    requires(init_if_iam_not_zero_the_base_with_me_minus_one != 0)
-  {
-    static_assert(
-        requires {
-          err_construct(mjz_no_init_optional_t<
-                        init_if_iam_not_zero_the_base_with_me_minus_one - 1>());
-        });
-    err_construct(
-        mjz_no_init_optional_t<init_if_iam_not_zero_the_base_with_me_minus_one -
-                               1>());
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t(
-      err_init_optional_t, mjz_no_init_optional_t<0>){};
-  template <typename T0, typename... T_s>
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t,
-                                                         T0 &&arg0,
-                                                         T_s &&...args) {
-    err_construct(std::move(arg0), std::forward<T_s>(args)...);
-  };
-  template <typename T0, typename... T_s>
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t,
-                                                         const T0 &arg0,
-                                                         T_s &&...args) {
-    err_construct(arg0, std::forward<T_s>(args)...);
-  };
-  template <typename T0, typename... T_s>
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t,
-                                                         T0 &arg0,
-                                                         T_s &&...args) {
-    err_construct(arg0, std::forward<T_s>(args)...);
-  };
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t,
-                                                         const Error_t &err) {
-    err_construct(err);
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t,
-                                                         Error_t &err) {
-    err_construct(err);
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t(err_init_optional_t,
-                                                         Error_t &&err) {
-    err_construct(std::move(err));
-  }
-
-  constexpr inline ~mjz_stack_obj_warper_template_class_t() {
-    err_destroy();
-    destroy();
+    if (s_obj_w.has_data()) construct(s_obj_w.operator*());
   }
 
  public:
@@ -11262,12 +11176,6 @@ struct mjz_stack_obj_warper_template_class_t
     return *this;
   }
   template <typename... Ts>
-  constexpr inline mjz_stack_obj_warper_template_class_t &replace_err(
-      Ts &&...args) & {
-    err_emplace(std::forward<Ts>(args)...);
-    return *this;
-  }
-  template <typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &&replace_me(
       Ts &&...args) && {
     return replace_me(std::forward<Ts>(args)...).move_me();
@@ -11276,12 +11184,6 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &&replace_obj(
       Ts &&...args) && {
     return replace_obj(std::forward<Ts>(args)...).move_me();
-  }
-  template <typename... Ts>
-  constexpr inline mjz_stack_obj_warper_template_class_t &&replace_err(
-      Ts &&...args) && {
-    /*note that this is the & version*/
-    return replace_err(std::forward<Ts>(args)...).move_me();
   }
   template <class Func_t, typename... Ts>
   constexpr inline mjz_stack_obj_warper_template_class_t &do_with_me(
@@ -11306,6 +11208,15 @@ struct mjz_stack_obj_warper_template_class_t
       Func_t Func, Ts &&...args) const && {
     std::forward<Func_t>(Func)(move_me(), std::forward<Ts>(args)...);
     return move_me();
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t(const Type &obj) {
+    construct(obj);
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t(Type &obj) {
+    construct(obj);
+  }
+  constexpr inline mjz_stack_obj_warper_template_class_t(Type &&obj) {
+    construct(std::move(obj));
   }
 
  public:
@@ -11381,50 +11292,32 @@ struct mjz_stack_obj_warper_template_class_t
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &&operator=(
       mjz_stack_obj_warper_template_class_t &&s_obj_w) && {
-    if (s_obj_w.has_data())
-      construct(std::move(s_obj_w.o()));
-    else if (s_obj_w.has_error())
-      err_construct(std::move(s_obj_w.e()));
+    if (!!s_obj_w) operator=(std::move(s_obj_w.operator*()));
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &&operator=(
       const mjz_stack_obj_warper_template_class_t &s_obj_w) && {
-    if (s_obj_w.has_data())
-      construct(s_obj_w.o());
-    else if (s_obj_w.has_error())
-      err_construct(s_obj_w.e());
+    if (!!s_obj_w) operator=(s_obj_w.operator*());
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &&operator=(
       mjz_stack_obj_warper_template_class_t &s_obj_w) && {
-    if (s_obj_w.has_data())
-      construct(s_obj_w.o());
-    else if (s_obj_w.has_error())
-      err_construct(s_obj_w.e());
+    if (!!s_obj_w) operator=(s_obj_w.operator*());
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &operator=(
       mjz_stack_obj_warper_template_class_t &&s_obj_w) & {
-    if (s_obj_w.has_data())
-      construct(std::move(s_obj_w.o()));
-    else if (s_obj_w.has_error())
-      err_construct(std::move(s_obj_w.e()));
+    if (!!s_obj_w) operator=(std::move(s_obj_w.operator*()));
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &operator=(
       const mjz_stack_obj_warper_template_class_t &s_obj_w) & {
-    if (s_obj_w.has_data())
-      construct(s_obj_w.o());
-    else if (s_obj_w.has_error())
-      err_construct(s_obj_w.e());
+    if (!!s_obj_w) operator=(s_obj_w.operator*());
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &operator=(
       mjz_stack_obj_warper_template_class_t &s_obj_w) & {
-    if (s_obj_w.has_data())
-      construct(s_obj_w.o());
-    else if (s_obj_w.has_error())
-      err_construct(s_obj_w.e());
+    if (!!s_obj_w) operator=(s_obj_w.operator*());
     return *this;
   }
 
@@ -11493,44 +11386,6 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me();
   }
 
-  template <typename arg_T, typename Type>
-  constexpr inline mjz_stack_obj_warper_template_class_t &err_init(
-      std::initializer_list<arg_T> list) & {
-    err_construct(list);
-    return *this;
-  }
-  template <typename arg_T>
-  constexpr inline mjz_stack_obj_warper_template_class_t &err_init(
-      iterator_template_t<arg_T> list) & {
-    err_construct(list);
-    return *this;
-  }
-  template <typename... arguments_types>
-  constexpr inline mjz_stack_obj_warper_template_class_t &err_init(
-      arguments_types &&...args) & {
-    err_construct(std::forward<arguments_types>(args)...);
-    return *this;
-  }
-
-  template <typename arg_T, typename Type>
-  constexpr inline mjz_stack_obj_warper_template_class_t &&err_init(
-      std::initializer_list<arg_T> list) && {
-    err_construct(list);
-    return move_me();
-  }
-  template <typename arg_T>
-  constexpr inline mjz_stack_obj_warper_template_class_t &&err_init(
-      iterator_template_t<arg_T> list) && {
-    err_construct(list);
-    return move_me();
-  }
-  template <typename... arguments_types>
-  constexpr inline mjz_stack_obj_warper_template_class_t &&err_init(
-      arguments_types &&...args) && {
-    err_construct(std::forward<arguments_types>(args)...);
-    return move_me();
-  }
-
  public:
   constexpr inline mjz_stack_obj_warper_template_class_t &de_init() & {
     destroy();
@@ -11550,28 +11405,6 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &&de_init(
       int fill_VAL) && {
     destroy();
-    static_str_algo::memset(m_obj_helper().m_data<uint8_t>(), fill_VAL,
-                            sizeof_Type);
-    return move_me();
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &err_de_init() & {
-    err_destroy();
-    return *this;
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &err_de_init(
-      int fill_VAL) & {
-    err_destroy();
-    static_str_algo::memset(m_obj_helper().m_data<uint8_t>(), fill_VAL,
-                            sizeof_Type);
-    return *this;
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &&err_de_init() && {
-    err_destroy();
-    return move_me();
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &&err_de_init(
-      int fill_VAL) && {
-    err_destroy();
     static_str_algo::memset(m_obj_helper().m_data<uint8_t>(), fill_VAL,
                             sizeof_Type);
     return move_me();
@@ -11670,7 +11503,6 @@ struct mjz_stack_obj_warper_template_class_t
   using my_Type_t = mjz_stack_obj_warper_template_class_t;
   constexpr inline my_Type_t &destroy_if_valid() & {
     de_init();
-    err_de_init();
     return *this;
   }
   constexpr inline my_Type_t &create_if_empty() & {
@@ -11690,7 +11522,6 @@ struct mjz_stack_obj_warper_template_class_t
   }
   constexpr inline my_Type_t &&destroy_if_valid() && {
     de_init();
-    err_de_init();
     return move_me();
   }
   constexpr inline my_Type_t &&create_if_empty() && {
@@ -11723,18 +11554,18 @@ struct mjz_stack_obj_warper_template_class_t
     return move_me().if_valid_destroy_else_create();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &operator--() & {
-    destroy_if_valid();
+    de_init();
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &&operator--() && {
-    destroy_if_valid();
+    de_init();
     return move_me();
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &&operator--()
       const && = delete;
   constexpr inline mjz_stack_obj_warper_template_class_t operator--(int) {
     mjz_stack_obj_warper_template_class_t temp(move_me());
-    destroy_if_valid();
+    de_init();
     return temp;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t &operator++() & {
@@ -11775,19 +11606,11 @@ struct mjz_stack_obj_warper_template_class_t
     return {move_me()};
   }
   constexpr inline iterator_template_t<Type> get_iter() & {
-    if (has_data()) return {uop(), uop(), uop() + 1};
+    if (!!*this) return {uop(), uop(), uop() + 1};
     return {};
   }
   constexpr inline iterator_template_t<const Type> get_iter() const & {
-    if (has_data()) return {uop(), uop(), uop() + 1};
-    return {};
-  }
-  constexpr inline iterator_template_t<Error_t> get_err_iter() & {
-    if (has_error()) return {uep(), uep(), uep() + 1};
-    return {};
-  }
-  constexpr inline iterator_template_t<const Error_t> get_err_iter() const & {
-    if (has_error()) return {uep(), uep(), uep() + 1};
+    if (!!*this) return {uop(), uop(), uop() + 1};
     return {};
   }
   constexpr inline mjz_stack_obj_warper_template_class_t *begin() & {
@@ -12714,22 +12537,10 @@ struct mjz_stack_obj_warper_template_class_t
       return !!my_obj_creator_t::construct_at(dest);
     }
   };
-  template <typename... Ts>
-  struct deafult_err_construct_at_fn : private my_err_creator_t {
-    inline constexpr bool operator()(Error_t *dest, Ts &&...args) {
-      return !!my_err_creator_t::construct_at(dest, std::forward<Ts>(args)...);
-    }
-  };
-  template <>
-  struct deafult_err_construct_at_fn<void> : private my_err_creator_t {
-    inline constexpr bool operator()(Error_t *dest) {
-      return !!my_err_creator_t::construct_at(dest);
-    }
-  };
   template <class... Args>
   constexpr inline mjz_stack_obj_warper_template_class_t &&fn_emplace(
       std::function<bool(T *, Args...)> construct_at_fn, Args &&...args) && {
-    destroy_if_valid();
+    ~*this;
     notify_unsafe_value_init_in([&](const auto &) {
       return construct_at_fn(uuop(), std::forward<Args>(args)...);
     });
@@ -12738,7 +12549,7 @@ struct mjz_stack_obj_warper_template_class_t
   template <class... Args>
   constexpr inline mjz_stack_obj_warper_template_class_t &fn_emplace(
       std::function<bool(T *, Args...)> construct_at_fn, Args &&...args) & {
-    destroy_if_valid();
+    ~*this;
     notify_unsafe_value_init_in([&](const auto &) {
       return construct_at_fn(uuop(), std::forward<Args>(args)...);
     });
@@ -12747,7 +12558,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &&fn_emplace(
       std::function<bool(T *)> construct_at_fn =
           deafult_construct_at_fn<void>()) && {
-    destroy_if_valid();
+    ~*this;
     notify_unsafe_value_init_in(
         [&](const auto &) { return (construct_at_fn(uuop())); });
     return move_me();
@@ -12755,7 +12566,7 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t &fn_emplace(
       std::function<bool(T *)> construct_at_fn =
           deafult_construct_at_fn<void>()) & {
-    destroy_if_valid();
+    ~*this;
     notify_unsafe_value_init_in(
         [&](const auto &) { return (construct_at_fn(uuop())); });
     return *this;
@@ -12780,113 +12591,33 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <class... Args>
   constexpr inline T &emplace(Args &&...args) & {
-    destroy_if_valid();
+    ~*this;
     construct(std::forward<Args>(args)...);
     return o();
   }
   template <class U, class... Args>
   constexpr inline T &emplace(std::initializer_list<U> ilist,
                               Args &&...args) & {
-    destroy_if_valid();
+    ~*this;
     construct(ilist, std::forward<Args>(args)...);
     return o();
   }
   template <class... Args>
   constexpr inline T &&emplace(Args &&...args) && {
-    destroy_if_valid();
+    ~*this;
     construct(std::forward<Args>(args)...);
     return move_me().o();
   }
   template <class U, class... Args>
   constexpr inline T &&emplace(std::initializer_list<U> ilist,
                                Args &&...args) && {
-    destroy_if_valid();
+    ~*this;
     construct(ilist, std::forward<Args>(args)...);
     return move_me().o();
   }
-  template <class... Args>
-  constexpr inline mjz_stack_obj_warper_template_class_t &&fn_err_emplace(
-      std::function<bool(T *, Args...)> err_construct_at_fn,
-      Args &&...args) && {
-    destroy_if_valid();
-    notify_unsafe_error_init_in([&](const auto &) {
-      return err_construct_at_fn(uuep(), std::forward<Args>(args)...);
-    });
-    return move_me();
-  }
-  template <class... Args>
-  constexpr inline mjz_stack_obj_warper_template_class_t &fn_err_emplace(
-      std::function<bool(T *, Args...)> err_construct_at_fn, Args &&...args) & {
-    destroy_if_valid();
-    notify_unsafe_error_init_in([&](const auto &) {
-      return err_construct_at_fn(uuep(), std::forward<Args>(args)...);
-    });
-    return *this;
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &&fn_err_emplace(
-      std::function<bool(T *)> err_construct_at_fn =
-          deafult_err_construct_at_fn<void>()) && {
-    destroy_if_valid();
-    notify_unsafe_error_init_in(
-        [&](const auto &) { return (err_construct_at_fn(uuep())); });
-    return move_me();
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &fn_err_emplace(
-      std::function<bool(T *)> err_construct_at_fn =
-          deafult_err_construct_at_fn<void>()) & {
-    destroy_if_valid();
-    notify_unsafe_error_init_in(
-        [&](const auto &) { return (err_construct_at_fn(uuep())); });
-    return *this;
-  }
-  template <class... Args>
-  constexpr inline mjz_stack_obj_warper_template_class_t &&dfn_err_emplace(
-      Args &&...args) && {
-    return move_me().fn_err_emplace<Args...>(
-        deafult_err_construct_at_fn<Args...>(), std::forward<Args>(args)...);
-  }
-  template <class... Args>
-  constexpr inline mjz_stack_obj_warper_template_class_t &dfn_err_emplace(
-      Args &&...args) & {
-    return fn_err_emplace<Args...>(deafult_err_construct_at_fn<Args...>(),
-                                   std::forward<Args>(args)...);
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &&dfn_err_emplace()
-      && {
-    return move_me().fn_err_emplace(deafult_err_construct_at_fn<void>());
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &dfn_err_emplace() & {
-    return fn_err_emplace(deafult_err_construct_at_fn<void>());
-  }
-  template <class... Args>
-  constexpr inline T &err_emplace(Args &&...args) & {
-    destroy_if_valid();
-    err_construct(std::forward<Args>(args)...);
-    return e();
-  }
-  template <class U, class... Args>
-  constexpr inline T &err_emplace(std::initializer_list<U> ilist,
-                                  Args &&...args) & {
-    destroy_if_valid();
-    err_construct(ilist, std::forward<Args>(args)...);
-    return e();
-  }
-  template <class... Args>
-  constexpr inline T &&err_emplace(Args &&...args) && {
-    destroy_if_valid();
-    err_construct(std::forward<Args>(args)...);
-    return move_me().e();
-  }
-  template <class U, class... Args>
-  constexpr inline T &&err_emplace(std::initializer_list<U> ilist,
-                                   Args &&...args) && {
-    destroy_if_valid();
-    err_construct(ilist, std::forward<Args>(args)...);
-    return move_me().e();
-  }
   void reset() noexcept {
     try {
-      destroy_if_valid();
+      ~(*this);
     } catch (...) {
     }
   }
@@ -12901,9 +12632,6 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr Type &&value() && { return *move_me(); }
   constexpr const Type &value() const & { return **this; }
   constexpr Type &value() & { return **this; }
-  constexpr Type &&error() && { return move_me().e(); }
-  constexpr const Type &error() const & { return e(); }
-  constexpr Type &error() & { return e(); }
   template <class U>
   constexpr Type value_or(U &&default_value) const & {
     return has_data() ? **this : static_cast<T>(std::forward<U>(default_value));
@@ -12919,67 +12647,28 @@ struct mjz_stack_obj_warper_template_class_t
   }
   template <class... Ts>
   inline constexpr Type &value_or_emplace(Ts &&...args) & {
-    if (has_data()) return o();
+    if (!!*this) return o();
     emplace(std::forward<Ts>(args)...);
     return o();
   }
   template <class... Ts>
   inline constexpr Type &&value_or_emplace(Ts &&...args) && {
-    if (has_data()) return std::move(o());
+    if (!!*this) return std::move(o());
     emplace(std::forward<Ts>(args)...);
     return std::move(o());
   }
   template <class... Ts>
   inline constexpr mjz_stack_obj_warper_template_class_t &optional_or_emplace(
       Ts &&...args) & {
-    if (has_data()) return *this;
+    if (!!*this) return *this;
     emplace(std::forward<Ts>(args)...);
     return *this;
   }
   template <class... Ts>
   inline constexpr mjz_stack_obj_warper_template_class_t &&optional_or_emplace(
       Ts &&...args) && {
-    if (has_data()) return move_me();
+    if (!!*this) return move_me();
     emplace(std::forward<Ts>(args)...);
-    return move_me();
-  }
-  template <class U>
-  constexpr Type error_or(U &&default_error) const & {
-    return has_error() ? e() : static_cast<T>(std::forward<U>(default_error));
-  }
-  template <class U>
-  constexpr Type error_or(U &&default_error) & {
-    return has_error() ? e() : static_cast<T>(std::forward<U>(default_error));
-  }
-  template <class U>
-  constexpr Type error_or(U &&default_error) && {
-    return has_error() ? std::move(move_me().e())
-                       : static_cast<T>(std::forward<U>(default_error));
-  }
-  template <class... Ts>
-  inline constexpr Type &error_or_emplace(Ts &&...args) & {
-    if (has_error()) return e();
-    err_emplace(std::forward<Ts>(args)...);
-    return e();
-  }
-  template <class... Ts>
-  inline constexpr Type &&error_or_emplace(Ts &&...args) && {
-    if (has_error()) return std::move(e());
-    err_emplace(std::forward<Ts>(args)...);
-    return std::move(e());
-  }
-  template <class... Ts>
-  inline constexpr mjz_stack_obj_warper_template_class_t &
-  optional_or_err_emplace(Ts &&...args) & {
-    if (has_error()) return *this;
-    err_emplace(std::forward<Ts>(args)...);
-    return *this;
-  }
-  template <class... Ts>
-  inline constexpr mjz_stack_obj_warper_template_class_t &&
-  optional_or_err_emplace(Ts &&...args) && {
-    if (has_error()) return move_me();
-    err_emplace(std::forward<Ts>(args)...);
     return move_me();
   }
   template <class F>
@@ -13089,42 +12778,6 @@ struct mjz_stack_obj_warper_template_class_t
   constexpr inline mjz_stack_obj_warper_template_class_t *move_to(
       mjz_stack_obj_warper_template_class_t *dest) {
     return &move_to(*dest);
-  }
-  constexpr inline Type *copy_err_to(Type *dest, bool dest_has_obj) & {
-    return err_copy_to_place(dest, dest_has_obj);
-  }
-  constexpr inline Type *move_err_to(Type *dest, bool dest_has_obj) {
-    return err_move_to_place(dest, dest_has_obj);
-  }
-  constexpr inline Type &copy_err_to(Type &dest, bool dest_has_obj) & {
-    return *copy_err_to(&dest, dest_has_obj);
-  }
-  constexpr inline Type &move_err_to(Type &dest, bool dest_has_obj) {
-    return *move_err_to(&dest, dest_has_obj);
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &copy_err_to(
-      mjz_stack_obj_warper_template_class_t &dest) & {
-    if (this != &dest)
-      dest.notify_unsafe_error_init_in([&](const auto &) {
-        return copy_err_to(dest.uuep(), dest.has_error()) == dest.uuep();
-      });
-    return dest;
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t &move_err_to(
-      mjz_stack_obj_warper_template_class_t &dest) {
-    if (this != &dest)
-      dest.notify_unsafe_error_init_in([&](const auto &) {
-        return move_err_to(dest.uuep(), dest.has_error()) == dest.uuep();
-      });
-    return dest;
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t *copy_err_to(
-      mjz_stack_obj_warper_template_class_t *dest) & {
-    return &copy_err_to(*dest);
-  }
-  constexpr inline mjz_stack_obj_warper_template_class_t *move_err_to(
-      mjz_stack_obj_warper_template_class_t *dest) {
-    return &move_err_to(*dest);
   }
 };
 
@@ -16598,7 +16251,6 @@ using no_init_uw_special_arg = no_init_uw_special_arg_t<0>;
 template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
 using no_init_optional_t = typename mjz_no_init_optional_t<
     init_if_iam_not_zero_the_base_with_me_minus_one>::me;
-using err_init_optional=err_init_optional_t;
 using no_init_optional = no_init_optional_t<0>;
 using init_optional = typename mjz_init_optional_t::me;
 using init_optional_if = mjz_init_optional_if_t;
