@@ -9822,12 +9822,10 @@ struct mjz_stack_obj_warper_deafualt_data_storage_template_t
     if constexpr (!class_has_Error) {
       return;
     }
-    if (get_has_error()) {
-      m_obj_buf.err_ref().unsafe_destroy();
+    if (get_has_data()) {
+      obj_crtr_t::destroy_at(m_data<Type>());
+      m_state = data_state::none;
     }
-    /* else if (!get_has_data()) {
-     * i really dont like this condition
-     *Throw<const char*const>(" unexpected leaked object ");}*/
   }
   constexpr inline void base_notify_error_unsafe_init_fail() {
     m_state = data_state::none;
@@ -9899,7 +9897,6 @@ struct mjz_stack_obj_warper_template_class_t
   using Error_t = my_obj_helper_t::Error_t;
   constexpr static const bool class_has_Error =
       my_obj_helper_t::class_has_Error;
-
  protected:
   constexpr inline const my_obj_helper_t &m_obj_helper() const & {
     return *this;
@@ -13161,153 +13158,15 @@ using O_mjz_stack_obj_warper_template_t = mjz_stack_obj_warper_template_class_t<
     my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
     do_error_check, use_object_in_union>;
 
-template <
-    typename OPTIONAL_type, typename OPTIONAL_error_type,
-    typename = typename OPTIONAL_type::
-        my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t,
-    typename = typename OPTIONAL_error_type::
-        my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t>
-struct mjz_stack_obj_warper_with_error_template_class_t : public OPTIONAL_type {
- public:
-  using Base_t = OPTIONAL_type;
-  /*
-  NOTE:
-  if the types are the same type the error will not show if one argument is set
-  */
-  template <
-      typename U = std::enable_if_t<std::negation_v<std::is_same<
-          typename OPTIONAL_type::Type, typename OPTIONAL_error_type::Type>>>>
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_error_type &&er)
-      : optional_error(er.move_me()) {}
 
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_type &&op)
-      : Base_t(op.move_me()) {}
-
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_type &&op, OPTIONAL_error_type &&er)
-      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, std::move(op))),
-        optional_error(er.move_me()) {}
-
-  template <
-      typename U = std::enable_if_t<std::negation_v<std::is_same<
-          typename OPTIONAL_type::Type, typename OPTIONAL_error_type::Type>>>>
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_error_type const &er)
-      : optional_error(er.copy_me()) {}
-
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_type const &op)
-      : Base_t(op.copy_me()) {}
-
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_type const &op, OPTIONAL_error_type const &er)
-      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, op.copy_me())),
-        optional_error(er.copy_me()) {}
-
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_type const &op, OPTIONAL_error_type &&er)
-      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, op.copy_me())),
-        optional_error(er.move_me()) {}
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t(
-      OPTIONAL_type &&op, OPTIONAL_error_type const &er)
-      : Base_t(Base_t::s_create_op_ignore_args_if_not(!er, op.move_me())),
-        optional_error(er.copy_me()) {}
-  template <typename... Ts>
-  static inline constexpr mjz_stack_obj_warper_with_error_template_class_t
-  s_er_create(OPTIONAL_error_type &&er, Ts &&...args) {
-    return {
-        Base_t::s_create_op_ignore_args_if_not(!er, std::forward<Ts>(args)...),
-        er.move_me()};
-  }
-  template <typename... Ts>
-  static inline constexpr mjz_stack_obj_warper_with_error_template_class_t
-  s_er_create(const OPTIONAL_error_type &er, Ts &&...args) {
-    return {
-        Base_t::s_create_op_ignore_args_if_not(!er, std::forward<Ts>(args)...),
-        er.copy_me()};
-  }
-  template <typename... Ts>
-
-  static inline constexpr mjz_stack_obj_warper_with_error_template_class_t
-  s_create(Ts &&...args) {
-    return {{std::forward<Ts>(args)...}, {}};
-  }
-
-  inline constexpr OPTIONAL_error_type &get_error() & { return optional_error; }
-
-  inline constexpr OPTIONAL_error_type &&get_error() && {
-    return optional_error.move_me();
-  }
-
-  inline constexpr const OPTIONAL_error_type &get_error() const & {
-    return optional_error;
-  }
-
-  inline constexpr const OPTIONAL_error_type &&get_error() const && {
-    return optional_error.move_me();
-  }
-
-  inline constexpr bool has_error() const { return !!optional_error; }
-  inline constexpr mjz_stack_obj_warper_with_error_template_class_t() {}
-  inline constexpr ~mjz_stack_obj_warper_with_error_template_class_t() {}
-
- public:
-  OPTIONAL_error_type optional_error;
-};
-
-template <typename my_iner_Type_, typename error_t,
-          bool construct_obj_on_constructor = true,
-          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
-              static_str_algo::remove_reference_t<my_iner_Type_>>,
-          bool do_error_check = 1, bool use_object_in_union = false>
-using mjz_stack_obj_warper_with_error_template_t =
-    mjz_stack_obj_warper_with_error_template_class_t<
-        mjz_stack_obj_warper_template_class_t<
-            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
-            do_error_check, use_object_in_union>,
-        OU_mjz_stack_obj_warper_template_t<
-            static_str_algo::remove_reference_t<error_t>>>;
-
-template <typename my_iner_Type_, typename error_t,
-          bool construct_obj_on_constructor = true,
+template <typename my_iner_Type_,typename error_t, bool construct_obj_on_constructor = false,
           class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
               static_str_algo::remove_reference_t<my_iner_Type_>>,
           bool do_error_check = 1, bool use_object_in_union = true>
-using U_mjz_stack_obj_warper_with_error_template_t =
-    mjz_stack_obj_warper_with_error_template_class_t<
-        mjz_stack_obj_warper_template_class_t<
-            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
-            do_error_check, use_object_in_union>,
-        OU_mjz_stack_obj_warper_template_t<
-            static_str_algo::remove_reference_t<error_t>>>;
-
-template <typename my_iner_Type_, typename error_t,
-          bool construct_obj_on_constructor = false,
-          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
-              static_str_algo::remove_reference_t<my_iner_Type_>>,
-          bool do_error_check = 1, bool use_object_in_union = true>
-using OU_mjz_stack_obj_warper_with_error_template_t =
-    mjz_stack_obj_warper_with_error_template_class_t<
-        mjz_stack_obj_warper_template_class_t<
-            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
-            do_error_check, use_object_in_union>,
-        OU_mjz_stack_obj_warper_template_t<
-            static_str_algo::remove_reference_t<error_t>>>;
-
-template <typename my_iner_Type_, typename error_t,
-          bool construct_obj_on_constructor = false,
-          class my_obj_creator_t = mjz_temp_type_obj_algorithims_warpper_t<
-              static_str_algo::remove_reference_t<my_iner_Type_>>,
-          bool do_error_check = 1, bool use_object_in_union = false>
-using O_mjz_stack_obj_warper_with_error_template_t =
-    mjz_stack_obj_warper_with_error_template_class_t<
-        mjz_stack_obj_warper_template_class_t<
-            my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
-            do_error_check, use_object_in_union>,
-        OU_mjz_stack_obj_warper_template_t<
-            static_str_algo::remove_reference_t<error_t>>>;
+using OEU_mjz_stack_obj_warper_template_t =
+    mjz_stack_obj_warper_template_class_t<
+        my_iner_Type_, construct_obj_on_constructor, my_obj_creator_t,
+        do_error_check, use_object_in_union,mjz_stack_obj_warper_deafualt_data_storage_template_t,error_t,mjz_temp_type_obj_algorithims_warpper_t<error_t>>;
 
 template <size_t my_index, typename T, typename Type0, typename... Types>
 struct mjz_get_type_index_helper_class_t {
@@ -16654,9 +16513,9 @@ template <typename T>
 using mjz_optional = OU_mjz_stack_obj_warper_template_t<T>;
 
 template <typename T, typename E>
-using optional_err = OU_mjz_stack_obj_warper_with_error_template_t<T, E>;
+using optional_err = OEU_mjz_stack_obj_warper_template_t<T, E>;
 template <typename T, typename E>
-using mjz_optional_err = OU_mjz_stack_obj_warper_with_error_template_t<T, E>;
+using mjz_optional_err = OEU_mjz_stack_obj_warper_template_t<T, E>;
 template <typename T>
 using functions_return_value = functions_return_value_t<T>;
 template <typename T>
