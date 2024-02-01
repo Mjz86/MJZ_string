@@ -13,21 +13,5 @@ namespace mjz_ard {}  // namespace mjz_ard
  */
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  result<operation_reporter> r = valopt; 
-  /*
-  * why i hate padding :
-  * this could be half the size
-  * (char*)&r :
-  * [0] operation_reporter padding / char (Error_t)
-  * [1] operation_reporter char
-  * [2] result uint8_t (state)
-  * [3] result padding
-  */
-  char*p=r.uuep();
-  println( *r);
-  assert(sizeof(operation_reporter) == 2);
-  p[0] = '%';// padding  in here
-  p[1] = '#';// inner char  in here
-  println(*r);
   return 0;
 }
