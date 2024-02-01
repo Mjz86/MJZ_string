@@ -15,9 +15,30 @@ namespace mjz_ard {}  // namespace mjz_ard
  *string will be written
  * and the unique and sheared and weak ptr will be next
  */
+
+auto rust_like_function(std::string_view view)
+    -> mjzt::Result<int, std::string> {
+  if (view.empty()) return {mjzt::erropt, "no input"};
+  char answer = view[0];
+  if (answer == 'Y' || answer == 'y') return {100};
+  if (answer == 'N' || answer == 'n') return mjzt::valopt;
+  std::string err= "bad input:" + std::string(view);
+  return {mjzt::erropt, err};
+}
 int my_main::main(int argc, const char* const* const argv) {
-  USE_MJZ_NS(); 
-  optional_err<operation_reporter,std::string>o;
-  println(sizeof(o));
+  USE_MJZ_NS();
+  std::string s;
+  println("give some input[Y/N]:");
+  scan(s);
+  if (s == "@E") s = "";
+  if (auto o = rust_like_function(s); !!o) {
+    print("success",' ', *o, ' ');
+    println( ++o());
+  } else if(o.has_error()){
+    println("Error:", o.error());
+  } else {
+   println("Unknown Error");
+  }
+  println("end");
   return 0;
 }

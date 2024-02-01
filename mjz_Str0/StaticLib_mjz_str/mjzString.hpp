@@ -1164,7 +1164,6 @@ struct mjz_init_optional_if_t
  public:
   inline constexpr mjz_init_optional_if_t(bool do_init_ = 0)
       : do_init(do_init_) {}
-  ~mjz_init_optional_if_t() {}
   inline constexpr operator bool() const { return do_init; }
   inline constexpr bool operator!() const { return !do_init; }
 };
@@ -16549,6 +16548,15 @@ template <typename T, typename E = char>
 using  result= mjz_result<T, E>;
 template <typename T, typename E = char>
 using  Result= mjz_result<T, E>;
+
+using nullopt_t = typename mjz_no_init_optional_t<0>;
+using valopt_t =typename mjz_init_optional_t;
+using ifopt_t = typename mjz_init_optional_if_t;
+using erropt_t =typename err_init_optional_t;
+constexpr static const nullopt_t nullopt {} ;
+constexpr static const valopt_t valopt {};
+constexpr static const ifopt_t ifopt {};
+constexpr static const erropt_t erropt{};
 template <typename T>
 using functions_return_value = functions_return_value_t<T>;
 template <typename T>
