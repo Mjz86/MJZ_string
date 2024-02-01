@@ -3637,6 +3637,8 @@ struct mjz_non_internal_obj_manager_template_t {
   static constexpr inline Type *construct_at(Type *dest,
                                              args_t &&...args) noexcept {
     Type *ptr{};
+    if constexpr (std::is_nothrow_constructible_v<Type, args_t...>)
+      return new (dest) Type(std::forward<args_t>(args)...);
     try {
       ptr = (new (dest) Type(std::forward<args_t>(args)...));
     } catch (...) {
@@ -3648,6 +3650,12 @@ struct mjz_non_internal_obj_manager_template_t {
                                                    args_t &&...args) noexcept {
     Type *ptr{dest};
     Type *end{dest + n - 1};
+    if constexpr(std::is_nothrow_constructible_v<Type, args_t...>) {
+      while (ptr < end) construct_at(ptr++, args...);
+      end++;
+      if (ptr < end) construct_at(ptr, std::forward<args_t>(args)...);
+      return dest;
+    }
     try {
       while (ptr < end) construct_at(ptr++, args...);
       end++;
@@ -3663,11 +3671,7 @@ struct mjz_non_internal_obj_manager_template_t {
     Type *ptr = dest + n;
     bool success = true;
     while (r_end < ptr) {
-      try {
-        while (r_end < ptr) destroy_at(--ptr);
-      } catch (...) {
-        success = false;
-      }
+     success &= destroy_at(--ptr);
     }
     return success;
   }
@@ -3835,6 +3839,7 @@ struct mjz_non_internal_obj_manager_template_t {
     return addressof(r);
   }
   static constexpr inline bool destroy_at(Type *ptr) noexcept {
+    if constexpr (std::is_nothrow_destructible_v <Type>){ptr->~Type();return true;}
     try {
       ptr->~Type();
     } catch (...) {
@@ -3843,6 +3848,10 @@ struct mjz_non_internal_obj_manager_template_t {
     return true;
   }
   static constexpr inline bool destroy_at(Type &ptr) noexcept {
+    if constexpr (std::is_nothrow_destructible_v<Type>) {
+      ptr.~Type();
+      return true;
+    }
     try {
       ptr.~Type();
     } catch (...) {
@@ -9284,7 +9293,7 @@ template <
 using optional_pointer_refrence_template_t =
     optional_pointer_refrence_class_template_t<std::remove_volatile_t<T_ref>,
                                                mutable_ptr, level>;
-enum mjz_stack_obj_warper_template_t_data_states : uint8_t {
+enum class mjz_stack_obj_warper_template_t_data_states : uint8_t {
   in_union,
   in_aligned_chars,
   in_chars
@@ -9454,8 +9463,10 @@ struct mjz_stack_obj_warper_deafualt_data_storage_template_t
   constexpr inline bool get_has_data() const noexcept {
     return m_state == data_state::value;
   }
-  mjz_stack_obj_warper_deafualt_data_storage_template_t() {}
-  ~mjz_stack_obj_warper_deafualt_data_storage_template_t() {
+
+  constexpr inline mjz_stack_obj_warper_deafualt_data_storage_template_t() {}
+
+  constexpr inline ~mjz_stack_obj_warper_deafualt_data_storage_template_t() {
     if (get_has_data()) {
       obj_crtr_v().destroy_at(m_data<Type>());
       /* i really dont like this condition*/
@@ -15157,6 +15168,15 @@ template <typename Type, bool destroy_on_destruction = true,
 using simple_unsafe_init_obj_wrpr_t =
     mjz_simple_unsafe_init_obj_wrpr_t<Type, destroy_on_destruction,
                                       create_on_construction>;
+template <typename Type, bool destroy_on_destruction = true,
+          bool create_on_construction = true>
+using mjz_in_union=simple_unsafe_init_obj_wrpr_t<
+    Type, destroy_on_destruction,
+    create_on_construction>;
+template <typename Type, bool destroy_on_destruction = true,
+          bool create_on_construction = true>
+using in_union = mjz_in_union<Type, destroy_on_destruction,
+                                                   create_on_construction>;
 template <size_t init_if_iam_not_zero_the_base_with_me_minus_one>
 using no_init_uw_special_arg_t =
     mjz_no_init_uw_special_arg<init_if_iam_not_zero_the_base_with_me_minus_one>;
@@ -15227,6 +15247,8 @@ using nullopt_t = typename mjz_no_init_optional_t<0>;
 using valopt_t =typename mjz_init_optional_t;
 using ifopt_t = typename mjz_init_optional_if_t;
 using erropt_t =typename err_init_optional_t;
+using null_union_t=typename mjz_no_init_uw_special_arg<0>;
+constexpr static const null_union_t null_union{};
 constexpr static const nullopt_t nullopt {} ;
 constexpr static const valopt_t valopt {};
 constexpr static const ifopt_t ifopt {};
