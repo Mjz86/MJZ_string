@@ -3704,15 +3704,15 @@ struct mjz_non_internal_obj_manager_template_t {
     Type *ptr{dest};
     Type *end{dest + n - 1};
     if constexpr (std::is_nothrow_constructible_v<Type, args_t...>) {
-      while (ptr < end) ne_construct_at_at(ptr++, args...);
+      while (ptr < end) ne_construct_at(ptr++, args...);
       end++;
-      if (ptr < end) ne_construct_at_at(ptr, std::forward<args_t>(args)...);
+      if (ptr < end) ne_construct_at(ptr, std::forward<args_t>(args)...);
       return dest;
     }
     try {
-      while (ptr < end) ne_construct_at_at(ptr++, args...);
+      while (ptr < end) ne_construct_at(ptr++, args...);
       end++;
-      if (ptr < end) ne_construct_at_at(ptr, std::forward<args_t>(args)...);
+      if (ptr < end) ne_construct_at(ptr, std::forward<args_t>(args)...);
     } catch (...) {
       return nullptr;
     }
@@ -3727,9 +3727,9 @@ struct mjz_non_internal_obj_manager_template_t {
                                                       args_t &&...args) {
     Type *ptr{dest};
     Type *end{dest + n - 1};
-    while (ptr < end) construct_at_at(ptr++, args...);
+    while (ptr < end) construct_at(ptr++, args...);
     end++;
-    if (ptr < end) construct_at_at(ptr, std::forward<args_t>(args)...);
+    if (ptr < end) construct_at(ptr, std::forward<args_t>(args)...);
     return dest;
   }
   static constexpr inline bool destruct_array_at(Type *dest,
@@ -15310,13 +15310,16 @@ template <typename T, typename E>
 using optional_err = OEU_mjz_stack_obj_warper_template_t<T, E>;
 template <typename T, typename E>
 using mjz_optional_err = OEU_mjz_stack_obj_warper_template_t<T, E>;
-
+template<typename T>
+using Char_array_Err=mjz_Array<uint8_t,sizeof(T)>;
 template <typename T, typename E=char>
 using mjz_result = mjz_optional_err<T, E>;
 template <typename T, typename E = char>
 using  result= mjz_result<T, E>;
 template <typename T, typename E = char>
 using  Result= mjz_result<T, E>;
+template <typename T>
+using optional_ce=mjz_result<T,Char_array_Err<T>>;
 
 using nullopt_t = typename mjz_no_init_optional_t<0>;
 using valopt_t =typename mjz_init_optional_t;

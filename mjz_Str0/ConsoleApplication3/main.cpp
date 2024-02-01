@@ -11,9 +11,17 @@ namespace mjz_ard {}  // namespace mjz_ard
  *string will be written
  * and the unique and sheared and weak ptr will be next
  */
-#include<any>
-#include<variant>
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
+  optional_ce<operation_reporter> r = valopt;
+  r.err_emplace();
+  r.me_do_first_if_true_or_second_if_false(
+      [](optional_ce<operation_reporter>& o) { o()++; },
+      [](optional_ce<operation_reporter>& o) {
+        if (o.has_error()) println("ERR:",(int)o.error()[0]);
+        else
+          println("ERR");
+        
+      });
   return 0;
 }
