@@ -13,9 +13,9 @@ namespace mjz_ard {}  // namespace mjz_ard
  *and some mess that should be cleaned and then for the vectors and the classes
  *dependent on dynamic allocators to update api and finally then the minimal mjz
  *string will be written
+ * and the unique and sheared and weak ptr will be next
  */
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS(); 
   return 0;
- 
 }
