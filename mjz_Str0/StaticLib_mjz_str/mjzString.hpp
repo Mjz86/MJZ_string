@@ -9391,13 +9391,14 @@ struct mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t {
   using Error_t = Error_T;
   constexpr static const bool class_has_Error = true;
 };
+struct Empty_t {};
 template <>
 struct mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
     void> {
-  using Error_t = char;
+  struct the_Empty_t {};
+  using Error_t = the_Empty_t;
   constexpr static const bool class_has_Error = false;
 };
-struct Empty_t{};
 template<class T,typename CONDTION_=void>
 struct to_error_t:public T {
   inline constexpr to_error_t()
@@ -9747,9 +9748,19 @@ struct mjz_stack_obj_warper_template_class_t {
   using my_totaly_uniuqe_type_name_of_content_type_for_mjz_stack_obj_warper_template_class_t =
       Type;
   static constexpr size_t sizeof_Type = my_obj_creator_t::size_of_type();
-  static_assert(C_is_valid_optional_type<Error_t> &&
-                C_is_valid_optional_type<Type> &&
-                !std::is_same_v<Type, Error_t>);
+  static_assert(C_is_valid_optional_type<Error_t> &&C_is_valid_optional_type<Type>);
+  static_assert(!(
+      std::is_same_v<Type, Error_t> &&
+          std::is_same_v<
+              Type,
+          typename mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<void>::Error_t>),
+      " you cant use a type for the error and the value please "
+      "consider using mjz_ard::to_error_t<Error_type>  insted.(note that your "
+      "type is the deafult error type)");
+
+  static_assert(!std::is_same_v<Type, Error_t>,
+                " you cant use a type for the error and the value please "
+                "consider using mjz_ard::to_error_t<Error_type>  insted.");
  protected:
   using my_obj_helper_t = mjz_stack_obj_warper_deafualt_data_storage_template_t<
       my_iner_Type_, my_obj_creator_t, my_err_creator_t,
@@ -9764,7 +9775,9 @@ struct mjz_stack_obj_warper_template_class_t {
 
  public:
   using err_crtr_t = my_obj_helper_t::err_crtr_t;
-  static_assert(std::is_same_v<Error_t, typename my_obj_helper_t::Error_t>);
+
+  static_assert(std::is_same_v<Error_t, typename my_obj_helper_t::Error_t> );
+  
   constexpr static const bool class_has_Error =
       my_obj_helper_t::class_has_Error;
 
@@ -15464,11 +15477,11 @@ template <typename T, typename E>
 using mjz_optional_err = OEU_mjz_stack_obj_warper_template_t<T, E>;
 template <typename T>
 using Char_array_Err = mjz_Array<uint8_t, sizeof(T)>;
-template <typename T, typename E = char>
+template <typename T, typename E = void>
 using mjz_result = mjz_optional_err<T, E>;
-template <typename T, typename E = char>
+template <typename T, typename E = void>
 using result = mjz_result<T, E>;
-template <typename T, typename E = char>
+template <typename T, typename E = void>
 using Result = mjz_result<T, E>;
 template <typename T>
 using optional_ce = mjz_result<T, Char_array_Err<T>>;
