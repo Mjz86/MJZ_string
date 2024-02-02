@@ -18,8 +18,25 @@ namespace mjz_ard {}  // namespace mjz_ard
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  auto [b, c] (optional<int>(erropt, 0UL));
-  println(  !!b, ':', b ? *b : int{-1}, ',', !!c, ':',
-          int(c ? *c : char{-1}));
+  Result<std::string, to_error_t<std::string>> o;
+  scan(*+o);
+  if (*o == "@E")
+    ~o;
+  else if (o->at(0) == '@')
+    o.err_emplace(o.move().substr(1));
+  auto [value_ptr, error_ptr] = o.ref();
+  if (error_ptr) {
+    println("Error: ", std::string_view(*error_ptr));
+  }
+  else if (value_ptr) {
+    auto& value = *value_ptr;
+    if (promptlnp<decltype(value)>('"', value,'"', " is:") == value)
+      println("correct");
+    else
+      println("incorrect");   
+  } else {
+    println("Error?");
+  }  
+
   return 0;
 }

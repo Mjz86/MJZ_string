@@ -9398,6 +9398,33 @@ struct mjz_stack_obj_warper_deafualt_data_storage_template_t_select_err_t<
   constexpr static const bool class_has_Error = false;
 };
 struct Empty_t{};
+template<class T,typename CONDTION_=void>
+struct to_error_t:public T {
+  inline constexpr to_error_t()
+    requires(std::constructible_from<T>)
+      : T()
+  {}
+   template<typename...Ts>
+  inline constexpr to_error_t(Ts&&...args)
+    requires(std::constructible_from<T,Ts...>):T(std::forward<Ts>(args)...)
+  {}
+};
+
+template <typename T > struct to_error_t<T,std::enable_if_t<!std::is_class_v<T>>>{
+    T obj{};
+   inline constexpr to_error_t()
+     requires(std::constructible_from<T>) {}
+   template <typename... Ts>
+   inline constexpr to_error_t(Ts &&...args)
+     requires(std::constructible_from<T, Ts...>)
+       : obj(std::forward<Ts>(args)...) {}
+       
+   inline constexpr operator T &() & { return obj; }
+   inline constexpr operator T &&() && { return std::move(obj); }
+   inline constexpr operator const T &() const  { return obj; }
+   inline constexpr operator const T &&() const && { return std::move(obj); }
+
+};
 template <typename T, C_mjz_obj_manager obj_crtr, C_mjz_obj_manager err_crtr,
           mjz_stack_obj_warper_template_t_data_states m_in_uinion,
           typename in_Error_t = void>
@@ -10816,12 +10843,25 @@ struct mjz_stack_obj_warper_template_class_t {
   constexpr inline mjz_stack_obj_warper_template_class_t clone_me() const && {
     return {move_me()};
   }
+
+  constexpr inline Type clone() & { return {o()}; }
+  constexpr inline Type clone() const & { return {o()}; }
+  constexpr inline Type clone() && { return {move_me().o()}; }
+  constexpr inline Type clone() const && { return {move_me().o()}; }
+  constexpr inline Error_t clone_err() & { return {e()}; }
+  constexpr inline Error_t clone_err() const & { return {e()}; }
+  constexpr inline Error_t clone_err() && { return {move_me().e()}; }
+  constexpr inline Error_t clone_err() const && { return {move_me().e()}; }
+
+
+
   constexpr inline mjz_stack_obj_warper_template_class_t temp_me() const {
     return *this;
   }
   constexpr inline mjz_stack_obj_warper_template_class_t temp_me() {
     return *this;
   }
+
   public:
   using nullopt_t = typename mjz_no_init_optional_t<0>;
 using valopt_t = typename mjz_init_optional_t;
@@ -12946,12 +12986,14 @@ constexpr static const erropt_t erropt{};
       mjz_stack_obj_warper_template_class_t *dest) {
     return &move_err_to(*dest);
   }
-constexpr inline   std::pair<optional_pointer_refrence_class_template_t<Type&,0>,optional_pointer_refrence_class_template_t<Error_t& ,0>>ref()&{
-	return {uop(),uep()};
-	}
-constexpr inline   std::pair<optional_pointer_refrence_class_template_t<const Type&,0>,optional_pointer_refrence_class_template_t<const Error_t &,0>>ref()const&{
-	return {uop(),uep()};
-}
+  template<class T>
+  using optional_refrene_of=optional_pointer_refrence_class_template_t<T&,0>;
+  constexpr inline std::pair<optional_refrene_of<Type>,optional_refrene_of<Error_t >>
+  ref() & {return {uop(),uep()};}
+  constexpr inline std::pair<optional_refrene_of<const Type >,optional_refrene_of<Error_t>>
+  ref() const & {return {uop(),uep()};}
+  void ref() const &&=delete;
+  void ref()  && = delete;
   using t_cpy_t = mjz_stack_obj_warper_template_class_t<Type, Empty_t>;
   using e_cpy_t = mjz_stack_obj_warper_template_class_t<Error_t,Empty_t>;
   template <size_t I>
@@ -16983,36 +17025,36 @@ inline void println(argT &&...args) {
 
 
 template <typename T>
-inline T scanv() {
-  T input{};
+inline std::remove_reference_t<T> scanv() {
+  std::remove_cvref_t<T> input{};
   scan(input);
   return input;
 }
 template <typename T>
-inline T scanlnv() {
-  T input{};
+inline std::remove_reference_t<T> scanlnv() {
+  std::remove_cvref_t<T> input{};
   scanln(input);
   return input;
 }
 
 
 template <typename input_t, typename... out_Ts>
-inline input_t prompt(out_Ts &&...args) {
+inline std::remove_reference_t<input_t> prompt(out_Ts &&...args) {
   print(std::forward<out_Ts>(args)...);
   return scanv<input_t>();
 }
 template <typename input_t, typename... out_Ts>
-inline input_t promptln(out_Ts &&...args) {
+inline std::remove_reference_t<input_t> promptln(out_Ts &&...args) {
   println(std::forward<out_Ts>(args)...);
   return scanlnv<input_t>();
 }
 template <typename input_t, typename... out_Ts>
-inline input_t promptlnp(out_Ts &&...args) {
+inline std::remove_reference_t<input_t> promptlnp(out_Ts &&...args) {
   println(std::forward<out_Ts>(args)...);
   return scanv<input_t>();
 }
 template <typename input_t, typename... out_Ts>
-inline input_t promptlns(out_Ts &&...args) {
+inline std::remove_reference_t<input_t> promptlns(out_Ts &&...args) {
   print(std::forward<out_Ts>(args)...);
   return scanlnv<input_t>();
 }
