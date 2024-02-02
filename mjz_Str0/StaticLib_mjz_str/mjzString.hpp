@@ -12946,6 +12946,12 @@ constexpr static const erropt_t erropt{};
       mjz_stack_obj_warper_template_class_t *dest) {
     return &move_err_to(*dest);
   }
+constexpr inline   std::pair<optional_pointer_refrence_class_template_t<Type&,0>,optional_pointer_refrence_class_template_t<Error_t& ,0>>ref()&{
+	return {uop(),uep()};
+	}
+constexpr inline   std::pair<optional_pointer_refrence_class_template_t<const Type&,0>,optional_pointer_refrence_class_template_t<const Error_t &,0>>ref()const&{
+	return {uop(),uep()};
+}
   using t_cpy_t = mjz_stack_obj_warper_template_class_t<Type, Empty_t>;
   using e_cpy_t = mjz_stack_obj_warper_template_class_t<Error_t,Empty_t>;
   template <size_t I>
