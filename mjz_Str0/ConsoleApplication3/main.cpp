@@ -11,7 +11,15 @@ namespace mjz_ard {}  // namespace mjz_ard
  *string will be written
  * and the unique and sheared and weak ptr will be next
  */
+
+
+
+
+
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
+  auto [a, b, c] (optional<int>(erropt, 0UL));
+  println((int)a, ',', !!b, ':', b ? *b : int{-1}, ',', !!c, ':',
+          int(c ? *c : char{-1}));
   return 0;
 }
