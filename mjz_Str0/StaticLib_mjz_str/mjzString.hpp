@@ -12946,36 +12946,11 @@ constexpr static const erropt_t erropt{};
       mjz_stack_obj_warper_template_class_t *dest) {
     return &move_err_to(*dest);
   }
-
-  template <size_t I>
-  constexpr inline data_state_t get() const &&
-    requires(I == 0)
-  {
-    return get_type();
-  }
-  template <size_t I>
-  constexpr inline data_state_t get() const &
-    requires(I == 0)
-  {
-    return get_type();
-  }
-  template <size_t I>
-      constexpr inline data_state_t get() &&
-        requires(I == 0)
-  {
-    return get_type();
-  }
-  template <size_t I>
-      constexpr inline data_state_t get() &
-        requires(I == 0)
-  {
-    return get_type();
-  }
   using t_cpy_t = mjz_stack_obj_warper_template_class_t<Type, Empty_t>;
   using e_cpy_t = mjz_stack_obj_warper_template_class_t<Error_t,Empty_t>;
   template <size_t I>
       constexpr inline t_cpy_t get() &&
-        requires(I == 1)
+        requires(I == 0)
   {
     t_cpy_t ret=nullopt;
     if (!has_data()) return ret;
@@ -12984,7 +12959,7 @@ constexpr static const erropt_t erropt{};
   }
   template <size_t I>
   constexpr inline t_cpy_t get() const &
-    requires(I == 1)
+    requires(I == 0)
   {
     t_cpy_t ret= nullopt;
     if (!has_data()) return ret;
@@ -12993,7 +12968,7 @@ constexpr static const erropt_t erropt{};
   }
   template <size_t I>
   constexpr inline t_cpy_t get() const &&
-    requires(I == 1)
+    requires(I == 0)
   {
     t_cpy_t ret= nullopt;
     if (!has_data()) return ret;
@@ -13002,7 +12977,7 @@ constexpr static const erropt_t erropt{};
   }
   template <size_t I>
       constexpr inline t_cpy_t get() &
-        requires(I == 1)
+        requires(I == 0)
   {
     t_cpy_t ret= nullopt;
     if (!has_data()) return ret;
@@ -13011,7 +12986,7 @@ constexpr static const erropt_t erropt{};
   }
   template <size_t I>
       constexpr inline e_cpy_t get() &&
-        requires(I == 2)
+        requires(I == 1)
   {
     e_cpy_t ret= nullopt;
     if (!has_error()) return ret;
@@ -13020,7 +12995,7 @@ constexpr static const erropt_t erropt{};
   }
   template <size_t I>
   constexpr inline e_cpy_t get() const &
-    requires(I == 2)
+    requires(I == 1)
   {
     e_cpy_t ret= nullopt;
     if (!has_error()) return ret;
@@ -13029,7 +13004,7 @@ constexpr static const erropt_t erropt{};
   }
   template <size_t I>
   constexpr inline e_cpy_t get() const &&
-    requires(I == 2)
+    requires(I == 1)
   {
     e_cpy_t ret= nullopt;
     if (!has_error()) return ret;
@@ -13038,7 +13013,7 @@ constexpr static const erropt_t erropt{};
   }
   template <size_t I>
       constexpr inline e_cpy_t get() &
-        requires(I == 2)
+        requires(I == 1)
   {
     e_cpy_t ret= nullopt;
     if (!has_error()) return ret;
@@ -13076,7 +13051,7 @@ struct tuple_element<I, ::mjz_ard::mjz_stack_obj_warper_template_class_t<
                             .get<I>());
 };
 template <class T_ ,class E_t_, bool COOC_, bool DOC_, bool UOIU_, class A_>
-struct tuple_size<::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_, UOIU_, A_>> : integral_constant<size_t, 3> {};
+struct tuple_size<::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_, UOIU_, A_>> : integral_constant<size_t, 2> {};
 }  // namespace std
 namespace mjz_ard {
 template <typename my_iner_Type_, bool construct_obj_on_constructor = true,

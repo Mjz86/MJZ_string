@@ -18,8 +18,8 @@ namespace mjz_ard {}  // namespace mjz_ard
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  auto [a, b, c] (optional<int>(erropt, 0UL));
-  println((int)a, ',', !!b, ':', b ? *b : int{-1}, ',', !!c, ':',
+  auto [b, c] (optional<int>(erropt, 0UL));
+  println(  !!b, ':', b ? *b : int{-1}, ',', !!c, ':',
           int(c ? *c : char{-1}));
   return 0;
 }
