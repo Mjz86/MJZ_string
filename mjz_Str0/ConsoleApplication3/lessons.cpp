@@ -19,9 +19,7 @@ void show_structure_binding() {
       println("incorrect");
   } else {
     println("Error?");
-  }  
-
-
+  }
 }
 void show_lifetime() {
   USE_MJZ_NS();
@@ -123,7 +121,6 @@ void show_evaluation_orter() {
           promptlnp<char>("0.(these aren't in right order )give char :"), ',',
           promptlnp<char>(" 1.(these aren't in right order )give char :"), ',',
           promptlnp<char>(" 2.(these aren't in right order )give char :"));
-
 }
 void function_for_knowledge(char* volatile a) {
   USE_MJZ_NS();
@@ -150,8 +147,10 @@ void show_exceptions_effect() {
           "SUSO5", "SUSO6", "SUSO7", "SUSO8", "SUSO9"};
       println("stack_unwinding_shower_object created");
       println("throw : ");
-      //throw operation_reporter("i am thrown");
-      JThrow<operation_reporter>("i am thrown");//this is my way to allow an exeption to propagate instead of termination
+      // throw operation_reporter("i am thrown");
+      JThrow<operation_reporter>(
+          "i am thrown");  // this is my way to allow an exeption to propagate
+                           // instead of termination
       println(" this will never run/print ");
 
     } catch (...) {
@@ -185,9 +184,8 @@ void show_exceptions_effect() {
 }
 
 typedef void (*lesson_fn)(void);
-lesson_fn lessons[]{show_structure_binding,show_lifetime,
-                    show_evaluation_orter,
-                    show_exceptions_effect, show_stack};
+lesson_fn lessons[]{show_structure_binding, show_lifetime,
+                    show_evaluation_orter, show_exceptions_effect, show_stack};
 
 void show_all() {
   USE_MJZ_NS();
