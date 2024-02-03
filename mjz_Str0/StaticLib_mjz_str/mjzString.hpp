@@ -9390,18 +9390,22 @@ class optional_pointer_refrence_class_template_t
     return !!m_ptr;
   }
   template <size_t I>
+  inline constexpr
   T_valid_or_invalid_refrence_t<const_Type> get() const
     requires(I == 1)
   {
     return *m_ptr;
   }
   template <size_t I>
+
+  inline constexpr
   T_valid_or_invalid_refrence_t<Type> get()
     requires(I == 1 && !is_const_type)
   {
     return *m_ptr;
   }
 };
+
 
 template <
     typename T_ref, bool mutable_ptr,
@@ -13041,25 +13045,30 @@ struct mjz_stack_obj_warper_template_class_t {
   ref() const & {
     return {uop(), uep()};
   }
-
+  /*
+  *@return note that at least one of the return references is invalid
+  */
   constexpr inline std::tuple<
       std::tuple_element_t<0, optional_refrene_of<Type>>,
       std::tuple_element_t<1, optional_refrene_of<Type>>,
       std::tuple_element_t<0, optional_refrene_of<Error_t>>,
       std::tuple_element_t<1, optional_refrene_of<Error_t>>>
-  ref4() & {
+  uref4() & {
     auto [value_ptr, error_ptr] = ref();
     auto [ptr_has_value, ptr_value_refrence] = value_ptr;
     auto [ptr_has_error, ptr_error_refrence] = error_ptr;
     return {ptr_has_value, ptr_value_refrence, ptr_has_error,
             ptr_error_refrence};
   }
+  /*
+  *@return note that at least one of the return references is invalid
+  */
   constexpr inline std::tuple<
       std::tuple_element_t<0, optional_refrene_of<const Type>>,
       std::tuple_element_t<1, optional_refrene_of<const Type>>,
       std::tuple_element_t<0, optional_refrene_of<const Error_t>>,
       std::tuple_element_t<1, optional_refrene_of<const Error_t>>>
-  ref4() const & {
+  uref4() const & {
     auto [value_ptr, error_ptr] = ref();
     auto [ptr_has_value, ptr_value_refrence] = value_ptr;
     auto [ptr_has_error, ptr_error_refrence] = error_ptr;

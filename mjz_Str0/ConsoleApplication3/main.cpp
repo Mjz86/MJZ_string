@@ -26,7 +26,7 @@ mjzt::Result<std::string, const char*> get_user_input() {
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   auto input = get_user_input();
-  if (auto [is_user, user_name, has_err, err] = input.ref4(); has_err) {
+  if (auto [is_user, user_name, has_err, err] = input.uref4(); has_err) {
     println("[Error]:", err);
   } else if (is_user) {
     println("hello ", user_name, " hear is on cmd command:");

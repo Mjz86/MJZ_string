@@ -10,7 +10,7 @@ void show_structure_binding() {
     ~o;
   else if (o->at(0) == '@')
     o.err_emplace(o.move().substr(1));
-  if (auto [has_value, value, has_err, error] = o.ref4(); has_err) {
+  if (auto [has_value, value, has_err, error] = o.uref4(); has_err) {
     println("Error: ", std::string_view(error));
   } else if (has_value) {
     if (promptlnp<decltype(value)>('"', value, '"', " is:") == value)
