@@ -12,32 +12,15 @@ namespace mjz_ard {}  // namespace mjz_ard
  * and the unique and sheared and weak ptr will be next
  */
 
-mjzt::Result<std::string, const char*> get_user_input() {
-  USE_MJZ_NS();
-  std::string password = prompt<std::string>("give password:");
-  constexpr const size_t hash_of_password =
-      5411718394350379800;  // the password is "password"
-  if (password.at(0) == '@')
-    return {erropt, "not a valid input"};
-  else if (std::hash<std::string>()(password) == hash_of_password)
-    return {" default user name "};
-  return nullopt;
-}
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  auto input = get_user_input();
-  if (auto [is_user, user_name, has_err, err] = input.uref4(); has_err) {
-    println("[Error]:", err);
-  } else if (is_user) {
-    println("hello ", user_name, " hear is on cmd command:");
-    std::string cmd = scanv<std::string>();
-    println(system(cmd.c_str()), "\n bye.");
+  mjz_String o;
 
-  } else {
-    println("not  a valid user");
-    auto [i, c, f] =
-        multi_cmd<int, char, float>::promptlnp("int:", "char:", "f:");
-    println(i, c, f);
-  }
+ char*b= o.get_buffer();
+  memset(b, '@', 10);
+ o.get_Base_t().set_len(10);
+ println((void*)o.get_buffer(), ' ', o.get_length(), ' ', o.get_cap());
+  o.reallocate_bigger_buffer(90);
+  println((void*)o.get_buffer(), ' ', o.get_length(), ' ', o.get_cap());
   return 0;
 }

@@ -2932,148 +2932,6 @@ struct vary_tiny_dynamic_arena_allocator
       : small_dynamic_arena_allocator_t<16, false, uint8_t>(p, cap) {}
   constexpr inline ~vary_tiny_dynamic_arena_allocator() {}
 };
-template <bool gsjgskhl>
-struct dummy_struct______T {
-  static size_t dummy;
-  constexpr inline size_t &get() { return dummy; }
-};
-
-template <bool B>
-size_t dummy_struct______T<B>::dummy{};
-
-template <class my_free_realloc_wrpr_t, typename Type>
-struct mjz_reallocator_template_t {
-  using my_value_Type_t = Type;
-  using value_type = my_value_Type_t;
-  using reference = value_type &;
-  using pointer = value_type *;
-  using iterator_category = std::random_access_iterator_tag;
-  using difference_type = std::ptrdiff_t;
-  using const_reference = const my_value_Type_t &;
-  using size_type = size_t;
-  using propagate_on_container_move_assignment = std::true_type;
-  constexpr inline mjz_reallocator_template_t(){};
-  constexpr inline ~mjz_reallocator_template_t(){};
-  constexpr inline mjz_reallocator_template_t(void *p, size_t n)
-      : my_free_realloc_wrpr_obj(p, n) {}
-  template <class T>
-  constexpr inline mjz_reallocator_template_t(
-      const mjz_reallocator_template_t<my_free_realloc_wrpr_t, T> &) noexcept {}
-  constexpr [[nodiscard]] inline my_value_Type_t *allocate(size_t n) {
-    return reallocate((my_value_Type_t *)0, n);
-  }
-  constexpr [[nodiscard]] inline my_value_Type_t *allocate(size_t n,
-                                                           const void *hint) {
-    return reallocate((my_value_Type_t *)hint, n);
-  }
-  constexpr inline void deallocate(my_value_Type_t *p, size_t n) noexcept {
-    free(p);
-  }
-
- protected:
-  constexpr [[nodiscard]] inline void *allocate_raw(size_t number_of_bytes) {
-    return reallocate_raw((void *)0, number_of_bytes);
-  }
-  constexpr [[nodiscard]] inline void *allocate_raw(size_t n,
-                                                    const void *hint) {
-    return reallocate_raw((void *)hint, n);
-  }
-  constexpr inline void deallocate_raw(void *p,
-                                       size_t number_of_bytes) noexcept {
-    free(p);
-  }
-
- private:
-  constexpr [[nodiscard]] inline my_value_Type_t *reallocate(
-      my_value_Type_t *ptr, size_t n) {
-    return static_cast<my_value_Type_t *>(
-        realloc(ptr, n * sizeof(my_value_Type_t)));
-  }
-  constexpr [[nodiscard]] inline void *reallocate_raw(void *ptr,
-                                                      size_t number_of_bytes) {
-    return realloc(ptr, number_of_bytes);
-  }
-  constexpr size_t &get_size_of_mem(void *ptr) {
-    if (ptr == 0) {
-      dummy_struct______T<1>().get() = 0;
-      return dummy_struct______T<1>().get();
-    }
-    return *(size_t *)get_real_mem(ptr);
-  }
-  constexpr inline size_t get_needed_size_of_mem(size_t size) {
-    return sizeof(size_t) + size;
-  }
-  constexpr inline void *get_fake_mem(void *ptr) {
-    if (ptr == 0) return ptr;
-    return (void *)((size_t *)ptr + 1);
-  }
-  constexpr inline void *get_real_mem(void *ptr) {
-    if (ptr == 0) return ptr;
-    return (void *)((size_t *)ptr - 1);
-  }
-  my_free_realloc_wrpr_t my_free_realloc_wrpr_obj;
-  constexpr inline void *realloc(void *ptr, size_t size) {
-    void *ptr2{};
-    ptr2 = realloc_mem(ptr, size);
-    get_size_of_mem(ptr2) = get_needed_size_of_mem(size);
-    return ptr2;
-  }
-  constexpr inline void free(void *ptr) {
-    my_free_realloc_wrpr_obj.free(get_real_mem(ptr), get_size_of_mem(ptr));
-  }
-  constexpr inline void *realloc_mem(void *ptr, size_t len) {
-    void *real_ptr = get_real_mem(ptr);
-    void *real_reallocated_ptr = my_free_realloc_wrpr_obj.realloc(
-        real_ptr, get_size_of_mem(ptr), get_needed_size_of_mem(len));
-    return get_fake_mem(real_reallocated_ptr);
-  }
-};
-template <class T1, class T2, class U>
-constexpr inline bool operator==(const mjz_reallocator_template_t<U, T1> &,
-                                 const mjz_reallocator_template_t<U, T2> &) {
-  return true;
-}
-
-template <class T1, class T2, class U>
-constexpr inline bool operator!=(const mjz_reallocator_template_t<U, T1> &,
-                                 const mjz_reallocator_template_t<U, T2> &) {
-  return false;
-}
-template <class T1, class T2, class U1, class U2>
-constexpr inline bool operator==(const mjz_reallocator_template_t<U1, T1> &,
-                                 const mjz_reallocator_template_t<U2, T2> &) {
-  return U1() == U2();
-}
-
-template <class T1, class T2, class U1, class U2>
-constexpr inline bool operator!=(const mjz_reallocator_template_t<U1, T1> &,
-                                 const mjz_reallocator_template_t<U2, T2> &) {
-  return U1() != U2();
-}
-class mjz_realloc_free_package_example {
- public:
-  inline void free(void *ptr) { ::free(ptr); }
-  inline void *realloc(void *ptr, size_t needed_len) {
-    return ::realloc(ptr, needed_len);
-  }
-};
-template <class C_realloc_free_package_t = mjz_realloc_free_package_example>
-struct mjz_allocate_free_warpper {
- public:
-  inline mjz_allocate_free_warpper() {}
-  inline ~mjz_allocate_free_warpper() {}
-  inline mjz_allocate_free_warpper(void *p, size_t n) : my_c_allocator(p, n) {}
-  inline void free(void *ptr, size_t) { my_c_allocator.free(ptr); }
-  inline void *realloc(void *ptr, size_t, size_t needed_len) {
-    return my_c_allocator.realloc(ptr, needed_len);
-  }
-
- private:
-  C_realloc_free_package_t my_c_allocator;
-};
-template <typename Type>
-using mjz_reallocator_t = mjz_reallocator_template_t<
-    mjz_allocate_free_warpper<mjz_realloc_free_package_example>, Type>;
 
 template <class T>
 using mjz_get_Type = typename T::Type;
@@ -4315,146 +4173,6 @@ struct mjz_inherited_container : private T {
   }
 };
 
-template <typename Type,
-          class my_constructor = mjz_obj_manager_template_t<Type>,
-          class my_reallocator = mjz_reallocator_t<Type>>
-
-struct mjz_temp_type_allocator_warpper_t
-    : public mjz_temp_type_obj_algorithims_warpper_t<Type, my_constructor>,
-      protected my_reallocator {
-  using me = mjz_temp_type_allocator_warpper_t;
-
- public:
-  using my_value_Type_t = Type;
-  using value_type = my_value_Type_t;
-  using reference = value_type &;
-  using pointer = value_type *;
-  using iterator_category = std::random_access_iterator_tag;
-  using difference_type = std::ptrdiff_t;
-  using const_reference = const my_value_Type_t &;
-  using size_type = size_t;
-  using propagate_on_container_move_assignment = std::true_type;
-  constexpr inline mjz_temp_type_allocator_warpper_t(){};
-  constexpr inline mjz_temp_type_allocator_warpper_t(void *p, size_t n)
-      : my_reallocator(p, n){};
-  constexpr inline ~mjz_temp_type_allocator_warpper_t(){};
-  template <class U>
-  constexpr inline mjz_temp_type_allocator_warpper_t(
-      const mjz_temp_type_allocator_warpper_t<U> &) noexcept {}
-  [[nodiscard]] Type *allocate(size_t n) { return allocate(n, (Type *)0); }
-  [[nodiscard]] static constexpr inline Type *allocate(
-      mjz_temp_type_allocator_warpper_t &a, size_t n, const void *hint) {
-    return (Type *)a.allocate(n, hint);
-  }
-  [[nodiscard]] static constexpr inline Type *allocate(
-      mjz_temp_type_allocator_warpper_t &a, size_t n) {
-    return (Type *)a.allocate(n);
-  }
-  static constexpr inline void deallocate(mjz_temp_type_allocator_warpper_t &a,
-                                          Type *p, size_t n) noexcept {
-    a.deallocate(p, n);
-  }
-  constexpr inline void deallocate(Type *p, size_t n) noexcept {
-    deallocate_pv(p, n);
-  }
-  constexpr [[nodiscard]] inline Type *allocate(size_t n, const void *hint) {
-    return allocate_pv(n, hint);
-  }
-  template <typename... args_t>
-  constexpr [[nodiscard]] inline Type *allocate_obj(args_t &&...args) {
-    // new Type(std::forward<args_t>(args)...);
-    Type *ptr = allocate_pv(1, 0);
-    if (!ptr) return nullptr;
-    *get_real_array_ptr<size_t>(ptr) = 1;
-    return my_constructor::construct_at(ptr, std::forward<args_t>(args)...);
-  }
-  template <typename... args_t>
-  constexpr [[nodiscard]] inline Type *allocate_obj_array(size_t len,
-                                                          bool in_reveres,
-                                                          args_t &&...args) {
-    // new Type(std::forward<args_t>(args)...)[len];
-    Type *ptr = allocate_pv(len, 0);
-    if (!ptr) return nullptr;
-    *get_real_array_ptr<size_t>(ptr) = len;
-    return me::construct_arr_at(ptr, len, in_reveres,
-                                std::forward<args_t>(args)...);
-  }
-  template <typename... args_t>
-  constexpr [[nodiscard]] inline Type *allocate_obj_array(size_t len,
-                                                          bool in_reveres = 0) {
-    Type *ptr = allocate_pv(len, 0);
-    if (!ptr) return nullptr;
-    *get_real_array_ptr<size_t>(ptr) = len;
-    return me::construct_arr_at(ptr, len, in_reveres);
-  }
-  constexpr inline size_t get_number_of_obj_in_array(Type *ptr) {
-    return *get_real_array_ptr<size_t>(ptr);
-  }
-  constexpr inline size_t size_of_array_with(size_t len) {
-    return sizeof(size_t) + this->size_of_type() * len;
-  }
-  constexpr inline size_t size_of_array_with(Type *ptr) {
-    return sizeof(size_t) +
-           this->size_of_type() * get_number_of_obj_in_array(ptr);
-  }
-  constexpr inline bool deallocate_obj(Type *ptr) {
-    return deallocate_obj_array(ptr);
-  }
-  constexpr inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
-    // delete[] dest;
-    bool was_successful = this->obj_destructor_arr(
-        ptr, get_number_of_obj_in_array(ptr), in_reveres);
-    deallocate_pv(ptr, size_of_array_with(ptr), 1);
-    return was_successful;
-  }
-
- private:
-  template <typename T_as, typename T_from>
-  constexpr inline T_as *get_real_array_ptr(T_from *fake) {
-    if (fake == 0) return 0;
-    return (T_as *)(((size_t *)fake) - 1);
-  }
-  template <typename T_as, typename T_from>
-  constexpr inline T_as *get_fake_array_ptr(T_from *real) {
-    if (real == 0 || (void *)real == (void *)sizeof(size_t)) return 0;
-    return (T_as *)(((size_t *)real) + 1);
-  }
-  constexpr [[nodiscard]] inline Type *allocate_pv(size_t n, const void *hint,
-                                                   bool raw = 0) {
-    return get_fake_array_ptr<Type>(my_reallocator::allocate_raw(
-        raw ? n : size_of_array_with(n), get_real_array_ptr<Type>(hint)));
-  }
-  constexpr inline void deallocate_pv(Type *p, size_t n,
-                                      bool raw = 0) noexcept {
-    my_reallocator::deallocate_raw(get_real_array_ptr<Type>(p),
-                                   raw ? n : size_of_array_with(n));
-  }
-  template <typename _Type, class _constructor, class _reallocator>
-  constexpr inline friend bool operator==(
-      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _constructor, _reallocator>) {
-    return false;
-  }
-  template <typename _Type, class _constructor, class _reallocator>
-  constexpr inline friend bool operator!=(
-      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _constructor, _reallocator>) {
-    return true;
-  }
-  template <typename _Type, class _constructor>
-  constexpr inline friend bool operator==(
-      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _constructor, my_reallocator>) {
-    return true;
-  }
-  template <typename _Type, class _constructor>
-  constexpr inline friend bool operator!=(
-      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
-      mjz_temp_type_allocator_warpper_t<_Type, _constructor, my_reallocator>) {
-    return false;
-  }
-};
-
 template <class Type, size_t m_Size>
 union M_DATA_U {
  public:
@@ -4485,468 +4203,6 @@ union M_DATA_U {
   *(volatile char *)nullptr = 0;  // address 0 is invalid
   // this will crash the program
 }
-
-namespace smart_ptr {
-template <typename T>
-union data_storage {
-  using Type = T;
-  char f;
-  Type object;
-  inline data_storage() {}  // no initilization
-
-  inline ~data_storage() {}  // no deinitilization
-
-  inline operator Type &() & { return *((Type *)&f); }
-
-  inline operator Type &&() && { return (Type &&) * ((Type *)&f); }
-
-  inline operator const Type &() & { return *((const Type *)&f); }
-
-  inline operator const Type &&() && {
-    return (const Type &&)*((const Type *)&f);
-  }
-
-  inline operator const Type &() const & { return *((const Type *)&f); }
-
-  inline operator const Type &&() const && {
-    return (const Type &&)*((const Type *)&f);
-  }
-
-  inline operator Type *() & { return ((Type *)&f); }
-
-  inline operator const Type *() & { return ((const Type *)&f); }
-
-  inline operator const Type *() const & { return ((const Type *)&f); }
-
-  inline Type &operator*() & { return operator Type &(); }
-
-  inline const Type &operator*() const & { return *((const Type *)&f); }
-
-  inline Type *operator->() & { return operator Type *(); }
-
-  inline const Type *operator->() const & { return operator const Type *(); }
-
-  inline Type *ptr() & { return operator Type *(); }
-
-  inline Type &get() & { return operator Type &(); }
-
-  inline const Type *ptr() const & { return operator const Type *(); }
-
-  inline const Type &get() const & { return *((const Type *)&f); }
-
-  inline Type &&get() && { return (Type &&) * ((Type *)&f); }
-
-  inline const Type &&get() const && {
-    return (const Type &&)*((const Type *)&f);
-  }
-};
-template <typename T>
-struct smart_data_structure_base {
-  using Type = T;
-  using size_lt = uint32_t;
-  size_lt shared_ptr_ref_count{};
-  size_lt weak_ptr_ref_count{};
-  data_storage<T> *data;
-  // a char will exist in both derived classes at this spot
-  // like this  char first_of_obj_if_allocted_both_in_one_go = pure variable;
-  smart_data_structure_base() {}
-  ~smart_data_structure_base() {}
-};
-template <typename T>
-struct smart_data_structure_sepereat : public smart_data_structure_base<T> {
-  char first_of_obj_if_allocted_both_in_one_go{};
-};
-template <typename T>
-struct smart_data_structure_both : public smart_data_structure_base<T> {
-  union data_storage_t {
-    data_storage_t() {}   // no initilization of T
-    ~data_storage_t() {}  // no deinitilization of T
-    T Data_of_var;
-    char first_of_obj_if_allocted_both_in_one_go;
-  };
-  data_storage_t buff;
-};
-template <typename T>
-bool is_sepereat(const smart_data_structure_base<T> &obj) {
-  static_assert(offsetof(smart_data_structure_both<T>,
-                         buff.first_of_obj_if_allocted_both_in_one_go) ==
-                offsetof(smart_data_structure_sepereat<T>,
-                         first_of_obj_if_allocted_both_in_one_go));
-
-  return ((void *)(&((smart_data_structure_sepereat<T> *)&obj)
-                        ->first_of_obj_if_allocted_both_in_one_go)) !=
-         (void *)obj.data;
-}
-
-template <typename T>
-class smart_ptr_base_template_t : private mjz_reallocator_t<T> {
- private:
-  void deallocate_seperate() {
-    if (!m_data) return;
-    if (m_data->data) {
-      try {
-        operator delete(m_data->data);  // no destructor called
-      } catch (...) {
-      }
-    }
-    try {
-      delete m_data;
-    } catch (...) {
-    }
-    m_data = 0;
-  }
-  void allocate_seperate(data_storage<T> *p) {
-    if (m_data) trap_crash();  // if has object ??
-    try {
-      m_data = new DB_t;
-    } catch (...) {
-      m_data = 0;
-    }
-    if (!m_data) return;
-    m_data->data = p;
-  }
-  void deallocate_both() {
-    if (!m_data) return;
-    try {
-      delete ((smart_data_structure_both<T> *)(m_data));
-    } catch (...) {
-    }
-    m_data = 0;
-  }
-  void allocate_both() {
-    if (m_data) trap_crash();  // if has object ??
-    try {
-      m_data = new smart_data_structure_both<T>;
-    } catch (...) {
-      m_data = 0;
-    }
-    if (!m_data) return;
-    try {
-      m_data->data =
-          (decltype(m_data
-                        ->data))(((char *)m_data) +
-                                 offsetof(
-                                     smart_data_structure_both<T>,
-                                     buff.first_of_obj_if_allocted_both_in_one_go));
-    } catch (...) {
-      m_data->data = 0;
-    }
-
-    if (!m_data->data) {
-      deallocate_both();
-    }
-  }
-
- public:
-  void deallocate() {
-    if (is_sepereat(*m_data)) return deallocate_seperate();
-    return deallocate_both();
-  }
-  void allocate(data_storage<T> *p = 0) {
-    if (p) return allocate_seperate(p);
-    return allocate_both();
-  }
-
- public:
-  using DB_t = smart_data_structure_base<T>;
-  DB_t *m_data{};
-  using Type = T;
-
-  void destroy() {
-    if (!m_data) return;
-    if (!m_data->data) return;
-    get_object_allocator().destroy_at(m_data->data->ptr());
-  }
-  template <typename... args_t>
-  bool create(args_t &&...args) {
-    return create_with([&, this](Type *p) {
-      get_object_allocator().construct_at(p, std::forward<args_t>(args)...);
-      return true;
-    });
-  }
-  bool create_with(std::function<bool(Type *)> FN_construct_at) {
-    if (!m_data) return false;
-    bool sucsses_full{false};
-    try {
-      sucsses_full = FN_construct_at(m_data->data->ptr());
-    } catch (...) {
-    }
-    return sucsses_full;
-  }
-
-  void weak_add(DB_t *p) {
-    if (!p) return;
-    m_data = p;
-    m_data->weak_ptr_ref_count++;
-  }
-  bool sheared_add(DB_t *p) {
-    if (!p) return false;
-    m_data = p;
-    m_data->shared_ptr_ref_count++;
-    return true;
-  }
-
- protected:
-  smart_ptr_base_template_t() {}
-  ~smart_ptr_base_template_t() {}
-  mjz_temp_type_allocator_warpper_t<T> &get_object_allocator() { return *this; }
-  const mjz_temp_type_allocator_warpper_t<T> &get_object_allocator() const {
-    return *this;
-  }
-  void update_weak() {
-    if (!m_data) return;
-    if (!m_data->shared_ptr_ref_count) {
-      weak_free();
-    }
-  }
-  void weak_set(DB_t *p) { weak_add(p); }
-
-  void weak_free() {
-    if (!m_data) return;
-    DB_t &data = *m_data;
-    data.weak_ptr_ref_count--;
-    if (data.shared_ptr_ref_count) {
-    } else if (!data.weak_ptr_ref_count) {
-      deallocate();
-    }
-
-    m_data = nullptr;
-  }
-  void sheared_free() {
-    if (!m_data) return;
-    DB_t &data = *m_data;
-
-    data.shared_ptr_ref_count--;
-    if (!data.shared_ptr_ref_count) {
-      destroy();
-      if (!data.weak_ptr_ref_count) {
-        deallocate();
-      }
-    }
-    m_data = nullptr;
-  }
-};
-template <class T>
-class weak_ptr_template_t;
-template <typename T>
-class sheared_ptr_template_t : protected smart_ptr_base_template_t<T> {
-  using DB_t = typename smart_ptr_base_template_t<T>::DB_t;
-  using Type = T;
-  DB_t *&ptr() { return this->m_data; }
-  const DB_t *const &ptr() const { return this->m_data; }
-
- public:
-  sheared_ptr_template_t() : smart_ptr_base_template_t<T>() {}
-  ~sheared_ptr_template_t() { operator~(); }
-  void operator~() { this->sheared_free(); }
-  sheared_ptr_template_t(sheared_ptr_template_t &&obj) {
-    ptr() = std::exchange(obj.ptr(), {0});
-  }
-  sheared_ptr_template_t(const sheared_ptr_template_t &&obj) {
-    ptr() = std::exchange(remove_const(obj.ptr()), {0});
-  }
-  sheared_ptr_template_t(sheared_ptr_template_t &obj) {
-    this->sheared_add(obj.ptr());
-  }
-  sheared_ptr_template_t(const sheared_ptr_template_t &obj) {
-    this->sheared_add(remove_const(obj.ptr()));
-  }
-
-  sheared_ptr_template_t &operator=(sheared_ptr_template_t &&obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    ptr() = std::exchange(obj.ptr(), {0});
-    return *this;
-  }
-  sheared_ptr_template_t &operator=(const sheared_ptr_template_t &&obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    ptr() = std::exchange(remove_const(obj.ptr()), {0});
-  }
-  sheared_ptr_template_t &operator=(sheared_ptr_template_t &obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    this->sheared_add(obj.ptr());
-    return *this;
-  }
-  sheared_ptr_template_t &operator=(const sheared_ptr_template_t &obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    this->sheared_add(remove_const(obj.ptr()));
-    return *this;
-  }
-
-  void reset() noexcept { operator~(); }
-  template <class T_der>
-  void reset(smart_data_structure_base<T_der> *p)
-    requires(std::is_base_of<T, T_der>)
-  {
-    operator~();
-    if (p) {
-      ptr() = (smart_data_structure_base<T> *)
-          p;  // dont worry its just a {s_lt,s_lt,der ptr}
-    }
-  }
-  T *get() {
-    if (!ptr()) return nullptr;
-    if (!ptr()->data) return nullptr;
-    return ptr()->data->get();
-  }
-  T &operator*() {
-    return *get();  // may derefrence null;
-  }
-  T *operator->() {
-    return get();  // may derefrence null;
-  }
-  long use_count() const noexcept {
-    if (!ptr()) return 0;
-    return ptr()->shared_ptr_ref_count;
-  }
-
-  const T *get() const {
-    if (!ptr()) return nullptr;
-    if (!ptr()->data) return nullptr;
-    return ptr()->data->get();
-  }
-  const T &operator*() const {
-    return *get();  // may derefrence null;
-  }
-  const T *operator->() const {
-    return get();  // may derefrence null;
-  }
-
-  explicit operator bool() const { return !!ptr(); }
-  bool operator!() const { return !ptr(); }
-
- public:
-  template <typename... args_t>
-  [[nodiscard]] static sheared_ptr_template_t mjz_make_sheared(
-      args_t &&...args) {
-    sheared_ptr_template_t ret;
-    ret.allocate();
-    ret.create(std::forward<args_t>(args)...);
-    ret.sheared_add(ret.m_data);
-    return ret;
-  }
-
-  friend class weak_ptr_template_t<T>;
-};
-
-template <typename T, typename... args_t>
-sheared_ptr_template_t<T> make_sheared(args_t &&...args) {
-  return sheared_ptr_template_t<T>::mjz_make_sheared(
-      std::forward<args_t>(args)...);
-}
-
-template <typename T>
-class weak_ptr_template_t : protected smart_ptr_base_template_t<T> {
-  using DB_t = typename smart_ptr_base_template_t<T>::DB_t;
-  using Type = T;
-  friend class sheared_ptr_template_t<T>;
-
-  DB_t *&ptr() {
-    UW();
-    return this->m_data;
-  }
-  const DB_t *const &ptr() const {
-    UW();
-    return this->m_data;
-  }
-  void UW() const  // not really
-  {
-    remove_const(this)->update_weak();
-  }
-
- public:
-  weak_ptr_template_t() : smart_ptr_base_template_t<T>() {}
-  ~weak_ptr_template_t() { operator~(); }
-  void operator~() { this->weak_free(); }
-  weak_ptr_template_t(weak_ptr_template_t &&obj) {
-    ptr() = std::exchange(obj.ptr(), {0});
-  }
-  weak_ptr_template_t(const weak_ptr_template_t &&obj) {
-    ptr() = std::exchange(remove_const(obj.ptr()), {0});
-  }
-  weak_ptr_template_t(weak_ptr_template_t &obj) { this->weak_add(obj.ptr()); }
-  weak_ptr_template_t(const weak_ptr_template_t &obj) {
-    this->weak_add(remove_const(obj.ptr()));
-  }
-
-  weak_ptr_template_t(const sheared_ptr_template_t<T> &obj) {
-    this->weak_add(remove_const(obj.ptr()));
-  }
-
-  weak_ptr_template_t &operator=(weak_ptr_template_t &&obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    ptr() = std::exchange(obj.ptr(), {0});
-    return *this;
-  }
-  weak_ptr_template_t &operator=(const weak_ptr_template_t &&obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    ptr() = std::exchange(remove_const(obj.ptr()), {0});
-  }
-  weak_ptr_template_t &operator=(weak_ptr_template_t &obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    this->weak_add(obj.ptr());
-    return *this;
-  }
-  weak_ptr_template_t &operator=(const weak_ptr_template_t &obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    this->weak_add(remove_const(obj.ptr()));
-    return *this;
-  }
-
-  weak_ptr_template_t &operator=(const sheared_ptr_template_t<T> &obj) {
-    if (ptr() == obj.ptr()) return *this;
-    operator~();
-    this->weak_add(remove_const(obj.ptr()));
-    return *this;
-  }
-
-  void reset() noexcept { operator~(); }
-  template <class T_der>
-  void reset(smart_data_structure_base<T_der> *p)
-    requires(std::is_base_of<T, T_der>)
-  {
-    operator~();
-    if (p) {
-      ptr() = (smart_data_structure_base<T> *)
-          p;  // dont worry its just a {s_lt,s_lt,der ptr}
-    }
-  }
-  T *get() {
-    if (!ptr()) return nullptr;
-    if (!ptr()->data) return nullptr;
-    return ptr()->data->get();
-  }
-  T &operator*() {
-    return *get();  // may derefrence null;
-  }
-  T *operator->() {
-    return get();  // may derefrence null;
-  }
-
-  const T *get() const {
-    if (!ptr()) return nullptr;
-    if (!ptr()->data) return nullptr;
-    return ptr()->data->get();
-  }
-  const T &operator*() const {
-    return *get();  // may derefrence null;
-  }
-  const T *operator->() const {
-    return get();  // may derefrence null;
-  }
-
-  explicit operator bool() const { return !!ptr(); }
-  bool operator!() const { return !ptr(); }
-};
-
-};  // namespace smart_ptr
 
 /*
 0 for little
@@ -5546,332 +4802,6 @@ constexpr inline T exchange(T &obj, U &&new_value) {
   obj = std::forward<U>(new_value);
   return old_value;
 }
-
-template <typename T, typename Allocator = mjz_reallocator_t<T>>
-struct mjz_Vector {
- public:
-  using value_type = T;
-  using allocator_type = Allocator;
-  using size_type = size_t;
-  using difference_type = ptrdiff_t;
-  using reference = value_type &;
-  using const_reference = const value_type &;
-  using pointer = typename Allocator::pointer;
-  using const_pointer =
-      typename std::allocator_traits<Allocator>::const_pointer;
-  using iterator = T *;
-  using const_iterator = const T *;
-  using reverse_iterator = std::reverse_iterator<iterator>;
-  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  constexpr inline mjz_Vector() : mjz_Vector(Allocator{}) {}
-  constexpr inline explicit mjz_Vector(const Allocator &a)
-      : m_allocator{a}, m_size{0}, m_capacity{0}, m_data{nullptr} {}
-  constexpr inline explicit mjz_Vector(size_type n, const T &val,
-                                       const Allocator &a = Allocator{})
-      : m_allocator{a},
-        m_size{n},
-        m_capacity{n},
-        m_data{m_allocator.allocate(n)} {
-    m_allocator.uninitialized_fill_n(m_data, n, val);
-  }
-  constexpr inline explicit mjz_Vector(size_type n,
-                                       const Allocator &a = Allocator{})
-      : m_allocator{a},
-        m_size{n},
-        m_capacity{n},
-        m_data{m_allocator.allocate_obj_array(n)} {}
-  template <typename InputIt>
-  constexpr inline mjz_Vector(InputIt first, InputIt last,
-                              const Allocator &a = Allocator{})
-      : mjz_Vector(std::distance(first, last), a) {
-    m_allocator.copy(first, last, begin());
-  }
-  constexpr inline mjz_Vector(const mjz_Vector &other)
-      : m_allocator{other.m_allocator},
-        m_size{other.m_size},
-        m_capacity{other.m_capacity} {
-    m_data = m_allocator.allocate(m_capacity);
-    m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
-  }
-  constexpr inline mjz_Vector(const mjz_Vector &other, const Allocator &a)
-      : m_allocator{a}, m_size{other.m_size}, m_capacity{other.m_capacity} {
-    m_data = m_allocator.allocate(m_capacity);
-    m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
-  }
-  constexpr inline mjz_Vector(mjz_Vector &&other) noexcept
-      : m_allocator{std::move(other.m_allocator)},
-        m_size{std::exchange(other.m_size, 0)},
-        m_capacity{std::exchange(other.m_capacity, 0)},
-        m_data{std::exchange(other.m_data, nullptr)} {}
-  constexpr inline mjz_Vector(mjz_Vector &&other, const Allocator &a)
-      : m_allocator{a},
-        m_size{std::exchange(other.m_size, 0)},
-        m_capacity{std::exchange(other.m_capacity, 0)},
-        m_data{std::exchange(other.m_data, nullptr)} {}
-  constexpr inline mjz_Vector(std::initializer_list<T> il,
-                              const Allocator &a = Allocator{})
-      : mjz_Vector(il.begin(), il.end(), a) {}
-  constexpr inline ~mjz_Vector() {
-    clear();
-    deallocate();
-  }
-  constexpr inline mjz_Vector &operator=(const mjz_Vector &other) {
-    if (this != &other) {
-      clear();
-      deallocate();
-      m_allocator = other.m_allocator;
-      m_size = other.m_size;
-      m_capacity = other.m_capacity;
-      m_data = m_allocator.allocate(m_capacity);
-      m_allocator.uninitialized_copy(other.begin(), other.end(), begin());
-    }
-    return *this;
-  }
-  constexpr inline mjz_Vector &operator=(mjz_Vector &&other) noexcept {
-    if (this != &other) {
-      clear();
-      deallocate();
-      m_allocator = std::move(other.m_allocator);
-      m_size = std::exchange(other.m_size, 0);
-      m_capacity = std::exchange(other.m_capacity, 0);
-      m_data = std::exchange(other.m_data, nullptr);
-    }
-    return *this;
-  }
-  constexpr inline mjz_Vector &operator=(std::initializer_list<T> il) {
-    *this = mjz_Vector(il);
-    return *this;
-  }
-  constexpr inline reference operator[](size_type pos) { return m_data[pos]; }
-  constexpr inline const_reference operator[](size_type pos) const {
-    return m_data[pos];
-  }
-  constexpr inline reference at(size_type pos) {
-    check_range(pos);
-    return m_data[pos];
-  }
-  constexpr inline const_reference at(size_type pos) const {
-    check_range(pos);
-    return m_data[pos];
-  }
-  constexpr inline reference front() { return *begin(); }
-  constexpr inline const_reference front() const { return *begin(); }
-  constexpr inline reference back() { return *(end() - 1); }
-  constexpr inline const_reference back() const { return *(end() - 1); }
-  constexpr inline T *data() noexcept { return m_data; }
-  constexpr inline const T *data() const noexcept { return m_data; }
-  constexpr inline iterator begin() noexcept { return m_data; }
-  constexpr inline const_iterator begin() const noexcept { return m_data; }
-  constexpr inline iterator end() noexcept { return m_data + m_size; }
-  constexpr inline const_iterator end() const noexcept {
-    return m_data + m_size;
-  }
-  constexpr inline reverse_iterator rbegin() noexcept {
-    return reverse_iterator(end());
-  }
-  constexpr inline const_reverse_iterator rbegin() const noexcept {
-    return const_reverse_iterator(end());
-  }
-  constexpr inline reverse_iterator rend() noexcept {
-    return reverse_iterator(begin());
-  }
-  constexpr inline const_reverse_iterator rend() const noexcept {
-    return const_reverse_iterator(begin());
-  }
-  constexpr inline const_iterator cbegin() const noexcept { return begin(); }
-  constexpr inline const_iterator cend() const noexcept { return end(); }
-  constexpr inline const_reverse_iterator crbegin() const noexcept {
-    return rbegin();
-  }
-  constexpr inline const_reverse_iterator crend() const noexcept {
-    return rend();
-  }
-  constexpr inline bool empty() const noexcept { return m_size == 0; }
-  constexpr inline size_type size() const noexcept { return m_size; }
-  constexpr inline size_type max_size() const noexcept {
-    return ((((size_type)-1) >> 1) -
-            1);  // std::allocator_traits<Allocator>::max_size(m_allocator);
-  }
-  constexpr inline void reserve(size_type n) {
-    if (n > m_capacity) reallocate(n);
-  }
-  constexpr inline size_type capacity() const noexcept { return m_capacity; }
-  constexpr inline void shrink_to_fit() {
-    if (m_size < m_capacity) reallocate(m_size);
-  }
-  constexpr inline void clear() noexcept {
-    destroy(begin(), end());
-    m_size = 0;
-  }
-  constexpr inline iterator insert(const_iterator pos, const T &val) {
-    return insert(pos, 1, val);
-  }
-  constexpr inline iterator insert(const_iterator pos, T &&val) {
-    emplace(pos, std::move(val));
-    return pos;
-  }
-  constexpr inline iterator insert(const_iterator pos, size_type count,
-                                   const T &val) {
-    auto offset = pos - cbegin();
-    reallocate(m_size + count);
-    m_allocator.move_backward(begin() + offset, end() - count, end());
-    m_allocator.uninitialized_fill_n(begin() + offset, count, val);
-    m_size += count;
-    return begin() + offset;
-  }
-  template <typename InputIt>
-  constexpr inline iterator insert(const_iterator pos, InputIt first,
-                                   InputIt last) {
-    auto offset = pos - cbegin();
-    auto count = std::distance(first, last);
-    reallocate(m_size + count);
-    m_allocator.move_backward(begin() + offset, end() - count, end());
-    m_allocator.uninitialized_copy(first, last, begin() + offset);
-    m_size += count;
-    return begin() + offset;
-  }
-  constexpr inline iterator insert(const_iterator pos,
-                                   std::initializer_list<T> ilist) {
-    return insert(pos, ilist.begin(), ilist.end());
-  }
-  template <typename... Args>
-  constexpr inline iterator emplace(const_iterator pos, Args &&...args) {
-    auto offset = pos - cbegin();
-    reallocate(m_size + 1);
-    m_allocator.move_backward(begin() + offset, end() - 1, end());
-    m_allocator.construct(m_allocator, m_data + offset,
-                          std::forward<Args>(args)...);
-    ++m_size;
-    return begin() + offset;
-  }
-  constexpr inline iterator erase(const_iterator pos) {
-    return erase(pos, pos + 1);
-  }
-  constexpr inline iterator erase(const_iterator first, const_iterator last) {
-    auto offset = first - cbegin();
-    auto count = last - first;
-    destroy(begin() + offset, end());
-    std::move(begin() + offset + count, end(), begin() + offset);
-    m_size -= count;
-    return begin() + offset;
-  }
-  template <typename... Args>
-  constexpr inline reference emplace_back(Args &&...args) {
-    if (m_size == m_capacity) {
-      reserve(m_capacity == 0 ? 1 : m_capacity * 2);
-    }
-    m_allocator.construct_at(m_data + m_size, std::forward<Args>(args)...);
-    ++m_size;
-    return back();
-  }
-  constexpr inline void pop_back() {
-    if (m_size > 0) {
-      --m_size;
-      m_allocator.destroy(m_data + m_size);
-    }
-  }
-  constexpr inline bool add_size(size_type n) {
-    if (n == m_size) return 1;
-    reserve(size() + n);
-    if ((size() + n) > m_capacity) return 0;
-    auto it = begin() + size();
-    auto it_e = it + n;
-    while (it < it_e) {
-      m_allocator.construct_at(it);
-      ++it;
-    }
-    m_size += n;
-    return 1;
-  }
-  constexpr inline bool add_size(size_type n, const value_type &value) {
-    if (n == m_size) return 1;
-    reserve(size() + n);
-    if ((size() + n) > m_capacity) return 0;
-    m_allocator.uninitialized_fill_n(begin() + size(), n, value);
-    m_size += n;
-    return 1;
-  }
-  constexpr inline bool add_size(size_type n, value_type &&value) {
-    if (n == m_size) return 1;
-    reserve(size() + n);
-    if ((size() + n) > m_capacity) return 0;
-    if ((n - 1) > 0)
-      m_allocator.uninitialized_fill_n(begin() + size(), n - 1, value);
-    m_allocator.construct(m_allocator, begin() + size() + n - 1,
-                          std::move(value));
-    m_size += n;
-    return 1;
-  }
-  constexpr inline bool resize(size_type n) {
-    if (m_size < n) return add_size(n - m_size);
-    if (m_size > n) {
-      destroy(begin() + n, end());
-      m_size = n;
-      return 1;
-    }
-    return 1;
-  }
-  constexpr inline bool resize(size_type n, const value_type &value) {
-    if (m_size < n) return add_size(n - m_size, std::move(value));
-    if (m_size > n) {
-      destroy(begin() + n, end());
-      m_size = n;
-      return 1;
-    }
-    return 1;
-  }
-  constexpr inline bool resize(size_type n, value_type &&value) {
-    if (m_size < n) return add_size(n - m_size, std::move(value));
-    if (m_size > n) {
-      destroy(begin() + n, end());
-      m_size = n;
-      return 1;
-    }
-    return 1;
-  }
-  constexpr inline reference push_back(const T &value) {
-    return emplace_back(value);
-  }
-  constexpr inline reference push_back(T &&value) {
-    return emplace_back(std::move(value));
-  }
-
- private:
-  allocator_type m_allocator;
-  size_type m_size;
-  size_type m_capacity;
-  pointer m_data;
-  // Helper functions
-
-  constexpr inline void deallocate() {
-    if (m_data) {
-      for (size_type i = 0; i < m_size; ++i) {
-        m_allocator.destroy(m_data + i);
-      }
-      m_allocator.deallocate(m_data, m_capacity);
-      m_data = nullptr;
-      m_size = 0;
-      m_capacity = 0;
-    }
-  }
-  constexpr inline void destroy(iterator first, iterator last) {
-    while (first < last) {
-      m_allocator.destroy(first++);
-    }
-  }
-  constexpr inline void reallocate(size_type newCapacity) {
-    pointer newData = m_allocator.allocate(newCapacity);
-    m_allocator.uninitialized_move_n(m_data, m_size, newData);
-    size_t s = m_size;
-    deallocate();
-    m_size = s;
-    m_data = newData;
-    m_capacity = newCapacity;
-  }
-  constexpr inline void check_range(size_type size) {
-    if (m_size < size) Throw<std::out_of_range>(" bad accesses");
-  }
-};
 
 template <class Type, size_t m_capacity,
           class my_obj_constructor =
@@ -9390,22 +8320,19 @@ class optional_pointer_refrence_class_template_t
     return !!m_ptr;
   }
   template <size_t I>
-  inline constexpr
-  T_valid_or_invalid_refrence_t<const_Type> get() const
-    requires(I == 1)
+  inline constexpr T_valid_or_invalid_refrence_t<const_Type> get() const
+    requires(I == 1 && is_const_type)
   {
     return *m_ptr;
   }
   template <size_t I>
 
-  inline constexpr
-  T_valid_or_invalid_refrence_t<Type> get()
+  inline constexpr T_valid_or_invalid_refrence_t<Type> get() const
     requires(I == 1 && !is_const_type)
   {
     return *m_ptr;
   }
 };
-
 
 template <
     typename T_ref, bool mutable_ptr,
@@ -13046,8 +11973,8 @@ struct mjz_stack_obj_warper_template_class_t {
     return {uop(), uep()};
   }
   /*
-  *@return note that at least one of the return references is invalid
-  */
+   *@return note that at least one of the return references is invalid
+   */
   constexpr inline std::tuple<
       std::tuple_element_t<0, optional_refrene_of<Type>>,
       std::tuple_element_t<1, optional_refrene_of<Type>>,
@@ -13061,8 +11988,8 @@ struct mjz_stack_obj_warper_template_class_t {
             ptr_error_refrence};
   }
   /*
-  *@return note that at least one of the return references is invalid
-  */
+   *@return note that at least one of the return references is invalid
+   */
   constexpr inline std::tuple<
       std::tuple_element_t<0, optional_refrene_of<const Type>>,
       std::tuple_element_t<1, optional_refrene_of<const Type>>,
@@ -14689,7 +13616,7 @@ class Point3D {
 };
 
 template <uint8_t min_of_stack_string>
-class minimal_mjz_string_data : protected static_str_algo {
+class minimal_mjz_string_data {
   static_assert(sizeof(void *) == sizeof(uintptr_t),
                 " for this class this is not good");
   typedef uintptr_t Size_t;
@@ -14768,38 +13695,13 @@ class minimal_mjz_string_data : protected static_str_algo {
 
  public:
   minimal_mjz_string_data(const char *s, size_t n) {
-    if (!s || !can_have_len(n)) return;
+    if (!s || !n || !can_have_len(n)) return;
     memcpy(get_str(), s, n);
     add_len(n);
   }
   minimal_mjz_string_data() {}
   inline bool is_dynamic() const {
     return m_db.db_s.internal_array_length == is_external_array_v;
-  }
-  inline dynamic_DB_t str_set_dynamic(char *buffer, size_t cap) {
-    if (!buffer || !cap) return {};
-    if (is_dynamic()) {
-      dynamic_DB_t per = m_db.db_d;
-      if (cap < per.length) return {};
-      if (!per.buffer || !per.length || !per.capacity || per.buffer == buffer)
-        return per;
-      memmove(buffer, per.buffer, per.length);
-      m_db.db_d.buffer = buffer;
-      m_db.db_d.capacity = cap;
-      return per;
-    }
-    if (m_db.db_s.internal_array_length)
-      memmove(buffer, m_db.db_s.internal_array,
-              m_db.db_s.internal_array_length);
-    dynamic_DB_t ret;
-    ret.buffer = 0;
-    ret.capacity = static_storage_cap;
-    ret.length = m_db.db_s.internal_array_length;
-    m_db.db_s.internal_array_length = is_external_array_v;
-    m_db.db_d.buffer = buffer;
-    m_db.db_d.capacity = cap;
-    m_db.db_d.length = ret.length;
-    return ret;
   }
   inline size_t get_cap() const {
     if (is_dynamic()) return m_db.db_d.capacity;
@@ -14816,6 +13718,40 @@ class minimal_mjz_string_data : protected static_str_algo {
   inline size_t get_len() const {
     if (is_dynamic()) return m_db.db_d.length;
     return m_db.db_s.internal_array_length;
+  }
+
+  inline bool unsafe_set_len(size_t length) {
+    if (is_dynamic()) {
+      m_db.db_d.length = length;
+      return 1;
+    }
+    if (length < is_external_array_v) {
+      m_db.db_s.internal_array_length = length;
+      return 1;
+    }
+    return 0;
+  }
+  inline void unsafe_reset() {
+    m_db.db_s.reset();
+    m_db.db_s.internal_array_length = 0;
+  }
+  inline static constexpr size_t max_static_cap() { return static_storage_cap; }
+  inline bool unsafe_set_cap(size_t capacity, char *set_to_dynamic_buffer,
+                             bool set_to_dynamic) {
+    if (is_dynamic()) {
+      m_db.db_d.capacity = capacity;
+      m_db.db_d.buffer = set_to_dynamic_buffer;
+      return true;
+    }
+    if (set_to_dynamic) {
+      size_t len = m_db.db_s.internal_array_length;
+      m_db.db_s.internal_array_length = is_external_array_v;
+      m_db.db_d.capacity = capacity;
+      m_db.db_d.length = len;
+      m_db.db_d.buffer = set_to_dynamic_buffer;
+      return true;
+    }
+    return 0;
   }
   inline bool set_len(size_t length) {
     if (!can_have_len(length)) return false;
@@ -14872,6 +13808,8 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
  protected:
   using Base_t::get_buffer;
   using Base_t::get_length;  // the ptr length (not counting the '\0')
+  constexpr inline Base_t &get_Base_t() { return *this; }
+  constexpr inline const Base_t &get_Base_t() const { return *this; }
 
  public:
   constexpr static size_t npos = -1;
@@ -15508,6 +14446,349 @@ template <class T>
 using mjz_ref_return_helper_class_t =
     typename mjz_ref_return_helper_class<T>::type;
 
+template <bool gsjgskhl>
+struct dummy_struct______T {
+  static size_t dummy;
+  constexpr inline size_t &get() { return dummy; }
+};
+
+template <bool B>
+size_t dummy_struct______T<B>::dummy{};
+
+template <class my_free_realloc_wrpr_t, typename Type>
+struct mjz_reallocator_template_t {
+  using my_value_Type_t = Type;
+  using value_type = my_value_Type_t;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using const_reference = const my_value_Type_t &;
+  using size_type = size_t;
+  using propagate_on_container_move_assignment = std::true_type;
+  constexpr inline mjz_reallocator_template_t(){};
+  constexpr inline ~mjz_reallocator_template_t(){};
+  constexpr inline mjz_reallocator_template_t(void *p, size_t n)
+      : my_free_realloc_wrpr_obj(p, n) {}
+  template <class T>
+  constexpr inline mjz_reallocator_template_t(
+      const mjz_reallocator_template_t<my_free_realloc_wrpr_t, T> &) noexcept {}
+  constexpr [[nodiscard]] inline my_value_Type_t *allocate(size_t n) {
+    return reallocate((my_value_Type_t *)0, n);
+  }
+  constexpr [[nodiscard]] inline my_value_Type_t *allocate(size_t n,
+                                                           const void *hint) {
+    return reallocate((my_value_Type_t *)hint, n);
+  }
+  constexpr inline void deallocate(my_value_Type_t *p, size_t n) noexcept {
+    free(p);
+  }
+
+ protected:
+  constexpr [[nodiscard]] inline void *allocate_raw(size_t number_of_bytes) {
+    return reallocate_raw((void *)0, number_of_bytes);
+  }
+  constexpr [[nodiscard]] inline void *allocate_raw(size_t n,
+                                                    const void *hint) {
+    return reallocate_raw((void *)hint, n);
+  }
+  constexpr inline void deallocate_raw(void *p,
+                                       size_t number_of_bytes) noexcept {
+    free(p);
+  }
+
+ private:
+  constexpr [[nodiscard]] inline my_value_Type_t *reallocate(
+      my_value_Type_t *ptr, size_t n) {
+    return static_cast<my_value_Type_t *>(
+        realloc(ptr, n * sizeof(my_value_Type_t)));
+  }
+  constexpr [[nodiscard]] inline void *reallocate_raw(void *ptr,
+                                                      size_t number_of_bytes) {
+    return realloc(ptr, number_of_bytes);
+  }
+  constexpr size_t &get_size_of_mem(void *ptr) {
+    if (ptr == 0) {
+      dummy_struct______T<1>().get() = 0;
+      return dummy_struct______T<1>().get();
+    }
+    return *(size_t *)get_real_mem(ptr);
+  }
+  constexpr inline size_t get_needed_size_of_mem(size_t size) {
+    return sizeof(size_t) + size;
+  }
+  constexpr inline void *get_fake_mem(void *ptr) {
+    if (ptr == 0) return ptr;
+    return (void *)((size_t *)ptr + 1);
+  }
+  constexpr inline void *get_real_mem(void *ptr) {
+    if (ptr == 0) return ptr;
+    return (void *)((size_t *)ptr - 1);
+  }
+  my_free_realloc_wrpr_t my_free_realloc_wrpr_obj;
+  constexpr inline void *realloc(void *ptr, size_t size) {
+    void *ptr2{};
+    ptr2 = realloc_mem(ptr, size);
+    get_size_of_mem(ptr2) = get_needed_size_of_mem(size);
+    return ptr2;
+  }
+  constexpr inline void free(void *ptr) {
+    my_free_realloc_wrpr_obj.free(get_real_mem(ptr), get_size_of_mem(ptr));
+  }
+  constexpr inline void *realloc_mem(void *ptr, size_t len) {
+    void *real_ptr = get_real_mem(ptr);
+    void *real_reallocated_ptr = my_free_realloc_wrpr_obj.realloc(
+        real_ptr, get_size_of_mem(ptr), get_needed_size_of_mem(len));
+    return get_fake_mem(real_reallocated_ptr);
+  }
+};
+template <class T1, class T2, class U>
+constexpr inline bool operator==(const mjz_reallocator_template_t<U, T1> &,
+                                 const mjz_reallocator_template_t<U, T2> &) {
+  return true;
+}
+
+template <class T1, class T2, class U>
+constexpr inline bool operator!=(const mjz_reallocator_template_t<U, T1> &,
+                                 const mjz_reallocator_template_t<U, T2> &) {
+  return false;
+}
+template <class T1, class T2, class U1, class U2>
+constexpr inline bool operator==(const mjz_reallocator_template_t<U1, T1> &,
+                                 const mjz_reallocator_template_t<U2, T2> &) {
+  return U1() == U2();
+}
+
+template <class T1, class T2, class U1, class U2>
+constexpr inline bool operator!=(const mjz_reallocator_template_t<U1, T1> &,
+                                 const mjz_reallocator_template_t<U2, T2> &) {
+  return U1() != U2();
+}
+class mjz_realloc_free_package_example {
+ public:
+  inline static constexpr const bool log{1};
+  inline static int64_t num{};
+  inline void free(void *ptr) {
+    if constexpr (log) std::cout << (void *)ptr << " is free " << --num << "\n";
+    ::free(ptr);
+  }
+  inline void *realloc(void *ptr, size_t needed_len) {
+      if constexpr(log) {
+        volatile  bool for_editor_to_use_for_no_mem_sim=0;
+      if (for_editor_to_use_for_no_mem_sim) return nullptr;
+      }
+    bool is_null = !ptr;
+      if constexpr (log) std::cout << ptr << "  is now  reallocated to ";
+  void*  new_ptr = ::realloc(ptr, needed_len);
+      if constexpr (log)
+          std::cout << new_ptr << "  " << (is_null ? num++ : num) << "\n";
+  return new_ptr;
+  }
+};
+
+template <class C_realloc_free_package_t = mjz_realloc_free_package_example>
+struct mjz_allocate_free_warpper {
+ public:
+  inline mjz_allocate_free_warpper() {}
+  inline ~mjz_allocate_free_warpper() {}
+  inline mjz_allocate_free_warpper(void *p, size_t n) : my_c_allocator(p, n) {}
+  inline void free(void *ptr, size_t) { my_c_allocator.free(ptr); }
+  inline void *realloc(void *ptr, size_t, size_t needed_len) {
+    return my_c_allocator.realloc(ptr, needed_len);
+  }
+
+ private:
+  C_realloc_free_package_t my_c_allocator;
+};
+template <typename Type>
+using mjz_reallocator_t = mjz_reallocator_template_t<
+    mjz_allocate_free_warpper<mjz_realloc_free_package_example>, Type>;
+
+template <typename Type,
+          class my_constructor = mjz_obj_manager_template_t<Type>,
+          class my_reallocator = mjz_reallocator_t<Type>>
+struct mjz_temp_type_allocator_warpper_t
+    : public mjz_temp_type_obj_algorithims_warpper_t<Type, my_constructor>,
+      protected my_reallocator {
+  using me = mjz_temp_type_allocator_warpper_t;
+
+ public:
+  using my_value_Type_t = Type;
+  using value_type = my_value_Type_t;
+  using reference = value_type &;
+  using pointer = value_type *;
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using const_reference = const my_value_Type_t &;
+  using size_type = size_t;
+  using propagate_on_container_move_assignment = std::true_type;
+  constexpr inline mjz_temp_type_allocator_warpper_t(){};
+  constexpr inline mjz_temp_type_allocator_warpper_t(void *p, size_t n)
+      : my_reallocator(p, n){};
+  constexpr inline ~mjz_temp_type_allocator_warpper_t(){};
+  template <class U>
+  constexpr inline mjz_temp_type_allocator_warpper_t(
+      const mjz_temp_type_allocator_warpper_t<U> &) noexcept {}
+  [[nodiscard]] Type *allocate(size_t n) { return allocate(n, (Type *)0); }
+  [[nodiscard]] static constexpr inline Type *allocate(
+      mjz_temp_type_allocator_warpper_t &a, size_t n, const void *hint) {
+    return (Type *)a.allocate(n, hint);
+  }
+  [[nodiscard]] static constexpr inline Type *allocate(
+      mjz_temp_type_allocator_warpper_t &a, size_t n) {
+    return (Type *)a.allocate(n);
+  }
+  static constexpr inline void deallocate(mjz_temp_type_allocator_warpper_t &a,
+                                          Type *p, size_t n) noexcept {
+    a.deallocate(p, n);
+  }
+  constexpr inline void deallocate(Type *p, size_t n) noexcept {
+    deallocate_pv(p, n);
+  }
+  constexpr [[nodiscard]] inline Type *allocate(size_t n, const void *hint) {
+    return allocate_pv(n, hint);
+  }
+  template <typename... args_t>
+  constexpr [[nodiscard]] inline Type *allocate_obj(args_t &&...args) {
+    // new Type(std::forward<args_t>(args)...);
+    Type *ptr = allocate_pv(1, 0);
+    if (!ptr) return nullptr;
+    *get_real_array_ptr<size_t>(ptr) = 1;
+    return my_constructor::construct_at(ptr, std::forward<args_t>(args)...);
+  }
+  template <typename... args_t>
+  constexpr [[nodiscard]] inline Type *allocate_obj_array(size_t len,
+                                                          bool in_reveres,
+                                                          args_t &&...args) {
+    // new Type(std::forward<args_t>(args)...)[len];
+    Type *ptr = allocate_pv(len, 0);
+    if (!ptr) return nullptr;
+    *get_real_array_ptr<size_t>(ptr) = len;
+    return me::construct_arr_at(ptr, len, in_reveres,
+                                std::forward<args_t>(args)...);
+  }
+  template <typename... args_t>
+  constexpr [[nodiscard]] inline Type *allocate_obj_array(size_t len,
+                                                          bool in_reveres = 0) {
+    Type *ptr = allocate_pv(len, 0);
+    if (!ptr) return nullptr;
+    *get_real_array_ptr<size_t>(ptr) = len;
+    return me::construct_arr_at(ptr, len, in_reveres);
+  }
+  constexpr inline size_t get_number_of_obj_in_array(Type *ptr) {
+    return *get_real_array_ptr<size_t>(ptr);
+  }
+  constexpr inline size_t size_of_array_with(size_t len) {
+    return sizeof(size_t) + this->size_of_type() * len;
+  }
+  constexpr inline size_t size_of_array_with(Type *ptr) {
+    return sizeof(size_t) +
+           this->size_of_type() * get_number_of_obj_in_array(ptr);
+  }
+  constexpr inline bool deallocate_obj(Type *ptr) {
+    return deallocate_obj_array(ptr);
+  }
+  constexpr inline bool deallocate_obj_array(Type *ptr, bool in_reveres = 1) {
+    // delete[] dest;
+    bool was_successful = this->obj_destructor_arr(
+        ptr, get_number_of_obj_in_array(ptr), in_reveres);
+    deallocate_pv(ptr, size_of_array_with(ptr), 1);
+    return was_successful;
+  }
+
+ private:
+  template <typename T_as, typename T_from>
+  constexpr inline T_as *get_real_array_ptr(T_from *fake) {
+    if (fake == 0) return 0;
+    return (T_as *)(((size_t *)fake) - 1);
+  }
+  template <typename T_as, typename T_from>
+  constexpr inline T_as *get_fake_array_ptr(T_from *real) {
+    if (real == 0 || (void *)real == (void *)sizeof(size_t)) return 0;
+    return (T_as *)(((size_t *)real) + 1);
+  }
+  constexpr [[nodiscard]] inline Type *allocate_pv(size_t n, const void *hint,
+                                                   bool raw = 0) {
+    return get_fake_array_ptr<Type>(my_reallocator::allocate_raw(
+        raw ? n : size_of_array_with(n), get_real_array_ptr<Type>(hint)));
+  }
+  constexpr inline void deallocate_pv(Type *p, size_t n,
+                                      bool raw = 0) noexcept {
+    my_reallocator::deallocate_raw(get_real_array_ptr<Type>(p),
+                                   raw ? n : size_of_array_with(n));
+  }
+  template <typename _Type, class _constructor, class _reallocator>
+  constexpr inline friend bool operator==(
+      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
+      mjz_temp_type_allocator_warpper_t<_Type, _constructor, _reallocator>) {
+    return false;
+  }
+  template <typename _Type, class _constructor, class _reallocator>
+  constexpr inline friend bool operator!=(
+      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
+      mjz_temp_type_allocator_warpper_t<_Type, _constructor, _reallocator>) {
+    return true;
+  }
+  template <typename _Type, class _constructor>
+  constexpr inline friend bool operator==(
+      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
+      mjz_temp_type_allocator_warpper_t<_Type, _constructor, my_reallocator>) {
+    return true;
+  }
+  template <typename _Type, class _constructor>
+  constexpr inline friend bool operator!=(
+      mjz_temp_type_allocator_warpper_t<Type, my_constructor, my_reallocator>,
+      mjz_temp_type_allocator_warpper_t<_Type, _constructor, my_reallocator>) {
+    return false;
+  }
+};
+
+template <class mjz_allocator_t = mjz_reallocator_t<char>>
+class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
+                   private mjz_allocator_t {
+  // private:
+ public:
+  using Base_t = minimal_mjz_string_data<0>;
+  constexpr inline Base_t &get_Base_t() { return *this; }
+  constexpr inline const Base_t &get_Base_t() const { return *this; }
+  inline mjz_allocator_t &Allocator() { return *this; }
+  const inline mjz_allocator_t &Allocator() const { return *this; }
+
+  const char *get_buffer() const { return get_Base_t().get_buffer(); }
+  char *get_buffer() { return get_Base_t().get_buffer(); }
+  size_t get_length() const { return get_Base_t().get_length(); }
+  size_t get_cap() const { return get_Base_t().get_cap(); }
+  void free_buffer() {
+    if (get_Base_t().is_dynamic()) {
+      Allocator().deallocate(get_buffer(), get_cap() + 1);
+    }
+    get_Base_t().unsafe_reset();
+  }
+  succsess_t reallocate_bigger_buffer(size_t new_cap) {
+    if (get_Base_t().can_have_len(new_cap)) return 1;
+    const bool is_dynamic = get_Base_t().is_dynamic();
+    char *new_buffer{};
+    char *old_buffer = get_buffer();
+    try {
+      new_buffer =
+          Allocator().allocate(new_cap + 1, is_dynamic ? old_buffer : 0);
+    } catch (...) {
+      new_buffer = 0;
+    }
+    if (!new_buffer) {
+      free_buffer();
+      return 0;
+    }
+    /* requires(get_len()<new_cap)*/
+    memmove(new_buffer, old_buffer, get_len());
+    memset(new_buffer + get_len(), 0, new_cap - get_len() + 1);
+    get_Base_t().unsafe_set_cap(new_cap, new_buffer, 1);
+    return 1;
+  }
+
+  ~mjz_String() { free_buffer(); }
+};
+
 namespace have_mjz_ard_removed {
 template <class T>
 using mjz_RAII_t = mjz_resource_acquisition_is_initialization_template<T>;
@@ -15524,8 +14805,8 @@ template <size_t N>
 using mjz_initilizer_t = initilizer_in_constructor_helper_class_t<N>;
 template <size_t N>
 using initilizer_t = initilizer_in_constructor_helper_class_t<N>;
-template <typename T>
-using Vector = mjz_Vector<T>;
+// template <typename T>
+// using Vector = mjz_Vector<T>;
 template <typename T, size_t size>
 using array = mjz_Array<T, size>;
 using initilizer_in_constructor_helper_class =
@@ -15587,8 +14868,8 @@ using mjz_to_it_wrpr =
     mjz_to_iterator_template_warper_t<mjz_get_value_Type<it_T>, it_T>;
 
 using arena_allocator = arena_allocator;
-template <typename T>
-using vector = mjz_Vector<T>;
+// template <typename T>
+// using vector = mjz_Vector<T>;
 template <typename T>
 template <typename T, bool init = true>
 using obj_warper = mjz_stack_obj_warper_template_t<T, init>;
@@ -17197,19 +16478,18 @@ inline std::remove_reference_t<input_t> promptlns(out_Ts &&...args) {
   return scanlnv<input_t>();
 }
 
-
 template <typename... input_t>
 std::tuple<std::remove_reference_t<input_t>...> multiscanv() {
   return {std::forward<input_t>(scanv<input_t>())...};
-} 
+}
 template <typename... input_t>
 std::tuple<std::remove_reference_t<input_t>...> multiscanlnv() {
   return {std::forward<input_t>(scanlnv<input_t>())...};
 }
 template <typename... input_t>
-void multiscan(input_t&...args) {
- char a[]= {(sacn<input_t>(args), 0)...};
-  return ;
+void multiscan(input_t &...args) {
+  char a[] = {(sacn<input_t>(args), 0)...};
+  return;
 }
 template <typename... input_t>
 void multiscanln(input_t &...args) {
@@ -17247,9 +16527,7 @@ struct multi_cmd {
   {
     return {(print(std::forward<out_Ts>(args)), scanlnv<input_t>())...};
   }
-
 };
-
 
 }  // namespace iostream
 namespace print_c_str_n {
