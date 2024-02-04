@@ -975,6 +975,16 @@ constexpr inline uint16_t makeWord(uint8_t h, uint8_t l) {
 unsigned long millis();
 #endif  // Arduino
 #ifndef _MJZ_STD_TERMENATE_NO_THROW
+/* true == is Debug*/
+/* msvc only*/
+#ifndef _MSC_VER 
+#error " fix the below macro before you move on"
+#endif  // _MSC_VER 
+#if defined(_DEBUG)
+#define _MJZ_STD_TERMENATE_NO_THROW true
+#else
+#define _MJZ_STD_TERMENATE_NO_THROW false
+#endif
 #define _MJZ_STD_TERMENATE_NO_THROW true
 #endif  //!_MJZ_STD_TERMENATE_NO_THROW
 inline uint32_t usteejtgk_millis() { return millis(); }
@@ -14533,11 +14543,11 @@ struct mjz_reallocator_template_t {
     return ptr2;
   }
   constexpr inline void free(void *ptr) {
-    my_free_realloc_wrpr_obj.free(get_real_mem(ptr), get_size_of_mem(ptr));
+    my_free_realloc_wrpr_obj.mjz_free(get_real_mem(ptr), get_size_of_mem(ptr));
   }
   constexpr inline void *realloc_mem(void *ptr, size_t len) {
     void *real_ptr = get_real_mem(ptr);
-    void *real_reallocated_ptr = my_free_realloc_wrpr_obj.realloc(
+    void *real_reallocated_ptr = my_free_realloc_wrpr_obj.mjz_realloc(
         real_ptr, get_size_of_mem(ptr), get_needed_size_of_mem(len));
     return get_fake_mem(real_reallocated_ptr);
   }
@@ -14573,16 +14583,16 @@ class mjz_realloc_free_package_example {
     ::free(ptr);
   }
   inline void *realloc(void *ptr, size_t needed_len) {
-      if constexpr(log) {
-        volatile  bool for_editor_to_use_for_no_mem_sim=0;
+    if constexpr (log) {
+      volatile bool for_editor_to_use_for_no_mem_sim = 0;
       if (for_editor_to_use_for_no_mem_sim) return nullptr;
-      }
+    }
     bool is_null = !ptr;
-      if constexpr (log) std::cout << ptr << "  is now  reallocated to ";
-  void*  new_ptr = ::realloc(ptr, needed_len);
-      if constexpr (log)
-          std::cout << new_ptr << "  " << (is_null ? num++ : num) << "\n";
-  return new_ptr;
+    if constexpr (log) std::cout << ptr << "  is now  reallocated to ";
+    void *new_ptr = ::realloc(ptr, needed_len);
+    if constexpr (log)
+      std::cout << new_ptr << "  " << (is_null ? num++ : num) << "\n";
+    return new_ptr;
   }
 };
 
@@ -14592,9 +14602,9 @@ struct mjz_allocate_free_warpper {
   inline mjz_allocate_free_warpper() {}
   inline ~mjz_allocate_free_warpper() {}
   inline mjz_allocate_free_warpper(void *p, size_t n) : my_c_allocator(p, n) {}
-  inline void free(void *ptr, size_t) { my_c_allocator.free(ptr); }
-  inline void *realloc(void *ptr, size_t, size_t needed_len) {
-    return my_c_allocator.realloc(ptr, needed_len);
+  inline void mjz_free(void *ptr, size_t) { my_c_allocator.free(ptr); }
+  inline void *mjz_realloc(void *ptr, size_t preveious_size, size_t new_size) {
+    return my_c_allocator.realloc(ptr, new_size);
   }
 
  private:
@@ -14742,51 +14752,112 @@ struct mjz_temp_type_allocator_warpper_t
     return false;
   }
 };
-
-template <class mjz_allocator_t = mjz_reallocator_t<char>>
+template <typename V=void,class mjz_reallocator =
+              mjz_allocate_free_warpper<mjz_realloc_free_package_example>,bool do_throw_=1>
+struct mjz_String_template_args{
+using mjz_reallocator_t=mjz_reallocator;
+static constexpr const
+bool do_throw = do_throw_;
+};
+template <class mjz_String_template_args_t>
+using get_mjz_reallocator_t_from_mjz_String_template_args= typename mjz_String_template_args_t::mjz_reallocator_t;
+template <class mjz_String_template_args_t = mjz_String_template_args<void>>
 class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
-                   private mjz_allocator_t {
-  // private:
- public:
-  using Base_t = minimal_mjz_string_data<0>;
-  constexpr inline Base_t &get_Base_t() { return *this; }
-  constexpr inline const Base_t &get_Base_t() const { return *this; }
-  inline mjz_allocator_t &Allocator() { return *this; }
-  const inline mjz_allocator_t &Allocator() const { return *this; }
-
-  const char *get_buffer() const { return get_Base_t().get_buffer(); }
-  char *get_buffer() { return get_Base_t().get_buffer(); }
-  size_t get_length() const { return get_Base_t().get_length(); }
-  size_t get_cap() const { return get_Base_t().get_cap(); }
-  void free_buffer() {
-    if (get_Base_t().is_dynamic()) {
-        /*
-          you could add memset 0 but performance :(
-        */
-      Allocator().deallocate(get_buffer(), get_cap() + 1);
-    }
-    get_Base_t().unsafe_reset();
-  }
-  succsess_t reallocate_bigger_buffer(size_t new_cap) {
-    if (get_Base_t().can_have_len(new_cap)) return 1;
-    const bool is_dynamic = get_Base_t().is_dynamic();
+                   private get_mjz_reallocator_t_from_mjz_String_template_args<
+                       mjz_String_template_args_t> {
+static constexpr const bool deafult_is_noexcept = !mjz_String_template_args_t::do_throw;
+using mjz_reallocator_t = get_mjz_reallocator_t_from_mjz_String_template_args<
+    mjz_String_template_args_t>;
+ private:
+  succsess_t shrink_to_(size_t new_cap) {
     char *new_buffer{};
     char *old_buffer = get_buffer();
-    try {
-      new_buffer =
-          Allocator().allocate(new_cap + 1, is_dynamic ? old_buffer : 0);
-    } catch (...) {
-      new_buffer = 0;
+      { /*reallocate "https://linux.die.net/man/3/realloc" but with args
+             (void*ptr,size_t pr_size,size_t new_size) [nonexpert]*/
+      new_buffer = (char *)/*sizeof(char)==1*/ Allocator().mjz_realloc(
+          old_buffer, get_cap() + 1, new_cap + 1);
     }
     if (!new_buffer) {
       free_buffer();
       return 0;
     }
+    new_buffer[new_cap]='\0';//null terminator
+    get_Base_t().unsafe_set_cap(new_cap, new_buffer, 1);
+    get_Base_t().set_len(new_cap);
+    return 1;
+  }
+
+  void free_buffer() {
+    if (is_dynamic()) {
+      /*
+        you could add memset 0 but performance :(
+      */
+      Allocator().mjz_free(get_buffer(), get_cap() + 1);
+    }
+    get_Base_t().unsafe_reset();
+  }
+  succsess_t reallocate_bigger_buffer(size_t new_cap) {
+    if (get_Base_t().can_have_len(new_cap)) return 1;
+    char *new_buffer{};
+    char *old_buffer = get_buffer();
+    const bool was_dynamic = is_dynamic();
+    { /*reallocate "https://linux.die.net/man/3/realloc" but with args
+           (void*ptr,size_t pr_size,size_t new_size) [nonexpert]*/
+      new_buffer = (char *)/*sizeof(char)==1*/ Allocator().mjz_realloc(
+          was_dynamic ? old_buffer : 0, was_dynamic ? get_cap() + 1 : 0,
+          new_cap + 1);
+    }
+    if (!new_buffer) {
+      free_buffer();
+      return 0;
+    }
+
     /* requires(get_len()<new_cap)*/
-    memmove(new_buffer, old_buffer, get_len());
+    if (!was_dynamic) {
+      const char *const perivuos_inner_buffer_that_will_be_invalid_after_call =
+          old_buffer;
+      memmove(new_buffer, perivuos_inner_buffer_that_will_be_invalid_after_call,
+              get_len());
+    }
     memset(new_buffer + get_len(), 0, new_cap - get_len() + 1);
     get_Base_t().unsafe_set_cap(new_cap, new_buffer, 1);
     return 1;
+  }
+  constexpr static succsess_t check_succsess(bool result,
+                                             bool is_noexcept = deafult_is_noexcept) {
+    if (result || is_noexcept) return result;
+    Throw<const char*>("out of memory");
+    return 0;//just for ?
+  }
+  // private:
+
+ public:
+  using Base_t = minimal_mjz_string_data<0>;
+  constexpr inline Base_t &get_Base_t() { return *this; }
+  constexpr inline const Base_t &get_Base_t() const { return *this; }
+  inline mjz_reallocator_t &Allocator() { return *this; }
+  const inline mjz_reallocator_t &Allocator() const { return *this; }
+  inline bool is_dynamic() const { return get_Base_t().is_dynamic(); }
+  const char *get_buffer() const { return get_Base_t().get_buffer(); }
+  char *get_buffer() { return get_Base_t().get_buffer(); }
+  size_t get_length() const { return get_Base_t().get_length(); }
+  size_t get_cap() const { return get_Base_t().get_cap(); }
+
+  succsess_t resurve(size_t new_cap, bool noexpt = deafult_is_noexcept) {
+    if (!get_Base_t().can_have_len(new_cap)) {
+      return check_succsess(reallocate_bigger_buffer(new_cap), noexpt);
+  }
+    if (!is_dynamic()) return 1;
+    return  check_succsess(shrink_to_(new_cap),noexpt);
+  }
+  succsess_t resize(size_t new_len, bool noexpt = deafult_is_noexcept) {
+    if (!resurve(new_len,1)) return check_succsess(0,noexpt);
+    get_Base_t().set_len(new_len);
+    get_buffer()[new_len] = '\0';  // null terminator
+    return 1;
+  }
+  inline succsess_t add_length(size_t addition_to_len, bool noexpt = deafult_is_noexcept) {
+    return resize(get_len() + addition_to_len, noexpt);
   }
 
   ~mjz_String() { free_buffer(); }
