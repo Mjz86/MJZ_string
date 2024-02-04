@@ -32,9 +32,12 @@ int my_main::main(int argc, const char* const* const argv) {
     println("hello ", user_name, " hear is on cmd command:");
     std::string cmd = scanv<std::string>();
     println(system(cmd.c_str()), "\n bye.");
+
   } else {
     println("not  a valid user");
+    auto [i, c, f] =
+        multi_cmd<int, char, float>::promptlnp("int:", "char:", "f:");
+    println(i, c, f);
   }
-
   return 0;
 }

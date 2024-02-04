@@ -17196,6 +17196,61 @@ inline std::remove_reference_t<input_t> promptlns(out_Ts &&...args) {
   print(std::forward<out_Ts>(args)...);
   return scanlnv<input_t>();
 }
+
+
+template <typename... input_t>
+std::tuple<std::remove_reference_t<input_t>...> multiscanv() {
+  return {std::forward<input_t>(scanv<input_t>())...};
+} 
+template <typename... input_t>
+std::tuple<std::remove_reference_t<input_t>...> multiscanlnv() {
+  return {std::forward<input_t>(scanlnv<input_t>())...};
+}
+template <typename... input_t>
+void multiscan(input_t&...args) {
+ char a[]= {(sacn<input_t>(args), 0)...};
+  return ;
+}
+template <typename... input_t>
+void multiscanln(input_t &...args) {
+  char a[] = {(sacnln<input_t>(args), 0)...};
+  return;
+}
+
+template <typename... input_t>
+struct multi_cmd {
+  template <typename... out_Ts>
+  static inline std::tuple<std::remove_reference_t<input_t>...> prompt(
+      out_Ts &&...args)
+    requires(sizeof...(out_Ts) == sizeof...(input_t))
+  {
+    return {(print(std::forward<out_Ts>(args)), scanv<input_t>())...};
+  }
+  template <typename... out_Ts>
+  static inline std::tuple<std::remove_reference_t<input_t>...> promptln(
+      out_Ts &&...args)
+    requires(sizeof...(out_Ts) == sizeof...(input_t))
+  {
+    return {(println(std::forward<out_Ts>(args)), scanlnv<input_t>())...};
+  }
+  template <typename... out_Ts>
+  static inline std::tuple<std::remove_reference_t<input_t>...> promptlnp(
+      out_Ts &&...args)
+    requires(sizeof...(out_Ts) == sizeof...(input_t))
+  {
+    return {(println(std::forward<out_Ts>(args)), scanv<input_t>())...};
+  }
+  template <typename... out_Ts>
+  static inline std::tuple<std::remove_reference_t<input_t>...> promptlns(
+      out_Ts &&...args)
+    requires(sizeof...(out_Ts) == sizeof...(input_t))
+  {
+    return {(print(std::forward<out_Ts>(args)), scanlnv<input_t>())...};
+  }
+
+};
+
+
 }  // namespace iostream
 namespace print_c_str_n {
 inline void print() {}
