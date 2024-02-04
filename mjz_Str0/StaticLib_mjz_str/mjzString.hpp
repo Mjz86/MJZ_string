@@ -14760,6 +14760,9 @@ class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
   size_t get_cap() const { return get_Base_t().get_cap(); }
   void free_buffer() {
     if (get_Base_t().is_dynamic()) {
+        /*
+          you could add memset 0 but performance :(
+        */
       Allocator().deallocate(get_buffer(), get_cap() + 1);
     }
     get_Base_t().unsafe_reset();
