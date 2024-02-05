@@ -15401,11 +15401,16 @@ class mjz_String_template
   inline mjz_String_template(const mjz_String_template &other,bool noexpt = deafult_is_noexcept) { 
       if (this == &other)return;
      if(!resize(other.length(),1)){
-      check_succsess(0, deafult_is_noexcept);
+      check_succsess(0, noexpt);
          return;
      }
      memmove(data(), other.C_str(), other.length());
      *end() = nullcr;
+  }
+  template <class T>
+  inline mjz_String_template(const basic_mjz_Str_view<T> &other,
+                             bool noexpt = deafult_is_noexcept) {
+     copy_from(other, noexpt);
   }
   mjz_String_template& operator=(mjz_String_template&&other) {
      if (this == &other) return*this;
@@ -15414,9 +15419,10 @@ class mjz_String_template
      return*this;
   }
  template <class T>
-  inline mjz_String_template &copy_from(const basic_mjz_Str_view<T> &other) {
+  inline mjz_String_template &copy_from(const basic_mjz_Str_view<T> &other,
+                                        bool noexpt = deafult_is_noexcept) {
      if (!resize(other.length(), 1)) {
-         check_succsess(0, deafult_is_noexcept);
+         check_succsess(0, noexpt);
          return *this;
      }
      if (data() == other.data()) {
@@ -15428,11 +15434,12 @@ class mjz_String_template
 }
 
    template <class T>
-inline mjz_String_template &append_from(const basic_mjz_Str_view<T> &other) {
+inline mjz_String_template &concat(const basic_mjz_Str_view<T> &other,
+                                        bool noexpt = deafult_is_noexcept) {
    const size_t per_len=length();
      const size_t len_add = other.length();
    if (!add_length(len_add, 1)) {
-         check_succsess(0, deafult_is_noexcept);
+         check_succsess(0, noexpt);
          return *this;
      }
    memmove(data() + per_len, other.data(), len_add);
@@ -15454,15 +15461,16 @@ inline mjz_String_template &append_from(const basic_mjz_Str_view<T> &other) {
 
   template <class T>
  inline mjz_String_template &operator+=(const basic_mjz_Str_view<T> &other) {
-  return append_from(other);
+  return concat(other);
  }
  inline mjz_String_template &operator+=(
      const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &other) {
-  return append_from(other);
+  return concat(other);
  }
  inline mjz_String_template &operator+=(const mjz_String_template &other) {
-  return append_from(other);
+  return concat(other);
  }
+
   ~mjz_String_template() { free_buffer(); }
   friend void inline constexpr static_assert_if_mjz_string_hase_bad_size();
 };
