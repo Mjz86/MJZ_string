@@ -11978,14 +11978,43 @@ struct mjz_stack_obj_warper_template_class_t {
       optional_pointer_refrence_class_template_t<T &, 0>;
   constexpr inline std::pair<optional_refrene_of<Type>,
                              optional_refrene_of<Error_t>>
-  ref() & {
+  ref2() & {
     return {uop(), uep()};
   }
   constexpr inline std::pair<optional_refrene_of<const Type>,
                              optional_refrene_of<Error_t>>
-  ref() const & {
+  ref2() const & {
     return {uop(), uep()};
   }
+
+ constexpr inline optional_refrene_of<Type>
+  valref() & {
+    return uop();
+  }
+  
+  constexpr inline optional_refrene_of<const Type>
+  valref() const & {
+    return uop();
+  }
+
+constexpr inline optional_refrene_of<Type>
+  ref() & {
+    return uop();
+  }
+  
+  constexpr inline optional_refrene_of<const Type>
+  ref() const & {
+    return uop();
+  }
+    constexpr inline optional_refrene_of<Error_t>
+  erref() & {
+    return  uep();
+  }
+  constexpr inline optional_refrene_of<Error_t>
+  erref() const & {
+    return uep();
+  }
+  
   /*
    *@return note that at least one of the return references is invalid
    */
