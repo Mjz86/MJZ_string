@@ -5757,47 +5757,6 @@ class static_str_algo {
       return (uint8_t)127;  // note : 127 is delete in ascii
     }
   }
-  static constexpr inline char *double_to_char_array(double num_double,
-                                                     int decimal_place,
-                                                     char buf) {
-    int num_int = round(num_double * mjz_pow_UINT(10, decimal_place));
-    int sign = num_int < 0 ? 1 : 0;
-    num_int = abs(num_int);
-    if (num_int == 0) {
-      char *s = (char *)buf;
-      s[0] = '0';
-      s[1] = '.';
-      for (int i = 2; i < decimal_place + 2; i++) s[i] = '0';
-      s[decimal_place + 2] = '\0';
-      return s;
-    }
-    int digit_count = 1;
-    int n = num_int;
-    if (n >= 100000000) {
-      digit_count += 8;
-      n /= 100000000;
-    }
-    if (n >= 10000) {
-      digit_count += 4;
-      n /= 10000;
-    }
-    if (n >= 100) {
-      digit_count += 2;
-      n /= 100;
-    }
-    if (n >= 10) {
-      digit_count++;
-    }
-    int size = digit_count + 1 + (decimal_place > 0 ? 1 : 0) + sign;
-    char *s = (char *)buf;
-    for (int i = 0, integer = num_int; integer != 0; integer /= 10) {
-      s[size - 2 - i++] = integer % 10 + 48;
-      if (decimal_place > 0 && i == decimal_place) s[size - 2 - i++] = '.';
-    }
-    s[size - 1] = '\0';
-    if (sign) s[0] = '-';
-    return s;
-  }
   struct just_str_view_data {
     constexpr inline ~just_str_view_data() {}
     constexpr inline just_str_view_data(char *p, size_t n)
@@ -13892,7 +13851,7 @@ struct deafult_mjz_Str_data_strorage {
   inline constexpr const char *get_buffer() const { return str_view; }
   inline constexpr size_t get_length() const { return len_view; }
   inline constexpr deafult_mjz_Str_data_strorage(const char *s, size_t n)
-      : str_view(s), len_view(n) {}
+      : str_view(n?s:nullptr), len_view(s?n:0) {}
 };
 
 template <mjz_Str_data_strorage Base_t>
@@ -13921,6 +13880,18 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   }
 
  public:
+  constexpr inline const char *begin() const {
+    return begining_of_str_ptr();
+  }
+  constexpr inline const char *end() const {
+    return ending_of_str_ptr();
+  }
+  constexpr inline const char *cbegin() const { return begining_of_str_ptr(); }
+  constexpr inline const char *cend() const { return ending_of_str_ptr(); }
+  constexpr inline size_t size() const {
+      return length();
+  }
+
   constexpr basic_mjz_Str_view(const char *const buffer, size_t length)
       : Base_t(buffer, length) {}
   template <size_t N>
@@ -13929,7 +13900,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr basic_mjz_Str_view(const just_str_view_data &s)
       : basic_mjz_Str_view(s.buffer, s.len) {}
   constexpr explicit inline basic_mjz_Str_view(no_decay_c_str auto c_string)
-      : basic_mjz_Str_view(c_string, strlen(c_string)) {}
+      : basic_mjz_Str_view(c_string, c_string? strlen(c_string):0) {}
   constexpr basic_mjz_Str_view()
       : basic_mjz_Str_view(static_str_algo::empty_STRING_C_STR, 0) {}
   constexpr basic_mjz_Str_view(const basic_mjz_Str_view& str)requires(is_normal)
@@ -13940,11 +13911,10 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
  public:
   constexpr bool is_blank() const {
     size_t i{};
-    while (i < get_length()) {
-      if (!is_blank_characteres_default(get_buffer()[i])) {
+    for (char *it=data(),*end=data()+length();it<end;it++) {
+      if (!is_blank_characteres_default(*it)) {
         return 0;
       }
-      i++;
     }
     return 1;
   }
@@ -14010,8 +13980,9 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   }
   constexpr double toDouble(void) const {
     if (get_buffer()) {
-      char *ptr{};
-      return strtod(get_buffer(), &ptr);
+      double dbl{};
+      std::from_chars(get_buffer(), get_buffer() + length(), dbl);
+      return dbl;
     }
     return 0;
   }
@@ -14223,6 +14194,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     return UN_ORDERED_compare(s.get_buffer(), s.get_length());
   }
   constexpr size_t UN_ORDERED_compare(const char *s, size_t s_len) const {
+    if (!s || !s_len) return length() * 2;
     const unsigned char *ucs_ = (const unsigned char *)s;
     const unsigned char *ucbuffer_ = (const unsigned char *)this->get_buffer();
     size_t number_of_not_right{};
@@ -14291,9 +14263,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     //
     return MJZ_STRnCMP(&get_buffer()[get_length() - s2.get_length()],
                        s2.get_buffer(), s2.get_length()) == 0;
-  }
-  // Function that return the length
-  constexpr size_t size() const { return length(); }
+  } 
   constexpr char charAt(int64_t loc) const {
     return operator[](signed_index_to_unsigned(loc));
   }
@@ -15341,7 +15311,7 @@ class mjz_String_template
     }
     get_Base_t().unsafe_reset();
   }
-  succsess_t reallocate_bigger_buffer(size_t new_cap) {
+  succsess_t reallocate_bigger_buffer_(size_t new_cap) {
     if (get_Base_t().can_have_len(new_cap)) return 1;
     char *new_buffer{};
     char *old_buffer = get_buffer();
@@ -15382,18 +15352,26 @@ class mjz_String_template
   size_t get_length() const { return get_Base_t().get_length(); }
   size_t get_len() const { return get_length(); }
   size_t get_cap() const { return get_Base_t().get_cap(); }
+  inline size_t to_appropriate_size(size_t new_min_cap)const {
+    return max(min(max(length()*2 , length() + capacity()),256), new_min_cap);
+  }
  public:
   inline bool is_dynamic() const { return get_Base_t().is_dynamic(); }
-
-  succsess_t resurve(size_t new_cap, bool noexpt = deafult_is_noexcept) {
+  succsess_t resurve(size_t new_cap,bool can_shrink=false,bool can_allocate_more=true, bool noexpt = deafult_is_noexcept) {
+    if (new_cap == capacity()) return 1;
     if (!get_Base_t().can_have_len(new_cap)) {
-      return check_succsess(reallocate_bigger_buffer(new_cap), noexpt);
+      return check_succsess(
+          reallocate_bigger_buffer_(
+              can_allocate_more ? to_appropriate_size(new_cap)
+                                       : new_cap),
+                            noexpt);
     }
     if (!is_dynamic()) return 1;
     return check_succsess(shrink_to_(new_cap), noexpt);
   }
   succsess_t resize(size_t new_len, bool noexpt = deafult_is_noexcept) {
-    if (!resurve(new_len, 1)) return check_succsess(0, noexpt);
+    if(new_len==length())return 1;
+    if (!resurve(new_len,0,1, 1)) return check_succsess(0, noexpt);
     get_Base_t().set_len(new_len);
     get_buffer()[new_len] = nullcr;   
     return 1;
@@ -15443,6 +15421,7 @@ class mjz_String_template
                              bool noexpt = deafult_is_noexcept) {
      copy_from(other, noexpt);
   }
+  
   mjz_String_template& operator=(mjz_String_template&&other) {
      if (this == &other) return*this;
      free_buffer();
@@ -15484,6 +15463,7 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
      return *this;
 }
 
+
  template <class T>
  inline mjz_String_template &operator=(const basic_mjz_Str_view<T> &other) {
   return   copy_from(other);
@@ -15510,7 +15490,7 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
  template <class T>
  inline bool concat(const basic_mjz_Str_view<T> &other,  bool noexpt = deafult_is_noexcept) {
   bool was_succsessful{}; 
- append(other, noexpt, was_succsessful);
+ append(other, noexpt, &was_succsessful);
  return check_succsess(was_succsessful, noexpt);
  }
  using str_view=basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
@@ -15591,11 +15571,254 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
  return 1;
  }
  inline bool has_any_data() const { return get_Base_t().has_any_data(); }
-
-inline str_view view() const { return {C_str(), length()};}
+ bool trim( bool noexpt = deafult_is_noexcept) {
+ return resurve(length(), 1,0,noexpt);
+ } inline str_view view() const { return {C_str(), length()};}
  inline operator str_view() const { return view(); }
 inline explicit operator bool() const { return !!*this; }
   ~mjz_String_template() { free_buffer(); }
+
+
+  
+mjz_String_template(unsigned char value, unsigned char base=10) {
+  
+ char buf[1 + 8 * sizeof(unsigned char)];
+auto[str,len]= ALGO::utoa(value, buf, base);
+copy_from(str_view(str,len));
+  }
+
+  mjz_String_template(int value, unsigned char base=10) {
+  
+ char buf[2 + 8 * sizeof(int)];
+ auto[str,len]=ALGO::itoa(value, buf, base);
+ copy_from(str_view(str,len));
+  }
+
+  mjz_String_template(unsigned int value, unsigned char base=10) {
+  
+ char buf[1 + 8 * sizeof(unsigned int)];
+ auto[str,len]=ALGO::
+ utoa(value, buf, base);
+ copy_from(str_view(str,len));
+  }
+
+  mjz_String_template(long value, unsigned char base=10) {
+  
+ char buf[2 + 8 * sizeof(long)];
+ auto[str,len]=ALGO::
+ ltoa(value, buf, base);
+ copy_from(str_view(str,len));
+  }
+
+  mjz_String_template(unsigned long value, unsigned char base=10) {
+  
+ char buf[1 + 8 * sizeof(unsigned long)];
+ auto[str,len]=ALGO::
+ ultoa(value, buf, base);
+ copy_from(str_view(str,len));
+  }
+
+
+
+
+  mjz_String_template(const void* ptr) {
+      concat(ptr);
+  }
+  mjz_String_template(int64_t value, unsigned char base=10) {
+ char buf[2 + 8 * sizeof(int64_t)];
+ auto [str, len] = ALGO::ltoa(value, buf, base);
+ copy_from(str_view(str, len));
+  }
+
+  mjz_String_template(uint64_t value, unsigned char base=10) {
+ char buf[1 + 8 * sizeof(uint64_t)];
+ auto [str, len] = ALGO::ultoa(value, buf, base);
+ copy_from(str_view(str, len));
+  }
+
+
+
+  mjz_String_template(float value, unsigned char decimalPlaces=2) {
+ static size_t const FLOAT_BUF_SIZE = FLT_MAX_10_EXP + ALGO::FLT_MAX_DECIMAL_PLACES +
+                                      1 /* '-' */ + 1 /* '.' */ + 1 /* '\0' */;
+  
+ char buf[FLOAT_BUF_SIZE];
+ decimalPlaces = min(decimalPlaces, ALGO::FLT_MAX_DECIMAL_PLACES);
+ auto [str, len] = ALGO::dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf,
+                                 NumberOf(buf));
+ copy_from(str_view(str, len));
+  }
+
+  mjz_String_template(double value, unsigned char decimalPlaces=2) {
+ static size_t const DOUBLE_BUF_SIZE = DBL_MAX_10_EXP +
+                                       ALGO::DBL_MAX_DECIMAL_PLACES +
+                                       1 /* '-' */ + 1 /* '.' */ + 1 /* '\0' */;
+  
+ char buf[DOUBLE_BUF_SIZE];
+ decimalPlaces = min(decimalPlaces, ALGO::DBL_MAX_DECIMAL_PLACES);
+ auto[str,len]=ALGO::dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf,NumberOf(buf));
+ copy_from(str_view(str, len));
+  }
+
+   
+  inline mjz_String_template(const str_view &other,bool noexpt = deafult_is_noexcept) {
+ copy_from(other, noexpt);
+  }
+  
+  mjz_String_template& toLowerCase(void) {
+ char *ptr = begin();
+ char *const end_ptr = end();
+ constexpr static const char after_a = 'A' - 1;
+ constexpr static const char before_z = 'Z' + 1;
+ constexpr static const int upper_to_lower_offset = int('a') - int('A');
+ while (ptr++ != end_ptr) {
+         if (after_a < *ptr && *ptr < before_z)
+        *ptr = *ptr + upper_to_lower_offset;
+ }
+  }
+  mjz_String_template& toUpperCase(void) {
+      char *ptr = begin();
+      char *const end_ptr = end();
+      constexpr static const char after_a = 'a' - 1;
+      constexpr static const char before_z = 'z' + 1;
+      constexpr static const int neg_lower_to_upper_offset =int('a') - int('A');
+      while (ptr++ != end_ptr) {
+         if (after_a < *ptr && *ptr < before_z) 
+        *ptr = *ptr - neg_lower_to_upper_offset;
+      }
+  }
+
+  succsess_t replace(char find, char replace) {
+      for(char& c : *this) 
+         c=(c==find?replace:c);
+      return true;
+  }
+  private:
+  static size_t find_multi_on_valid_str_(const char *hay_stack,
+                                         size_t hay_stack_len,const char*needle,size_t needel_len ) {
+      size_t found {};
+      const char *str=hay_stack;
+      size_t len = hay_stack_len;
+      char first_char = *needle;
+      while (true) {
+         while (len&&first_char != *str) {
+        ++str;
+        --len;
+         }
+
+         if (!len) return found;
+         size_t needel_reamain = needel_len;
+         const char *needle_ptr = needle ;
+         while (len && needel_reamain && *str == *needle_ptr) {
+        needel_reamain--;
+        len--;
+        needle_ptr++;
+        str++;
+         }
+         if (!needel_reamain) ++found;
+         if (!len) return found;
+      }
+
+ }
+
+ 
+  public:
+  succsess_t replace(const str_view& find, const str_view& replace,bool noexpt=deafult_is_noexcept) {
+      if (!find.length()) return false;
+      if (length() < find.length()) return true;
+     const  char *const ptr_find = find.data();
+      const char *const ptr_replace = replace.data();
+     const size_t len_find = find.length();
+    const  size_t len_replace = replace.length();
+  const    size_t per_len=length();
+      size_t num =
+          find_multi_on_valid_str_(C_str(), per_len, ptr_find, len_find);
+      int64_t delta_length = num * (len_replace - len_find);
+      if(delta_length==0)return true;
+      char *src_ptr = 0;
+      char *dest_ptr = 0; 
+      if (delta_length > 0) {
+         bool succsess = add_length(delta_length, noexpt);
+         if (!succsess) return check_succsess(0, noexpt);
+         char *const data_buffer_ptr = data() + delta_length;
+         char *const data_storage = data();
+         memmove(data_buffer_ptr, data_storage, per_len);
+         //move back and replace
+         src_ptr = data_buffer_ptr;
+         dest_ptr = data_storage; 
+      } else{
+          //emplace replace
+          src_ptr = data();
+         dest_ptr = src_ptr; 
+      }
+      /*like below FIND -> REPLACE
+          * -> resize
+          * "helloFINDworld   "'\0'
+          * -> move to front
+          * "helhelloFINDworld"'\0'
+          * -> with block move backs 
+          * "helloREPLACEworld"'\0'
+          */
+        
+     
+
+      
+
+
+      
+      
+      
+         
+      const char first_char = *ptr_find;
+      const char *const finde_ptr_ = ptr_find;
+      const size_t finde_len_ = len_find;
+      size_t len = per_len;
+      while (true) {
+         while (len && first_char != *src_ptr) {
+      *dest_ptr++ = *src_ptr++;
+      --len;
+         }
+         if (!len) break;
+
+         const char *finder_ptr = finde_ptr_;
+         size_t finder_len = finde_len_;
+         if (len < finder_len) {
+      ALGO::memmove(dest_ptr, src_ptr, len);
+      break;
+         }
+         bool is_equal = ALGO::mem_equals(src_ptr, finder_ptr, finder_len);
+         if (is_equal) {
+      ALGO::memmove(dest_ptr, ptr_replace, len_replace);
+      len -= finder_len;
+      src_ptr += finder_len;
+      dest_ptr += len_replace;
+         } else {
+      *dest_ptr++ = *src_ptr++;
+      --len;
+         }
+      }
+      return resize((int64_t)per_len + delta_length, noexpt);
+      
+  }
+  succsess_t remove(size_t index) {
+      if (!valid_index(index)) return false;
+      return resize( index+1);
+  }
+  succsess_t remove(size_t index, size_t count) {
+      if (!valid_index(index)) return false;
+      char *dest_ptr = data() + index;
+      char *src_ptr = dest_ptr + count;
+      ALGO::memmove(dest_ptr, src_ptr, count);
+      return resize(length() - count);
+  }
+
+
+
+
+
+
+
+
   friend void inline constexpr static_assert_if_mjz_string_hase_bad_size();
 };
 inline constexpr

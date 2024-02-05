@@ -16,28 +16,12 @@ namespace mjz_ard {}  // namespace mjz_ard
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  mjz_String o;
-  mjz_String s;
-  o = "string----------------------------------------------------------";
-  o.substr_view(0ULL).c_str();
-  Printlnstr(o);
-  Printlnstr(s);
-  s = "mjz-------------------------------------------------------------";
-  Printlnstr(s);
-  mjz_String sa[]{s, std::move(o)};
-
-  Printlnstr(o);
-  Printlnstr(s);
-
-  Printlnstr(sa[0]);
-  Printlnstr(sa[1]);
-  s += o;
-  sa[1] += sa[0];
-  Printlnstr(o);
-  Printlnstr(s);
-
-  Printlnstr(sa[0]);
-  Printlnstr(sa[1]);
-  prompt<int>();  
+  mjz_String str;
+  int i{};
+  while (!str.is_dynamic()) {
+    str.concat(static_str_algo::GET_CHAR_from_int(i++,0));
+  }
+  println(str);
+  
   return 0;
 }
