@@ -13862,6 +13862,9 @@ class minimal_mjz_string_data {
     m_db = std::move(d.m_db);
     return *this;
   }
+  inline bool has_any_data( )const {
+    return !(m_db.db_s.internal_array_length == 0/* not needed: || internal_array_length!=is_external_array_v*/);
+  }
 
   char *get_buffer() { return get_str(); }
   const char *get_buffer() const { return get_str(); }
@@ -13901,6 +13904,14 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr inline const Base_t &get_Base_t() const { return *this; }
 
  public:
+ using normal_str_view=basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
+  constexpr static const bool is_normal =
+      std::is_same_v<Base_t, deafult_mjz_Str_data_strorage>;
+  inline constexpr operator normal_str_view() const
+    requires(!is_normal)
+  {
+      return {data(),length()};
+ }
   constexpr static size_t npos = -1;
   constexpr inline const char *begining_of_str_ptr() const {
     return get_buffer();
@@ -13921,11 +13932,10 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
       : basic_mjz_Str_view(c_string, strlen(c_string)) {}
   constexpr basic_mjz_Str_view()
       : basic_mjz_Str_view(static_str_algo::empty_STRING_C_STR, 0) {}
-  constexpr inline ~basic_mjz_Str_view() = default;
-  constexpr basic_mjz_Str_view &operator=(basic_mjz_Str_view &&) = default;
-  constexpr basic_mjz_Str_view &operator=(const basic_mjz_Str_view &) = default;
-  constexpr basic_mjz_Str_view(basic_mjz_Str_view &&) = default;
-  constexpr basic_mjz_Str_view(const basic_mjz_Str_view &) = default;
+  constexpr basic_mjz_Str_view(const basic_mjz_Str_view& str)requires(is_normal)
+      : basic_mjz_Str_view(str.data(), str.length()) {}
+  constexpr basic_mjz_Str_view(const normal_str_view& str)requires(!is_normal)
+      : basic_mjz_Str_view(str.data(), str.length()) {}
 
  public:
   constexpr bool is_blank() const {
@@ -13942,6 +13952,8 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     return (!get_length() ||
             get_buffer() == static_str_algo::empty_STRING_C_STR ||
             get_buffer() == nullptr);
+  }
+  constexpr bool isEmpty() const { return empty();
   }
   static constexpr const bool is_const_view =
       requires(Base_t o) {
@@ -14003,66 +14015,6 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     }
     return 0;
   }
-  constexpr friend bool operator==(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
-    return a.equals(b);
-  }
-  constexpr friend bool operator==(const basic_mjz_Str_view &a, const char *b) {
-    return a.equals(b);
-  }
-  constexpr friend bool operator==(const char *a, const basic_mjz_Str_view &b) {
-    return b == a;
-  }
-  constexpr friend bool operator<(const basic_mjz_Str_view &a,
-                                  const basic_mjz_Str_view &b) {
-    return a.compareTo(b) < 0;
-  }
-  constexpr friend bool operator<(const basic_mjz_Str_view &a, const char *b) {
-    return a.compareTo(b) < 0;
-  }
-  constexpr friend bool operator<(const char *a, const basic_mjz_Str_view &b) {
-    return b.compareTo(a) > 0;
-  }
-  constexpr friend bool operator!=(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
-    return !(a == b);
-  }
-  constexpr friend bool operator!=(const basic_mjz_Str_view &a, const char *b) {
-    return !(a == b);
-  }
-  constexpr friend bool operator!=(const char *a, const basic_mjz_Str_view &b) {
-    return !(a == b);
-  }
-  constexpr friend bool operator>(const basic_mjz_Str_view &a,
-                                  const basic_mjz_Str_view &b) {
-    return b < a;
-  }
-  constexpr friend bool operator>(const basic_mjz_Str_view &a, const char *b) {
-    return b < a;
-  }
-  constexpr friend bool operator>(const char *a, const basic_mjz_Str_view &b) {
-    return b < a;
-  }
-  constexpr friend bool operator<=(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
-    return !(b < a);
-  }
-  constexpr friend bool operator<=(const basic_mjz_Str_view &a, const char *b) {
-    return !(b < a);
-  }
-  constexpr friend bool operator<=(const char *a, const basic_mjz_Str_view &b) {
-    return !(b < a);
-  }
-  constexpr friend bool operator>=(const basic_mjz_Str_view &a,
-                                   const basic_mjz_Str_view &b) {
-    return !(a < b);
-  }
-  constexpr friend bool operator>=(const basic_mjz_Str_view &a, const char *b) {
-    return !(a < b);
-  }
-  constexpr friend bool operator>=(const char *a, const basic_mjz_Str_view &b) {
-    return !(a < b);
-  }
   friend std::ostream &operator<<(std::ostream &COUT,
                                   const basic_mjz_Str_view &s) {
     COUT.write(s.data(), s.length());
@@ -14073,22 +14025,22 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     return SHA256_CTX::hash_msg_to_sha_512_n(c_str(), length(), n);
   }
   constexpr hash_sha256 hash() const { return mjz_hash(0); }
-  constexpr int64_t compareTo(const basic_mjz_Str_view &s) const {
+  constexpr int64_t compareTo(const normal_str_view &s) const {
     return compare_two_str(get_buffer(), get_length(), s.get_buffer(),
                            s.get_length());
   }
   constexpr int64_t compareTo(const char *cstr) const {
     return compare_two_str(get_buffer(), get_length(), cstr, strlen(cstr));
   }
-  constexpr inline int compare(const basic_mjz_Str_view &str) const {
+  constexpr inline int compare(const normal_str_view &str) const {
     return compareTo(str);
   }
   constexpr inline int compare(size_t pos, size_t len,
-                               const basic_mjz_Str_view &str) const {
+                               const normal_str_view &str) const {
     return substr_view_beg_n(pos, len).compareTo(str);
   }
   constexpr inline int compare(size_t pos, size_t len,
-                               const basic_mjz_Str_view &str, size_t subpos,
+                               const normal_str_view &str, size_t subpos,
                                size_t sublen) const {
     return substr_view_beg_n(pos, len).compareTo(
         str.substr_view_beg_n(subpos, sublen));
@@ -14109,7 +14061,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr inline bool starts_with(const char *s, size_t n) const {
     return substr_view(0ULL, n).equals(s, n);
   }
-  constexpr inline bool starts_with(const basic_mjz_Str_view &s) const {
+  constexpr inline bool starts_with(const normal_str_view &s) const {
     return starts_with(s.c_str(), s.length());
   }
   constexpr inline bool starts_with(char c) const { return c == *c_str(); }
@@ -14119,7 +14071,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr inline bool ends_with(const char *s, size_t n) const {
     return substr_view(length() - n, length()).equals(s, n);
   }
-  constexpr inline bool ends_with(const basic_mjz_Str_view &s) const {
+  constexpr inline bool ends_with(const normal_str_view &s) const {
     return ends_with(s.c_str(), s.length());
   }
   constexpr inline bool ends_with(char c) const {
@@ -14128,21 +14080,21 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr inline bool ends_with(const char *s) const {
     return ends_with(s, strlen(s));
   }
-  constexpr inline int64_t indexOf(const basic_mjz_Str_view &s2) const {
+  constexpr inline int64_t indexOf(const normal_str_view &s2) const {
     return indexOf(s2, 0);
   }
-  constexpr inline int64_t indexOf(const basic_mjz_Str_view &s2,
+  constexpr inline int64_t indexOf(const normal_str_view &s2,
                                    size_t fromIndex) const {
     return indexOf_cstr(s2.data(), s2.length(), fromIndex);
   }
-  constexpr inline int64_t lastIndexOf(const basic_mjz_Str_view &s2) const {
+  constexpr inline int64_t lastIndexOf(const normal_str_view &s2) const {
     return lastIndexOf(s2, get_length() - s2.get_length());
   }
-  constexpr inline int64_t lastIndexOf(const basic_mjz_Str_view &s2,
+  constexpr inline int64_t lastIndexOf(const normal_str_view &s2,
                                        size_t fromIndex) const {
     return lastIndexOf_cstr(s2.c_str(), s2.length(), fromIndex);
   }
-  constexpr inline size_t find(const basic_mjz_Str_view &str,
+  constexpr inline size_t find(const normal_str_view &str,
                                size_t pos = 0) const {
     return indexOf(str, pos);
   }
@@ -14155,7 +14107,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr inline size_t find(char c, size_t pos = 0) const {
     return indexOf(c, pos);
   }
-  constexpr inline size_t rfind(const basic_mjz_Str_view &str,
+  constexpr inline size_t rfind(const normal_str_view &str,
                                 size_t pos = npos) const {
     return lastIndexOf(str, pos);
   }
@@ -14177,10 +14129,10 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
                                                 n);
   }
   constexpr inline size_t find_first_of_in_str(
-      const basic_mjz_Str_view &str) const {
+      const normal_str_view &str) const {
     return find_first_of_in_str(str.get_buffer(), str.get_length());
   }
-  constexpr inline size_t find_first_of(const basic_mjz_Str_view &str,
+  constexpr inline size_t find_first_of(const normal_str_view &str,
                                         size_t pos = 0) const {
     return substr_view(pos).find_first_of_in_str(str);
   }
@@ -14194,7 +14146,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr inline size_t find_first_of(char c, size_t pos = 0) const {
     return find_first_of(&c, pos, 1);
   }
-  constexpr inline size_t find_last_of(const basic_mjz_Str_view &str,
+  constexpr inline size_t find_last_of(const normal_str_view &str,
                                        size_t pos = npos) const {
     return substr_view(pos).find_last_of_in_str(str.data(), str.length());
   }
@@ -14213,7 +14165,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     return static_str_algo::find_last_of_not_in_str(get_buffer(), get_length(),
                                                     s, n);
   }
-  constexpr inline size_t find_last_not_of(const basic_mjz_Str_view &str,
+  constexpr inline size_t find_last_not_of(const normal_str_view &str,
                                            size_t pos = npos) const {
     return substr_view(pos).find_last_not_of_in_str(str.c_str(), str.length());
   }
@@ -14233,7 +14185,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     return static_str_algo::find_first_of_not_in_str(get_buffer(), get_length(),
                                                      s, n);
   }
-  constexpr inline size_t find_first_not_of(const basic_mjz_Str_view &str,
+  constexpr inline size_t find_first_not_of(const normal_str_view &str,
                                             size_t pos = 0) const {
     return substr_view(pos).find_first_not_of_in_str(str.c_str(), str.length());
   }
@@ -14251,7 +14203,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr bool equals(const char *cstr, size_t cstr_len) const {
     return are_two_str_equale(get_buffer(), get_length(), cstr, cstr_len);
   }
-  constexpr bool equals(const basic_mjz_Str_view &s2) const {
+  constexpr bool equals(const normal_str_view &s2) const {
     //
     return equals(s2.data(), s2.length());
   }
@@ -14267,7 +14219,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     }
     return index;
   }
-  constexpr size_t UN_ORDERED_compare(const basic_mjz_Str_view &s) const {
+  constexpr size_t UN_ORDERED_compare(const normal_str_view &s) const {
     return UN_ORDERED_compare(s.get_buffer(), s.get_length());
   }
   constexpr size_t UN_ORDERED_compare(const char *s, size_t s_len) const {
@@ -14288,7 +14240,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     }
     return number_of_not_right;
   }
-  constexpr bool equalsIgnoreCase(const basic_mjz_Str_view &s2) const {
+  constexpr bool equalsIgnoreCase(const normal_str_view &s2) const {
     if (this == &s2) {
       //
       return true;
@@ -14313,7 +14265,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     //
     return true;
   }
-  constexpr bool startsWith(const basic_mjz_Str_view &s2) const {
+  constexpr bool startsWith(const normal_str_view &s2) const {
     if (get_length() < s2.get_length()) {
       //
       return false;
@@ -14321,7 +14273,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     //
     return startsWith(s2, 0);
   }
-  constexpr bool startsWith(const basic_mjz_Str_view &s2, size_t offset) const {
+  constexpr bool startsWith(const normal_str_view &s2, size_t offset) const {
     if (offset > get_length() - s2.get_length() || !get_buffer() ||
         !s2.get_buffer()) {
       //
@@ -14331,7 +14283,7 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
     return MJZ_STRnCMP(&get_buffer()[offset], s2.get_buffer(),
                        s2.get_length()) == 0;
   }
-  constexpr bool endsWith(const basic_mjz_Str_view &s2) const {
+  constexpr bool endsWith(const normal_str_view &s2) const {
     if (get_length() < s2.get_length() || !get_buffer() || !s2.get_buffer()) {
       //
       return false;
@@ -14455,49 +14407,128 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
   constexpr const char at(int64_t i) { return operator[](i); }
   constexpr const char back() { return get_buffer()[0]; }
   constexpr const char front() { return operator[]((int64_t)-1); }
-  constexpr inline basic_mjz_Str_view substr_view(size_t beginIndex,
+  constexpr inline normal_str_view substr_view(size_t beginIndex,
                                                   size_t endIndex) const {
     const char *out_ptr{};
     size_t out_len{};
     substring_give_ptrULL(beginIndex, endIndex, out_ptr, out_len);
-    return out_len ? basic_mjz_Str_view(out_ptr, out_len)
-                   : basic_mjz_Str_view();
+    return out_len ? normal_str_view(out_ptr, out_len)
+                   : normal_str_view();
   }
-  constexpr inline basic_mjz_Str_view substr_view(int64_t beginIndex,
+  constexpr inline normal_str_view substr_view(int64_t beginIndex,
                                                   int64_t endIndex) const {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(endIndex));
   }
-  constexpr inline basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
+  constexpr inline normal_str_view substr_view_beg_n(int64_t beginIndex,
                                                         size_t number) {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(beginIndex) + number);
   }
-  constexpr inline basic_mjz_Str_view substr_view(int64_t beginIndex) const {
+  constexpr inline normal_str_view substr_view(int64_t beginIndex) const {
     return substr_view(signed_index_to_unsigned(beginIndex));
   }
-  constexpr inline basic_mjz_Str_view substr_view(int beginIndex,
+  constexpr inline normal_str_view substr_view(int beginIndex,
                                                   int endIndex) const {
     return substr_view((int64_t)beginIndex, (int64_t)endIndex);
   }
-  constexpr inline basic_mjz_Str_view substr_view_beg_n(int beginIndex,
+  constexpr inline normal_str_view substr_view_beg_n(int beginIndex,
                                                         int number) const {
     return substr_view_beg_n((int64_t)beginIndex, (size_t)number);
   }
-  constexpr inline basic_mjz_Str_view substr_view_beg_n(size_t beginIndex,
+  constexpr inline normal_str_view substr_view_beg_n(size_t beginIndex,
                                                         size_t number) const {
     return substr_view(beginIndex, number + beginIndex);
   }
-  constexpr inline basic_mjz_Str_view substr_view(size_t beginIndex) const {
+  constexpr inline normal_str_view substr_view(size_t beginIndex) const {
     return substr_view(beginIndex, length() - beginIndex);
   }
-  constexpr inline basic_mjz_Str_view substr_view_beg_n(int64_t beginIndex,
+  constexpr inline normal_str_view substr_view_beg_n(int64_t beginIndex,
                                                         size_t number) const {
     return substr_view(signed_index_to_unsigned(beginIndex),
                        signed_index_to_unsigned(beginIndex) + number);
   }
   constexpr inline size_t max_size() const { return (((size_t)(-1)) >> 1) - 1; }
 };
+
+constexpr inline bool operator==(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a,
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return a.equals(b);
+}
+constexpr inline bool operator==(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a, const char *b) {
+  return a.equals(b);
+}
+constexpr inline bool operator==(
+    const char *a, const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return b == a;
+}
+constexpr inline bool operator<(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a,
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return a.compareTo(b) < 0;
+}
+constexpr inline bool operator<(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a, const char *b) {
+  return a.compareTo(b) < 0;
+}
+constexpr inline bool operator<(
+    const char *a, const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return b.compareTo(a) > 0;
+}
+constexpr inline bool operator!=(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a,
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return !(a == b);
+}
+constexpr inline bool operator!=(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a, const char *b) {
+  return !(a == b);
+}
+constexpr inline bool operator!=(
+    const char *a, const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return !(a == b);
+}
+constexpr inline bool operator>(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a,
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return b < a;
+}
+constexpr inline bool operator>(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a, const char *b) {
+  return b < a;
+}
+constexpr inline bool operator>(
+    const char *a, const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return b < a;
+}
+constexpr inline bool operator<=(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a,
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return !(b < a);
+}
+constexpr inline bool operator<=(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a, const char *b) {
+  return !(b < a);
+}
+constexpr inline bool operator<=(
+    const char *a, const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return !(b < a);
+}
+constexpr inline bool operator>=(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a,
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return !(a < b);
+}
+constexpr inline bool operator>=(
+    const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &a, const char *b) {
+  return !(a < b);
+}
+constexpr inline bool operator>=(
+    const char *a, const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &b) {
+  return !(a < b);
+}
 
 //
 // mjz_vector.h
@@ -15420,8 +15451,11 @@ class mjz_String_template
   }
  template <class T>
   inline mjz_String_template &copy_from(const basic_mjz_Str_view<T> &other,
-                                        bool noexpt = deafult_is_noexcept) {
+                                        bool noexpt = deafult_is_noexcept,
+                                        bool *successful_out = nullptr) {
+     if (successful_out) *successful_out = true;
      if (!resize(other.length(), 1)) {
+         if (successful_out) *successful_out = 0;
          check_succsess(0, noexpt);
          return *this;
      }
@@ -15434,11 +15468,14 @@ class mjz_String_template
 }
 
    template <class T>
-inline mjz_String_template &concat(const basic_mjz_Str_view<T> &other,
-                                        bool noexpt = deafult_is_noexcept) {
+inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
+                                   bool noexpt = deafult_is_noexcept,
+                                   bool *successful_out=nullptr) {
+     if (successful_out) *successful_out = true;
    const size_t per_len=length();
      const size_t len_add = other.length();
    if (!add_length(len_add, 1)) {
+         if (successful_out) *successful_out = 0;
          check_succsess(0, noexpt);
          return *this;
      }
@@ -15461,16 +15498,103 @@ inline mjz_String_template &concat(const basic_mjz_Str_view<T> &other,
 
   template <class T>
  inline mjz_String_template &operator+=(const basic_mjz_Str_view<T> &other) {
-  return concat(other);
+  return append(other);
  }
  inline mjz_String_template &operator+=(
      const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &other) {
-  return concat(other);
+  return append(other);
  }
  inline mjz_String_template &operator+=(const mjz_String_template &other) {
-  return concat(other);
+  return append(other);
+ }
+ template <class T>
+ inline bool concat(const basic_mjz_Str_view<T> &other,  bool noexpt = deafult_is_noexcept) {
+  bool was_succsessful{}; 
+ append(other, noexpt, was_succsessful);
+ return check_succsess(was_succsessful, noexpt);
+ }
+ using str_view=basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
+ using ALGO=static_str_algo;
+ bool concat(const char *cstr, size_t length) {
+ concat(str_view{cstr, length});
+ }
+ bool concat(const uint8_t *cstr, size_t length) {
+ return concat((const char *)cstr, length);
+ }
+ bool concat(char c) {
+     return concat(str_view{&c, 1});
+ }
+ bool concat(unsigned char num) {
+ char buf[1 + 3 * sizeof(unsigned char)];
+ return concat(buf, ALGO::itoa(num, buf, 10).len);
+ }
+ bool concat(int num) {
+ char buf[2 + 3 * sizeof(int)];
+ return concat(buf, ALGO::itoa(num, buf, 10).len);
+ }
+ bool concat(unsigned int num) {
+ char buf[1 + 3 * sizeof(unsigned int)];
+ return concat(buf, ALGO::utoa(num, buf, 10).len);
+ }
+ bool  concat(long num) {
+ char buf[2 + 3 * sizeof(long)];
+ return concat(buf, ALGO::ltoa(num, buf, 10).len);
  }
 
+ bool  concat(unsigned long num) {
+ char buf[1 + 3 * sizeof(unsigned long)];
+ return concat(buf, ALGO::ultoa(num, buf, 10).lne);
+ }
+
+ bool concat(int64_t num) {
+ char buf[2 + 3 * sizeof(int64_t)];
+ return concat(buf, ALGO::lltoa(num, buf, 10).len);
+ }
+
+ bool concat(uint64_t num) {
+ char buf[1 + 3 * sizeof(uint64_t)];
+ return concat(buf, ALGO::ulltoa(num, buf, 10).lne);
+ }
+ bool concat(const void*ptr) {
+ char buf[1 + 3 * sizeof(const void *)];
+ const uint64_t val = (uint64_t)ptr;
+ return concat(buf, ALGO::b_U_lltoa_n(val, buf, NumberOf(buf),16,0,0,1).lne);
+ }
+
+ bool  concat(float num) {
+ char buf[22];
+ auto[string ,len]= ALGO::dtostrf(num, 4, 2, buf,21);
+ return concat(string, len);
+ }
+
+ bool  concat(double num) {
+ char buf[42];
+ auto [string, len] = ALGO::dtostrf(num, 4, 2, buf, 41);
+ return concat(string,len);
+ }
+ static inline char dummy_writable_char{};
+ static bool is_dummy_char(const char& c) { return &dummy_writable_char==&c;}
+ inline bool valid_index(size_t i)const {
+ return get_Base_t().can_have_len(i + 1);
+ }
+ char &operator[](size_t index) {
+ if (!valid_index(index)) {
+         dummy_writable_char = 0;
+         return dummy_writable_char;
+ }
+ return data()[index];
+ }
+
+ bool  setCharAt(unsigned int loc, char c) {
+ if (loc >= length()) return 0;
+ data()[loc] = c;
+ return 1;
+ }
+ inline bool has_any_data() const { return get_Base_t().has_any_data(); }
+
+inline str_view view() const { return {C_str(), length()};}
+ inline operator str_view() const { return view(); }
+inline explicit operator bool() const { return !!*this; }
   ~mjz_String_template() { free_buffer(); }
   friend void inline constexpr static_assert_if_mjz_string_hase_bad_size();
 };

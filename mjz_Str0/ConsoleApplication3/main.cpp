@@ -19,6 +19,7 @@ int my_main::main(int argc, const char* const* const argv) {
   mjz_String o;
   mjz_String s;
   o = "string----------------------------------------------------------";
+  o.substr_view(0ULL).c_str();
   Printlnstr(o);
   Printlnstr(s);
   s = "mjz-------------------------------------------------------------";
