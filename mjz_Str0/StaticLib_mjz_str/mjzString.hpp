@@ -2202,6 +2202,7 @@ class iterator_warper_template_t {
 
  public:
   using r_it_T = std::reverse_iterator<it_T>;
+  using cr_it_T = std::reverse_iterator<const it_T>;
   constexpr inline iterator_warper_template_t(iterator_warper_template_t &&obj)
       : m_begin(std::move(obj.m_begin)), m_end(std::move(obj.m_end)) {}
   constexpr inline iterator_warper_template_t(iterator_warper_template_t &obj)
@@ -2225,10 +2226,10 @@ class iterator_warper_template_t {
   constexpr inline const it_T cend() const { return m_end; }
   constexpr inline r_it_T rbegin() { return m_end; }
   constexpr inline r_it_T rend() { return m_begin; }
-  constexpr inline const r_it_T rbegin() const { return m_end; }
-  constexpr inline const r_it_T rend() const { return m_begin; }
-  constexpr inline const r_it_T crbegin() const { return m_end; }
-  constexpr inline const r_it_T crend() const { return m_begin; }
+  constexpr inline cr_it_T rbegin() const { return m_end; }
+  constexpr inline cr_it_T rend() const { return m_begin; }
+  constexpr inline cr_it_T crbegin() const { return m_end; }
+  constexpr inline cr_it_T crend() const { return m_begin; }
 };
 
 template <class it_T>
@@ -12024,7 +12025,7 @@ constexpr inline optional_refrene_of<Type>
       std::tuple_element_t<0, optional_refrene_of<Error_t>>,
       std::tuple_element_t<1, optional_refrene_of<Error_t>>>
   uref4() & {
-    auto [value_ptr, error_ptr] = ref();
+    auto [value_ptr, error_ptr] = ref2();
     auto [ptr_has_value, ptr_value_refrence] = value_ptr;
     auto [ptr_has_error, ptr_error_refrence] = error_ptr;
     return {ptr_has_value, ptr_value_refrence, ptr_has_error,
@@ -12039,7 +12040,7 @@ constexpr inline optional_refrene_of<Type>
       std::tuple_element_t<0, optional_refrene_of<const Error_t>>,
       std::tuple_element_t<1, optional_refrene_of<const Error_t>>>
   uref4() const & {
-    auto [value_ptr, error_ptr] = ref();
+    auto [value_ptr, error_ptr] = ref2();
     auto [ptr_has_value, ptr_value_refrence] = value_ptr;
     auto [ptr_has_error, ptr_error_refrence] = error_ptr;
     return {ptr_has_value, ptr_value_refrence, ptr_has_error,
@@ -15244,6 +15245,10 @@ namespace mjzt = mjz_ard_types;
 #endif  // ! _NOT_USING_MJZ_ARD_
 #undef NO_IGNORE_CHAR
 namespace mjz_ard{
+
+struct mjz_String_pointer_for_internal_realloc_id {
+  const void *const ptr{};
+};
 template <typename V = void,
           class mjz_reallocator =
               mjz_allocate_free_warpper<mjz_realloc_free_package_example>,
@@ -15251,33 +15256,44 @@ template <typename V = void,
 struct mjz_String_template_args {
   using mjz_reallocator_t = mjz_reallocator;
   static constexpr const bool do_throw = do_throw_;
-};
-template <class mjz_String_template_args_t>
+  static constexpr const size_t minimal_mjz_string_data_min_size{0};
+}; template <class mjz_String_template_args_t>
 using get_mjz_reallocator_t_from_mjz_String_template_args =
     typename mjz_String_template_args_t::mjz_reallocator_t;
 template <class mjz_String_template_args_t = mjz_String_template_args<void>>
-class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
-                   private get_mjz_reallocator_t_from_mjz_String_template_args<
-                       mjz_String_template_args_t> {
+class mjz_String
+    : public basic_mjz_Str_view<minimal_mjz_string_data<
+          mjz_String_template_args_t::minimal_mjz_string_data_min_size>>
+                     {
   static constexpr const bool deafult_is_noexcept =
       !mjz_String_template_args_t::do_throw;
   using mjz_reallocator_t = get_mjz_reallocator_t_from_mjz_String_template_args<
       mjz_String_template_args_t>;
+  using Base_t = minimal_mjz_string_data<mjz_String_template_args_t::minimal_mjz_string_data_min_size>;
 
+  constexpr static const char nullcr = '\0';
+  constexpr static const uint8_t nullen = sizeof(nullcr)/*1*/;
  private:
+  inline mjz_reallocator_t Allocator() const {
+    if constexpr (std::is_constructible_v<
+                      mjz_reallocator_t,
+                      mjz_String_pointer_for_internal_realloc_id>)
+      return {mjz_String_pointer_for_internal_realloc_id{.ptr = this}};
+    return {};
+  } 
   succsess_t shrink_to_(size_t new_cap) {
     char *new_buffer{};
     char *old_buffer = get_buffer();
     { /*reallocate "https://linux.die.net/man/3/realloc" but with args
            (void*ptr,size_t pr_size,size_t new_size) [nonexpert]*/
-      new_buffer = (char *)/*sizeof(char)==1*/ Allocator().mjz_realloc(
-          old_buffer, get_cap() + 1, new_cap + 1);
+      new_buffer = (char *)  Allocator().mjz_realloc(
+          old_buffer, get_cap() + nullen, new_cap + nullen);
     }
     if (!new_buffer) {
       free_buffer();
       return 0;
     }
-    new_buffer[new_cap] = '\0';  // null terminator
+    new_buffer[new_cap] = nullcr;  
     get_Base_t().unsafe_set_cap(new_cap, new_buffer, 1);
     get_Base_t().set_len(new_cap);
     return 1;
@@ -15288,7 +15304,7 @@ class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
       /*
         you could add memset 0 but performance :(
       */
-      Allocator().mjz_free(get_buffer(), get_cap() + 1);
+      Allocator().mjz_free(get_buffer(), get_cap() + nullen);
     }
     get_Base_t().unsafe_reset();
   }
@@ -15300,8 +15316,8 @@ class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
     { /*reallocate "https://linux.die.net/man/3/realloc" but with args
            (void*ptr,size_t pr_size,size_t new_size) [nonexpert]*/
       new_buffer = (char *)/*sizeof(char)==1*/ Allocator().mjz_realloc(
-          was_dynamic ? old_buffer : 0, was_dynamic ? get_cap() + 1 : 0,
-          new_cap + 1);
+          was_dynamic ? old_buffer : nullptr, was_dynamic ? get_cap() + nullen : 0,
+          new_cap + nullen);
     }
     if (!new_buffer) {
       free_buffer();
@@ -15315,7 +15331,7 @@ class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
       memmove(new_buffer, perivuos_inner_buffer_that_will_be_invalid_after_call,
               get_len());
     }
-    memset(new_buffer + get_len(), 0, new_cap - get_len() + 1);
+    memset(new_buffer + get_len(), '\0', new_cap - get_len() + nullen);
     get_Base_t().unsafe_set_cap(new_cap, new_buffer, 1);
     return 1;
   }
@@ -15326,18 +15342,16 @@ class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
     return 0;  // just for ?
   }
   // private:
-
- public:
-  using Base_t = minimal_mjz_string_data<0>;
   constexpr inline Base_t &get_Base_t() { return *this; }
   constexpr inline const Base_t &get_Base_t() const { return *this; }
-  inline mjz_reallocator_t &Allocator() { return *this; }
-  const inline mjz_reallocator_t &Allocator() const { return *this; }
-  inline bool is_dynamic() const { return get_Base_t().is_dynamic(); }
+
   const char *get_buffer() const { return get_Base_t().get_buffer(); }
   char *get_buffer() { return get_Base_t().get_buffer(); }
   size_t get_length() const { return get_Base_t().get_length(); }
+  size_t get_len() const { return get_length(); }
   size_t get_cap() const { return get_Base_t().get_cap(); }
+ public:
+  inline bool is_dynamic() const { return get_Base_t().is_dynamic(); }
 
   succsess_t resurve(size_t new_cap, bool noexpt = deafult_is_noexcept) {
     if (!get_Base_t().can_have_len(new_cap)) {
@@ -15349,16 +15363,57 @@ class mjz_String : private basic_mjz_Str_view<minimal_mjz_string_data<0>>,
   succsess_t resize(size_t new_len, bool noexpt = deafult_is_noexcept) {
     if (!resurve(new_len, 1)) return check_succsess(0, noexpt);
     get_Base_t().set_len(new_len);
-    get_buffer()[new_len] = '\0';  // null terminator
+    get_buffer()[new_len] = nullcr;   
     return 1;
   }
   inline succsess_t add_length(size_t addition_to_len,
                                bool noexpt = deafult_is_noexcept) {
     return resize(get_len() + addition_to_len, noexpt);
   }
-
+  inline const char*C_str()const{
+  return  get_buffer();
+  }
+  inline char *data() { return  get_buffer(); }
+  inline char *c_str() { return data(); }
+  inline const char *c_str() const { return C_str(); }
+  inline size_t length( ) const{ return get_len();}
+  inline size_t capacity()const { return get_cap(); }
+  inline char *begin() { return c_str(); }
+  inline char *end() { return c_str() + get_len(); }
+  inline const char *begin()const { return c_str(); }
+  inline const char *end()const { return c_str() + get_len(); }
+  inline const char *cbegin() const { return begin(); }
+  inline const char *cend() const { return end(); }
+  using r_it_T = std::reverse_iterator<char *>;
+  using cr_it_T = std::reverse_iterator<const char *>;
+  inline r_it_T rbegin() { return end(); }
+  inline r_it_T rend() { return begin(); }
+  inline cr_it_T rbegin() const { return end(); }
+  inline cr_it_T rend() const { return begin(); }
+  inline cr_it_T crbegin() const { return end(); }
+  inline cr_it_T crend() const { return begin(); }
+  inline mjz_String() {}
+  inline mjz_String(mjz_String &&other) noexcept {
+    if (this == &other) return;
+    get_Base_t().move_to_me(other.get_Base_t());
+  }
+  inline mjz_String(const mjz_String &other,bool noexpt = deafult_is_noexcept) { 
+      if (this == &other)return;
+     if(!resize(other.length(),1)){
+      check_succsess(0, deafult_is_noexcept);
+         return;
+     }
+     memmove(data(), other.C_str(), other.length());
+     *end() = nullcr;
+  }
   ~mjz_String() { free_buffer(); }
+  friend void inline constexpr static_assert_if_mjz_string_hase_bad_size();
 };
+inline constexpr
+void static_assert_if_mjz_string_hase_bad_size( ) {
+    using str_mjz=mjz_String<mjz_String_template_args<void>>;
+  static_assert(sizeof(typename str_mjz::Base_t) == sizeof(str_mjz));
+}
 };
 namespace mjz_ard {
 inline void randomSeed(unsigned long seed) {

@@ -16,16 +16,14 @@ int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   mjz_String o;
   o.add_length(10);
-  memset(o.get_buffer(), '@', 10);
-  println((void*)o.get_buffer(), ' ', o.get_length(), ' ', o.get_cap(),':',o.get_buffer());
+  memset(o.c_str(), '@', 10);
+  println(o);
  o.resurve(90);
   o.add_length(10);
-  memset(o.get_buffer()+10, '$', 10);
-  println((void*)o.get_buffer(), ' ', o.get_length(), ' ', o.get_cap(), ':',
-          o.get_buffer());
-  o.resurve(9000);
-  println((void*)o.get_buffer(), ' ', o.get_length(), ' ', o.get_cap(), ':',
-          o.get_buffer());
+  memset(o.c_str()+10, '$', 10);
+  println(o);
+  o.resurve(900);
+  println(o);
   prompt<int>();  
   std::vector<int> v;
   return 0;
