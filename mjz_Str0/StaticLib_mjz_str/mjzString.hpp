@@ -13764,6 +13764,7 @@ class minimal_mjz_string_data {
     DB_t &operator=(DB_t &&other) {
       db_s = other.db_s;
       other.db_s.reset();
+      return *this;
     }
     DB_t &operator=(DB_t const &) = delete;
 
@@ -15261,7 +15262,7 @@ struct mjz_String_template_args {
 using get_mjz_reallocator_t_from_mjz_String_template_args =
     typename mjz_String_template_args_t::mjz_reallocator_t;
 template <class mjz_String_template_args_t = mjz_String_template_args<void>>
-class mjz_String
+class mjz_String_template
     : public basic_mjz_Str_view<minimal_mjz_string_data<
           mjz_String_template_args_t::minimal_mjz_string_data_min_size>>
                      {
@@ -15282,6 +15283,7 @@ class mjz_String
     return {};
   } 
   succsess_t shrink_to_(size_t new_cap) {
+    if (new_cap == get_cap()) return true;
     char *new_buffer{};
     char *old_buffer = get_buffer();
     { /*reallocate "https://linux.die.net/man/3/realloc" but with args
@@ -15344,7 +15346,6 @@ class mjz_String
   // private:
   constexpr inline Base_t &get_Base_t() { return *this; }
   constexpr inline const Base_t &get_Base_t() const { return *this; }
-
   const char *get_buffer() const { return get_Base_t().get_buffer(); }
   char *get_buffer() { return get_Base_t().get_buffer(); }
   size_t get_length() const { return get_Base_t().get_length(); }
@@ -15392,12 +15393,12 @@ class mjz_String
   inline cr_it_T rend() const { return begin(); }
   inline cr_it_T crbegin() const { return end(); }
   inline cr_it_T crend() const { return begin(); }
-  inline mjz_String() {}
-  inline mjz_String(mjz_String &&other) noexcept {
+  inline mjz_String_template() {}
+  inline mjz_String_template(mjz_String_template &&other) noexcept {
     if (this == &other) return;
-    get_Base_t().move_to_me(other.get_Base_t());
+    get_Base_t().move_to_me(std::move(other.get_Base_t()));
   }
-  inline mjz_String(const mjz_String &other,bool noexpt = deafult_is_noexcept) { 
+  inline mjz_String_template(const mjz_String_template &other,bool noexpt = deafult_is_noexcept) { 
       if (this == &other)return;
      if(!resize(other.length(),1)){
       check_succsess(0, deafult_is_noexcept);
@@ -15406,16 +15407,19 @@ class mjz_String
      memmove(data(), other.C_str(), other.length());
      *end() = nullcr;
   }
-  mjz_String& operator=(mjz_String&&other) {
+  mjz_String_template& operator=(mjz_String_template&&other) {
      if (this == &other) return*this;
-     get_Base_t().move_to_me(other.get_Base_t());
+     free_buffer();
+     get_Base_t().move_to_me(std::move(other.get_Base_t()));
      return*this;
   }
  template <class T>
-inline  mjz_String &copy_from(const basic_mjz_Str_view<T> &other) {
-     if (this == &other) return *this;
+  inline mjz_String_template &copy_from(const basic_mjz_Str_view<T> &other) {
      if (!resize(other.length(), 1)) {
          check_succsess(0, deafult_is_noexcept);
+         return *this;
+     }
+     if (data() == other.data()) {
          return *this;
      }
      memmove(data(), other.data(), other.length());
@@ -15423,25 +15427,54 @@ inline  mjz_String &copy_from(const basic_mjz_Str_view<T> &other) {
      return *this;
 }
 
+   template <class T>
+inline mjz_String_template &append_from(const basic_mjz_Str_view<T> &other) {
+   const size_t per_len=length();
+     const size_t len_add = other.length();
+   if (!add_length(len_add, 1)) {
+         check_succsess(0, deafult_is_noexcept);
+         return *this;
+     }
+   memmove(data() + per_len, other.data(), len_add);
+     *end() = nullcr;
+     return *this;
+}
+
  template <class T>
- inline mjz_String &operator=(const basic_mjz_Str_view<T> &other) {
+ inline mjz_String_template &operator=(const basic_mjz_Str_view<T> &other) {
   return   copy_from(other);
  }
- inline mjz_String &operator=(
+ inline mjz_String_template &operator=(
      const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &other) {
   return copy_from(other);
   }
- inline mjz_String &operator=(const mjz_String &other) {
+ inline mjz_String_template &operator=(const mjz_String_template &other) {
   return copy_from(other);
  }
 
-  ~mjz_String() { free_buffer(); }
+  template <class T>
+ inline mjz_String_template &operator+=(const basic_mjz_Str_view<T> &other) {
+  return append_from(other);
+ }
+ inline mjz_String_template &operator+=(
+     const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &other) {
+  return append_from(other);
+ }
+ inline mjz_String_template &operator+=(const mjz_String_template &other) {
+  return append_from(other);
+ }
+  ~mjz_String_template() { free_buffer(); }
   friend void inline constexpr static_assert_if_mjz_string_hase_bad_size();
 };
 inline constexpr
 void static_assert_if_mjz_string_hase_bad_size( ) {
-    using str_mjz=mjz_String<mjz_String_template_args<void>>;
+    using str_mjz=mjz_String_template<mjz_String_template_args<void>>;
   static_assert(sizeof(typename str_mjz::Base_t) == sizeof(str_mjz));
+}
+
+namespace have_mjz_ard_removed {
+using  mjz_String=mjz_String_template<mjz_String_template_args<void>>;
+using  mjz_String_view=basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
 }
 };
 namespace mjz_ard {

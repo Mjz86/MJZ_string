@@ -11,23 +11,32 @@ namespace mjz_ard {}  // namespace mjz_ard
  *string will be written
  * and the unique and sheared and weak ptr will be next
  */
+#define Printlnvar(X) println(__LINE__, ':', #X,':', (X))
+#define Printlnstr(X) println(__LINE__, ':', #X, ':', X, '<', X.length(), '>')
 
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   mjz_String o;
-
   mjz_String s;
-  o.add_length(10);
-  memset(o.c_str(), '@', 10);
-  println(o);
- o.resurve(90);
-  o.add_length(10);
-  memset(o.c_str()+10, '$', 10);
-  println(o);
-  o.resurve(900);
-  println(o);
+  o = "string----------------------------------------------------------";
+  Printlnstr(o);
+  Printlnstr(s);
+  s = "mjz-------------------------------------------------------------";
+  Printlnstr(s);
+  mjz_String sa[]{s, std::move(o)};
 
-  s = o;
+  Printlnstr(o);
+  Printlnstr(s);
+
+  Printlnstr(sa[0]);
+  Printlnstr(sa[1]);
+  s += o;
+  sa[1] += sa[0];
+  Printlnstr(o);
+  Printlnstr(s);
+
+  Printlnstr(sa[0]);
+  Printlnstr(sa[1]);
   prompt<int>();  
   return 0;
 }
