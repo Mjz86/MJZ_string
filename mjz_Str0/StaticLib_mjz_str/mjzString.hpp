@@ -15406,6 +15406,26 @@ class mjz_String
      memmove(data(), other.C_str(), other.length());
      *end() = nullcr;
   }
+  mjz_String& operator=(mjz_String&&other) {
+     if (this == &other) return*this;
+     get_Base_t().move_to_me(other.get_Base_t());
+     return*this;
+  }
+ template <class T>
+inline  mjz_String &operator=(const basic_mjz_Str_view<T> &other) {
+     if (this == &other) return *this;
+     if (!resize(other.length(), 1)) {
+         check_succsess(0, deafult_is_noexcept);
+         return *this;
+     }
+     memmove(data(), other.data(), other.length());
+     *end() = nullcr;
+     return *this;
+  }
+ inline mjz_String &operator=<deafult_mjz_Str_data_strorage>(const
+      basic_mjz_Str_view<deafult_mjz_Str_data_strorage>&);
+  inline mjz_String &operator=<Base_t>(const mjz_String&);
+
   ~mjz_String() { free_buffer(); }
   friend void inline constexpr static_assert_if_mjz_string_hase_bad_size();
 };

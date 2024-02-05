@@ -15,6 +15,8 @@ namespace mjz_ard {}  // namespace mjz_ard
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   mjz_String o;
+
+  mjz_String s;
   o.add_length(10);
   memset(o.c_str(), '@', 10);
   println(o);
@@ -24,7 +26,8 @@ int my_main::main(int argc, const char* const* const argv) {
   println(o);
   o.resurve(900);
   println(o);
+
+  s = o;
   prompt<int>();  
-  std::vector<int> v;
   return 0;
 }
