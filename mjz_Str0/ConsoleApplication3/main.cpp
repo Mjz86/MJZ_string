@@ -15,7 +15,6 @@ namespace mjz_ard {}  // namespace mjz_ard
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   mjz_String o;
-
   o.add_length(10);
   memset(o.get_buffer(), '@', 10);
   println((void*)o.get_buffer(), ' ', o.get_length(), ' ', o.get_cap(),':',o.get_buffer());
