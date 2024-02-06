@@ -121,12 +121,12 @@ inline uint32_t esp_random(Type... arggs) {
 }
 
 template <class Type, class L>
-auto min(const Type &a, const L &b) -> decltype((b < a) ? b : a) {
+inline constexpr auto min(const Type &a, const L &b) -> decltype((b < a) ? b : a) {
   return (b < a) ? b : a;
 }
 
 template <class Type, class L>
-auto max(const Type &a, const L &b) -> decltype((b < a) ? b : a) {
+inline constexpr auto max(const Type &a, const L &b) -> decltype((b < a) ? b : a) {
   return (a < b) ? b : a;
 }
 
@@ -982,8 +982,10 @@ unsigned long millis();
 #endif  // _MSC_VER 
 #if defined(_DEBUG)
 #define _MJZ_STD_TERMENATE_NO_THROW true
+static constexpr const bool mjz_do_debug=1;
 #else
 #define _MJZ_STD_TERMENATE_NO_THROW false
+static constexpr const bool mjz_do_debug = 0;
 #endif
 #define _MJZ_STD_TERMENATE_NO_THROW true
 #endif  //!_MJZ_STD_TERMENATE_NO_THROW
@@ -3289,7 +3291,7 @@ struct mjz_internal_obj_manager_template_t {
     return *construct_at(&uninitilized_data);
   }
 
-  [[nodiscard]] static constexpr inline Type *obj_constructor_on(
+    static constexpr inline Type *obj_constructor_on(
       Type *uninitilized_data) {
     return construct_at(uninitilized_data);
   }
@@ -13701,7 +13703,8 @@ class minimal_mjz_string_data {
   struct static_DB_t {
     uint8_t internal_array_length{};  // alings with dynamic_DB_t::dummy in
                                       // below union
-    char internal_array[static_storage_cap + 1]{};
+    static constexpr uint8_t null_terminator_len=1;
+    char internal_array[static_storage_cap + null_terminator_len]{};
     void reset() {
       mjz_obj_manager_template_t<static_DB_t>::obj_destructor_on(this);
       mjz_obj_manager_template_t<static_DB_t>::obj_constructor_on(this);
@@ -13750,6 +13753,10 @@ class minimal_mjz_string_data {
   minimal_mjz_string_data() {}
   inline bool is_dynamic() const {
     return m_db.db_s.internal_array_length == is_external_array_v;
+  }
+  inline size_t can_add_until_not_dynamic() const {
+    return is_dynamic() ? 0
+               : (static_storage_cap - m_db.db_s.internal_array_length);
   }
   inline size_t get_cap() const {
     if (is_dynamic()) return m_db.db_d.capacity;
@@ -14656,7 +14663,7 @@ constexpr inline bool operator!=(const mjz_reallocator_template_t<U1, T1> &,
 }
 class mjz_realloc_free_package_example {
  public:
-  inline static constexpr const bool log{1};
+  inline static constexpr const bool log{mjz_do_debug};
   inline static int64_t num{};
   inline void free(void *ptr) {
     if constexpr (log) std::cout << (void *)ptr << " is free " << --num << "\n";
@@ -14679,11 +14686,11 @@ class mjz_realloc_free_package_example {
 template <class C_realloc_free_package_t = mjz_realloc_free_package_example>
 struct mjz_allocate_free_warpper {
  public:
-  inline mjz_allocate_free_warpper() {}
-  inline ~mjz_allocate_free_warpper() {}
-  inline mjz_allocate_free_warpper(void *p, size_t n) : my_c_allocator(p, n) {}
-  inline void mjz_free(void *ptr, size_t) { my_c_allocator.free(ptr); }
-  inline void *mjz_realloc(void *ptr, size_t preveious_size, size_t new_size) {
+  inline mjz_allocate_free_warpper() noexcept {}
+  inline ~mjz_allocate_free_warpper() noexcept {}
+  inline mjz_allocate_free_warpper(void *p, size_t n)noexcept : my_c_allocator(p, n) {}
+  inline void mjz_free(void *ptr, size_t)noexcept { my_c_allocator.free(ptr); }
+  inline void *mjz_realloc(void *ptr, size_t preveious_size, size_t new_size)noexcept {
     return my_c_allocator.realloc(ptr, new_size);
   }
 
@@ -15251,9 +15258,43 @@ namespace mjz_ard{
 struct mjz_String_pointer_for_internal_realloc_id {
   const void *const ptr{};
 };
+template<class T>
+concept C_string_allocator =requires(T obj,size_t perivious_size,void*data,size_t new_size){
+      { T() } noexcept;
+      { obj.~T() } noexcept;
+                               { obj.mjz_free(data, perivious_size)
+                               } noexcept;
+      {
+                                 obj.mjz_realloc(data, perivious_size, new_size)
+        } noexcept -> std::convertible_to<void *>;
+
+    };
+using default_string_allocator_base_t= mjz_allocate_free_warpper<
+    mjz_realloc_free_package_example>;
+struct default_string_allocator : default_string_allocator_base_t {
+  inline  default_string_allocator() noexcept {}
+  const void*this_ptr{};
+  static const constexpr bool log = mjz_do_debug;
+  inline default_string_allocator(
+      mjz_String_pointer_for_internal_realloc_id p) noexcept
+      : this_ptr(p.ptr) {}
+  inline void mjz_free(void *ptr, size_t n) noexcept {
+      if constexpr(log) {
+      std::cout << "mjz string {" << this_ptr << "} :";
+      }
+    default_string_allocator_base_t::mjz_free(ptr, n);
+}
+inline void *mjz_realloc(void *ptr, size_t preveious_size,
+                         size_t new_size) noexcept {
+    if constexpr (log) {
+      std::cout << "mjz string {" << this_ptr << "} :";
+    }
+    return default_string_allocator_base_t::mjz_realloc(ptr, preveious_size,
+                                                    new_size);
+}
+};
 template <typename V = void,
-          class mjz_reallocator =
-              mjz_allocate_free_warpper<mjz_realloc_free_package_example>,
+          C_string_allocator mjz_reallocator = default_string_allocator,
           bool do_throw_ = 1>
 struct mjz_String_template_args {
   using mjz_reallocator_t = mjz_reallocator;
@@ -15338,7 +15379,7 @@ class mjz_String_template
     get_Base_t().unsafe_set_cap(new_cap, new_buffer, 1);
     return 1;
   }
-  constexpr static succsess_t check_succsess(
+  inline constexpr static succsess_t check_succsess(
       bool result, bool is_noexcept = deafult_is_noexcept) {
     if (result || is_noexcept) return result;
     Throw<const char *>("out of memory");
@@ -15347,16 +15388,33 @@ class mjz_String_template
   // private:
   constexpr inline Base_t &get_Base_t() { return *this; }
   constexpr inline const Base_t &get_Base_t() const { return *this; }
-  const char *get_buffer() const { return get_Base_t().get_buffer(); }
-  char *get_buffer() { return get_Base_t().get_buffer(); }
-  size_t get_length() const { return get_Base_t().get_length(); }
-  size_t get_len() const { return get_length(); }
-  size_t get_cap() const { return get_Base_t().get_cap(); }
+  inline const char *get_buffer() const { return get_Base_t().get_buffer(); }
+  inline char *get_buffer() { return get_Base_t().get_buffer(); }
+  inline size_t get_length() const { return get_Base_t().get_length(); }
+  inline size_t get_len() const { return get_length(); }
+  inline size_t get_cap() const { return get_Base_t().get_cap(); }
   inline size_t to_appropriate_size(size_t new_min_cap)const {
-    return max(min(max(length()*2 , length() + capacity()),256), new_min_cap);
+    constexpr static const bool log = mjz_do_debug;
+      if constexpr(log){
+   std::cout<< "new_min_cap:";
+   std::cout<< new_min_cap;
+      }
+   new_min_cap= max(min(length() * 2, (int)((length() + capacity()) * 1.5f)),
+                        new_min_cap);
+      if constexpr (log) {
+   std::cout << " to ";
+   std::cout<<new_min_cap<<'\n';
+      }
+   return new_min_cap;
   }
  public:
   inline bool is_dynamic() const { return get_Base_t().is_dynamic(); }
+  inline size_t can_add_until_not_dynamic() const {
+    return get_Base_t().can_add_until_not_dynamic();
+  }
+  inline size_t can_add_until_reallocation() const {
+    return capacity()-length();
+  }
   succsess_t resurve(size_t new_cap,bool can_shrink=false,bool can_allocate_more=true, bool noexpt = deafult_is_noexcept) {
     if (new_cap == capacity()) return 1;
     if (!get_Base_t().can_have_len(new_cap)) {
@@ -15366,12 +15424,12 @@ class mjz_String_template
                                        : new_cap),
                             noexpt);
     }
-    if (!is_dynamic()) return 1;
+    if (!is_dynamic() || !can_shrink) return 1;
     return check_succsess(shrink_to_(new_cap), noexpt);
   }
   succsess_t resize(size_t new_len, bool noexpt = deafult_is_noexcept) {
     if(new_len==length())return 1;
-    if (!resurve(new_len,0,1, 1)) return check_succsess(0, noexpt);
+    if (!resurve(new_len, 0, 1, noexpt)) return 0;
     get_Base_t().set_len(new_len);
     get_buffer()[new_len] = nullcr;   
     return 1;
@@ -15480,6 +15538,13 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
  inline mjz_String_template &operator+=(const basic_mjz_Str_view<T> &other) {
   return append(other);
  }
+  template <class T>
+ inline mjz_String_template &operator+=(T &&val)
+   requires requires() { this->concat(val); }
+ {
+   concat(val);
+  return *this;
+  }
  inline mjz_String_template &operator+=(
      const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &other) {
   return append(other);
@@ -15496,7 +15561,11 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
  using str_view=basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
  using ALGO=static_str_algo;
  bool concat(const char *cstr, size_t length) {
- concat(str_view{cstr, length});
+return concat(str_view{cstr, length});
+ }
+ template<size_t N>
+ bool concat(const char (&const a)[N]) {
+return concat(str_view{a, N});
  }
  bool concat(const uint8_t *cstr, size_t length) {
  return concat((const char *)cstr, length);
@@ -15523,7 +15592,7 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
 
  bool  concat(unsigned long num) {
  char buf[1 + 3 * sizeof(unsigned long)];
- return concat(buf, ALGO::ultoa(num, buf, 10).lne);
+ return concat(buf, ALGO::ultoa(num, buf, 10).len);
  }
 
  bool concat(int64_t num) {
@@ -15533,12 +15602,15 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
 
  bool concat(uint64_t num) {
  char buf[1 + 3 * sizeof(uint64_t)];
- return concat(buf, ALGO::ulltoa(num, buf, 10).lne);
+ return concat(buf, ALGO::ulltoa(num, buf, 10).len);
  }
- bool concat(const void*ptr) {
+ template <typename JUST_VOID_PTR = const void *>
+ bool concat(JUST_VOID_PTR ptr)
+   requires(std::is_same_v<std::remove_cvref_t<JUST_VOID_PTR>, void *>)
+ {
  char buf[1 + 3 * sizeof(const void *)];
  const uint64_t val = (uint64_t)ptr;
- return concat(buf, ALGO::b_U_lltoa_n(val, buf, NumberOf(buf),16,0,0,1).lne);
+ return concat(buf, ALGO::b_U_lltoa_n(val, buf, NumberOf(buf),16,0,0,1).len);
  }
 
  bool  concat(float num) {
@@ -15556,6 +15628,14 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
  static bool is_dummy_char(const char& c) { return &dummy_writable_char==&c;}
  inline bool valid_index(size_t i)const {
  return get_Base_t().can_have_len(i + 1);
+ }
+ inline succsess_t add_filled_length(char fill_var,size_t addition_to_len,
+                                     bool noexpt = deafult_is_noexcept) {
+     size_t pr_len=length();
+ if (!add_length(addition_to_len, noexpt))return 0;
+     ALGO::memset(data() + pr_len, fill_var, addition_to_len);
+     *end()=nullcr;
+     return true;
  }
  char &operator[](size_t index) {
  if (!valid_index(index)) {
@@ -15731,6 +15811,7 @@ copy_from(str_view(str,len));
      const size_t len_find = find.length();
     const  size_t len_replace = replace.length();
   const    size_t per_len=length();
+  //find the number of strings maching find
       size_t num =
           find_multi_on_valid_str_(C_str(), per_len, ptr_find, len_find);
       int64_t delta_length = num * (len_replace - len_find);
@@ -15754,21 +15835,11 @@ copy_from(str_view(str,len));
       /*like below FIND -> REPLACE
           * -> resize
           * "helloFINDworld   "'\0'
-          * -> move to front
-          * "helhelloFINDworld"'\0'
-          * -> with block move backs 
+          * -> move to front( "hel""==###" but that is invalid  )
+          * "###helloFINDworld"'\0'
+          * -> with block move backs(the core part) 
           * "helloREPLACEworld"'\0'
           */
-        
-     
-
-      
-
-
-      
-      
-      
-         
       const char first_char = *ptr_find;
       const char *const finde_ptr_ = ptr_find;
       const size_t finde_len_ = len_find;
@@ -15800,19 +15871,49 @@ copy_from(str_view(str,len));
       return resize((int64_t)per_len + delta_length, noexpt);
       
   }
-  succsess_t remove(size_t index) {
+  succsess_t remove(size_t index, bool noexpt = deafult_is_noexcept) {
       if (!valid_index(index)) return false;
-      return resize( index+1);
+      return resize( index+1,noexpt);
   }
-  succsess_t remove(size_t index, size_t count) {
+  succsess_t remove(size_t index, size_t count,
+                    bool noexpt = deafult_is_noexcept) {
       if (!valid_index(index)) return false;
       char *dest_ptr = data() + index;
       char *src_ptr = dest_ptr + count;
       ALGO::memmove(dest_ptr, src_ptr, count);
-      return resize(length() - count);
+      return resize(length() - count,noexpt);
   }
+  succsess_t insert(size_t index, char val, size_t count,
+                    bool noexpt = deafult_is_noexcept) {
+      char *index_ptr_ret{};
+      if (!insert_invalid(index, count, &index_ptr_ret, noexpt))
+         return false;
+      ALGO::memset(index_ptr_ret, val, count);
 
-
+  }
+  inline
+  succsess_t insert_invalid(
+      size_t index, size_t count,
+      char **index_ptr_,
+                    bool noexpt = deafult_is_noexcept) {
+          size_t per_len = length();
+          if (!add_length(count, noexpt)) return false;
+          char *index_ptr = data() + index;
+          if (index_ptr_)*index_ptr_ = index_ptr;
+          ALGO::memmove(index_ptr + count, index_ptr, per_len - index);
+          return true;
+  }
+  succsess_t insert(size_t index,const char* string, size_t count,
+                    bool noexpt = deafult_is_noexcept) {
+          char *index_ptr_ret{};
+          if (!insert_invalid(index, count, &index_ptr_ret, noexpt))
+         return false;
+          ALGO::memmove(index_ptr_ret, string, count);
+  }
+  succsess_t insert(size_t index, str_view str,
+                    bool noexpt = deafult_is_noexcept) {
+          return insert(index, str.data(), str.length(), noexpt);
+  }
 
 
 

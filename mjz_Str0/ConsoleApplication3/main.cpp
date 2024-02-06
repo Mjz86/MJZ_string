@@ -17,11 +17,13 @@ namespace mjz_ard {}  // namespace mjz_ard
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   mjz_String str;
-  int i{};
-  while (!str.is_dynamic()) {
-    str.concat(static_str_algo::GET_CHAR_from_int(i++,0));
+  char c = 'A';
+  char end = 'z'+1;
+  while (c<end) {
+    str.concat(c);
+    c++;
   }
-  println(str);
   
+ println(str);
   return 0;
 }
