@@ -12575,6 +12575,13 @@ concept is_mjz_tupleable =
       typename T::special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015 ;
       T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_;
     };
+template <class T>
+concept is_mjz_outside_tupleable =
+    requires() {
+      requires !is_mjz_tupleable<T>;
+      T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_;
+      typename T::special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015_out_gets;
+    };
 
 }
 
@@ -12630,6 +12637,25 @@ struct tuple_size<T>
           size_t, T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_> {};
 
 }  // namespace std
+template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
+inline constexpr std::tuple_element_t<Index, T &> &get(T &obj) {
+  return obj.internal__mjz_tuple_data_get_at_<Index>();
+}
+
+template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
+inline constexpr std::tuple_element_t<Index, T &&> &get(T &&obj) {
+  return std::move(obj).internal__mjz_tuple_data_get_at_<Index>();
+}
+
+template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
+inline constexpr std::tuple_element_t<Index, T const &> &get(T const &obj) {
+  return obj.internal__mjz_tuple_data_get_at_<Index>();
+}
+
+template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
+inline constexpr std::tuple_element_t<Index, T const &&> &get(T const &&obj) {
+  return std::move(obj).internal__mjz_tuple_data_get_at_<Index>();
+}
 namespace mjz_ard {
 template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
           class my_obj_creator_t =
