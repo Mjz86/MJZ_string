@@ -7688,6 +7688,10 @@ class optional_pointer_refrence_class_template_t
   bare_Type *m_ptr{};
 
  public:
+  using special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015 =
+      void;
+  constexpr static const size_t
+      special_internal_type_is_mjz_tupleable_mjz_tuple_len_ = 2;
   template <typename T = Type, bool B = true>
   inline constexpr Type *const get_ptr_to_valid_object_or_throw() = delete;
   template <>
@@ -12533,7 +12537,10 @@ constexpr inline optional_refrene_of<Type>
     e_ref_t ret = this;
     return ret;
   }
-
+  using special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015 =
+      void;
+  constexpr static const size_t
+      special_internal_type_is_mjz_tupleable_mjz_tuple_len_ = 2;
 };
 #define mjz_stack_obj_warper_template_class_t_class_template_argument_deduction( \
     REF)                                                                         \
@@ -12553,119 +12560,6 @@ mjz_stack_obj_warper_template_class_t_class_template_argument_deduction(
 
 }  // namespace mjz_ard
 namespace std {
-template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
-          class A_>
-struct tuple_element<I, ::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &&> {
-  static_assert(
-      requires() {
-        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
-                                                         UOIU_, A_>()
-            .ucopy_me()
-            .remove_const()
-            .get<I>();
-      }, " index out of bounds");
-  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
-                            .remove_const()
-                            .get<I>());
-};
-
-template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
-          class A_>
-struct tuple_element<I, const ::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &&> {
-  static_assert(
-      requires() {
-        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
-                                                         UOIU_, A_>()
-            .add_const()
-            .get<I>();
-      }, " index out of bounds");
-  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
-                            .ucopy_me()
-                            .add_const()
-                            .get<I>());
-};
-template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
-          class A_>
-struct tuple_element<I, ::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &> {
-  static_assert(
-      requires() {
-        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
-                                                         UOIU_, A_>()
-            .ucopy_me()
-            .remove_const()
-            .get<I>();
-      }, " index out of bounds");
-  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
-                            .ucopy_me()
-                            .remove_const()
-                            .get<I>());
-};
-
-template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
-          class A_>
-struct tuple_element<I, const ::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &> {
-  static_assert(
-      requires() {
-        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
-                                                         UOIU_, A_>()
-            .ucopy_me()
-            .add_const()
-            .get<I>();
-      }, " index out of bounds");
-  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
-                            .ucopy_me()
-                            .add_const()
-                            .get<I>());
-};
-
-template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
-          class A_>
-struct tuple_element<I, ::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>> {
-  static_assert(
-      requires() {
-        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
-                                                         UOIU_, A_>()
-            .ucopy_me()
-            .remove_const()
-            .get<I>();
-      }, " index out of bounds");
-  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
-                            .ucopy_me()
-                            .remove_const()
-                            .get<I>());
-};
-
-template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
-          class A_>
-struct tuple_element<I, const ::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>> {
-  static_assert(
-      requires() {
-        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
-                                                         UOIU_, A_>()
-            .ucopy_me()
-            .add_const()
-            .get<I>();
-      }, " index out of bounds");
-  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
-                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
-                            .ucopy_me()
-                            .add_const()
-                            .get<I>());
-};
-template <class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_, class A_>
-struct tuple_size<::mjz_ard::mjz_stack_obj_warper_template_class_t<
-    T_, E_t_, COOC_, DOC_, UOIU_, A_>> : integral_constant<size_t, 2> {};
 
 namespace mjz_Detail{
 
@@ -12679,6 +12573,7 @@ template <class T>
 concept is_mjz_tupleable =
     requires() {
       typename T::special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015 ;
+      T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_;
     };
 
 }
@@ -12733,30 +12628,6 @@ template <mjz_Detail::is_mjz_tupleable T>
 struct tuple_size<T>
     : integral_constant<
           size_t, T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_> {};
-
-template <
-    size_t I, typename T_ref, bool mutable_ptr,
-    ::mjz_ard::optional_pointer_refrence_has_to_be_valid_on_construction_level
-        level>
-struct tuple_element<I, ::mjz_ard::optional_pointer_refrence_class_template_t<
-                            T_ref, mutable_ptr, level>> {
-  static_assert(
-      requires() {
-        ::mjz_ard::optional_pointer_refrence_class_template_t<
-            T_ref, mutable_ptr, level>(*(std::remove_cvref_t<T_ref> *)nullptr)
-            .get<I>();
-      }, " index out of bounds");
-  using type = decltype(::mjz_ard::optional_pointer_refrence_class_template_t<
-                            T_ref, mutable_ptr, level>(
-                            *(std::remove_cvref_t<T_ref> *)nullptr)
-                            .get<I>());
-};
-template <
-    typename T_ref, bool mutable_ptr,
-    ::mjz_ard::optional_pointer_refrence_has_to_be_valid_on_construction_level
-        level>
-struct tuple_size<::mjz_ard::optional_pointer_refrence_class_template_t<
-    T_ref, mutable_ptr, level>> : integral_constant<size_t, 2> {};
 
 }  // namespace std
 namespace mjz_ard {
