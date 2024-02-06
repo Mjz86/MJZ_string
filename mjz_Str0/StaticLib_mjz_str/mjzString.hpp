@@ -12558,11 +12558,19 @@ mjz_stack_obj_warper_template_class_t_class_template_argument_deduction(
 mjz_stack_obj_warper_template_class_t_class_template_argument_deduction(
     const &);
 
+enum class tuple_state_on_construction:int {
+    none=0,
+    type,
+    const_type,
+    refrence,
+    const_refrence, 
+    temp_refrence,
+    const_temp_refrence
+};
+
 }  // namespace mjz_ard
 namespace std {
-
 namespace mjz_Detail{
-
 template<class T>
 T get_invalid_T_obj( ) {
   return (T)((std::remove_reference_t<T>*)nullptr);
@@ -12582,6 +12590,10 @@ concept is_mjz_outside_tupleable =
       T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_;
       typename T::special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015_out_gets;
     };
+template<class T>
+concept has_mjz_tupleable_len =
+    is_mjz_outside_tupleable<T> || is_mjz_tupleable<T>;
+
 
 }
 
@@ -12631,30 +12643,118 @@ struct tuple_element<I, const T &&> {
       " index out of bounds");
   using type = decltype(mjz_Detail::get_invalid_T_obj<const T &&>().get<I>());
 };
-template <mjz_Detail::is_mjz_tupleable T>
+
+
+template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
+struct tuple_element<I, T> {
+  static_assert(
+      requires() {
+        mjz_Detail::get_invalid_T_obj<T>().internal__mjz_tuple_data_get_at_<I>(0);
+      }, " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<T>()
+                            .internal__mjz_tuple_data_get_at_<I>(0));
+};
+template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
+struct tuple_element<I, const T> {
+  static_assert(
+      requires() {
+        mjz_Detail::get_invalid_T_obj<const T>()
+            .internal__mjz_tuple_data_get_at_<I>(0);
+      }, " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<const T>()
+                            .internal__mjz_tuple_data_get_at_<I>(0));
+};
+
+template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
+struct tuple_element<I, T &> {
+  static_assert(
+      requires() {
+        mjz_Detail::get_invalid_T_obj<T &>()
+            .internal__mjz_tuple_data_get_at_<I>(0);
+      }, " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<T &>()
+                            .internal__mjz_tuple_data_get_at_<I>(0));
+};
+
+template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
+struct tuple_element<I, T &&> {
+  static_assert(
+      requires() {
+        mjz_Detail::get_invalid_T_obj<T &&>()
+            .internal__mjz_tuple_data_get_at_<I>(0);
+      }, " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<T &&>()
+                            .internal__mjz_tuple_data_get_at_<I>(0));
+};
+template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
+struct tuple_element<I, const T &> {
+  static_assert(
+      requires() {
+        mjz_Detail::get_invalid_T_obj<const T &>()
+            .internal__mjz_tuple_data_get_at_<I>(0);
+      }, " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<const T &>()
+                            .internal__mjz_tuple_data_get_at_<I>(0));
+};
+
+template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
+struct tuple_element<I, const T &&> {
+  static_assert(
+      requires() {
+        mjz_Detail::get_invalid_T_obj<const T &&>()
+            .internal__mjz_tuple_data_get_at_<I>(0);
+      }, " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<const T &&>()
+                            .internal__mjz_tuple_data_get_at_<I>(0));
+};
+
+template <mjz_Detail::has_mjz_tupleable_len T>
 struct tuple_size<T>
     : integral_constant<
           size_t, T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_> {};
 
 }  // namespace std
+
+
+
 template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
-inline constexpr std::tuple_element_t<Index, T &> &get(T &obj) {
-  return obj.internal__mjz_tuple_data_get_at_<Index>();
+inline constexpr std::tuple_element_t<Index, const T> get(const T &&obj)
+  requires requires() {
+             std::move(obj).internal__mjz_tuple_data_get_at_<Index>(0);
+             requires std::mjz_Detail::is_mjz_outside_tupleable<T>;
+           }
+{
+  return std::move(obj).internal__mjz_tuple_data_get_at_<Index>(0);
 }
 
 template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
-inline constexpr std::tuple_element_t<Index, T &&> &get(T &&obj) {
-  return std::move(obj).internal__mjz_tuple_data_get_at_<Index>();
+inline constexpr std::tuple_element_t<Index, T> get(T &&obj)
+  requires requires() {
+             std::move(obj).internal__mjz_tuple_data_get_at_<Index>(0);
+             requires std::mjz_Detail::is_mjz_outside_tupleable<T>;
+           }
+{
+  return std::move(obj).internal__mjz_tuple_data_get_at_<Index>(0);
 }
 
 template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
-inline constexpr std::tuple_element_t<Index, T const &> &get(T const &obj) {
-  return obj.internal__mjz_tuple_data_get_at_<Index>();
+inline constexpr std::tuple_element_t<Index, const T &> get(const T &obj)
+  requires requires() {
+             obj.internal__mjz_tuple_data_get_at_<Index>(0);
+             requires std::mjz_Detail::is_mjz_outside_tupleable<T>;
+           }
+{
+  return obj.internal__mjz_tuple_data_get_at_<Index>(0);
 }
 
 template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
-inline constexpr std::tuple_element_t<Index, T const &&> &get(T const &&obj) {
-  return std::move(obj).internal__mjz_tuple_data_get_at_<Index>();
+inline constexpr std::tuple_element_t<Index, T &> get(T &obj)
+  requires requires() {
+             obj.internal__mjz_tuple_data_get_at_<Index>(0);
+             requires std::mjz_Detail::is_mjz_outside_tupleable<T>;
+           }
+{
+  return obj.internal__mjz_tuple_data_get_at_<Index>(0);
 }
 namespace mjz_ard {
 template <typename my_iner_Type_, bool construct_obj_on_constructor = true,

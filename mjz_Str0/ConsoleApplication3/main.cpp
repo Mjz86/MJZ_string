@@ -15,14 +15,7 @@ namespace mjz_ard {}  // namespace mjz_ard
 #define Printlnstr(X) println(__LINE__, ':', #X, ':', X, '<', X.length(), '>')
 
 
-
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
- auto[v,_]=  option<operation_reporter>("a");
-  if (v) v()++;
- option<operation_reporter>*p= v.ubase_ptr();
-  auto [hv, r] = v;
-  p->emplace("eee");
- if (hv) r--;
   return 0;
 }
