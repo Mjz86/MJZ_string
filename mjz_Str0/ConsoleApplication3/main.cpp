@@ -14,7 +14,6 @@ namespace mjz_ard {}  // namespace mjz_ard
 #define Printlnvar(X) println(__LINE__, ':', #X,':', (X))
 #define Printlnstr(X) println(__LINE__, ':', #X, ':', X, '<', X.length(), '>')
 
-
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
   return 0;

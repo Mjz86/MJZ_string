@@ -12501,6 +12501,14 @@ constexpr inline optional_refrene_of<Type>
     e_ref_t ret = this;
     return ret;
   } 
+/*
+note :
+based on my experiments the structure binding return type can only vary across constness 
+and the lvalue/ rvalue qualifiers have to have the same return type
+
+*/
+
+
       /*note that you shuold not use these on a normal temporary (just for structure
    * binding )*/
   template <size_t I>
@@ -12582,6 +12590,7 @@ concept is_mjz_tupleable =
     requires() {
       typename T::special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015 ;
       T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_;
+      /*get*/
     };
 template <class T>
 concept is_mjz_outside_tupleable =
@@ -12589,6 +12598,7 @@ concept is_mjz_outside_tupleable =
       requires !is_mjz_tupleable<T>;
       T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_;
       typename T::special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015_out_gets;
+      /*internal__mjz_tuple_data_get_at_(int)*/
     };
 template<class T>
 concept has_mjz_tupleable_len =
@@ -12629,20 +12639,7 @@ struct tuple_element<I, const T &> {
   using type = decltype(mjz_Detail::get_invalid_T_obj<const T &>().get<I>());
 };
 
-template <size_t I, mjz_Detail::is_mjz_tupleable T>
-struct tuple_element<I, T &&> {
-  static_assert(
-      requires() { mjz_Detail::get_invalid_T_obj<T &&>().get<I>(); },
-      " index out of bounds");
-  using type = decltype(mjz_Detail::get_invalid_T_obj<T &&>().get<I>());
-};
-template <size_t I, mjz_Detail::is_mjz_tupleable T>
-struct tuple_element<I, const T &&> {
-  static_assert(
-      requires() { mjz_Detail::get_invalid_T_obj<const T &&>().get<I>(); },
-      " index out of bounds");
-  using type = decltype(mjz_Detail::get_invalid_T_obj<const T &&>().get<I>());
-};
+
 
 
 template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
@@ -12677,16 +12674,6 @@ struct tuple_element<I, T &> {
 };
 
 template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
-struct tuple_element<I, T &&> {
-  static_assert(
-      requires() {
-        mjz_Detail::get_invalid_T_obj<T &&>()
-            .internal__mjz_tuple_data_get_at_<I>(0);
-      }, " index out of bounds");
-  using type = decltype(mjz_Detail::get_invalid_T_obj<T &&>()
-                            .internal__mjz_tuple_data_get_at_<I>(0));
-};
-template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
 struct tuple_element<I, const T &> {
   static_assert(
       requires() {
@@ -12697,24 +12684,10 @@ struct tuple_element<I, const T &> {
                             .internal__mjz_tuple_data_get_at_<I>(0));
 };
 
-template <size_t I, mjz_Detail::is_mjz_outside_tupleable T>
-struct tuple_element<I, const T &&> {
-  static_assert(
-      requires() {
-        mjz_Detail::get_invalid_T_obj<const T &&>()
-            .internal__mjz_tuple_data_get_at_<I>(0);
-      }, " index out of bounds");
-  using type = decltype(mjz_Detail::get_invalid_T_obj<const T &&>()
-                            .internal__mjz_tuple_data_get_at_<I>(0));
-};
-
 template <mjz_Detail::has_mjz_tupleable_len T>
 struct tuple_size<T>
     : integral_constant<
           size_t, T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_> {};
-
-}  // namespace std
-
 
 
 template <std::size_t Index, std::mjz_Detail::is_mjz_outside_tupleable T>
@@ -12756,6 +12729,7 @@ inline constexpr std::tuple_element_t<Index, T &> get(T &obj)
 {
   return obj.internal__mjz_tuple_data_get_at_<Index>(0);
 }
+}  // namespace std
 namespace mjz_ard {
 template <typename my_iner_Type_, bool construct_obj_on_constructor = true,
           class my_obj_creator_t =
