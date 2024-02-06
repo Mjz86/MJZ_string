@@ -8458,6 +8458,7 @@ struct mjz_stack_obj_warper_deafualt_data_storage_template_t
   };
 
  public:
+
  public:
   constexpr inline bool get_has_error() const volatile noexcept {
     return m_state == data_state::error;
@@ -9026,6 +9027,29 @@ struct mjz_stack_obj_warper_template_class_t {
     return std::move(uo());
   }
   constexpr inline const Type *uop() const && = delete;
+
+  template <typename T>
+  constexpr inline const Type *get_up() const requires(std::is_same_v<T,Type>){
+    return uop();
+  }
+  template <typename T>
+  constexpr inline Type *get_up()
+    requires(std::is_same_v<T, Type>)
+  {
+    return uop();
+  }
+  template <typename T>
+  constexpr inline const Error_t *get_up() const
+    requires(std::is_same_v<T, Error_t>)
+  {
+    return uep();
+  }
+  template <typename T>
+  constexpr inline Error_t *get_up()
+    requires(std::is_same_v<T, Error_t>)
+  {
+    return uep();
+  }
   // Ultra nunsafe
   using data_state_t = typename my_obj_helper_t::data_state;
   using data_state = data_state_t;
@@ -9768,17 +9792,17 @@ struct mjz_stack_obj_warper_template_class_t {
       const {
     return std::move(*this);
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() & {
+  constexpr inline mjz_stack_obj_warper_template_class_t &ucopy_me() & {
     return *this;
   }
-  constexpr inline const mjz_stack_obj_warper_template_class_t &copy_me()
+  constexpr inline const mjz_stack_obj_warper_template_class_t &ucopy_me()
       const & {
     return *this;
   }
-  constexpr inline mjz_stack_obj_warper_template_class_t &copy_me() && {
+  constexpr inline mjz_stack_obj_warper_template_class_t &ucopy_me() && {
     return *this;
   }
-  constexpr inline const mjz_stack_obj_warper_template_class_t &copy_me()
+  constexpr inline const mjz_stack_obj_warper_template_class_t &ucopy_me()
       const && {
     return *this;
   }
@@ -9830,6 +9854,16 @@ struct mjz_stack_obj_warper_template_class_t {
   }
   mjz_stack_obj_warper_template_class_t &remove_const() & { return *this; }
   mjz_stack_obj_warper_template_class_t &&remove_const() && {
+    return std::move(*this);
+  }
+ const mjz_stack_obj_warper_template_class_t &add_const() const & {
+    return *this;
+  }
+ const mjz_stack_obj_warper_template_class_t &&add_const() const && {
+    return std::move(* this);
+  }
+ const mjz_stack_obj_warper_template_class_t &add_const() & { return *this; }
+  const  mjz_stack_obj_warper_template_class_t &&add_const() && {
     return std::move(*this);
   }
   Type &remove_const_obj() const & { return *m_obj_helper().mm_data<Type>(); }
@@ -12017,21 +12051,23 @@ constexpr inline optional_refrene_of<Type>
   }
   constexpr inline std::tuple<mjz_stack_obj_warper_template_class_t> out_me()
       const & {
-    return {copy_me()};
+    return {ucopy_me()};
   }
   constexpr inline std::tuple<mjz_stack_obj_warper_template_class_t> out_me()
       & {
-    return {copy_me()};
+    return {ucopy_me()};
   }
 
   void ref() const && = delete;
   void ref() && = delete;
-  using t_cpy_t =
+ 
+  
+ using t_cpy_t =
       mjz_stack_obj_warper_template_class_t<Type, Empty_t_t<Error_t>>;
   using e_cpy_t =
       mjz_stack_obj_warper_template_class_t<Error_t, Empty_t_t<Type>>;
   template <size_t I>
-      constexpr inline t_cpy_t get() &&
+      constexpr inline t_cpy_t get_cpy() &&
         requires(I == 0)
   {
     t_cpy_t ret = nullopt;
@@ -12040,7 +12076,7 @@ constexpr inline optional_refrene_of<Type>
     return ret;
   }
   template <size_t I>
-  constexpr inline t_cpy_t get() const &
+  constexpr inline t_cpy_t get_cpy() const &
     requires(I == 0)
   {
     t_cpy_t ret = nullopt;
@@ -12049,7 +12085,7 @@ constexpr inline optional_refrene_of<Type>
     return ret;
   }
   template <size_t I>
-  constexpr inline t_cpy_t get() const &&
+  constexpr inline t_cpy_t get_cpy() const &&
     requires(I == 0)
   {
     t_cpy_t ret = nullopt;
@@ -12058,7 +12094,7 @@ constexpr inline optional_refrene_of<Type>
     return ret;
   }
   template <size_t I>
-      constexpr inline t_cpy_t get() &
+      constexpr inline t_cpy_t get_cpy() &
         requires(I == 0)
   {
     t_cpy_t ret = nullopt;
@@ -12067,7 +12103,7 @@ constexpr inline optional_refrene_of<Type>
     return ret;
   }
   template <size_t I>
-      constexpr inline e_cpy_t get() &&
+      constexpr inline e_cpy_t get_cpy() &&
         requires(I == 1)
   {
     e_cpy_t ret = nullopt;
@@ -12076,7 +12112,7 @@ constexpr inline optional_refrene_of<Type>
     return ret;
   }
   template <size_t I>
-  constexpr inline e_cpy_t get() const &
+  constexpr inline e_cpy_t get_cpy() const &
     requires(I == 1)
   {
     e_cpy_t ret = nullopt;
@@ -12085,7 +12121,7 @@ constexpr inline optional_refrene_of<Type>
     return ret;
   }
   template <size_t I>
-  constexpr inline e_cpy_t get() const &&
+  constexpr inline e_cpy_t get_cpy() const &&
     requires(I == 1)
   {
     e_cpy_t ret = nullopt;
@@ -12094,7 +12130,7 @@ constexpr inline optional_refrene_of<Type>
     return ret;
   }
   template <size_t I>
-      constexpr inline e_cpy_t get() &
+      constexpr inline e_cpy_t get_cpy() &
         requires(I == 1)
   {
     e_cpy_t ret = nullopt;
@@ -12104,17 +12140,400 @@ constexpr inline optional_refrene_of<Type>
   }
 
   constexpr inline std::pair<t_cpy_t, e_cpy_t> out() && {
-    return {move_me().get<0>(), move_me().get<1>()};
+    return {move_me().get_cpy<0>(), move_me().get_cpy<1>()};
   }
   constexpr inline std::pair<t_cpy_t, e_cpy_t> out() const && {
-    return {move_me().get<0>(), move_me().get<1>()};
+    return {move_me().get_cpy<0>(), move_me().get_cpy<1>()};
   }
   constexpr inline std::pair<t_cpy_t, e_cpy_t> out() & {
-    return {copy_me().get<0>(), copy_me().get<1>()};
+    return {ucopy_me().get_cpy<0>(), ucopy_me().get_cpy<1>()};
   }
   constexpr inline std::pair<t_cpy_t, e_cpy_t> out() const & {
-    return {copy_me().get<0>(), copy_me().get<1>()};
+    return {ucopy_me().get_cpy<0>(), ucopy_me().get_cpy<1>()};
   }
+
+  template <class my_stack_object_wraper_t, typename T_ref>
+  class my_stack_object_wraper_refrence_class_template_t {
+   public:
+    using Type = std::remove_cvref_t<T_ref>;
+    using bare_Type = std::remove_volatile_t<std::remove_reference_t<T_ref>>;
+    constexpr static const bool is_const_type =
+        std::is_same_v<bare_Type &, const Type &>;
+
+   private:
+    friend class mjz_stack_obj_warper_template_class_t;
+    my_stack_object_wraper_t *my_real_optional_ptr{};
+    inline constexpr bare_Type *m_ptr()const {
+      if (my_real_optional_ptr) return my_real_optional_ptr->get_up<Type>();
+      return nullptr;
+    };
+    constexpr inline my_stack_object_wraper_refrence_class_template_t(
+        my_stack_object_wraper_t *the_real_object)
+        : my_real_optional_ptr(the_real_object) {}
+
+   public:
+    constexpr inline my_stack_object_wraper_refrence_class_template_t(std::nullptr_t)
+        : my_real_optional_ptr(nullptr) {}
+   my_stack_object_wraper_t* ubase_ptr( )const { return my_real_optional_ptr;
+    }
+    template <typename T = Type, bool B = true>
+    inline constexpr Type *const get_ptr_to_valid_object_or_throw() const =
+        delete;
+    template <>
+    inline constexpr Type *const
+    get_ptr_to_valid_object_or_throw<void, !is_const_type>() const {
+      return m_ptr();
+    }
+    template <>
+    inline constexpr Type *const
+    get_ptr_to_valid_object_or_throw<Type, !is_const_type>() const {
+      if (m_ptr()) return m_ptr();
+      Throw<const char *>("no object ");
+    }
+
+    inline constexpr explicit operator bool() const
+      requires(!is_const_type)
+    {
+      return !!get_ptr_to_valid_object_or_throw<void>();
+    }
+    inline constexpr bool operator!() const
+      requires(!is_const_type)
+    {
+      return !get_ptr_to_valid_object_or_throw<void>();
+    }
+
+    inline constexpr operator Type *() const
+      requires(!is_const_type)
+    {
+      return get_ptr_to_valid_object_or_throw<void>();
+    }
+
+    inline constexpr Type *ptr() const
+      requires(!is_const_type)
+    {
+      return get_ptr_to_valid_object_or_throw<void>();
+    }
+
+    inline constexpr Type &get() const
+      requires(!is_const_type)
+    {
+      return *get_ptr_to_valid_object_or_throw();
+    }
+    inline constexpr Type &operator()() const
+      requires(!is_const_type)
+    {
+      return get();
+    }
+
+
+    inline constexpr operator Type &() const
+      requires(!is_const_type)
+    {
+      return get();
+    }
+
+    inline constexpr Type *operator->() const
+      requires(!is_const_type)
+    {
+      return get_ptr_to_valid_object_or_throw();
+    }
+    inline constexpr Type &operator*() const
+      requires(!is_const_type)
+    {
+      return *get_ptr_to_valid_object_or_throw();
+    }
+
+   public:
+    using const_Type = const std::remove_cvref_t<T_ref>;
+
+   public:
+    template <typename T = const_Type, bool B = true>
+    inline constexpr const_Type *const get_ptr_to_valid_const_object_or_throw()
+        const = delete;
+    template <>
+    inline constexpr const_Type *const
+    get_ptr_to_valid_const_object_or_throw<void, is_const_type>() const {
+      return m_ptr();
+    }
+    template <>
+    inline constexpr const_Type *const
+    get_ptr_to_valid_const_object_or_throw<const_Type, is_const_type>() const {
+      if (m_ptr()) return m_ptr();
+      Throw<const char *>("no object ");
+    }
+
+    using Type = std::remove_const_t<const_Type>;
+
+    my_stack_object_wraper_refrence_class_template_t &operator=(const_Type &&)
+      requires(is_const_type)
+    = delete;
+
+    inline constexpr ~my_stack_object_wraper_refrence_class_template_t() {}
+    inline constexpr explicit operator bool() const
+      requires(is_const_type)
+    {
+      return !!get_ptr_to_valid_const_object_or_throw<void>();
+    }
+    inline constexpr bool operator!() const
+      requires(is_const_type)
+    {
+      return !get_ptr_to_valid_const_object_or_throw<void>();
+    }
+
+    inline constexpr operator const_Type *() const
+      requires(is_const_type)
+    {
+      return get_ptr_to_valid_const_object_or_throw<void>();
+    }
+
+    inline constexpr const_Type *ptr() const
+      requires(is_const_type)
+    {
+      return get_ptr_to_valid_const_object_or_throw<void>();
+    }
+
+    inline constexpr const_Type &get() const
+      requires(is_const_type)
+    {
+      return *get_ptr_to_valid_const_object_or_throw();
+    }
+
+    inline constexpr operator const_Type &() const
+      requires(is_const_type)
+    {
+      return *get_ptr_to_valid_const_object_or_throw();
+    }
+
+    inline constexpr const_Type *operator->() const
+      requires(is_const_type)
+    {
+      return get_ptr_to_valid_const_object_or_throw();
+    }
+    inline constexpr const_Type &operator*() const
+      requires(is_const_type)
+    {
+      return *get_ptr_to_valid_const_object_or_throw();
+    }
+
+    inline constexpr const_Type &operator()() const
+      requires(is_const_type)
+    {
+      return *get_ptr_to_valid_const_object_or_throw();
+    }
+
+    using merf = my_stack_object_wraper_refrence_class_template_t &;
+    inline constexpr friend bool operator==(merf a, merf b)
+
+    {
+      return *a == *b;
+    }
+    inline constexpr friend bool operator!=(merf a, merf b)
+
+    {
+      return *a != *b;
+    }
+    inline constexpr friend bool operator<=(merf a, merf b)
+
+    {
+      return *a <= *b;
+    }
+    inline constexpr friend bool operator>=(merf a, merf b)
+
+    {
+      return *a >= *b;
+    }
+    inline constexpr friend bool operator<(merf a, merf b)
+
+    {
+      return *a < *b;
+    }
+    inline constexpr friend bool operator>(merf a, merf b)
+
+    {
+      return *a > *b;
+    }
+    inline constexpr friend auto operator&(merf a, merf b)
+
+    {
+      return *a & *b;
+    }
+    inline constexpr friend auto operator|(merf a, merf b)
+
+    {
+      return *a | *b;
+    }
+    inline constexpr friend auto operator^(merf a, merf b)
+
+    {
+      return *a ^ *b;
+    }
+    inline constexpr friend auto operator%(merf a, merf b)
+
+    {
+      return *a % *b;
+    }
+    inline constexpr friend auto operator*(merf a, merf b)
+
+    {
+      return *a * *b;
+    }
+    inline constexpr friend auto operator/(merf a, merf b)
+
+    {
+      return *a / *b;
+    }
+    inline constexpr friend auto operator-(merf a, merf b)
+
+    {
+      return *a - *b;
+    }
+    inline constexpr friend auto operator+(merf a, merf b)
+
+    {
+      return *a + *b;
+    }
+    inline constexpr auto operator&=(merf b)
+
+    {
+      return (**this) &= *b;
+    }
+    inline constexpr auto operator|=(merf b)
+
+    {
+      return (**this) |= *b;
+    }
+    inline constexpr auto operator^=(merf b)
+
+    {
+      return (**this) ^= *b;
+    }
+    inline constexpr auto operator%=(merf b)
+
+    {
+      return (**this) %= *b;
+    }
+    inline constexpr auto operator*=(merf b)
+
+    {
+      return (**this) *= *b;
+    }
+    inline constexpr auto operator/=(merf b)
+
+    {
+      return (**this) /= *b;
+    }
+    inline constexpr auto operator-=(merf b)
+
+    {
+      return (**this) -= *b;
+    }
+    inline constexpr auto operator+=(merf b)
+
+    {
+      return (**this) += *b;
+    }
+    template <size_t I>
+    inline constexpr bool get() const
+      requires(I == 0)
+    {
+      return !!m_ptr();
+    }
+    template <size_t I>
+    inline constexpr T_valid_or_invalid_refrence_t<const_Type> get() const
+      requires(I == 1 && is_const_type)
+    {
+      return *m_ptr();
+    }
+    template <size_t I>
+
+    inline constexpr T_valid_or_invalid_refrence_t<Type> get() const
+      requires(I == 1 && !is_const_type)
+    {
+      return *m_ptr();
+    }
+    using special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015=void;
+    constexpr static const size_t special_internal_type_is_mjz_tupleable_mjz_tuple_len_=2;
+  };
+
+  
+ using t_ref_t = my_stack_object_wraper_refrence_class_template_t<
+      mjz_stack_obj_warper_template_class_t, Type>;
+  using e_ref_t = my_stack_object_wraper_refrence_class_template_t<
+      mjz_stack_obj_warper_template_class_t, Error_t>;
+
+  using ct_ref_t = my_stack_object_wraper_refrence_class_template_t<
+      const mjz_stack_obj_warper_template_class_t, const Type>;
+  using ce_ref_t = my_stack_object_wraper_refrence_class_template_t<
+      const mjz_stack_obj_warper_template_class_t, const Error_t>;
+
+  template <size_t I>
+  constexpr inline ct_ref_t get() const &
+    requires(I == 0)
+  {
+    ct_ref_t ret = this;
+    return ret;
+  }
+
+  template <size_t I>
+      constexpr inline t_ref_t get() &
+        requires(I == 0)
+  {
+    t_ref_t ret = this;
+    return ret;
+  }
+
+  template <size_t I>
+  constexpr inline ce_ref_t get() const &
+    requires(I == 1)
+  {
+    ce_ref_t ret = this;
+    return ret;
+  }
+
+  template <size_t I>
+      constexpr inline e_ref_t get() &
+        requires(I == 1)
+  {
+    e_ref_t ret = this;
+    return ret;
+  } 
+      /*note that you shuold not use these on a normal temporary (just for structure
+   * binding )*/
+  template <size_t I>
+  constexpr inline ct_ref_t get() const &&
+    requires(I == 0)
+  {
+    ct_ref_t ret = this;
+    return ret;
+  }
+  /*note that you shuold not use these on a normal temporary (just for structure
+   * binding )*/
+  template <size_t I>
+      constexpr inline t_ref_t get() &&
+        requires(I == 0)
+  {
+    t_ref_t ret = this;
+    return ret;
+  }
+  /*note that you shuold not use these on a normal temporary (just for structure
+   * binding )*/
+  template <size_t I>
+  constexpr inline ce_ref_t get() const &&
+    requires(I == 1)
+  {
+    ce_ref_t ret = this;
+    return ret;
+  }
+  /*note that you shuold not use these on a normal temporary (just for structure
+   * binding )*/
+  template <size_t I>
+      constexpr inline e_ref_t get() &&
+        requires(I == 1)
+  {
+    e_ref_t ret = this;
+    return ret;
+  }
+
 };
 #define mjz_stack_obj_warper_template_class_t_class_template_argument_deduction( \
     REF)                                                                         \
@@ -12137,20 +12556,183 @@ namespace std {
 template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
           class A_>
 struct tuple_element<I, ::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &&> {
+  static_assert(
+      requires() {
+        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
+                                                         UOIU_, A_>()
+            .ucopy_me()
+            .remove_const()
+            .get<I>();
+      }, " index out of bounds");
+  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
+                            .remove_const()
+                            .get<I>());
+};
+
+template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
+          class A_>
+struct tuple_element<I, const ::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &&> {
+  static_assert(
+      requires() {
+        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
+                                                         UOIU_, A_>()
+            .add_const()
+            .get<I>();
+      }, " index out of bounds");
+  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
+                            .ucopy_me()
+                            .add_const()
+                            .get<I>());
+};
+template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
+          class A_>
+struct tuple_element<I, ::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &> {
+  static_assert(
+      requires() {
+        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
+                                                         UOIU_, A_>()
+            .ucopy_me()
+            .remove_const()
+            .get<I>();
+      }, " index out of bounds");
+  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
+                            .ucopy_me()
+                            .remove_const()
+                            .get<I>());
+};
+
+template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
+          class A_>
+struct tuple_element<I, const ::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_> &> {
+  static_assert(
+      requires() {
+        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
+                                                         UOIU_, A_>()
+            .ucopy_me()
+            .add_const()
+            .get<I>();
+      }, " index out of bounds");
+  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
+                            .ucopy_me()
+                            .add_const()
+                            .get<I>());
+};
+
+template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
+          class A_>
+struct tuple_element<I, ::mjz_ard::mjz_stack_obj_warper_template_class_t<
                             T_, E_t_, COOC_, DOC_, UOIU_, A_>> {
   static_assert(
       requires() {
         ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
                                                          UOIU_, A_>()
+            .ucopy_me()
+            .remove_const()
             .get<I>();
       }, " index out of bounds");
   using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
                             T_, E_t_, COOC_, DOC_, UOIU_, A_>()
+                            .ucopy_me()
+                            .remove_const()
+                            .get<I>());
+};
+
+template <size_t I, class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_,
+          class A_>
+struct tuple_element<I, const ::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_>> {
+  static_assert(
+      requires() {
+        ::mjz_ard::mjz_stack_obj_warper_template_class_t<T_, E_t_, COOC_, DOC_,
+                                                         UOIU_, A_>()
+            .ucopy_me()
+            .add_const()
+            .get<I>();
+      }, " index out of bounds");
+  using type = decltype(::mjz_ard::mjz_stack_obj_warper_template_class_t<
+                            T_, E_t_, COOC_, DOC_, UOIU_, A_>()
+                            .ucopy_me()
+                            .add_const()
                             .get<I>());
 };
 template <class T_, class E_t_, bool COOC_, bool DOC_, bool UOIU_, class A_>
 struct tuple_size<::mjz_ard::mjz_stack_obj_warper_template_class_t<
     T_, E_t_, COOC_, DOC_, UOIU_, A_>> : integral_constant<size_t, 2> {};
+
+namespace mjz_Detail{
+
+template<class T>
+T get_invalid_T_obj( ) {
+  return (T)((std::remove_reference_t<T>*)nullptr);
+}
+
+
+template <class T>
+concept is_mjz_tupleable =
+    requires() {
+      typename T::special_internal_type_is_mjz_tupleable_mjz_tuple_id_57r986578265852952856060951581015 ;
+    };
+
+}
+
+
+
+template <size_t I, mjz_Detail::is_mjz_tupleable T>
+struct tuple_element<I, T> {
+  static_assert(
+      requires() { mjz_Detail::get_invalid_T_obj<T>().get<I>(); },
+      " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<T>().get<I>());
+};
+template <size_t I, mjz_Detail::is_mjz_tupleable T>
+struct tuple_element<I, const T> {
+  static_assert(
+      requires() { mjz_Detail::get_invalid_T_obj<const T>().get<I>(); },
+      " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<const T>().get<I>());
+};
+
+template <size_t I, mjz_Detail::is_mjz_tupleable T>
+struct tuple_element<I, T &> {
+  static_assert(
+      requires() { mjz_Detail::get_invalid_T_obj<T &>().get<I>(); },
+      " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<T &>().get<I>());
+};
+template <size_t I, mjz_Detail::is_mjz_tupleable T>
+struct tuple_element<I, const T &> {
+  static_assert(
+      requires() { mjz_Detail::get_invalid_T_obj<const T &>().get<I>(); },
+      " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<const T &>().get<I>());
+};
+
+template <size_t I, mjz_Detail::is_mjz_tupleable T>
+struct tuple_element<I, T &&> {
+  static_assert(
+      requires() { mjz_Detail::get_invalid_T_obj<T &&>().get<I>(); },
+      " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<T &&>().get<I>());
+};
+template <size_t I, mjz_Detail::is_mjz_tupleable T>
+struct tuple_element<I, const T &&> {
+  static_assert(
+      requires() { mjz_Detail::get_invalid_T_obj<const T &&>().get<I>(); },
+      " index out of bounds");
+  using type = decltype(mjz_Detail::get_invalid_T_obj<const T &&>().get<I>());
+};
+template <mjz_Detail::is_mjz_tupleable T>
+struct tuple_size<T>
+    : integral_constant<
+          size_t, T::special_internal_type_is_mjz_tupleable_mjz_tuple_len_> {};
 
 template <
     size_t I, typename T_ref, bool mutable_ptr,
@@ -15029,7 +15611,7 @@ using get_caler_return_type_t = typename T::Type;
 template <class T>
 using get_calee_return_type_t = typename T::Type::Type;
 
-#define CR_NO_RETURN(RET) ((RET).copy_me())
+#define CR_NO_RETURN(RET) ((RET).ucopy_me())
 // NOTE: this function only works if calee_ret<T> is checked in the called
 // function Undefined Behaviour otherwise
 #define CR_CALL_IF(_CONDITION, _RET)                                \
@@ -15048,7 +15630,7 @@ using get_calee_return_type_t = typename T::Type::Type;
        ? (::mjz_ard::have_mjz_ard_removed::calee_ret<         \
              typename decltype(_RET)::                        \
                  my_totaly_uniuqe_type_name_of_content_type>( \
-             (_RET).copy_me()))                               \
+             (_RET).ucopy_me()))                               \
        : (::mjz_ard::have_mjz_ard_removed::calee_ret<         \
              typename decltype(_RET)::                        \
                  my_totaly_uniuqe_type_name_of_content_type>(nullptr)))
