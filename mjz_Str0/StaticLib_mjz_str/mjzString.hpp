@@ -10465,13 +10465,13 @@ struct mjz_stack_obj_warper_template_class_t {
 
  public:
   constexpr inline Type *operator->() & { return pointer_to_data(); }
-  constexpr inline Type &&operator->() && {
+  constexpr inline Type *operator->() && {
     if (has_data()) return std::move(move_me().O());
     Throw<std::out_of_range>(
         "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data bad "
         "access");
   }  // overload dosnt give ptr
-  constexpr inline const Type &&operator->() const && {
+  constexpr inline const Type *operator->() const && {
     if (has_data()) return std::move(move_me().O());
     Throw<std::out_of_range>(
         "mjz_ard::mjz_stack_obj_warper_template_class_t::pointer_to_data bad "
