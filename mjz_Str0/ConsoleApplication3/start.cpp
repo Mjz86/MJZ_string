@@ -13,6 +13,7 @@ void get_main_argguments(int& argc, const char* const*& argv) {
 
 int main(int argc, const char* const* const argv) {
  if (!argc) return -1;
+ mjz::tiny_scoped_timer total_main(" main ");
  get_argguments_fn() = [&](int& argc_get, const char* const*& argv_get) -> void{
     argc_get = argc;
     argv_get = argv;

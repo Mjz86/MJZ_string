@@ -2,6 +2,25 @@
 #include "my_main.h"
 
 namespace lesson {
+void show_structure_binding() {
+  USE_MJZ_NS();
+  Result<std::string, to_error_t<std::string>> o;
+  scan(*+o);
+  if (*o == "@E")
+    ~o;
+  else if (o->at(0) == '@')
+    o.err_emplace(o.move().substr(1));
+  if (auto [has_value, value, has_err, error] = o.uref4(); has_err) {
+    println("Error: ", std::string_view(error));
+  } else if (has_value) {
+    if (promptlnp<decltype(value)>('"', value, '"', " is:") == value)
+      println("correct");
+    else
+      println("incorrect");
+  } else {
+    println("Error?");
+  }
+}
 void show_lifetime() {
   USE_MJZ_NS();
   operation_reporter var("var");
@@ -61,6 +80,48 @@ void show_if_with_optional() {
     if (op) op()++;
   }
 }
+struct three_var {
+  char a{}, b{}, c{};
+};
+void show_evaluation_orter() {
+  USE_MJZ_NS();
+  {
+    // Aggregate initialization evaluation
+    auto [a, b, c] = std::tuple{
+        promptlnp<char>("0.(these are in right order )give char :"),
+        promptlnp<char>(" 1.(these are in right order )give char :"),
+        promptlnp<char>(" 2.(these are in right order )give char :")};
+    // Direct-initialization evaluation
+    auto [d, e, f] = std::tuple(
+        promptlnp<char>("0.(these aren't in right order )give char :"),
+        promptlnp<char>(" 1.(these aren't in right order )give char :"),
+        promptlnp<char>(" 2.(these aren't in right order )give char :"));
+    // function evaluvation
+    println("you gave:", a, ',', b, ',', c, " not in right order : ", d, ',', e,
+            ',', f, ",\n",
+            promptlnp<char>("0.(these aren't in right order )give char :"), ',',
+            promptlnp<char>(" 1.(these aren't in right order )give char :"),
+            ',',
+            promptlnp<char>(" 2.(these aren't in right order )give char :"));
+  }
+
+  // Aggregate initialization evaluation
+  auto [a, b, c] = three_var{
+      .a = promptlnp<char>("0.(these are in right order )give char :"),
+      .b = promptlnp<char>(" 1.(these are in right order )give char :"),
+      .c = promptlnp<char>(" 2.(these are in right order )give char :")};
+  // Direct-initialization evaluation
+  auto [d, e, f] = three_var(
+      promptlnp<char>("0.(these aren't in right order )give char :"),
+      promptlnp<char>(" 1.(these aren't in right order )give char :"),
+      promptlnp<char>(" 2.(these aren't in right order )give char :"));
+  // function evaluvation
+  println("you gave:", a, ',', b, ',', c, " not in right order : ", d, ',', e,
+          ',', f, ",\n",
+          promptlnp<char>("0.(these aren't in right order )give char :"), ',',
+          promptlnp<char>(" 1.(these aren't in right order )give char :"), ',',
+          promptlnp<char>(" 2.(these aren't in right order )give char :"));
+}
 void function_for_knowledge(char* volatile a) {
   USE_MJZ_NS();
   char b[100]{};
@@ -86,8 +147,10 @@ void show_exceptions_effect() {
           "SUSO5", "SUSO6", "SUSO7", "SUSO8", "SUSO9"};
       println("stack_unwinding_shower_object created");
       println("throw : ");
-      //throw operation_reporter("i am thrown");
-      JThrow<operation_reporter>("i am thrown");//this is my way to allow an exeption to propagate instead of termination
+      // throw operation_reporter("i am thrown");
+      JThrow<operation_reporter>(
+          "i am thrown");  // this is my way to allow an exeption to propagate
+                           // instead of termination
       println(" this will never run/print ");
 
     } catch (...) {
@@ -121,7 +184,8 @@ void show_exceptions_effect() {
 }
 
 typedef void (*lesson_fn)(void);
-lesson_fn lessons[]{show_lifetime, show_exceptions_effect, show_stack};
+lesson_fn lessons[]{show_structure_binding, show_lifetime,
+                    show_evaluation_orter, show_exceptions_effect, show_stack};
 
 void show_all() {
   USE_MJZ_NS();
