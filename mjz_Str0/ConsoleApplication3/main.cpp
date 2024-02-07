@@ -13,6 +13,20 @@ namespace mjz_ard {}  // namespace mjz_ard
  */
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  mjz_String s;
+  optional<operation_reporter> o;
+  +o;
+  o.to_pipeline()[1]->*
+      [](bool has_value, operation_reporter& value, bool, auto&) {
+    if (has_value) {
+      value++;
+    }
+        return true;
+  } / [](auto ref , auto) {
+    if (!ref)return 0;
+      operation_reporter& value = ref;
+      value++;
+    
+    return true;
+  };
   return 0;
 }
