@@ -12614,6 +12614,9 @@ struct mjz_stack_obj_warper_template_class_t {
       my_integer_t(T v)
         requires(std::is_integral_v<T>)
           : b(v) {}
+      my_integer_t(const my_integer_t& v)
+          : b((bool)v) {}
+      my_integer_t(bool v) : b(v) {}
       bool b{};
       inline constexpr operator bool() const { return b; }
     }; 
@@ -12652,7 +12655,7 @@ struct mjz_stack_obj_warper_template_class_t {
     } 
      template <class T>
     inline constexpr lambda_pipeline_t operator>=(T &&do_pipe_fn) {
-      auto [value_ref, error_ref] = get_uref4(ptr);
+      auto [value_ref, error_ref] = get_uref2(ptr);
       if (do_pipe_fn(value_ref, error_ref)) return ptr;
       return nullptr;
     }
@@ -12690,7 +12693,7 @@ struct mjz_stack_obj_warper_template_class_t {
 
     inline constexpr lambda_pipeline_t operator>(T &&do_pipe_fn) {
       if (!ptr) return nullptr;
-      auto [value_ref, error_ref] = get_uref4(ptr);
+      auto [value_ref, error_ref] = get_uref2(ptr);
       if (do_pipe_fn(value_ref, error_ref)) return ptr;
       return nullptr;
     }
@@ -12734,6 +12737,20 @@ struct mjz_stack_obj_warper_template_class_t {
       return nullptr;
     }
 
+ friend inline constexpr lambda_pipeline_t operator&(my_integer_t v, lambda_pipeline_t p) {
+        return p[(bool)v];
+    }
+ friend inline constexpr lambda_pipeline_t operator&=(my_integer_t v,
+                                                      lambda_pipeline_t p) {
+        return p[(bool)v];
+ }
+   inline constexpr lambda_pipeline_t operator&( my_integer_t v) {
+        return p()[(bool)v];
+ }
+   inline constexpr lambda_pipeline_t operator&=( my_integer_t v) {
+        return p()[(bool)v];
+ }
+    
     inline constexpr explicit operator bool() const { return !!ptr; }
 
     inline constexpr bool operator!() const { return !ptr; }
