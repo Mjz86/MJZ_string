@@ -14259,8 +14259,8 @@ class minimal_mjz_string_data {
     static constexpr uint8_t null_terminator_len=1;
     char internal_array[static_storage_cap + null_terminator_len]{};
     void reset() {
-      mjz_obj_manager_template_t<static_DB_t>::obj_destructor_on(this);
-      mjz_obj_manager_template_t<static_DB_t>::obj_constructor_on(this);
+      mjz_obj_manager_template_t<static_DB_t>::destroy_at(this);
+      mjz_obj_manager_template_t<static_DB_t>::construct_at(this);
     }
   };
   struct DB_t {
@@ -14465,9 +14465,19 @@ class basic_mjz_Str_view : protected Base_t, protected static_str_algo {
       : basic_mjz_Str_view(static_str_algo::empty_STRING_C_STR, 0) {}
   constexpr basic_mjz_Str_view(const basic_mjz_Str_view& str)requires(is_normal)
       : basic_mjz_Str_view(str.data(), str.length()) {}
-  constexpr basic_mjz_Str_view(const normal_str_view& str)requires(!is_normal)
-      : basic_mjz_Str_view(str.data(), str.length()) {}
-
+  constexpr inline basic_mjz_Str_view &operator=(normal_str_view v)
+    requires(is_normal)
+  {
+     Base_t::operator=(v);
+    return *this;
+  }
+  basic_mjz_Str_view &operator=(const basic_mjz_Str_view &)
+    requires(!is_normal)
+  = delete;
+  basic_mjz_Str_view(const basic_mjz_Str_view &)
+    requires(!is_normal)
+  = delete;
+  constexpr inline~basic_mjz_Str_view() {}
  public:
   constexpr bool is_blank() const {
     size_t i{};
@@ -15866,7 +15876,8 @@ class mjz_String_template
   using mjz_reallocator_t = get_mjz_reallocator_t_from_mjz_String_template_args<
       mjz_String_template_args_t>;
   using Base_t = minimal_mjz_string_data<mjz_String_template_args_t::minimal_mjz_string_data_min_size>;
-
+  
+ using str_view=basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
   constexpr static const char nullcr = '\0';
   constexpr static const uint8_t nullen = sizeof(nullcr)/*1*/;
  private:
@@ -16014,10 +16025,12 @@ class mjz_String_template
   inline cr_it_T crbegin() const { return end(); }
   inline cr_it_T crend() const { return begin(); }
   inline mjz_String_template() {}
-  inline mjz_String_template(mjz_String_template &&other) noexcept {
+  template <std::same_as<mjz_String_template> T>
+  inline mjz_String_template(T &&other) noexcept {
     if (this == &other) return;
     get_Base_t().move_to_me(std::move(other.get_Base_t()));
   }
+
   inline mjz_String_template(const mjz_String_template &other,bool noexpt = deafult_is_noexcept) { 
       if (this == &other)return;
      if(!resize(other.length(),1)){
@@ -16029,16 +16042,23 @@ class mjz_String_template
   }
   template <class T>
   inline mjz_String_template(const basic_mjz_Str_view<T> &other,
-                             bool noexpt = deafult_is_noexcept) {
+      bool noexpt = deafult_is_noexcept) requires(!std::same_as<Base_t,T>) {
      copy_from(other, noexpt);
   }
-  
-  mjz_String_template& operator=(mjz_String_template&&other) {
+
+  inline mjz_String_template &operator=(str_view &&other) {
+     return copy_from(other);
+  }
+  template<class T>
+  mjz_String_template &operator=(T &&other)
+    requires(std::same_as<T,mjz_String_template>)
+  {
      if (this == &other) return*this;
      free_buffer();
      get_Base_t().move_to_me(std::move(other.get_Base_t()));
      return*this;
   }
+
  template <class T>
   inline mjz_String_template &copy_from(const basic_mjz_Str_view<T> &other,
                                         bool noexpt = deafult_is_noexcept,
@@ -16056,7 +16076,7 @@ class mjz_String_template
      *end() = nullcr;
      return *this;
 }
-
+  
    template <class T>
 inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
                                    bool noexpt = deafult_is_noexcept,
@@ -16080,7 +16100,7 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
   return   copy_from(other);
  }
  inline mjz_String_template &operator=(
-     const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &other) {
+     const str_view &other) {
   return copy_from(other);
   }
  inline mjz_String_template &operator=(const mjz_String_template &other) {
@@ -16099,7 +16119,7 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
   return *this;
   }
  inline mjz_String_template &operator+=(
-     const basic_mjz_Str_view<deafult_mjz_Str_data_strorage> &other) {
+     const str_view &other) {
   return append(other);
  }
  inline mjz_String_template &operator+=(const mjz_String_template &other) {
@@ -16111,7 +16131,6 @@ inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
  append(other, noexpt, &was_succsessful);
  return check_succsess(was_succsessful, noexpt);
  }
- using str_view=basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
  using ALGO=static_str_algo;
  bool concat(const char *cstr, size_t length) {
 return concat(str_view{cstr, length});
@@ -16210,6 +16229,18 @@ return concat(str_view{a, N});
  inline operator str_view() const { return view(); }
 inline explicit operator bool() const { return !!*this; }
   ~mjz_String_template() { free_buffer(); }
+  inline void operator~() { free_buffer(); }
+  inline int64_t operator+( ) {
+      return view().toLL( );
+  }
+  template<typename T>
+  struct mjz_is_castable_int_t
+      : std::integral_constant< bool, std::is_integral_v<T> && !std::is_same_v<T,bool> && !std::is_same_v<T,char> && !std::is_same_v<T,unsigned char>> {};
+ template<t_to_concept<mjz_is_castable_int_t> T>
+  inline operator T()
+  {
+ return view().toLL();
+  }
 
 
   
@@ -16253,8 +16284,8 @@ copy_from(str_view(str,len));
 
 
 
-
-  mjz_String_template(const void* ptr) {
+ template <std::same_as<const void *>V>
+  mjz_String_template(V ptr) {
       concat(ptr);
   }
   mjz_String_template(int64_t value, unsigned char base=10) {
