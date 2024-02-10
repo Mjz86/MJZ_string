@@ -43,6 +43,7 @@ written by mjz https://github.com/Mjz86
 #include <string.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstdarg>
@@ -12071,7 +12072,6 @@ struct mjz_stack_obj_warper_template_class_t {
           optional_refrene_of<
               Error_t>>> inline constexpr static get_uref4(mjz_stack_obj_warper_template_class_t
                                                                *This) {
-    
     auto [value_ptr, error_ptr] = get_uref2(This);
     auto [ptr_has_value, ptr_value_refrence] = value_ptr;
     auto [ptr_has_error, ptr_error_refrence] = error_ptr;
@@ -12614,12 +12614,11 @@ struct mjz_stack_obj_warper_template_class_t {
       my_integer_t(T v)
         requires(std::is_integral_v<T>)
           : b(v) {}
-      my_integer_t(const my_integer_t& v)
-          : b((bool)v) {}
+      my_integer_t(const my_integer_t &v) : b((bool)v) {}
       my_integer_t(bool v) : b(v) {}
       bool b{};
       inline constexpr operator bool() const { return b; }
-    }; 
+    };
     using real_t =
         std::conditional_t<is_mutable_type,
                            mjz_stack_obj_warper_template_class_t,
@@ -12630,57 +12629,57 @@ struct mjz_stack_obj_warper_template_class_t {
     inline constexpr lambda_pipeline_t(real_t *p) : ptr(p) {}
 
     template <class... Ts>
-    inline constexpr lambda_pipeline_t operator()(bool check,Ts &&...functions) {
+    inline constexpr lambda_pipeline_t operator()(bool check,
+                                                  Ts &&...functions) {
       if (!check || ptr) const char a[] = {(functions(p()), 0)...};
       return ptr;
     }
-   
 
-     template <class T>
+    template <class T>
     inline constexpr lambda_pipeline_t operator|=(T &&do_pipe_fn) {
       if (do_pipe_fn(p())) return ptr;
       return nullptr;
     }
 
-     template <class T>
+    template <class T>
     inline constexpr lambda_pipeline_t operator%=(T &&do_pipe_fn) {
       if (do_pipe_fn(ptr)) return ptr;
       return nullptr;
     }
 
-     template <class T>
+    template <class T>
     inline constexpr lambda_pipeline_t operator^=(T &&do_pipe_fn) {
       if (do_pipe_fn(!!ptr, *ptr)) return ptr;
       return nullptr;
-    } 
-     template <class T>
+    }
+    template <class T>
     inline constexpr lambda_pipeline_t operator>=(T &&do_pipe_fn) {
       auto [value_ref, error_ref] = get_uref2(ptr);
       if (do_pipe_fn(value_ref, error_ref)) return ptr;
       return nullptr;
     }
 
-    inline constexpr lambda_pipeline_t operator[](my_integer_t&& b)const {
+    inline constexpr lambda_pipeline_t operator[](my_integer_t &&b) const {
       if (b) return ptr;
       return nullptr;
     }
-     template <class T>
+    template <class T>
 
     inline constexpr lambda_pipeline_t operator|(T &&do_pipe_fn) {
       if (!ptr) return nullptr;
       if (do_pipe_fn(p())) return ptr;
       return nullptr;
     }
-     
-     template <class T>
+
+    template <class T>
 
     inline constexpr lambda_pipeline_t operator%(T &&do_pipe_fn) {
       if (!ptr) return nullptr;
       if (do_pipe_fn(ptr)) return ptr;
       return nullptr;
     }
-     
-     template <class T>
+
+    template <class T>
 
     inline constexpr lambda_pipeline_t operator^(T &&do_pipe_fn) {
       if (!ptr) return nullptr;
@@ -12688,8 +12687,8 @@ struct mjz_stack_obj_warper_template_class_t {
       if (do_pipe_fn(!!ptr, *ptr)) return ptr;
       return nullptr;
     }
-     
-     template <class T>
+
+    template <class T>
 
     inline constexpr lambda_pipeline_t operator>(T &&do_pipe_fn) {
       if (!ptr) return nullptr;
@@ -12697,8 +12696,8 @@ struct mjz_stack_obj_warper_template_class_t {
       if (do_pipe_fn(value_ref, error_ref)) return ptr;
       return nullptr;
     }
-      
-     template <class T>
+
+    template <class T>
 
     inline constexpr lambda_pipeline_t operator>>(T &&do_pipe_fn) {
       if (!ptr) return nullptr;
@@ -12706,15 +12705,15 @@ struct mjz_stack_obj_warper_template_class_t {
       auto error_ref = ptr->uep();
       if (do_pipe_fn(value_ptr, error_ref)) return ptr;
       return nullptr;
-    } 
-     template <class T>
+    }
+    template <class T>
     inline constexpr lambda_pipeline_t operator>>=(T &&do_pipe_fn) {
       auto value_ptr = ptr ? ptr->uop() : nullptr;
       auto error_ref = ptr ? ptr->uep() : nullptr;
       if (do_pipe_fn(value_ptr, error_ref)) return ptr;
       return nullptr;
-    } 
-     template <class T>
+    }
+    template <class T>
 
     inline constexpr lambda_pipeline_t operator/(T &&do_pipe_fn) {
       if (!ptr) return nullptr;
@@ -12725,8 +12724,8 @@ struct mjz_stack_obj_warper_template_class_t {
         return ptr;
       return nullptr;
     }
-     
-     template <class T>
+
+    template <class T>
 
     inline constexpr lambda_pipeline_t operator->*(T &&do_pipe_fn) {
       auto [ptr_has_value, ptr_value_refrence, ptr_has_error,
@@ -12737,20 +12736,21 @@ struct mjz_stack_obj_warper_template_class_t {
       return nullptr;
     }
 
- friend inline constexpr lambda_pipeline_t operator&(my_integer_t v, lambda_pipeline_t p) {
-        return p[(bool)v];
+    friend inline constexpr lambda_pipeline_t operator&(my_integer_t v,
+                                                        lambda_pipeline_t p) {
+      return p[(bool)v];
     }
- friend inline constexpr lambda_pipeline_t operator&=(my_integer_t v,
-                                                      lambda_pipeline_t p) {
-        return p[(bool)v];
- }
-   inline constexpr lambda_pipeline_t operator&( my_integer_t v) {
-        return p()[(bool)v];
- }
-   inline constexpr lambda_pipeline_t operator&=( my_integer_t v) {
-        return p()[(bool)v];
- }
-    
+    friend inline constexpr lambda_pipeline_t operator&=(my_integer_t v,
+                                                         lambda_pipeline_t p) {
+      return p[(bool)v];
+    }
+    inline constexpr lambda_pipeline_t operator&(my_integer_t v) {
+      return p()[(bool)v];
+    }
+    inline constexpr lambda_pipeline_t operator&=(my_integer_t v) {
+      return p()[(bool)v];
+    }
+
     inline constexpr explicit operator bool() const { return !!ptr; }
 
     inline constexpr bool operator!() const { return !ptr; }
@@ -16079,7 +16079,7 @@ template <class mjz_String_template_args_t>
 using get_mjz_reallocator_t_from_mjz_String_template_args =
     typename mjz_String_template_args_t::mjz_reallocator_t;
 template <class mjz_String_template_args_t = mjz_String_template_args<void>>
-class mjz_String_template
+class mjz_protected_String_base_template
     : public basic_mjz_Str_view<minimal_mjz_string_data<
           mjz_String_template_args_t::minimal_mjz_string_data_min_size>> {
   static constexpr const bool deafult_is_noexcept =
@@ -16101,15 +16101,125 @@ class mjz_String_template
       return {mjz_String_pointer_for_internal_realloc_id{.ptr = this}};
     return {};
   }
+  using sheared_int_t =
+      mjz::mjz_simple_unsafe_init_obj_wrpr_t<std::atomic_uint_fast64_t, 0, 0>;
+  using sheared_copy_int_t = uint64_t;
+  static constexpr const sheared_copy_int_t nops = (-1) >> 1;
+  inline static constexpr size_t capacity_to_real_size(size_t cap) {
+    return cap + nullen + sizeof(sheared_int_t);
+  }
+  inline static constexpr size_t real_size_to_capacity(size_t real_size) {
+    return real_size - capacity_to_real_size(0);
+  }
+  inline static constexpr char *mjz_str_to_real_ptr(char *my_mjz_c_str) {
+    if (!my_mjz_c_str) return nullptr;
+    return my_mjz_c_str - sizeof(sheared_int_t);
+  }
+  inline static constexpr char *real_ptr_to_mjz_str(char *real_ptr) {
+    if (!real_ptr) return nullptr;
+    return real_ptr + sizeof(sheared_int_t);
+  }
+  inline static sheared_int_t *get_sheared_int_from_real(char *real_ptr) {
+    return (sheared_int_t *)real_ptr;
+  }
+  inline static sheared_int_t *get_sheared_int_from_str(char *my_mjz_c_str) {
+    if (!my_mjz_c_str) return nullptr;
+    return get_sheared_int_from_real(mjz_str_to_real_ptr(my_mjz_c_str));
+  }
+  inline static char *init_real_ptr_int_then_get_real(char *real_ptr) {
+    if (!real_ptr) return nullptr;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    int_ptr->unsafe_create(1);
+    return real_ptr;
+  }
+  inline static char *deinit_real_ptr_int_then_get_real(char *real_ptr) {
+    if (!real_ptr) return nullptr;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    int_ptr->get() = nops;
+    int_ptr->unsafe_destroy();
+    return real_ptr;
+  }
+  inline static sheared_copy_int_t increment_real_ptr_int_and_then_get(
+      char *real_ptr) {
+    if (!real_ptr) return nops;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return ++int_ptr->get();
+  }
+  inline static sheared_copy_int_t decrement_real_ptr_int_and_then_get(
+      char *real_ptr) {
+    if (!real_ptr) return nops;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return --int_ptr->get();
+  }
+  inline static bool decrement_real_ptr_int_and_then_get_is_none(
+      char *real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return ((--int_ptr->get()) == 0);
+  }
+  inline static sheared_copy_int_t real_ptr_int_get(char *real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (sheared_copy_int_t)int_ptr->get();
+  }
+  inline static bool real_ptr_int_is_alone(char *real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (1 == int_ptr->get());
+  }
+  inline static bool real_ptr_int_is_none(char *real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (0 == int_ptr->get());
+  }
+
+  inline static bool real_ptr_int_has_friend(char *real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (1 < int_ptr->get());
+  }
+  inline char *get_real_ptr() { return mjz_str_to_real_ptr(data()); }
+
+ private:
+  char *allocate_and_init_if_succsess_then_get_mjz_str(
+      char *mjz_c_string, size_t pr_capacity /*0 -> 0*/,
+      size_t new_cap /*no zero*/) {
+    if (!new_cap) return nullptr;
+    /*reallocate "https://linux.die.net/man/3/realloc" but with args
+ (void*ptr,size_t pr_size,size_t new_size) [nonexpert]*/
+    return real_ptr_to_mjz_str(
+        init_real_ptr_int_then_get_real((char *)Allocator().mjz_realloc(
+            mjz_str_to_real_ptr(mjz_c_string),
+            pr_capacity == 0 ? 0 : capacity_to_real_size(pr_capacity),
+            capacity_to_real_size(new_cap))));
+  }
+  char *account_friend_allocate_and_init_if_succsess_then_get_mjz_str(
+      char *mjz_c_string, size_t pr_capacity /*0 -> 0*/,
+      size_t new_cap /*no zero*/, size_t pr_len = nops) {
+    if (!new_cap) return nullptr;
+    if (mjz_c_string && real_ptr_int_has_friend(mjz_c_string)) {
+      char *new_str =
+          allocate_and_init_if_succsess_then_get_mjz_str(nullptr, 0, new_cap);
+      if (!new_str) {
+        su_free_ptr_buffer(mjz_c_string, pr_capacity);
+        return nullptr;
+      }
+      if (pr_len == nops) pr_len = pr_capacity;
+      memmove(new_str, mjz_c_string, pr_len);
+      su_free_ptr_buffer(mjz_c_string, pr_capacity);
+      return new_str;
+    }
+    return allocate_and_init_if_succsess_then_get_mjz_str(mjz_c_string,
+                                                          pr_capacity, new_cap);
+  }
+
   succsess_t shrink_to_(size_t new_cap) {
     if (new_cap == get_cap()) return true;
     char *new_buffer{};
     char *old_buffer = get_buffer();
-    { /*reallocate "https://linux.die.net/man/3/realloc" but with args
-           (void*ptr,size_t pr_size,size_t new_size) [nonexpert]*/
-      new_buffer = (char *)Allocator().mjz_realloc(
-          old_buffer, get_cap() + nullen, new_cap + nullen);
-    }
+    new_buffer = account_friend_allocate_and_init_if_succsess_then_get_mjz_str(
+        old_buffer, capacity(), new_cap);
+
     if (!new_buffer) {
       free_buffer();
       return 0;
@@ -16119,27 +16229,78 @@ class mjz_String_template
     get_Base_t().set_len(new_cap);
     return 1;
   }
-
-  void free_buffer() {
-    if (is_dynamic()) {
+  void su_free_ptr_buffer(char *mjz_c_str, size_t cap) {
+    char *real_ptr = mjz_str_to_real_ptr(mjz_c_str);
+    if (real_ptr && decrement_real_ptr_int_and_then_get_is_none(real_ptr)) {
       /*
         you could add memset 0 but performance :(
       */
-      Allocator().mjz_free(get_buffer(), get_cap() + nullen);
+      Allocator().mjz_free(deinit_real_ptr_int_then_get_real(real_ptr),
+                           capacity_to_real_size(cap));
+    }
+  }
+  void free_buffer() {
+    if (is_dynamic()) {
+      su_free_ptr_buffer(data(), capacity());
     }
     get_Base_t().unsafe_reset();
   }
+  succsess_t make_sheared_str_helper(char *mjz_c_str, size_t len, size_t cap) {
+    if (data() == mjz_c_str) return true;
+    if (is_dynamic()) {
+      free_buffer();
+    }
+    sheared_copy_int_t val =
+        increment_real_ptr_int_and_then_get(mjz_str_to_real_ptr(mjz_c_str));
+    if (val == nops) return true;
+    get_Base_t().unsafe_set_cap(cap, mjz_c_str, 1);
+    get_Base_t().unsafe_set_len(len);
+    return true;
+  }
+  succsess_t owner_cast_me_helper() {
+    if (!is_dynamic()) return true;
+    if (real_ptr_int_is_alone(get_real_ptr())) return true;
+    size_t cap = capacity();
+    size_t len = length();
+    char *other_objects_string = data();
+    char *new_buffer =
+        allocate_and_init_if_succsess_then_get_mjz_str(nullptr, 0, cap);
+    if (!new_buffer) {
+      free_buffer();
+      return false;
+    }
+    memcpy(new_buffer, other_objects_string, len);
+    new_buffer[cap] = nullcr;
+    get_Base_t().unsafe_set_cap(cap, new_buffer, 1);
+    get_Base_t().set_len(len);
+    su_free_ptr_buffer(other_objects_string, cap);
+    return true;
+  }
+  inline succsess_t make_sheared_str(mjz_protected_String_base_template &string,
+                                     bool noexpt = deafult_is_noexcept) {
+    if (&string == this) return true;
+    return check_succsess(
+        make_sheared_str_helper(string.data(), string.length(),
+                                string.capacity()),
+        noexpt);
+  }
+  inline succsess_t owner_cast_me(bool noexpt = deafult_is_noexcept) {
+    return check_succsess(owner_cast_me_helper(), noexpt);
+  }
+  inline succsess_t owner_cast_me_if(bool condition, bool on_not_ret,
+                                     bool noexpt = deafult_is_noexcept) {
+    if (!condition) return on_not_ret;
+    return owner_cast_me(noexpt);
+  }
+
   succsess_t reallocate_bigger_buffer_(size_t new_cap) {
     if (get_Base_t().can_have_len(new_cap)) return 1;
     char *new_buffer{};
     char *old_buffer = get_buffer();
     const bool was_dynamic = is_dynamic();
-    { /*reallocate "https://linux.die.net/man/3/realloc" but with args
-           (void*ptr,size_t pr_size,size_t new_size) [nonexpert]*/
-      new_buffer = (char *)/*sizeof(char)==1*/ Allocator().mjz_realloc(
-          was_dynamic ? old_buffer : nullptr,
-          was_dynamic ? get_cap() + nullen : 0, new_cap + nullen);
-    }
+    new_buffer = account_friend_allocate_and_init_if_succsess_then_get_mjz_str(
+        was_dynamic ? old_buffer : nullptr, was_dynamic ? capacity() : 0,
+        new_cap);
     if (!new_buffer) {
       free_buffer();
       return 0;
@@ -16185,7 +16346,7 @@ class mjz_String_template
     return new_min_cap;
   }
 
- public:
+ protected:
   inline bool is_dynamic() const { return get_Base_t().is_dynamic(); }
   inline size_t can_add_until_not_dynamic() const {
     return get_Base_t().can_add_until_not_dynamic();
@@ -16196,6 +16357,8 @@ class mjz_String_template
   succsess_t resurve(size_t new_cap, bool can_shrink = false,
                      bool can_allocate_more = true,
                      bool noexpt = deafult_is_noexcept) {
+     if( owner_cast_me(noexpt))return false;
+
     if (new_cap == capacity()) return 1;
     if (!get_Base_t().can_have_len(new_cap)) {
       return check_succsess(
@@ -16207,6 +16370,7 @@ class mjz_String_template
     return check_succsess(shrink_to_(new_cap), noexpt);
   }
   succsess_t resize(size_t new_len, bool noexpt = deafult_is_noexcept) {
+    if (owner_cast_me(noexpt)) return false;
     if (new_len == length()) return 1;
     if (!resurve(new_len, 0, 1, noexpt)) return 0;
     get_Base_t().set_len(new_len);
@@ -16237,14 +16401,42 @@ class mjz_String_template
   inline cr_it_T rend() const { return begin(); }
   inline cr_it_T crbegin() const { return end(); }
   inline cr_it_T crend() const { return begin(); }
-  inline mjz_String_template() {}
-  explicit inline mjz_String_template(mjz_String_template &&other) noexcept {
+  inline mjz_protected_String_base_template() {}
+  explicit inline mjz_protected_String_base_template(
+      mjz_protected_String_base_template &&other) noexcept {
     if (this == &other) return;
     get_Base_t().move_to_me(std::move(other.get_Base_t()));
   }
+  explicit inline mjz_protected_String_base_template(
+      str_view str, bool noexpt = deafult_is_noexcept) {
+    bool len_change{};
+    if (data() == str.data()) len_change = 1;
+    if (!resize(str.length(), 1)) {
+      check_succsess(0, noexpt);
+      return;
+    }
+    if (len_change) return;
+    memmove(data(), str.data(), str.length());
+    *end() = nullcr;
+  }
+  template <size_t N>
+  inline mjz_protected_String_base_template(const char (&const a)[N])
+      : mjz_protected_String_base_template(str_view{a, N - 1},
+                                           deafult_is_noexcept) {}
 
-  explicit inline mjz_String_template(const mjz_String_template &other,
-                                      bool noexpt = deafult_is_noexcept) {
+  inline mjz_protected_String_base_template(
+      mjz_protected_String_base_template &other,
+      bool noexpt = deafult_is_noexcept) {
+    make_sheared_str(other, noexpt);
+  }
+  inline mjz_protected_String_base_template &operator=(
+      mjz_protected_String_base_template &other) {
+    make_sheared_str(other, deafult_is_noexcept);
+    return *this;
+  }
+  explicit inline mjz_protected_String_base_template(
+      const mjz_protected_String_base_template &other,
+      bool noexpt = deafult_is_noexcept) {
     if (this == &other) return;
     if (!resize(other.length(), 1)) {
       check_succsess(0, noexpt);
@@ -16254,18 +16446,23 @@ class mjz_String_template
     *end() = nullcr;
   }
   template <class T>
-  explicit inline mjz_String_template(const basic_mjz_Str_view<T> &other,
-                                      bool noexpt = deafult_is_noexcept)
+  explicit inline mjz_protected_String_base_template(
+      const basic_mjz_Str_view<T> &other, bool noexpt = deafult_is_noexcept)
     requires(!std::same_as<Base_t, T>)
   {
     copy_from(other, noexpt);
   }
-
-  inline mjz_String_template &operator=(str_view &&other) {
+  template <size_t N>
+  inline mjz_protected_String_base_template &operator=(
+      const char (&const a)[N]) {
+    return copy_from(str_view{a, N - 1});
+  }
+  inline mjz_protected_String_base_template &operator=(str_view &&other) {
     return copy_from(other);
   }
 
-  mjz_String_template &operator=(mjz_String_template &&other) {
+  mjz_protected_String_base_template &operator=(
+      mjz_protected_String_base_template &&other) {
     if (this == &other) return *this;
     free_buffer();
     get_Base_t().move_to_me(std::move(other.get_Base_t()));
@@ -16273,9 +16470,9 @@ class mjz_String_template
   }
 
   template <class T>
-  inline mjz_String_template &copy_from(const basic_mjz_Str_view<T> &other,
-                                        bool noexpt = deafult_is_noexcept,
-                                        bool *successful_out = nullptr) {
+  inline mjz_protected_String_base_template &copy_from(
+      const basic_mjz_Str_view<T> &other, bool noexpt = deafult_is_noexcept,
+      bool *successful_out = nullptr) {
     if (successful_out) *successful_out = true;
     if (!resize(other.length(), 1)) {
       if (successful_out) *successful_out = 0;
@@ -16291,9 +16488,9 @@ class mjz_String_template
   }
 
   template <class T>
-  inline mjz_String_template &append(const basic_mjz_Str_view<T> &other,
-                                     bool noexpt = deafult_is_noexcept,
-                                     bool *successful_out = nullptr) {
+  inline mjz_protected_String_base_template &append(
+      const basic_mjz_Str_view<T> &other, bool noexpt = deafult_is_noexcept,
+      bool *successful_out = nullptr) {
     if (successful_out) *successful_out = true;
     const size_t per_len = length();
     const size_t len_add = other.length();
@@ -16308,31 +16505,35 @@ class mjz_String_template
   }
 
   template <class T>
-  inline mjz_String_template &operator=(const basic_mjz_Str_view<T> &other) {
+  inline mjz_protected_String_base_template &operator=(
+      const basic_mjz_Str_view<T> &other) {
     return copy_from(other);
   }
-  inline mjz_String_template &operator=(const str_view &other) {
+  inline mjz_protected_String_base_template &operator=(const str_view &other) {
     return copy_from(other);
   }
-  inline mjz_String_template &operator=(const mjz_String_template &other) {
+  inline mjz_protected_String_base_template &operator=(
+      const mjz_protected_String_base_template &other) {
     return copy_from(other);
   }
 
   template <class T>
-  inline mjz_String_template &operator+=(const basic_mjz_Str_view<T> &other) {
+  inline mjz_protected_String_base_template &operator+=(
+      const basic_mjz_Str_view<T> &other) {
     return append(other);
   }
   template <class T>
-  inline mjz_String_template &operator+=(T &&val)
+  inline mjz_protected_String_base_template &operator+=(T &&val)
     requires requires() { this->concat(val); }
   {
     concat(val);
     return *this;
   }
-  inline mjz_String_template &operator+=(const str_view &other) {
+  inline mjz_protected_String_base_template &operator+=(const str_view &other) {
     return append(other);
   }
-  inline mjz_String_template &operator+=(const mjz_String_template &other) {
+  inline mjz_protected_String_base_template &operator+=(
+      const mjz_protected_String_base_template &other) {
     return append(other);
   }
   template <class T>
@@ -16348,7 +16549,7 @@ class mjz_String_template
   }
   template <size_t N>
   bool concat(const char (&const a)[N]) {
-    return concat(str_view{a, N});
+    return concat(str_view{a, N - 1});
   }
   bool concat(const uint8_t *cstr, size_t length) {
     return concat((const char *)cstr, length);
@@ -16441,7 +16642,7 @@ class mjz_String_template
   inline str_view view() const { return {C_str(), length()}; }
   inline operator str_view() const { return view(); }
   inline explicit operator bool() const { return !!*this; }
-  ~mjz_String_template() { free_buffer(); }
+  ~mjz_protected_String_base_template() { free_buffer(); }
   inline void operator~() { free_buffer(); }
   inline int64_t operator+() { return view().toLL(); }
   template <typename T>
@@ -16455,53 +16656,61 @@ class mjz_String_template
     return view().toLL();
   }
 
-  explicit mjz_String_template(unsigned char value, unsigned char base = 10) {
+  explicit mjz_protected_String_base_template(unsigned char value,
+                                              unsigned char base = 10) {
     char buf[1 + 8 * sizeof(unsigned char)];
     auto [str, len] = ALGO::utoa(value, buf, base);
     copy_from(str_view(str, len));
   }
 
-  explicit mjz_String_template(int value, unsigned char base = 10) {
+  explicit mjz_protected_String_base_template(int value,
+                                              unsigned char base = 10) {
     char buf[2 + 8 * sizeof(int)];
     auto [str, len] = ALGO::itoa(value, buf, base);
     copy_from(str_view(str, len));
   }
 
-  explicit mjz_String_template(unsigned int value, unsigned char base = 10) {
+  explicit mjz_protected_String_base_template(unsigned int value,
+                                              unsigned char base = 10) {
     char buf[1 + 8 * sizeof(unsigned int)];
     auto [str, len] = ALGO::utoa(value, buf, base);
     copy_from(str_view(str, len));
   }
 
-  explicit mjz_String_template(long value, unsigned char base = 10) {
+  explicit mjz_protected_String_base_template(long value,
+                                              unsigned char base = 10) {
     char buf[2 + 8 * sizeof(long)];
     auto [str, len] = ALGO::ltoa(value, buf, base);
     copy_from(str_view(str, len));
   }
 
-  explicit mjz_String_template(unsigned long value, unsigned char base = 10) {
+  explicit mjz_protected_String_base_template(unsigned long value,
+                                              unsigned char base = 10) {
     char buf[1 + 8 * sizeof(unsigned long)];
     auto [str, len] = ALGO::ultoa(value, buf, base);
     copy_from(str_view(str, len));
   }
 
   template <std::same_as<const void *> V>
-  explicit mjz_String_template(V ptr) {
+  explicit mjz_protected_String_base_template(V ptr) {
     concat(ptr);
   }
-  explicit mjz_String_template(int64_t value, unsigned char base = 10) {
+  explicit mjz_protected_String_base_template(int64_t value,
+                                              unsigned char base = 10) {
     char buf[2 + 8 * sizeof(int64_t)];
     auto [str, len] = ALGO::ltoa(value, buf, base);
     copy_from(str_view(str, len));
   }
 
-  explicit mjz_String_template(uint64_t value, unsigned char base = 10) {
+  explicit mjz_protected_String_base_template(uint64_t value,
+                                              unsigned char base = 10) {
     char buf[1 + 8 * sizeof(uint64_t)];
     auto [str, len] = ALGO::ultoa(value, buf, base);
     copy_from(str_view(str, len));
   }
 
-  explicit mjz_String_template(float value, unsigned char decimalPlaces = 2) {
+  explicit mjz_protected_String_base_template(float value,
+                                              unsigned char decimalPlaces = 2) {
     static size_t const FLOAT_BUF_SIZE =
         FLT_MAX_10_EXP + ALGO::FLT_MAX_DECIMAL_PLACES + 1 /* '-' */ +
         1 /* '.' */ + 1 /* '\0' */;
@@ -16513,7 +16722,8 @@ class mjz_String_template
     copy_from(str_view(str, len));
   }
 
-  explicit mjz_String_template(double value, unsigned char decimalPlaces = 2) {
+  explicit mjz_protected_String_base_template(double value,
+                                              unsigned char decimalPlaces = 2) {
     static size_t const DOUBLE_BUF_SIZE =
         DBL_MAX_10_EXP + ALGO::DBL_MAX_DECIMAL_PLACES + 1 /* '-' */ +
         1 /* '.' */ + 1 /* '\0' */;
@@ -16525,16 +16735,7 @@ class mjz_String_template
     copy_from(str_view(str, len));
   }
 
-  inline mjz_String_template(const str_view &other,
-                             bool noexpt = deafult_is_noexcept) {
-    copy_from(other, noexpt);
-  }
-  inline mjz_String_template(str_view &&other,
-                             bool noexpt = deafult_is_noexcept) {
-    copy_from(other, noexpt);
-  }
-
-  mjz_String_template &toLowerCase(void) {
+  mjz_protected_String_base_template &toLowerCase(void) {
     char *ptr = begin();
     char *const end_ptr = end();
     constexpr static const char after_a = 'A' - 1;
@@ -16545,7 +16746,7 @@ class mjz_String_template
         *ptr = *ptr + upper_to_lower_offset;
     }
   }
-  mjz_String_template &toUpperCase(void) {
+  mjz_protected_String_base_template &toUpperCase(void) {
     char *ptr = begin();
     char *const end_ptr = end();
     constexpr static const char after_a = 'a' - 1;
@@ -16591,7 +16792,7 @@ class mjz_String_template
     }
   }
 
- public:
+ protected:
   succsess_t replace(const str_view &find, const str_view &replace,
                      bool noexpt = deafult_is_noexcept) {
     if (!find.length()) return false;
@@ -16700,13 +16901,14 @@ class mjz_String_template
 
   friend void inline constexpr static_assert_if_mjz_string_hase_bad_size();
 };
-inline constexpr void static_assert_if_mjz_string_hase_bad_size() {
+
+/*inline constexpr void static_assert_if_mjz_string_hase_bad_size() {
   using str_mjz = mjz_String_template<mjz_String_template_args<void>>;
   static_assert(sizeof(typename str_mjz::Base_t) == sizeof(str_mjz));
-}
+}*/
 
 namespace have_mjz_ard_removed {
-using mjz_String = mjz_String_template<mjz_String_template_args<void>>;
+//using mjz_String = mjz_String_template<mjz_String_template_args<void>>;
 using mjz_String_view = basic_mjz_Str_view<deafult_mjz_Str_data_strorage>;
 }  // namespace have_mjz_ard_removed
 };  // namespace mjz_ard
@@ -17312,13 +17514,13 @@ class mjz_class_operation_reporter_t
   template <size_t N>
   void constructor(const char (&a)[N]) {
     print_c_str(" created with const str , len  : \"");
-    print_c_str_len_1(a, N);
+    print_c_str_len_1(a, N - 1);
     println_wi(index++, "\"   ");
   }
   template <size_t N>
   void constructor(char (&a)[N]) {
     print_c_str(" created with str , len  : \"");
-    print_c_str_len_1(a, N);
+    print_c_str_len_1(a, N - 1);
     println_wi(index++, "\"   ");
   }
 
@@ -17714,7 +17916,7 @@ struct named_operation_reporter_class_t
       : BASE(std::nullptr_t(), (decltype(a))a) {}
   template <size_t N>
   named_operation_reporter_class_t(char (&a)[N])
-      : BASE(std::nullptr_t(), {a, N}) {}
+      : BASE(std::nullptr_t(), {a, N - 1}) {}
   template <typename T>
   named_operation_reporter_class_t(T &&arg)
       : BASE(std::nullptr_t(), std::forward<T>(arg)) {}

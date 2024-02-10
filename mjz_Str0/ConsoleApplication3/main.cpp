@@ -11,7 +11,27 @@ namespace mjz_ard {}  // namespace mjz_ard
  *string will be written
  * and the unique and sheared and weak ptr will be next
  */
+
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
+  /* mjz_String s = "hello---------------------------------------------";
+  println("s:", s);
+  s = "2---------------------------------------------";
+  ;
+  println("s:", s);
+  mjz_String o = "hello---------------------------------------------";
+  ;
+  println("o:", o);
+  o = "2---------------------------------------------";
+  ;
+  println("o:", o);
+  s = o;
+  mjz_String sp = s;
+  mjz_String op = o;
+  println("o:", o);
+  println("s:", s);
+  println("op:", o);
+  println("sp:", s);
+  */
   return 0;
 }
