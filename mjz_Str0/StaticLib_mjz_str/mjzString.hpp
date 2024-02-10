@@ -16348,7 +16348,7 @@ class mjz_String_template
   }
   template <size_t N>
   bool concat(const char (&const a)[N]) {
-    return concat(str_view{a, N});
+    return concat(str_view{a, N-1});
   }
   bool concat(const uint8_t *cstr, size_t length) {
     return concat((const char *)cstr, length);
@@ -17312,13 +17312,13 @@ class mjz_class_operation_reporter_t
   template <size_t N>
   void constructor(const char (&a)[N]) {
     print_c_str(" created with const str , len  : \"");
-    print_c_str_len_1(a, N);
+    print_c_str_len_1(a, N-1);
     println_wi(index++, "\"   ");
   }
   template <size_t N>
   void constructor(char (&a)[N]) {
     print_c_str(" created with str , len  : \"");
-    print_c_str_len_1(a, N);
+    print_c_str_len_1(a, N-1);
     println_wi(index++, "\"   ");
   }
 
@@ -17714,7 +17714,7 @@ struct named_operation_reporter_class_t
       : BASE(std::nullptr_t(), (decltype(a))a) {}
   template <size_t N>
   named_operation_reporter_class_t(char (&a)[N])
-      : BASE(std::nullptr_t(), {a, N}) {}
+      : BASE(std::nullptr_t(), {a, N-1}) {}
   template <typename T>
   named_operation_reporter_class_t(T &&arg)
       : BASE(std::nullptr_t(), std::forward<T>(arg)) {}
