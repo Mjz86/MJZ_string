@@ -16071,42 +16071,6 @@ struct default_string_allocator : default_string_allocator_base_t {
                                                         new_size);
   }
 };
-struct default_new_allocator : default_new_allocator_base_t {
-  inline default_new_allocator() noexcept {}
-  const void *this_ptr{};
-  static const constexpr bool log = mjz_do_debug;
-  inline default_new_allocator(
-      mjz_String_pointer_for_internal_realloc_id p) noexcept
-      : this_ptr(p.ptr) {}
-
-  template <class T>
-  inline void mjz_delete_single(T *ptr) noexcept {
-    if constexpr (log) {
-      std::cout << " delete {" << this_ptr << "} :";
-    }
-    if(!ptr)return;
-    std::destroy_at(ptr);
-    mjz_free(ptr, sizeof(T));
-  }
-  template<class T,typename...Ts>
-  inline _NODISCARD T *mjz_new_single(Ts&&...args) noexcept {
-    if constexpr (log) {
-      std::cout << " new {" << this_ptr << "} :";
-    }
-  T* ptr= (T*) mjz_realloc(nullptr,0,sizeof(T));
-  if(ptr)
-    return std::construct_at(ptr, std::forward<Ts>(args)...);
-  return nullptr;
-  }
-};
-template <typename V = void,
-          C_string_allocator mjz_reallocator = default_string_allocator,
-          bool do_throw_ = 1>
-struct mjz_String_template_args {
-  using mjz_reallocator_t = mjz_reallocator;
-  static constexpr const bool do_throw = do_throw_;
-  static constexpr const size_t minimal_mjz_string_data_min_size{0};
-};
 };  // namespace mjz_ard
 namespace mjz_ard {
 inline void randomSeed(unsigned long seed) {
