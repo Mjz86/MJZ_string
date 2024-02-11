@@ -209,7 +209,141 @@ Control byte:__[SF0][SF1][SF2]____[len][len][len][len][len];
   inline DB_t(DB_t&&) = default;
   inline DB_t(const DB_t&) = default;
 };
+/*
+requires mjz any to work as a mjz::function
+*/
+template <typename ret_t, typename ...arguments_t>
+struct mjz_function_data ;
+template <typename return_t, typename... arguments_t>
+struct mjz_function_data<return_t(arguments_t...)> {
+ private:
+  typedef bool succsess_t;
+  constexpr static const bool ret_is_ref = std::is_reference_v<return_t>;
+  constexpr static const bool ret_is_void = std::is_same_v<void,return_t>;
+  using ret_t =std::conditional_t<ret_is_ref||ret_is_void,std::remove_reference_t<return_t>*,return_t>;
+  template<typename T>
+ using to_ptr_t=std::remove_reference_t<T>* ;
+  template <typename T>
+ inline static  T&& arg_to_original(to_ptr_t<T> ptr) {
+    return std::forward<T>(*ptr);
+ }
+  
+  template <typename T>
+ inline static to_ptr_t<T> arg_to_ptr(T&& ref) {
+    return std::addressof((std::remove_reference_t<T>&)(ref));
+  }
+   template <typename T>
+  inline static to_ptr_t<T> arg_to_ptr(T& ref) {
+    return std::addressof((std::remove_reference_t<T>&)(ref));
+  }
+
+  template<class FN_t>
+  static succsess_t call_or_destroy(
+      ret_t* return_emplace_if_not_null_or_destroy_if_null, void* This_of_fn,
+      to_ptr_t<arguments_t>... args) {
+    FN_t* This = (FN_t*)This_of_fn;
+    if (!return_emplace_if_not_null_or_destroy_if_null) {
+      if constexpr (std::is_destructible_v<FN_t>) {
+        This->~FN_t();
+      }
+      return true;
+    }
+    if constexpr (ret_is_void) {
+      (*This)(arg_to_original<arguments_t>(args)...);
+      return true;
+    } else 
+      if constexpr (ret_is_ref) {
+        *return_emplace_if_not_null_or_destroy_if_null =
+            std::addressof((*This)(arg_to_original<arguments_t>(args)...));
+        return true;
+      } else {
+        return !!std::construct_at(
+            return_emplace_if_not_null_or_destroy_if_null,
+            (*This)(arg_to_original<arguments_t>(args)...));
+    }
+  }
+
+  using call_or_destroy_t= succsess_t(*)(ret_t*  ,   void*  , to_ptr_t<arguments_t>...  );
+
+  call_or_destroy_t my_function{};
+      void* my_object{};/* removed if any was added*/
+    /*mjzt::any   potential_object ;*/
+ public:
+  mjz_function_data( ) {
+
+  }
+  ~mjz_function_data(){
+      //  destruct(); /*any destructor*/
+  }
+  return_t operator()(arguments_t&&...args) { 
+      mjz::mjz_simple_unsafe_init_obj_wrpr_t<ret_t,true,false> ret;
+      bool succussed = call_with_emplace_return(
+          ret.get(), std::forward<arguments_t>(args)...);
+      if (!succussed) mjz::Throw("no function");
+      if constexpr (ret_is_void) return;
+      else if constexpr (ret_is_ref) {
+        return *ret.get();
+      } else {
+        return ret.get();
+      }
+      
+ }
+  succsess_t call_with_emplace_return(ret_t& return_ref,
+                                      arguments_t&&... args) {
+if (!my_function) return false;
+ret_t* return_ptr= std::addressof(return_ref);
+return my_function(return_ptr, my_object, arg_to_ptr<arguments_t>(args)...);
+  }
+  succsess_t call_with(
+                                      arguments_t&&... args)requires(ret_is_void) {
+if (!my_function) return false;
+ret_t return_ptr{};
+return my_function(&return_ptr, my_object, arg_to_ptr<arguments_t>(args)...);
+  }
+  succsess_t destruct( ) {
+if (!my_function) return false;
+        my_function(nullptr, my_object, std::forward <to_ptr_t< arguments_t >>(nullptr)...);
+my_function = nullptr;
+        /*clear any instead*/
+        my_object = nullptr;
+  }
+  /*will be hidden and set to mjz any's object */
+  template<class FN_t>
+  void set(FN_t& my_func)
+    requires requires(arguments_t&&... args) { 
+     {
+                 my_func(std::forward<arguments_t>(args)...)
+                 } -> std::same_as<return_t>;
+  }
+  {
+        my_object = std::addressof(my_func);
+        my_function = &call_or_destroy<FN_t>;
+  }
+
+};
+
+
+
+
+
+
+
+
+
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
+  
+  {
+        auto f = [o = operation_reporter{}, argv,
+                  argc](operation_reporter&& s) mutable -> operation_reporter& {
+          println(s, argv[0], argc);
+          return o;
+        };
+        mjz_function_data<operation_reporter&(operation_reporter s)> fn;
+        fn.set(f);
+        fn("view")++;
+  }
+  std::function<void(void)> f;
+
   return 0;
 }
