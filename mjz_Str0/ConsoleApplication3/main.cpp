@@ -11,7 +11,7 @@ namespace mjz_ard {}  // namespace mjz_ard
  *string will be written
  * and the unique and sheared and weak ptr will be next
  */
- 
+
 struct DB_t {
  private:
   constexpr static const bool
@@ -25,7 +25,7 @@ struct DB_t {
       S_flag1_can_throw_if_error_by_default,
       S_flag2_can_allocate_more_that_needed_by_default};
   constexpr static const uint8_t static_flag_mask[3]{(1 << 7), (1 << 6),
-                                                     (1 << 5)}; 
+                                                     (1 << 5)};
 #define MJZ_static_flag_mask_bit_default_I_(I) \
   (MJZ_logic_bit_to_8_bits(static_flag_default[I]) & static_flag_mask[I])
   constexpr static const uint8_t static_flag_mask_bit_default[3]{
@@ -212,138 +212,135 @@ Control byte:__[SF0][SF1][SF2]____[len][len][len][len][len];
 /*
 requires mjz any to work as a mjz::function
 */
-template <typename ret_t, typename ...arguments_t>
-struct mjz_function_data ;
-template <typename return_t, typename... arguments_t>
-struct mjz_function_data<return_t(arguments_t...)> {
+template <typename ret_t, class Alocator = mjz::default_new_allocator,
+          typename... arguments_t>
+struct mjz_function_data;
+template <typename return_t, class Alocator, typename... arguments_t>
+struct mjz_function_data<return_t(arguments_t...), Alocator> {
  private:
+  Alocator get_allocator() const {
+    if constexpr (std::is_constructible_v<
+                      Alocator,
+                      mjz::mjz_object_pointer_for_internal_realloc_id>)
+      return Alocator(
+          mjz::mjz_object_pointer_for_internal_realloc_id{.ptr = this});
+    else
+      return Alocator{};
+  }
   typedef bool succsess_t;
-  constexpr static const bool ret_is_ref = std::is_reference_v<return_t>;
-  constexpr static const bool ret_is_void = std::is_same_v<void,return_t>;
-  using ret_t =std::conditional_t<ret_is_ref||ret_is_void,std::remove_reference_t<return_t>*,return_t>;
-  template<typename T>
- using to_ptr_t=std::remove_reference_t<T>* ;
-  template <typename T>
- inline static  T&& arg_to_original(to_ptr_t<T> ptr) {
-    return std::forward<T>(*ptr);
- }
-  
-  template <typename T>
- inline static to_ptr_t<T> arg_to_ptr(T&& ref) {
-    return std::addressof((std::remove_reference_t<T>&)(ref));
-  }
-   template <typename T>
-  inline static to_ptr_t<T> arg_to_ptr(T& ref) {
-    return std::addressof((std::remove_reference_t<T>&)(ref));
-  }
 
-  template<class FN_t>
-  static succsess_t call_or_destroy(
-      ret_t* return_emplace_if_not_null_or_destroy_if_null, void* This_of_fn,
-      to_ptr_t<arguments_t>... args) {
-    FN_t* This = (FN_t*)This_of_fn;
-    if (!return_emplace_if_not_null_or_destroy_if_null) {
-      if constexpr (std::is_destructible_v<FN_t>) {
-        This->~FN_t();
-      }
-      return true;
-    }
-    if constexpr (ret_is_void) {
-      (*This)(arg_to_original<arguments_t>(args)...);
-      return true;
-    } else 
-      if constexpr (ret_is_ref) {
-        *return_emplace_if_not_null_or_destroy_if_null =
-            std::addressof((*This)(arg_to_original<arguments_t>(args)...));
-        return true;
-      } else {
-        return !!std::construct_at(
-            return_emplace_if_not_null_or_destroy_if_null,
-            (*This)(arg_to_original<arguments_t>(args)...));
+  template <class FN_t>
+  static return_t call(void* This_of_fn, arguments_t&&... args) {
+    return (*((FN_t*)This_of_fn))(std::forward<arguments_t>(args)...);
+  }
+  template <class FN_t>
+ static inline void destroy_val(mjz_function_data*This,void* This_of_fn) {
+    This->get_allocator().mjz_delete_single((FN_t*)This_of_fn);
+  }
+  template <class FN_t>
+  static inline void copy_val(mjz_function_data* This, void* This_of_fn) {
+    This->set(*((FN_t*)This_of_fn));
+  }
+  enum what_t{
+  destroy,
+  copy_construct,
+  };
+  template <class FN_t>
+  static inline void controler_val(what_t what, mjz_function_data* This,
+                                   void* This_of_fn) {
+    switch (what) { case what_t::copy_construct:
+        return copy_val < FN_t>(This, This_of_fn);
+        break;
+      case what_t::destroy:
+        return destroy_val < FN_t>(This, This_of_fn);
+        break;
+      default:
+        break;
     }
   }
 
-  using call_or_destroy_t= succsess_t(*)(ret_t*  ,   void*  , to_ptr_t<arguments_t>...  );
 
-  call_or_destroy_t my_function{};
-      void* my_object{};/* removed if any was added*/
-    /*mjzt::any   potential_object ;*/
+  using call_t = return_t (*)(void*, arguments_t&&...);
+  using controler_t = void (*)(what_t what, mjz_function_data* This,
+                               void* This_of_fn);
+
+  controler_t function_controler{};
+  call_t function_caller{};
+  void* my_object{}; /* removed if any was added*/
+                     /*mjzt::any   potential_object ;*/
  public:
-  mjz_function_data( ) {
+ inline mjz_function_data() {}
 
-  }
-  ~mjz_function_data(){
-      //  destruct(); /*any destructor*/
-  }
-  return_t operator()(arguments_t&&...args) { 
-      mjz::mjz_simple_unsafe_init_obj_wrpr_t<ret_t,true,false> ret;
-      bool succussed = call_with_emplace_return(
-          ret.get(), std::forward<arguments_t>(args)...);
-      if (!succussed) mjz::Throw("no function");
-      if constexpr (ret_is_void) return;
-      else if constexpr (ret_is_ref) {
-        return *ret.get();
-      } else {
-        return ret.get();
-      }
-      
+  inline mjz_function_data(mjz_function_data&& other)
+     : function_caller(std::exchange(other.function_caller, nullptr)),
+       function_controler(std::exchange(other.function_controler, nullptr)),
+       my_object(std::exchange(other.my_object, nullptr)) {
+  
+  } 
+    inline mjz_function_data& operator=(mjz_function_data&& other){
+    destruct();
+    function_caller =(std::exchange(other.function_caller, nullptr));
+    function_controler=(std::exchange(other.function_controler, nullptr));
+    my_object=(std::exchange(other.my_object, nullptr));
  }
-  succsess_t call_with_emplace_return(ret_t& return_ref,
-                                      arguments_t&&... args) {
-if (!my_function) return false;
-ret_t* return_ptr= std::addressof(return_ref);
-return my_function(return_ptr, my_object, arg_to_ptr<arguments_t>(args)...);
+
+ inline ~mjz_function_data() { 
+      destruct(); /*any destructor*/
   }
-  succsess_t call_with(
-                                      arguments_t&&... args)requires(ret_is_void) {
-if (!my_function) return false;
-ret_t return_ptr{};
-return my_function(&return_ptr, my_object, arg_to_ptr<arguments_t>(args)...);
+  inline return_t operator()(arguments_t&&... args) {
+    if (!function_caller) mjz::Throw("no function");
+    return function_caller(my_object, std::forward<arguments_t>(args)...);
   }
-  succsess_t destruct( ) {
-if (!my_function) return false;
-        my_function(nullptr, my_object, std::forward <to_ptr_t< arguments_t >>(nullptr)...);
-my_function = nullptr;
-        /*clear any instead*/
-        my_object = nullptr;
+
+  inline void destruct() {
+    function_caller = nullptr;
+    if (function_controler && my_object) function_controler(what_t::destroy,this, my_object);
+    function_controler = nullptr;
+    my_object = nullptr;
   }
   /*will be hidden and set to mjz any's object */
-  template<class FN_t>
-  void set(FN_t& my_func)
-    requires requires(arguments_t&&... args) { 
-     {
+  template <class FN_t>
+  succsess_t set(FN_t&& my_func)
+    requires requires(arguments_t&&... args) {
+               {
                  my_func(std::forward<arguments_t>(args)...)
                  } -> std::same_as<return_t>;
-  }
+             }
   {
-        my_object = std::addressof(my_func);
-        my_function = &call_or_destroy<FN_t>;
+   using fn_t = std::remove_reference_t<FN_t>;
+    function_caller = &call<fn_t>;
+    if constexpr (std::is_convertible_v<fn_t,
+                                        return_t (*)(arguments_t && ...)>) {
+      my_object = (return_t(*)(arguments_t && ...)) my_func;
+      function_controler = nullptr;
+    } else if constexpr (std::is_convertible_v<fn_t,
+                                               return_t (*)(arguments_t...)>) {
+      my_object = (return_t(*)(arguments_t...))my_func;
+      function_controler = nullptr;
+    } else if constexpr (std::is_destructible_v<
+                             fn_t> ||
+                         std::is_class_v<fn_t> ||
+                         std::is_union_v<fn_t>) {
+      my_object =
+          get_allocator().mjz_new_single<fn_t>(std::forward<FN_t>(my_func));
+      if (!my_object) return false;
+      function_controler = &controler_val<fn_t>;
+    } else {
+      static_assert(" wrong type ");
+    }
+    return true;
   }
-
 };
 
-
-
-
-
-
-
-
-
+#include <any>
 int my_main::main(int argc, const char* const* const argv) {
   USE_MJZ_NS();
-  
-  {
-        auto f = [o = operation_reporter{}, argv,
-                  argc](operation_reporter&& s) mutable -> operation_reporter& {
-          println(s, argv[0], argc);
-          return o;
-        };
-        mjz_function_data<operation_reporter&(operation_reporter s)> fn;
-        fn.set(f);
-        fn("view")++;
-  }
-  std::function<void(void)> f;
-
+  std::any s;
+  // no delete why ?
+  mjz_function_data<operation_reporter()> fn;
+  auto f = [o=operation_reporter{}]() mutable -> operation_reporter { return {}; };
+  fn.set(f);
+  fn()++;
+  // sf()++;
   return 0;
 }

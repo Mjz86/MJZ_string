@@ -16032,6 +16032,8 @@ namespace mjz_ard {
 struct mjz_String_pointer_for_internal_realloc_id {
   const void *const ptr{};
 };
+using mjz_object_pointer_for_internal_realloc_id =
+    mjz_String_pointer_for_internal_realloc_id ;
 template <class T>
 concept C_string_allocator =
     requires(T obj, size_t perivious_size, void *data, size_t new_size) {
@@ -16043,6 +16045,9 @@ concept C_string_allocator =
         } noexcept -> std::convertible_to<void *>;
     };
 using default_string_allocator_base_t =
+    mjz_allocate_free_warpper<mjz_realloc_free_package_example>;
+
+using default_new_allocator_base_t =
     mjz_allocate_free_warpper<mjz_realloc_free_package_example>;
 struct default_string_allocator : default_string_allocator_base_t {
   inline default_string_allocator() noexcept {}
@@ -16057,13 +16062,41 @@ struct default_string_allocator : default_string_allocator_base_t {
     }
     default_string_allocator_base_t::mjz_free(ptr, n);
   }
-  inline void *mjz_realloc(void *ptr, size_t preveious_size,
+  inline _NODISCARD void *mjz_realloc(void *ptr, size_t preveious_size,
                            size_t new_size) noexcept {
     if constexpr (log) {
       std::cout << "mjz string {" << this_ptr << "} :";
     }
     return default_string_allocator_base_t::mjz_realloc(ptr, preveious_size,
                                                         new_size);
+  }
+};
+struct default_new_allocator : default_new_allocator_base_t {
+  inline default_new_allocator() noexcept {}
+  const void *this_ptr{};
+  static const constexpr bool log = mjz_do_debug;
+  inline default_new_allocator(
+      mjz_String_pointer_for_internal_realloc_id p) noexcept
+      : this_ptr(p.ptr) {}
+
+  template <class T>
+  inline void mjz_delete_single(T *ptr) noexcept {
+    if constexpr (log) {
+      std::cout << " delete {" << this_ptr << "} :";
+    }
+    if(!ptr)return;
+    std::destroy_at(ptr);
+    mjz_free(ptr, sizeof(T));
+  }
+  template<class T,typename...Ts>
+  inline _NODISCARD T *mjz_new_single(Ts&&...args) noexcept {
+    if constexpr (log) {
+      std::cout << " new {" << this_ptr << "} :";
+    }
+  T* ptr= (T*) mjz_realloc(nullptr,0,sizeof(T));
+  if(ptr)
+    return std::construct_at(ptr, std::forward<Ts>(args)...);
+  return nullptr;
   }
 };
 template <typename V = void,
