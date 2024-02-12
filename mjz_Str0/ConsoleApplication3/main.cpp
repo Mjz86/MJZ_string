@@ -318,9 +318,105 @@ constexpr inline mjz_str_DB_t& operator=(mjz_str_DB_t&&) noexcept = default;
 constexpr inline mjz_str_DB_t(mjz_str_DB_t&&) noexcept = default;
 constexpr inline mjz_str_DB_t(const mjz_str_DB_t&) noexcept = default;
 };
-template <typename Char_t,class mjz_reallocator_t = mjz::default_string_allocator>
-class mjz_String_memory_class : public mjz_str_DB_t<Char_t> {
+template <typename Char_t_,class mjz_reallocator_t = mjz::default_string_allocator>
+class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
+mjz_reallocator_t Allocator() const {
+    return mjz_reallocator_t(
+        mjz::mjz_String_pointer_for_internal_realloc_id{.ptr = this});
+};
+using sheared_int_t =
+    mjz::mjz_simple_unsafe_init_obj_wrpr_t<std::atomic_uint_fast64_t, 0, 0>;
+using sheared_copy_int_t = uint64_t;
+static constexpr const sheared_copy_int_t nops = (-1) >> 1;
+inline static constexpr size_t capacity_to_real_size(size_t cap) {
+    return cap + nullen + sizeof(sheared_int_t);
+}
+inline static constexpr size_t real_size_to_capacity(size_t real_size) {
+    return real_size - capacity_to_real_size(0);
+}
+inline static   void *mjz_str_to_real_ptr(Char_t_ *my_mjz_c_str) {
+    if (!my_mjz_c_str) return nullptr;
+    return (char*)(my_mjz_c_str) - sizeof(sheared_int_t);
+}
+inline static Char_t_ *real_ptr_to_mjz_str(void *real_ptr) {
+    if (!real_ptr) return nullptr;
+    return (Char_t_*)((char*)real_ptr + sizeof(sheared_int_t));
+}
+inline static sheared_int_t *get_sheared_int_from_real(void*real_ptr) {
+    return (sheared_int_t *)real_ptr;
+}
+inline static sheared_int_t *get_sheared_int_from_str(Char_t_ *my_mjz_c_str) {
+    if (!my_mjz_c_str) return nullptr;
+    return get_sheared_int_from_real(mjz_str_to_real_ptr(my_mjz_c_str));
+}
+inline static void*init_real_ptr_int_then_get_real(void*real_ptr) {
+    if (!real_ptr) return nullptr;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    int_ptr->unsafe_create(1);
+    return real_ptr;
+}
+inline static void*deinit_real_ptr_int_then_get_real(void*real_ptr) {
+    if (!real_ptr) return nullptr;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    int_ptr->get() = nops;
+    int_ptr->unsafe_destroy();
+    return real_ptr;
+}
+inline static sheared_copy_int_t increment_real_ptr_int_and_then_get(
+    void*real_ptr) {
+    if (!real_ptr) return nops;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return ++int_ptr->get();
+}
+inline static sheared_copy_int_t decrement_real_ptr_int_and_then_get(
+    void*real_ptr) {
+    if (!real_ptr) return nops;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return --int_ptr->get();
+}
+inline static bool decrement_real_ptr_int_and_then_get_is_none(void*real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return ((--int_ptr->get()) == 0);
+}
+inline static sheared_copy_int_t real_ptr_int_get(void*real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (sheared_copy_int_t)int_ptr->get();
+}
+inline static bool real_ptr_int_is_alone(void*real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (1 == int_ptr->get());
+}
+inline static bool real_ptr_int_is_none(void*real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (0 == int_ptr->get());
+}
 
+inline static bool real_ptr_int_has_friend(void*real_ptr) {
+    if (!real_ptr) return 0;
+    sheared_int_t *int_ptr = get_sheared_int_from_real(real_ptr);
+    return (1 < int_ptr->get());
+}
+
+inline static bool real_ptr_is_sheared(bool DF0_can_be_sheared,bool DF1_has_atomic, void* real_ptr) {
+    if (!DF0_can_be_sheared || !DF1_has_atomic) return false;
+    return real_ptr_int_has_friend(real_ptr);
+}
+inline static bool real_ptr_is_owned(bool DF0_can_be_sheared,
+                                       bool DF1_has_atomic, void* real_ptr) {
+    return !real_ptr_is_sheared(DF0_can_be_sheared, DF1_has_atomic, real_ptr);
+}
+
+public:
+    mjz_String_memory_class( ) {
+
+}
+    ~mjz_String_memory_class( ) {
+
+}
 };
 
 
