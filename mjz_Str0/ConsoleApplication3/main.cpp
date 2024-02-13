@@ -12,7 +12,7 @@ namespace mjz_ard {}  // namespace mjz_ard
  * and the unique and sheared and weak ptr will be next
                        */
 template <typename Char_t> class mjz_str_DB_t {
- private:
+ public:
   constexpr static const bool
       S_flag0_will_allocate_a_sharable_string_by_default = true;
 
@@ -112,8 +112,7 @@ Control byte:__[SF0][SF1][SF2]____[len][len][len][len][len];
       (uint8_t)~dynamic_flag_mask[6], (uint8_t)~dynamic_flag_mask[7]};
 
   DATA_t m_data_strorage;
-
- protected:
+   
   enum static_flags : uint8_t {
     S_flag0_will_allocate_a_sharable_string = 0,
     S_flag1_can_throw_if_error = 1,
@@ -213,6 +212,15 @@ constexpr inline size_t get_dynamic_length() const noexcept {
     return m_data_strorage.m_dy_length;
   }
 
+constexpr inline bool get_DF0( ) const {
+    return get_dynamic_flag<
+        dynamic_flags::D_flag0_can_have_sheared_string_data>();
+  }
+constexpr inline bool get_DF1() const {
+    return get_dynamic_flag<
+        dynamic_flags::D_flag1_can_sheare_string_data>();
+}
+
  
   inline Char_t* get_dynamic_string() noexcept {
     return  (m_data_strorage.m_dy_data);
@@ -275,6 +283,8 @@ constexpr inline void set_all_to_dynamic(Char_t* mjz_data_string, size_t length,
     set_dynamic_capacity(capacity);
     set_dynamic_length(length);
     set_dynamic_string(mjz_data_string);
+    mjz_data_string[length] = nulchr;
+    mjz_data_string[capacity] = nulchr;
 } 
 /*msvc c++23*/
 #define mjz_assume __assume
@@ -320,16 +330,27 @@ constexpr inline mjz_str_DB_t(const mjz_str_DB_t&) noexcept = default;
 };
 template <typename Char_t_,class mjz_reallocator_t = mjz::default_string_allocator>
 class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
+public:
+  inline constexpr mjz_str_DB_t<Char_t_>& B() { return *this; }
+const inline constexpr mjz_str_DB_t<Char_t_>& B()const { return *this; }
+using B_t= mjz_str_DB_t<Char_t_>;
 mjz_reallocator_t Allocator() const {
     return mjz_reallocator_t(
         mjz::mjz_String_pointer_for_internal_realloc_id{.ptr = this});
 };
+inline void A_mjz_free(void* pr_real_ptr, size_t n) noexcept {
+    Allocator().mjz_free(pr_real_ptr, n);
+}
+inline _NODISCARD void* A_mjz_realloc(void* pr_real_ptr, size_t preveious_size,
+                                    size_t new_size) noexcept {
+return    Allocator().mjz_realloc(pr_real_ptr,   preveious_size,   new_size);
+}
 using sheared_int_t =
     mjz::mjz_simple_unsafe_init_obj_wrpr_t<std::atomic_uint_fast64_t, 0, 0>;
 using sheared_copy_int_t = uint64_t;
 static constexpr const sheared_copy_int_t nops = (-1) >> 1;
 inline static constexpr size_t capacity_to_real_size(size_t cap) {
-    return cap + nullen + sizeof(sheared_int_t);
+    return cap + B_t::nullen + sizeof(sheared_int_t);
 }
 inline static constexpr size_t real_size_to_capacity(size_t real_size) {
     return real_size - capacity_to_real_size(0);
@@ -401,29 +422,227 @@ inline static bool real_ptr_int_has_friend(void*real_ptr) {
     return (1 < int_ptr->get());
 }
 
-inline static bool real_ptr_is_sheared(bool DF0_can_be_sheared,bool DF1_has_atomic, void* real_ptr) {
-    if (!DF0_can_be_sheared || !DF1_has_atomic) return false;
+inline static bool real_ptr_is_sheared(bool is_dynamic,bool DF0_can_be_sheared,
+                                       bool DF1_has_atomic, void* real_ptr) {
+    if (!is_dynamic || !DF0_can_be_sheared || !DF1_has_atomic) return false;
     return real_ptr_int_has_friend(real_ptr);
 }
-inline static bool real_ptr_is_owned(bool DF0_can_be_sheared,
+inline static bool real_ptr_is_owned(bool is_dynamic,bool DF0_can_be_sheared,
                                        bool DF1_has_atomic, void* real_ptr) {
-    return !real_ptr_is_sheared(DF0_can_be_sheared, DF1_has_atomic, real_ptr);
+    return !real_ptr_is_sheared(is_dynamic,DF0_can_be_sheared, DF1_has_atomic,
+                                real_ptr);
+}
+enum states{
+    Static,
+    dy_owend,
+  dy_sheared,
+};
+inline static states real_ptr_is_state(bool is_dynamic, bool DF0_can_be_sheared,
+                                     bool DF1_has_atomic, void* real_ptr) {
+    [[mjz_assume((DF0_can_be_sheared && !DF1_has_atomic) == false)]];
+    if (!is_dynamic) {
+      return states::Static;
+    }
+    if (!DF0_can_be_sheared || !DF1_has_atomic) return states::dy_owend;
+    if (real_ptr_int_has_friend(real_ptr)) return states::dy_sheared;
+        return states::dy_owend;
+}
+inline   states get_state() {
+        if (!B().is_dynamic()) {
+        return states::Static;
+        }
+        void* real_ptr = mjz_str_to_real_ptr(B().get_dynamic_string());
+        
+        states state =
+            real_ptr_is_state(false, B().get_DF0(), B().get_DF1(),
+            real_ptr);
+        if (state == states::dy_owend) {
+        set_dynamic_flag<
+            B().dynamic_flags::D_flag0_can_have_sheared_string_data>(false);
+        return states::dy_owend;
+        }
+        return states::dy_sheared;
 }
 
-public:
-    mjz_String_memory_class( ) {
+inline   states get_state() const {
+        return mjz::remove_const(this)->get_state();
+}
+inline static constexpr size_t to_optimal_cap(size_t new_cap, size_t pr_cap,
+                                              size_t pr_len) {
+        pr_cap = min(pr_cap, 32768 + new_cap);
+        pr_len=min(pr_cap, pr_len);
+        if (new_cap < pr_cap) return pr_cap;
+        return max(new_cap,max(64, max(pr_cap + pr_cap - pr_len, pr_cap + pr_len)));
+}
+using succsess_t=B_t::succsess_t;
+struct String_temp_data_t {
+      inline  String_temp_data_t(mjz_String_memory_class* ptr,
+                           bool free_data_ = false)
+            : This(ptr) , free_data(free_data_) {
+        was_static = !This->is_dynamic();
+        m_static_data = This->B().get_static_string();
+        m_static_len = This->B().get_static_length();
+        m_length = This->B().m_length();
+        m_capacity = This->B().m_capacity();
+        m_data = This->B().m_string();
+
+        DF0 = This->B().get_DF0();
+        DF1 = This->B().get_DF1();
+        }
+      inline  ~String_temp_data_t() {
+        if (!was_static && free_data) free_memory_at_old(This, this);
+        }
+        mjz_String_memory_class* This{};
+        Char_t_* m_data{};
+        Char_t_* m_static_data{};
+        constexpr static const size_t m_static_cap = B_t::get_static_capacity();
+        size_t m_static_len{};
+        size_t m_length{};
+        size_t m_capacity{};
+        bool flags[4]{};
+        bool DF0{};
+        bool DF1{};
+        bool was_static{};
+        bool free_data{};
+};
+inline
+static void free_memory_at_old(mjz_String_memory_class* This,
+                           String_temp_data_t*old_This) {
+        [[mjz_assume(This && old_This)]];
+        if (old_This->was_static) return;
+        bool can_have_sheared_string_data = old_This->DF0;
+        bool has_live_atomic = old_This->DF1;
+        void* real_ptr = mjz_str_to_real_ptr(old_This->m_data);
+       bool is_shered= real_ptr_is_sheared(false, can_have_sheared_string_data,
+                            has_live_atomic,
+                            real_ptr);
+        auto delete_str = [&]() mutable -> void {
+        real_ptr= deinit_real_ptr_int_then_get_real(real_ptr);
+        This->A_mjz_free(real_ptr, capacity_to_real_size(old_This->m_capacity));
+        return;
+        };
+        if (!is_shered) return delete_str();
+        if (decrement_real_ptr_int_and_then_get_is_none(real_ptr)) {
+        return delete_str();
+        }
+        return;
 
 }
-    ~mjz_String_memory_class( ) {
-
+inline succsess_t realloc_memory(size_t new_cap, bool force_shrink,
+                                 bool can_throw_) {
+        if (B().can_be_static(new_cap)) {
+        if (!B().is_dynamic()) return true;
+        String_temp_data_t past(this, true);
+        size_t new_len = min(new_cap, past.m_length);
+        memmove(past.m_static_data, past.m_data, new_len);
+        B().set_all_to_static(new_len);
+        return true;
+        }
+        bool SF0_can_share =B().get_static_flag<B_t::S_flag0_will_allocate_a_sharable_string>();
+        bool can_throw = can_throw_ && B().get_static_flag<B_t::S_flag1_can_throw_if_error>();
+        bool alloc_more =
+            force_shrink?0:B()
+                .get_static_flag<B_t::S_flag2_can_allocate_more_that_needed>();
+        size_t pr_cap_ = m_capacity();
+        if (alloc_more) new_cap = to_optimal_cap(new_cap, pr_cap_, m_length());
+        if (new_cap == pr_cap_) {
+        return true;
+        }
+        String_temp_data_t past(this);
+        if(past.was_static) {
+     void*real_ptr=   A_mjz_realloc(nullptr, 0, capacity_to_real_size(new_cap));
+        if (!real_ptr) {
+        if (can_throw) mjz::Throw("bad alloc");
+        return false;
+        }
+        size_t new_len = min(new_cap, past.m_length); 
+        if (SF0_can_share) {
+        real_ptr = init_real_ptr_int_then_get_real(real_ptr); 
+        }
+      Char_t_* mjz_str_data=  real_ptr_to_mjz_str(real_ptr);
+        B().set_all_to_dynamic(mjz_str_data, new_len, new_cap, false,
+                               SF0_can_share);
+      memmove(mjz_str_data, past.m_static_data, new_len);
+        mjz_str_data[new_len] = B().nulchr;
+            return true;
+        }
+        void* others_real_ptr = mjz_str_to_real_ptr(B().get_dynamic_string());   
+        if (real_ptr_is_sheared(false, B().get_DF0(), B().get_DF1(),
+                                others_real_ptr)) {
+            String_temp_data_t past_free_obj(this, true);
+                 void* real_ptr =A_mjz_realloc(nullptr, 0, capacity_to_real_size(new_cap));
+            if (!real_ptr) {
+        if (can_throw) mjz::Throw("bad alloc");
+        return false;
+            }
+            size_t new_len = min(new_cap, past.m_length);
+            if (SF0_can_share) {
+        real_ptr = init_real_ptr_int_then_get_real(real_ptr);
+            }
+            Char_t_* mjz_str_data = real_ptr_to_mjz_str(real_ptr);
+            B().set_all_to_dynamic(mjz_str_data, new_len, new_cap, false,
+                                   SF0_can_share);
+            memmove(mjz_str_data, past.m_data, new_len);
+            mjz_str_data[new_len] = B().nulchr;
+            return true;
+        }
+        if (past.DF1)
+            others_real_ptr=deinit_real_ptr_int_then_get_real(others_real_ptr);
+        void* real_ptr =
+            A_mjz_realloc(others_real_ptr, capacity_to_real_size(past.m_capacity), capacity_to_real_size(new_cap));
+        if (!real_ptr) {
+          B().set_dynamic_flag<B_t::D_flag1_has_atomic>(false);
+            String_temp_data_t past_free_obj(this,true);
+            if (can_throw) mjz::Throw("bad alloc");
+            return false;
+        }
+        if (SF0_can_share) {
+            real_ptr = init_real_ptr_int_then_get_real(real_ptr);
+        }
+        size_t new_len = min(new_cap, past.m_length);
+        Char_t_* mjz_str_data = real_ptr_to_mjz_str(real_ptr);
+        B().set_all_to_dynamic(mjz_str_data, new_len, new_cap, false,
+                               SF0_can_share);
+        mjz_str_data[new_len] = B().nulchr;
+        return true;
 }
+
+
+
+
+
+constexpr inline size_t m_length() const noexcept { return B().m_length(); }
+
+constexpr inline size_t m_capacity() const noexcept { return B().m_capacity(); }
+
+constexpr inline const Char_t_* m_string() const noexcept {
+        return B().m_string();
+}
+constexpr inline   Char_t_* m_string()   noexcept {
+        return B().m_string();
+}
+
+
+
+
+    mjz_String_memory_class() { B().set_all_to_static(0);
+    }
+ ~mjz_String_memory_class() { String_temp_data_t deleter(this, true); }
 };
 
 
 
 
 int my_main::main(int argc, const char* const* const argv) {
-  USE_MJZ_NS();
+ USE_MJZ_NS();
+ mjz_String_memory_class<char> string{};
+ auto p = [&]() {
+   println('{', string.m_length(), ',', string.m_capacity(), ',',
+         string.m_string(),'}');
+ };
+ for (int i{}; i < 3276800; i += 29) {
+        string.realloc_memory(i, 0, 0);
+ }
 
   return 0;
 }

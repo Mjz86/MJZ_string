@@ -16058,14 +16058,17 @@ struct default_string_allocator : default_string_allocator_base_t {
       : this_ptr(p.ptr) {}
   inline void mjz_free(void *ptr, size_t n) noexcept {
     if constexpr (log) {
-      std::cout << "mjz string {" << this_ptr << "} :";
+      std::cout << "mjz string  mjz_free("<< ptr<<','<<n<<"){" << this_ptr << "} :";
     }
     default_string_allocator_base_t::mjz_free(ptr, n);
   }
   inline _NODISCARD void *mjz_realloc(void *ptr, size_t preveious_size,
                            size_t new_size) noexcept {
     if constexpr (log) {
-      std::cout << "mjz string {" << this_ptr << "} :";
+      std::cout << "mjz string mjz_realloc(" << ptr << ','
+                << preveious_size << ','<<new_size <<"){"
+                << this_ptr
+                << "} :";
     }
     return default_string_allocator_base_t::mjz_realloc(ptr, preveious_size,
                                                         new_size);
