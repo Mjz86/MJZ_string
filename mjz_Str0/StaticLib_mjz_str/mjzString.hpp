@@ -41,7 +41,7 @@ written by mjz https://github.com/Mjz86
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include<mutex>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -15433,12 +15433,43 @@ constexpr inline bool operator!=(const mjz_reallocator_template_t<U1, T1> &,
   return U1() != U2();
 }
 class mjz_realloc_free_package_example {
+    private:
+    inline static void DELETER( void*ptr) {if(ptr) {delete[] (std::ptrdiff_t *)(ptr);}}
+    _NODISCARD inline static void* RENEWER(void *ptr_pr,size_t new_cap) { 
+        std::ptrdiff_t * new_ptr{};
+    size_t len = ((new_cap) / sizeof(std::ptrdiff_t)) + 1;
+        try {
+      new_ptr = new std::ptrdiff_t[len];
+        } catch(...) {
+      new_ptr = 0;
+        }
+        if (!ptr_pr) return new_ptr;
+        if(!new_ptr) {
+      DELETER(ptr_pr);
+      return nullptr;
+        } 
+      memcpy(new_ptr, ptr_pr, len);
+      DELETER(ptr_pr);
+      return new_ptr;
+    }
  public:
   inline static constexpr const bool log{mjz_do_debug};
-  inline static int64_t num{};
+  inline static constexpr const bool log_sp{0};
+  inline static uint_fast64_t num{};
+  inline static uint_fast64_t rlsp{};
+  inline static uint_fast64_t frsp{};
+  inline static uint_fast64_t numsp{};
+  inline static std::mutex msp;
   inline void free(void *ptr) {
-    if constexpr (log) std::cout << (void *)ptr << " is free " << --num << "\n";
-    ::free(ptr);
+    if constexpr (log_sp) {
+      std::lock_guard l(msp);
+      std::cout << (frsp++)<<','<<(--numsp) << "fr\n";
+    }
+    if constexpr (log)
+     {
+        std::cout << (void *)ptr << " is free " << (--num) << "\n";
+    }
+    DELETER(ptr);
   }
   inline void *realloc(void *ptr, size_t needed_len) {
     if constexpr (log) {
@@ -15446,10 +15477,20 @@ class mjz_realloc_free_package_example {
       if (for_editor_to_use_for_no_mem_sim) return nullptr;
     }
     bool is_null = !ptr;
+
     if constexpr (log) std::cout << ptr << "  is now  reallocated to ";
-    void *new_ptr = ::realloc(ptr, needed_len);
+    
+    void *new_ptr {};
+   
+  new_ptr=    RENEWER(ptr, needed_len);
+  
     if constexpr (log)
-      std::cout << new_ptr << "  " << (is_null ? num++ : num) << "\n";
+      std::cout << new_ptr << "  " << (is_null ? (num++) : ((uint64_t)num)) << "\n";
+    if constexpr (log_sp) {
+      std::lock_guard l(msp);
+      std::cout << (is_null ? (rlsp++) : ((uint64_t)frsp)) << ','
+                << (is_null ? (numsp++) : ((uint64_t)numsp)) << "rl\n";
+    }
     return new_ptr;
   }
 };
@@ -17298,7 +17339,18 @@ inline void println_it_FE(const T &obj) {
     break;
   }
 }
-template <typename... argT>
+template <class T>
+inline void println_be_FE(T &&it,T &&end) {
+  if (it == end) return;
+  for (;;) {
+    std::cout << (*it) << '\n';
+    if (++it < end) {
+      continue;
+    }
+    break;
+  }
+}
+  template <typename... argT>
 inline void println_FE(argT &&...args) {  // println_for_each
   auto list =
       std::initializer_list<std::function<void(void)>>{[&](void) -> void {
