@@ -640,9 +640,10 @@ int my_main::main(int argc, const char* const* const argv) {
    println('{', string.m_length(), ',', string.m_capacity(), ',',
          string.m_string(),'}');
  };
- for (int i{}; i < 3276800; i += 29) {
+ for (int i{}; i < 327680000; i += 29) {
         string.realloc_memory(i, 0, 0);
  }
+ p();
 
   return 0;
 }
