@@ -666,6 +666,11 @@ inline _NODISCARD succsess_t resize(size_t new_len, bool fill = 0,
         m_string()[new_len] = B().nulchr;
 }
 
+inline _NODISCARD succsess_t
+add_length(size_t add_len, Char_t_ fill_val = '\0', bool fill = true) {
+        return resize(m_length() + add_len,  fill, fill_val);
+}
+
 
 inline _NODISCARD succsess_t
 copy_my_string_to(mjz_String_memory_class& other_str) const {
@@ -748,52 +753,5 @@ mjz_String_memory_class& operator=(mjz_String_memory_class&& other) noexcept {
 
 int my_main::main(int argc, const char* const* const argv) {
  USE_MJZ_NS();
- tiny_scoped_timer timer("tm");
- if (0){
-        try {
-            mjz_String_memory_class<char> string{};
-            auto p = [](mjz_String_memory_class<char>& string) {
-              iostream:: println('{', string.m_length(), ',', string.m_capacity(),
-                               ',',
-                      string.m_string(), '}');
-            };
-            std::vector<mjz_String_memory_class<char>> stra;
-            std::mutex m;
-            std::vector<std::jthread> tha;
-            string.realloc_memory(40, 0, 1);
-            for (int i{}; i < 10000; i++)
-        tha.emplace_back(std::jthread{[&m, &stra, &string, p, r = i]() {
-          mjz_String_memory_class<char> a;
-          a = string;
-          if (r % 5) {
-            for (int j{}; j < r; j++) a.resize(j);
-          }
-          if (!(r % 2) || !(r % 3)) {
-            std::lock_guard<std::mutex> l(m);
-            if (!(r % 2))
-              stra.emplace_back(std::move(a));
-            else if (!(r % 3))
-              stra.emplace_back(a);
-          }
-        }});
-            iostream:: 
-
-            println("-----------------------");
-            p(string);
-        } catch (...) {
-            iostream::println(" ERROR ");
-        }
- }
- 
-        mjz_String_memory_class < wchar_t> str;
- str.resize(str.m_capacity());
-        for (auto beg = str.m_string(), end = beg + str.m_length();
-             beg < end;beg++) {
-        auto &c=*beg;
-        c = L'A' + (end - beg);
- }
-        str.resize(100, 1, L'!');
- iterator_template it(str.m_string(), str.m_length());
-       for (auto c : it) std::wcout << c;
   return 0;
 }

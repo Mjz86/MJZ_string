@@ -15434,23 +15434,9 @@ constexpr inline bool operator!=(const mjz_reallocator_template_t<U1, T1> &,
 }
 class mjz_realloc_free_package_example {
     private:
-    inline static void DELETER( void*ptr) {if(ptr) {delete[] (std::ptrdiff_t *)(ptr);}}
+    inline static void DELETER( void*ptr) {if(ptr) {::free(ptr);}}
     _NODISCARD inline static void* RENEWER(void *ptr_pr,size_t new_cap) { 
-        std::ptrdiff_t * new_ptr{};
-    size_t len = ((new_cap) / sizeof(std::ptrdiff_t)) + 1;
-        try {
-      new_ptr = new std::ptrdiff_t[len];
-        } catch(...) {
-      new_ptr = 0;
-        }
-        if (!ptr_pr) return new_ptr;
-        if(!new_ptr) {
-      DELETER(ptr_pr);
-      return nullptr;
-        } 
-      memcpy(new_ptr, ptr_pr, len);
-      DELETER(ptr_pr);
-      return new_ptr;
+      return ::realloc(ptr_pr,new_cap);
     }
  public:
   inline static constexpr const bool log{mjz_do_debug};
