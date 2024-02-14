@@ -16425,10 +16425,12 @@ Control byte:__[SF0][SF1][SF2]____[len][len][len][len][len];
 
   constexpr inline mjz_str_DB_t(const mjz_str_DB_t &) noexcept = delete;
 };
-template <typename Char_t_,
+
+
+template <typename Char_t_, 
           class mjz_reallocator_t = mjz::default_string_allocator>
 class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
- public:
+ public:using Traits = std::char_traits<Char_t_>/* i don't have  to do this ok   and i cant have this much support implemented for every char type [for now].*/;
   inline constexpr mjz_str_DB_t<Char_t_> &B() { return *this; }
   const inline constexpr mjz_str_DB_t<Char_t_> &B() const { return *this; }
   using B_t = mjz_str_DB_t<Char_t_>;
@@ -16445,16 +16447,11 @@ class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
     return Allocator().mjz_realloc(pr_real_ptr, preveious_size, new_size);
   }
   inline static void crset(Char_t_ *ptr, Char_t_ val, size_t len) {
-    Char_t_ *ptr_e = ptr + len;
-    while (ptr < ptr_e) {
-      *ptr++ = val;
-    }
+    Traits::assign(ptr, len, val);
+    ;
   }
   inline static void crmove(Char_t_ *dest, const Char_t_ *src, size_t len) {
-    Char_t_ *dest_e = dest + len;
-    while (dest < dest_e) {
-      *dest++ = *src++;
-    }
+    Traits::move(dest, src,   len);
   }
 
   using sheared_int_t =
