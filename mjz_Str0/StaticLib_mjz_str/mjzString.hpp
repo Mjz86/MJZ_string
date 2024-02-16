@@ -41,7 +41,7 @@ written by mjz https://github.com/Mjz86
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include<mutex>
+
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -50,6 +50,7 @@ written by mjz https://github.com/Mjz86
 #include <exception>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -1086,24 +1087,90 @@ class initilizer_in_constructor_helper_class_t {
   }
 };
 
-template <typename T>
-struct mjz_resource_acquisition_is_initialization_template {
-  T obj;
-  std::function<void(T &&)> destructor;
+namespace mjz_RAII {
+template <class FN_destructor, class FN_call>
+struct functor_t {
+  std::remove_cvref_t<FN_destructor> destructor{};
+  std::remove_cvref_t<FN_call> functor_t_call{};
+  template <class FN_constructor>
+  inline constexpr functor_t(FN_destructor &&destructor_f,
+                             FN_call &&call_operator,
+                             FN_constructor &&constructor_f)
+      : destructor(std::forward<FN_destructor>(destructor_f)),
+        functor_t_call(std::forward<FN_call>(call_operator)) {
+    std::forward<FN_constructor>(constructor_f)();
+  }
+  inline constexpr functor_t(FN_destructor &&destructor_f,
+                             FN_call &&call_operator)
+      : destructor(std::forward<FN_destructor>(destructor_f)),
+        functor_t_call(std::forward<FN_call>(call_operator)) {}
+
   template <typename... Ts>
-  inline mjz_resource_acquisition_is_initialization_template(
-      std::function<void(T &&)> destructor_function, Ts &&...args)
-      : obj(std::forward<Ts>(args)...),
-        destructor(std::move(destructor_function)) {}
-  inline ~mjz_resource_acquisition_is_initialization_template() {
-    destructor(std::move(obj));
+      inline constexpr decltype(auto) operator()(Ts &&...args) &
+        requires requires() { functor_t_call(std::forward<Ts>(args)...); }
+  {
+    return functor_t_call(std::forward<Ts>(args)...);
+  }
+  template <typename... Ts>
+  inline constexpr decltype(auto) operator()(Ts &&...args) const &
+    requires requires() { functor_t_call(std::forward<Ts>(args)...); }
+  {
+    return functor_t_call(std::forward<Ts>(args)...);
+  }
+  template <typename... Ts>
+      inline constexpr decltype(auto) operator()(Ts &&...args) &&
+        requires requires() {
+                   std::move(functor_t_call)(std::forward<Ts>(args)...);
+                 }
+  {
+    return std::move(functor_t_call)(std::forward<Ts>(args)...);
+  }
+  template <typename... Ts>
+  inline constexpr decltype(auto) operator()(Ts &&...args) const &&
+    requires requires() {
+               std::move(functor_t_call)(std::forward<Ts>(args)...);
+             }
+  {
+    return std::move(functor_t_call)(std::forward<Ts>(args)...);
+  }
+
+  inline constexpr ~functor_t() {
+    if constexpr (requires() { destructor(std::move(functor_t_call)); }) {
+      destructor(std::move(functor_t_call));
+    } else if constexpr (requires() {
+                           destructor(functor_t_call);
+                         }) {
+      destructor(functor_t_call);
+    } else {
+      destructor();
+    }
   }
 };
 
-template <size_t N>
-using initilizer_helper_class_t = initilizer_in_constructor_helper_class_t<N>;
-template <size_t N>
-using initilizer_class_t = initilizer_in_constructor_helper_class_t<N>;
+template <class FN_destructor, class FN_call, class FN_constructor>
+inline static constexpr auto functor(FN_destructor &&destructor_f,
+                                     FN_call &&call_operator,
+                                     FN_constructor &&constructor_f) {
+  return functor_t<FN_destructor, FN_call>(
+      std::forward<FN_destructor>(destructor_f),
+      std::forward<FN_call>(call_operator),
+      std::forward<FN_constructor>(constructor_f));
+}
+template <class FN_destructor, class FN_call>
+inline static constexpr auto functor(FN_destructor &&destructor_f,
+                                     FN_call &&call_operator) {
+  return functor_t<FN_destructor, FN_call>(
+      std::forward<FN_destructor>(destructor_f),
+      std::forward<FN_call>(destructor_f));
+}
+template <class FN_destructor>
+inline static constexpr auto functor(FN_destructor &&destructor_f) {
+  auto none = [c = char('?')]<typename... Ts>(
+                  Ts &&...) noexcept -> const char & { return c; };
+  return functor_t<FN_destructor, decltype(none)>(
+      std::forward<FN_destructor>(destructor_f), std::move(none));
+}
+}  // namespace mjz_RAII
 /*
 this argument shall not be used in any non mjz object or function as argument
 this is a separator just for the compiler
@@ -15433,11 +15500,16 @@ constexpr inline bool operator!=(const mjz_reallocator_template_t<U1, T1> &,
   return U1() != U2();
 }
 class mjz_realloc_free_package_example {
-    private:
-    inline static void DELETER( void*ptr) {if(ptr) {::free(ptr);}}
-    _NODISCARD inline static void* RENEWER(void *ptr_pr,size_t new_cap) { 
-      return ::realloc(ptr_pr,new_cap);
+ private:
+  inline static void DELETER(void *ptr) {
+    if (ptr) {
+      ::free(ptr);
     }
+  }
+  _NODISCARD inline static void *RENEWER(void *ptr_pr, size_t new_cap) {
+    return ::realloc(ptr_pr, new_cap);
+  }
+
  public:
   inline static constexpr const bool log{mjz_do_debug};
   inline static constexpr const bool log_sp{0};
@@ -15449,11 +15521,10 @@ class mjz_realloc_free_package_example {
   inline void free(void *ptr) {
     if constexpr (log_sp) {
       std::lock_guard l(msp);
-      std::cout << (frsp++)<<','<<(--numsp) << "fr\n";
+      std::cout << (frsp++) << ',' << (--numsp) << "fr\n";
     }
-    if constexpr (log)
-     {
-        std::cout << (void *)ptr << " is free " << (--num) << "\n";
+    if constexpr (log) {
+      std::cout << (void *)ptr << " is free " << (--num) << "\n";
     }
     DELETER(ptr);
   }
@@ -15465,13 +15536,14 @@ class mjz_realloc_free_package_example {
     bool is_null = !ptr;
 
     if constexpr (log) std::cout << ptr << "  is now  reallocated to ";
-    
-    void *new_ptr {};
-   
-  new_ptr=    RENEWER(ptr, needed_len);
-  
+
+    void *new_ptr{};
+
+    new_ptr = RENEWER(ptr, needed_len);
+
     if constexpr (log)
-      std::cout << new_ptr << "  " << (is_null ? (num++) : ((uint64_t)num)) << "\n";
+      std::cout << new_ptr << "  " << (is_null ? (num++) : ((uint64_t)num))
+                << "\n";
     if constexpr (log_sp) {
       std::lock_guard l(msp);
       std::cout << (is_null ? (rlsp++) : ((uint64_t)frsp)) << ','
@@ -15641,10 +15713,6 @@ struct mjz_temp_type_allocator_warpper_t
 };
 
 namespace have_mjz_ard_removed {
-template <class T>
-using mjz_RAII_t = mjz_resource_acquisition_is_initialization_template<T>;
-template <class T>
-using RAII_t = mjz_RAII_t<T>;
 using algorithm = static_str_algo;
 template <typename T, size_t size>
 using ex_Array = extended_mjz_Array<T, size>;
@@ -16048,6 +16116,7 @@ namespace mjzt = mjz_ard_types;
   using namespace mjz_ard;                       \
   using namespace mjz_ard::have_mjz_ard_removed; \
   using namespace mjz_ard::iostream;             \
+  using namespace mjz_ard::mjz_RAII;             \
   using namespace mjz_ard::util
 
 //  put semicolon
@@ -16060,7 +16129,7 @@ struct mjz_String_pointer_for_internal_realloc_id {
   const void *const ptr{};
 };
 using mjz_object_pointer_for_internal_realloc_id =
-    mjz_String_pointer_for_internal_realloc_id ;
+    mjz_String_pointer_for_internal_realloc_id;
 template <class T>
 concept C_string_allocator =
     requires(T obj, size_t perivious_size, void *data, size_t new_size) {
@@ -16085,355 +16154,386 @@ struct default_string_allocator : default_string_allocator_base_t {
       : this_ptr(p.ptr) {}
   inline void mjz_free(void *ptr, size_t n) noexcept {
     if constexpr (log) {
-      std::cout << "mjz string  mjz_free("<< ptr<<','<<n<<"){" << this_ptr << "} :";
+      std::cout << "mjz string  mjz_free(" << ptr << ',' << n << "){"
+                << this_ptr << "} :";
     }
     default_string_allocator_base_t::mjz_free(ptr, n);
   }
   inline _NODISCARD void *mjz_realloc(void *ptr, size_t preveious_size,
-                           size_t new_size) noexcept {
+                                      size_t new_size) noexcept {
     if constexpr (log) {
-      std::cout << "mjz string mjz_realloc(" << ptr << ','
-                << preveious_size << ','<<new_size <<"){"
-                << this_ptr
-                << "} :";
+      std::cout << "mjz string mjz_realloc(" << ptr << ',' << preveious_size
+                << ',' << new_size << "){" << this_ptr << "} :";
     }
     return default_string_allocator_base_t::mjz_realloc(ptr, preveious_size,
                                                         new_size);
   }
 };
 
-template <typename Char_t>
-class mjz_str_DB_t {
- public:
-  constexpr static const bool
-      S_flag0_will_allocate_a_sharable_string_by_default = true;
 
-  constexpr static const bool S_flag1_can_throw_if_error_by_default = true;
-  constexpr static const bool S_flag2_can_allocate_more_that_needed_by_default =
-      true;
-  constexpr static const bool static_flag_default[3]{
-      S_flag0_will_allocate_a_sharable_string_by_default,
-      S_flag1_can_throw_if_error_by_default,
-      S_flag2_can_allocate_more_that_needed_by_default};
-  constexpr static const uint8_t static_flag_mask[3]{(1 << 7), (1 << 6),
-                                                     (1 << 5)};
+template <typename Char_t_>
+struct mjz_char_trait : std::char_traits<Char_t_> {};
+template <typename Char_t_>
+struct mjz_string_view {
+  using Traits = mjz_char_trait<Char_t_>;
+  using cr_t=Char_t_;
+  const cr_t *m_data;
+    size_t m_length;
+  using cr_it = std::reverse_iterator<const cr_t *>;
+    _NODISCARD inline constexpr const cr_t *begin() const { return m_data; }
+  _NODISCARD inline constexpr const cr_t *cbegin() const { return m_data; }
+    _NODISCARD inline constexpr const cr_t *end() const {
+    return m_data + m_length;
+    }
+    _NODISCARD inline constexpr const cr_t *cend() const {
+    return m_data + m_length;
+    }
+  _NODISCARD inline constexpr cr_it rbegin() const { return end(); }
+  _NODISCARD inline constexpr cr_it crbegin() const { return end(); }
+  _NODISCARD inline constexpr cr_it rend() const { return begin(); }
+  _NODISCARD inline constexpr cr_it crend() const { return begin(); }
+  _NODISCARD inline constexpr size_t size() const { return end() - begin(); }
+  _NODISCARD inline constexpr const cr_t *data() const { return begin(); }
+};
+template <typename Char_t_,
+          class mjz_reallocator_t = mjz::default_string_allocator>
+class mjz_String_memory_class {
+ public:
+ /* i don't have  to do this ok   and i cant have
+                                   this much support implemented for every char
+                                   type [for now].*/
+  using Traits = mjz_char_trait<Char_t_>;
+
+ using Char_t=Char_t_;
+  class mjz_str_DB_t {
+   public:
+    constexpr static const bool
+        S_flag0_will_allocate_a_sharable_string_by_default = true;
+
+    constexpr static const bool S_flag1_can_throw_if_error_by_default = true;
+    constexpr static const bool
+        S_flag2_can_allocate_more_that_needed_by_default = true;
+    constexpr static const bool static_flag_default[3]{
+        S_flag0_will_allocate_a_sharable_string_by_default,
+        S_flag1_can_throw_if_error_by_default,
+        S_flag2_can_allocate_more_that_needed_by_default};
+    constexpr static const uint8_t static_flag_mask[3]{(1 << 7), (1 << 6),
+                                                       (1 << 5)};
 #define MJZ_static_flag_mask_bit_default_I_(I) \
   (MJZ_logic_bit_to_8_bits(static_flag_default[I]) & static_flag_mask[I])
-  constexpr static const uint8_t static_flag_mask_bit_default[3]{
-      MJZ_static_flag_mask_bit_default_I_(0),
-      MJZ_static_flag_mask_bit_default_I_(1),
-      MJZ_static_flag_mask_bit_default_I_(2)};
+    constexpr static const uint8_t static_flag_mask_bit_default[3]{
+        MJZ_static_flag_mask_bit_default_I_(0),
+        MJZ_static_flag_mask_bit_default_I_(1),
+        MJZ_static_flag_mask_bit_default_I_(2)};
 #undef MJZ_static_flag_mask_bit_default_I_
-  constexpr static const size_t max_internal_storable_uint_in_control_byte =
-      (1 << 5) - 1;
-  constexpr static const size_t is_dynamic_control_value =
-      max_internal_storable_uint_in_control_byte;
-  /*
-bits:____________7____6____5________4____3____2____1____0__;
-Control byte:__[SF0][SF1][SF2]____[len][len][len][len][len];
- */
-  constexpr static const uint8_t control_default =
-      static_flag_mask_bit_default[0] | static_flag_mask_bit_default[1] |
-      static_flag_mask_bit_default[2];
+    constexpr static const size_t max_internal_storable_uint_in_control_byte =
+        (1 << 5) - 1;
+    constexpr static const size_t is_dynamic_control_value =
+        max_internal_storable_uint_in_control_byte;
+    /*
+  bits:____________7____6____5________4____3____2____1____0__;
+  Control byte:__[SF0][SF1][SF2]____[len][len][len][len][len];
+   */
+    constexpr static const uint8_t control_default =
+        static_flag_mask_bit_default[0] | static_flag_mask_bit_default[1] |
+        static_flag_mask_bit_default[2];
 
-  constexpr static const uint8_t dynamic_flags_default = 0;
-  constexpr static const uint8_t nullen = 1;
-  constexpr static const Char_t nulchr = '\0';
-  constexpr static const size_t internal_storage_cap_ =
-      2 * sizeof(Char_t *) + 2 * sizeof(size_t) - nullen -
-      sizeof(control_default);
-  static_assert(internal_storage_cap_ < is_dynamic_control_value,
-                "cant store until capacity in this architecture");
+    constexpr static const uint8_t dynamic_flags_default = 0;
+    constexpr static const uint8_t nullen = 1;
+    constexpr static const Char_t nulchr = '\0';
+    constexpr static const size_t internal_storage_cap_ =
+        2 * sizeof(Char_t *) + 2 * sizeof(size_t) - nullen -
+        sizeof(control_default);
+    static_assert(internal_storage_cap_ < is_dynamic_control_value,
+                  "cant store until capacity in this architecture");
 
-  template <typename C_T = Char_t>
-  static constexpr const size_t internal_storage_cap_for =
-      max_macro_(1, size_t((internal_storage_cap_ + nullen) / sizeof(C_T))) -
-      nullen;
+    template <typename C_T = Char_t>
+    static constexpr const size_t internal_storage_cap_for =
+        max_macro_(1, size_t((internal_storage_cap_ + nullen) / sizeof(C_T))) -
+        nullen;
 
-  static constexpr const size_t internal_storage_cap_of_t =
-      internal_storage_cap_for<Char_t>;
-  union DATA_t {
-    union {
-      struct {
-        Char_t *MV_hlpr0;
-        Char_t *MV_hlpr1;
-        size_t MV_hlpr2;
-        size_t MV_hlpr3;
-      };
-      struct {
-        Char_t *m_dy_data;
-        size_t m_dy_length;
-        size_t m_dy_capacity;
-      };
-      struct {
-        uint8_t no_use___pervious_dy_data_____[sizeof(m_dy_data) +
-                                               sizeof(m_dy_length) +
-                                               sizeof(m_dy_capacity)];
-        uint8_t m_dy_flags;
-      };
-      struct {
-        Char_t internal_storage_[internal_storage_cap_of_t + nullen];
-      };
-      char internal_storage_cr[internal_storage_cap_ + nullen];
-      struct {
-        uint8_t no_use__all_pervious_data_____[internal_storage_cap_];
-        char internal_null_terminator_____;
-        uint8_t control_byte;
+    static constexpr const size_t internal_storage_cap_of_t =
+        internal_storage_cap_for<Char_t>;
+    union DATA_t {
+      union {
+        struct {
+          Char_t *MV_hlpr0;
+          Char_t *MV_hlpr1;
+          size_t MV_hlpr2;
+          size_t MV_hlpr3;
+        };
+        struct {
+          Char_t *m_dy_data;
+          size_t m_dy_length;
+          size_t m_dy_capacity;
+        };
+        struct {
+          uint8_t no_use___pervious_dy_data_____[sizeof(m_dy_data) +
+                                                 sizeof(m_dy_length) +
+                                                 sizeof(m_dy_capacity)];
+          uint8_t m_dy_flags;
+        };
+        struct {
+          Char_t internal_storage_[internal_storage_cap_of_t + nullen];
+        };
+        char internal_storage_cr[internal_storage_cap_ + nullen];
+        struct {
+          uint8_t no_use__all_pervious_data_____[internal_storage_cap_];
+          char internal_null_terminator_____;
+          uint8_t control_byte;
+        };
       };
     };
-  };
-  static_assert(sizeof(size_t) <= sizeof(Char_t *), " what is this place ");
-  static_assert(alignof(size_t) <= alignof(Char_t *), " what is this place ");
-  static_assert(alignof(char) == 1 && 1 == sizeof(char),
-                " what is this place ");
-  static_assert(alignof(uint8_t) == 1 && 1 == sizeof(uint8_t),
-                " what is this place ");
-  static_assert(alignof(DATA_t) <= alignof(Char_t *), " what is this place ");
-  static_assert(internal_storage_cap_ + nullen + sizeof(DATA_t::control_byte) ==
-                    sizeof(DATA_t),
-                " some packing was added but how ");
+    static_assert(sizeof(size_t) <= sizeof(Char_t *), " what is this place ");
+    static_assert(alignof(size_t) <= alignof(Char_t *), " what is this place ");
+    static_assert(alignof(char) == 1 && 1 == sizeof(char),
+                  " what is this place ");
+    static_assert(alignof(uint8_t) == 1 && 1 == sizeof(uint8_t),
+                  " what is this place ");
+    static_assert(alignof(DATA_t) <= alignof(Char_t *), " what is this place ");
+    static_assert(internal_storage_cap_ + nullen +
+                          sizeof(DATA_t::control_byte) ==
+                      sizeof(DATA_t),
+                  " some packing was added but how ");
 
-  const static constexpr uint8_t static_length_mask_for_control =
-      max_internal_storable_uint_in_control_byte;
-  const static constexpr uint8_t inverted_static_length_mask_for_control =
-      ~static_length_mask_for_control;
-  const static constexpr uint8_t inverted_static_flag_mask[]{
-      (uint8_t)~static_flag_mask[0], (uint8_t)~static_flag_mask[1],
-      (uint8_t)~static_flag_mask[2]};
-  constexpr static const uint8_t dynamic_flag_mask[8]{
-      (1 << 7), (1 << 6), (1 << 5), (1 << 4),
-      (1 << 3), (1 << 2), (1 << 1), (1 << 0)};
-  const static constexpr uint8_t inverted_dynamic_flag_mask[8]{
-      (uint8_t)~dynamic_flag_mask[0], (uint8_t)~dynamic_flag_mask[1],
-      (uint8_t)~dynamic_flag_mask[2], (uint8_t)~dynamic_flag_mask[3],
-      (uint8_t)~dynamic_flag_mask[4], (uint8_t)~dynamic_flag_mask[5],
-      (uint8_t)~dynamic_flag_mask[6], (uint8_t)~dynamic_flag_mask[7]};
+    const static constexpr uint8_t static_length_mask_for_control =
+        max_internal_storable_uint_in_control_byte;
+    const static constexpr uint8_t inverted_static_length_mask_for_control =
+        ~static_length_mask_for_control;
+    const static constexpr uint8_t inverted_static_flag_mask[]{
+        (uint8_t)~static_flag_mask[0], (uint8_t)~static_flag_mask[1],
+        (uint8_t)~static_flag_mask[2]};
+    constexpr static const uint8_t dynamic_flag_mask[8]{
+        (1 << 7), (1 << 6), (1 << 5), (1 << 4),
+        (1 << 3), (1 << 2), (1 << 1), (1 << 0)};
+    const static constexpr uint8_t inverted_dynamic_flag_mask[8]{
+        (uint8_t)~dynamic_flag_mask[0], (uint8_t)~dynamic_flag_mask[1],
+        (uint8_t)~dynamic_flag_mask[2], (uint8_t)~dynamic_flag_mask[3],
+        (uint8_t)~dynamic_flag_mask[4], (uint8_t)~dynamic_flag_mask[5],
+        (uint8_t)~dynamic_flag_mask[6], (uint8_t)~dynamic_flag_mask[7]};
 
-  DATA_t m_data_strorage;
+    DATA_t m_data_strorage;
 
-  enum static_flags : uint8_t {
-    S_flag0_will_allocate_a_sharable_string = 0,
-    S_flag1_can_throw_if_error = 1,
-    S_flag2_can_allocate_more_that_needed = 2,
-    S_is_in_dynamic_state = 255
-  };
-  enum dynamic_flags : uint8_t {
-    D_flag0_can_have_sheared_string_data = 0,
-    D_flag1_can_sheare_string_data = 1,
-    D_flag1_has_atomic = D_flag1_can_sheare_string_data,
-    D_flag2,
-    D_flag3,
-    D_flag4,
-    D_flag5,
-    D_flag6,
-    D_flag7,
-    D_free_mask_a = D_flag4,
-    D_free_mask_b,
-    D_free_mask_c,
-    D_free_mask_d,
-  };
-  template <static_flags flag>
-  constexpr inline void set_static_flag(bool bit_) noexcept { /* can clear*/
-    const constexpr uint8_t index =
-        static_cast<std::underlying_type_t<static_flags>>(flag);
-    uint8_t &bytes_ = m_data_strorage.control_byte;
-    bytes_ &= inverted_static_flag_mask[index];
-    bytes_ |= bit_ ? static_flag_mask[index] : 0;
-  }
+    enum static_flags : uint8_t {
+      S_flag0_will_allocate_a_sharable_string = 0,
+      S_flag1_can_throw_if_error = 1,
+      S_flag2_can_allocate_more_that_needed = 2,
+      S_is_in_dynamic_state = 255
+    };
+    enum dynamic_flags : uint8_t {
+      D_flag0_can_have_sheared_string_data = 0,
+      D_flag1_can_sheare_string_data = 1,
+      D_flag1_has_atomic = D_flag1_can_sheare_string_data,
+      D_flag2,
+      D_flag3,
+      D_flag4,
+      D_flag5,
+      D_flag6,
+      D_flag7,
+      D_free_mask_a = D_flag4,
+      D_free_mask_b,
+      D_free_mask_c,
+      D_free_mask_d,
+    };
+    template <static_flags flag>
+    constexpr inline void set_static_flag(bool bit_) noexcept { /* can clear*/
+      const constexpr uint8_t index =
+          static_cast<std::underlying_type_t<static_flags>>(flag);
+      uint8_t &bytes_ = m_data_strorage.control_byte;
+      bytes_ &= inverted_static_flag_mask[index];
+      bytes_ |= bit_ ? static_flag_mask[index] : 0;
+    }
 
-  template <static_flags flag>
-  constexpr inline bool get_static_flag() const noexcept {
-    const constexpr uint8_t index =
-        static_cast<std::underlying_type_t<static_flags>>(flag);
-    uint8_t bytes_ = m_data_strorage.control_byte;
-    return !!(bytes_ & static_flag_mask[index]);
-  }
+    template <static_flags flag>
+    constexpr inline bool get_static_flag() const noexcept {
+      const constexpr uint8_t index =
+          static_cast<std::underlying_type_t<static_flags>>(flag);
+      uint8_t bytes_ = m_data_strorage.control_byte;
+      return !!(bytes_ & static_flag_mask[index]);
+    }
 
-  template <static_flags flag>
-  constexpr inline void set_static_flag(bool to_dynamic) noexcept
-    requires(flag == static_flags::S_is_in_dynamic_state)
-  {
-    uint8_t &bytes_ = m_data_strorage.control_byte;
-    bytes_ = to_dynamic ? (bytes_ | static_length_mask_for_control)
-                        : (bytes_ & inverted_static_length_mask_for_control);
-  }
+    template <static_flags flag>
+    constexpr inline void set_static_flag(bool to_dynamic) noexcept
+      requires(flag == static_flags::S_is_in_dynamic_state)
+    {
+      uint8_t &bytes_ = m_data_strorage.control_byte;
+      bytes_ = to_dynamic ? (bytes_ | static_length_mask_for_control)
+                          : (bytes_ & inverted_static_length_mask_for_control);
+    }
 
-  template <static_flags flag>
-  constexpr inline bool get_static_flag() const noexcept
-    requires(flag == static_flags::S_is_in_dynamic_state)
-  {
-    uint8_t bytes_ = m_data_strorage.control_byte;
-    return (bytes_ & static_length_mask_for_control) ==
-           static_length_mask_for_control;
-  }
+    template <static_flags flag>
+    constexpr inline bool get_static_flag() const noexcept
+      requires(flag == static_flags::S_is_in_dynamic_state)
+    {
+      uint8_t bytes_ = m_data_strorage.control_byte;
+      return (bytes_ & static_length_mask_for_control) ==
+             static_length_mask_for_control;
+    }
 
-  typedef bool succsess_t;
-  constexpr inline void set_static_length(size_t len) noexcept {
-    /* if (internal_storage_cap < len)
-    return ;*/
-    uint8_t &bytes_ = m_data_strorage.control_byte;
-    bytes_ &= inverted_static_length_mask_for_control;
-    bytes_ |= (uint8_t)len;
-  }
-  constexpr inline size_t get_static_length() const noexcept {
-    uint8_t bytes_ = m_data_strorage.control_byte;
-    return uint8_t(bytes_ & static_length_mask_for_control);
-  }
+    typedef bool succsess_t;
+    constexpr inline void set_static_length(size_t len) noexcept {
+      /* if (internal_storage_cap < len)
+      return ;*/
+      uint8_t &bytes_ = m_data_strorage.control_byte;
+      bytes_ &= inverted_static_length_mask_for_control;
+      bytes_ |= (uint8_t)len;
+    }
+    constexpr inline size_t get_static_length() const noexcept {
+      uint8_t bytes_ = m_data_strorage.control_byte;
+      return uint8_t(bytes_ & static_length_mask_for_control);
+    }
 
-  template <dynamic_flags flag>
-  constexpr inline void set_dynamic_flag(bool bit_) noexcept {
-    const constexpr uint8_t index =
-        static_cast<std::underlying_type_t<dynamic_flags>>(flag);
-    uint8_t &bytes_ = m_data_strorage.m_dy_flags;
-    bytes_ &= inverted_dynamic_flag_mask[index];
-    bytes_ |= bit_ ? dynamic_flag_mask[index] : 0;
-  }
+    template <dynamic_flags flag>
+    constexpr inline void set_dynamic_flag(bool bit_) noexcept {
+      const constexpr uint8_t index =
+          static_cast<std::underlying_type_t<dynamic_flags>>(flag);
+      uint8_t &bytes_ = m_data_strorage.m_dy_flags;
+      bytes_ &= inverted_dynamic_flag_mask[index];
+      bytes_ |= bit_ ? dynamic_flag_mask[index] : 0;
+    }
 
-  template <dynamic_flags flag>
-  constexpr inline bool get_dynamic_flag() const noexcept {
-    const constexpr uint8_t index =
-        static_cast<std::underlying_type_t<dynamic_flags>>(flag);
-    uint8_t bytes_ = m_data_strorage.m_dy_flags;
-    return !!(bytes_ & dynamic_flag_mask[index]);
-  }
-  constexpr inline bool is_dynamic() const noexcept {
-    return get_static_flag<static_flags::S_is_in_dynamic_state>();
-  }
+    template <dynamic_flags flag>
+    constexpr inline bool get_dynamic_flag() const noexcept {
+      const constexpr uint8_t index =
+          static_cast<std::underlying_type_t<dynamic_flags>>(flag);
+      uint8_t bytes_ = m_data_strorage.m_dy_flags;
+      return !!(bytes_ & dynamic_flag_mask[index]);
+    }
+    constexpr inline bool is_dynamic() const noexcept {
+      return get_static_flag<static_flags::S_is_in_dynamic_state>();
+    }
 
-  template <typename Char_t = Char_t>
-  inline static constexpr bool can_be_static(size_t len) noexcept {
-    return len <= internal_storage_cap_of_t;
-  }
+    template <typename Char_t = Char_t>
+    inline static constexpr bool can_be_static(size_t len) noexcept {
+      return len <= internal_storage_cap_of_t;
+    }
 
-  constexpr inline size_t get_dynamic_length() const noexcept {
-    return m_data_strorage.m_dy_length;
-  }
+    constexpr inline size_t get_dynamic_length() const noexcept {
+      return m_data_strorage.m_dy_length;
+    }
 
-  constexpr inline bool get_DF0() const {
-    return get_dynamic_flag<
-        dynamic_flags::D_flag0_can_have_sheared_string_data>();
-  }
-  constexpr inline bool get_DF1() const {
-    return get_dynamic_flag<dynamic_flags::D_flag1_can_sheare_string_data>();
-  }
+    constexpr inline bool get_DF0() const {
+      return get_dynamic_flag<
+          dynamic_flags::D_flag0_can_have_sheared_string_data>();
+    }
+    constexpr inline bool get_DF1() const {
+      return get_dynamic_flag<dynamic_flags::D_flag1_can_sheare_string_data>();
+    }
 
-  inline Char_t *get_dynamic_string() noexcept {
-    return (m_data_strorage.m_dy_data);
-  }
+    inline Char_t *get_dynamic_string() noexcept {
+      return (m_data_strorage.m_dy_data);
+    }
 
-  inline const Char_t *get_static_string() const noexcept {
-    return (m_data_strorage.internal_storage_);
-  }
+    inline const Char_t *get_static_string() const noexcept {
+      return (m_data_strorage.internal_storage_);
+    }
 
-  inline Char_t *get_static_string() noexcept {
-    return (m_data_strorage.internal_storage_);
-  }
+    inline Char_t *get_static_string() noexcept {
+      return (m_data_strorage.internal_storage_);
+    }
 
-  inline constexpr static size_t get_static_capacity() noexcept {
-    return internal_storage_cap_of_t;
-  }
+    inline constexpr static size_t get_static_capacity() noexcept {
+      return internal_storage_cap_of_t;
+    }
 
-  inline const Char_t *get_dynamic_string() const noexcept {
-    return (m_data_strorage.m_dy_data);
-  }
-  constexpr inline size_t get_dynamic_capacity() const noexcept {
-    return m_data_strorage.m_dy_capacity;
-  }
+    inline const Char_t *get_dynamic_string() const noexcept {
+      return (m_data_strorage.m_dy_data);
+    }
+    constexpr inline size_t get_dynamic_capacity() const noexcept {
+      return m_data_strorage.m_dy_capacity;
+    }
 
-  constexpr inline size_t m_length() const noexcept {
-    return is_dynamic() ? get_dynamic_length() : get_static_length();
-  }
+    constexpr inline size_t m_length() const noexcept {
+      return is_dynamic() ? get_dynamic_length() : get_static_length();
+    }
 
-  constexpr inline size_t m_capacity() const noexcept {
-    return is_dynamic() ? get_dynamic_capacity() : get_static_capacity();
-  }
+    constexpr inline size_t m_capacity() const noexcept {
+      return is_dynamic() ? get_dynamic_capacity() : get_static_capacity();
+    }
 
-  constexpr inline const Char_t *m_string() const noexcept {
-    return is_dynamic() ? get_dynamic_string() : get_static_string();
-  }
+    constexpr inline const Char_t *m_string() const noexcept {
+      return is_dynamic() ? get_dynamic_string() : get_static_string();
+    }
 
-  constexpr inline Char_t *m_string() noexcept {
-    return is_dynamic() ? get_dynamic_string() : get_static_string();
-  }
+    constexpr inline Char_t *m_string() noexcept {
+      return is_dynamic() ? get_dynamic_string() : get_static_string();
+    }
 
-  constexpr inline void set_dynamic_length(size_t len) noexcept {
-    m_data_strorage.m_dy_length = len;
-  }
+    constexpr inline void set_dynamic_length(size_t len) noexcept {
+      m_data_strorage.m_dy_length = len;
+    }
 
-  constexpr inline void set_dynamic_string(Char_t *mjz_str) noexcept {
-    m_data_strorage.m_dy_data = mjz_str;
-  }
+    constexpr inline void set_dynamic_string(Char_t *mjz_str) noexcept {
+      m_data_strorage.m_dy_data = mjz_str;
+    }
 
-  constexpr inline void set_dynamic_capacity(size_t cap) noexcept {
-    m_data_strorage.m_dy_capacity = cap;
-  }
+    constexpr inline void set_dynamic_capacity(size_t cap) noexcept {
+      m_data_strorage.m_dy_capacity = cap;
+    }
 
-  constexpr inline void set_all_to_dynamic(
-      Char_t *mjz_data_string, size_t length, size_t capacity,
-      bool DF0_did_share_string_data, bool DF1_has_a_live_atomic) noexcept {
-    m_data_strorage.m_dy_flags = dynamic_flags_default;
-    set_static_flag<static_flags::S_is_in_dynamic_state>(true);
-    set_dynamic_flag<dynamic_flags::D_flag0_can_have_sheared_string_data>(
-        DF0_did_share_string_data);
-    set_dynamic_flag<dynamic_flags::D_flag1_has_atomic>(DF1_has_a_live_atomic);
-    set_dynamic_capacity(capacity);
-    set_dynamic_length(length);
-    set_dynamic_string(mjz_data_string);
-    mjz_data_string[length] = nulchr;
-    mjz_data_string[capacity] = nulchr;
-  }
+    constexpr inline void set_all_to_dynamic(
+        Char_t *mjz_data_string, size_t length, size_t capacity,
+        bool DF0_did_share_string_data, bool DF1_has_a_live_atomic) noexcept {
+      m_data_strorage.m_dy_flags = dynamic_flags_default;
+      set_static_flag<static_flags::S_is_in_dynamic_state>(true);
+      set_dynamic_flag<dynamic_flags::D_flag0_can_have_sheared_string_data>(
+          DF0_did_share_string_data);
+      set_dynamic_flag<dynamic_flags::D_flag1_has_atomic>(
+          DF1_has_a_live_atomic);
+      set_dynamic_capacity(capacity);
+      set_dynamic_length(length);
+      set_dynamic_string(mjz_data_string);
+      mjz_data_string[length] = nulchr;
+      mjz_data_string[capacity] = nulchr;
+    }
 /*msvc c++23*/
 #define mjz_assume __assume
-  constexpr inline void set_all_to_static(size_t length) noexcept {
-    [[mjz_assume(length <= internal_storage_cap_of_t)]];
-    set_static_flag<static_flags::S_is_in_dynamic_state>(false);
-    set_static_length(length);
-    m_data_strorage.internal_storage_[length] = nulchr;
-    m_data_strorage.internal_storage_[internal_storage_cap_of_t] = nulchr;
-  }
+    constexpr inline void set_all_to_static(size_t length) noexcept {
+      [[mjz_assume(length <= internal_storage_cap_of_t)]];
+      set_static_flag<static_flags::S_is_in_dynamic_state>(false);
+      set_static_length(length);
+      m_data_strorage.internal_storage_[length] = nulchr;
+      m_data_strorage.internal_storage_[internal_storage_cap_of_t] = nulchr;
+    }
 
-  constexpr inline void move_to_me(mjz_str_DB_t &&other) noexcept {
-    m_data_strorage.MV_hlpr0 = other.m_data_strorage.MV_hlpr0;
-    m_data_strorage.MV_hlpr1 = other.m_data_strorage.MV_hlpr1;
-    m_data_strorage.MV_hlpr2 = other.m_data_strorage.MV_hlpr2;
-    m_data_strorage.MV_hlpr3 = other.m_data_strorage.MV_hlpr3;
-    other.m_data_strorage.MV_hlpr0 = 0;
-    other.m_data_strorage.MV_hlpr1 = 0;
-    other.m_data_strorage.MV_hlpr2 = 0;
-    other.m_data_strorage.MV_hlpr3 = 0;
-    other.m_data_strorage.control_byte = control_default;
-  }
+    constexpr inline void move_to_me(mjz_str_DB_t &&other) noexcept {
+      m_data_strorage.MV_hlpr0 = other.m_data_strorage.MV_hlpr0;
+      m_data_strorage.MV_hlpr1 = other.m_data_strorage.MV_hlpr1;
+      m_data_strorage.MV_hlpr2 = other.m_data_strorage.MV_hlpr2;
+      m_data_strorage.MV_hlpr3 = other.m_data_strorage.MV_hlpr3;
+      other.m_data_strorage.MV_hlpr0 = 0;
+      other.m_data_strorage.MV_hlpr1 = 0;
+      other.m_data_strorage.MV_hlpr2 = 0;
+      other.m_data_strorage.MV_hlpr3 = 0;
+      other.m_data_strorage.control_byte = control_default;
+    }
 
-  constexpr inline mjz_str_DB_t(mjz_str_DB_t &&other) noexcept {
-    move_to_me(std::move(other));
-  }
+    constexpr inline mjz_str_DB_t(mjz_str_DB_t &&other) noexcept {
+      move_to_me(std::move(other));
+    }
 
- public:
-  constexpr inline mjz_str_DB_t() noexcept {
-    m_data_strorage.control_byte = control_default;
-    m_data_strorage.internal_storage_[internal_storage_cap_of_t] = nulchr;
-  }
-  constexpr inline ~mjz_str_DB_t() noexcept {
-    m_data_strorage.control_byte = control_default;
-  }
+   public:
+    constexpr inline mjz_str_DB_t() noexcept {
+      m_data_strorage.control_byte = control_default;
+      m_data_strorage.internal_storage_[internal_storage_cap_of_t] = nulchr;
+    }
+    constexpr inline ~mjz_str_DB_t() noexcept {
+      m_data_strorage.control_byte = control_default;
+    }
 
- private:
-  constexpr inline mjz_str_DB_t &operator=(mjz_str_DB_t &&) noexcept = delete;
+   private:
+    constexpr inline mjz_str_DB_t &operator=(mjz_str_DB_t &&) noexcept = delete;
 
-  constexpr inline mjz_str_DB_t &operator=(const mjz_str_DB_t &) noexcept =
-      delete;
+    constexpr inline mjz_str_DB_t &operator=(const mjz_str_DB_t &) noexcept =
+        delete;
 
-  constexpr inline mjz_str_DB_t(const mjz_str_DB_t &) noexcept = delete;
-};
-
-
-template <typename Char_t_, 
-          class mjz_reallocator_t = mjz::default_string_allocator>
-class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
- public:using Traits = std::char_traits<Char_t_>/* i don't have  to do this ok   and i cant have this much support implemented for every char type [for now].*/;
-  inline constexpr mjz_str_DB_t<Char_t_> &B() { return *this; }
-  const inline constexpr mjz_str_DB_t<Char_t_> &B() const { return *this; }
-  using B_t = mjz_str_DB_t<Char_t_>;
+    constexpr inline mjz_str_DB_t(const mjz_str_DB_t &) noexcept = delete;
+  };
+      
+  mjz_str_DB_t m_data_;
+  inline constexpr mjz_str_DB_t &B() { return m_data_; }
+  const inline constexpr mjz_str_DB_t &B() const { return m_data_; }
+  using B_t = mjz_str_DB_t;
   mjz_reallocator_t Allocator() const {
     return mjz_reallocator_t(
         mjz::mjz_String_pointer_for_internal_realloc_id{.ptr = this});
@@ -16451,7 +16551,7 @@ class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
     ;
   }
   inline static void crmove(Char_t_ *dest, const Char_t_ *src, size_t len) {
-    Traits::move(dest, src,   len);
+    Traits::move(dest, src, len);
   }
 
   using sheared_int_t =
@@ -16569,7 +16669,7 @@ class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
     states state =
         real_ptr_is_state(false, B().get_DF0(), B().get_DF1(), real_ptr);
     if (state == states::dy_owend) {
-      set_dynamic_flag<B().dynamic_flags::D_flag0_can_have_sheared_string_data>(
+   B().   set_dynamic_flag<B_t::D_flag0_can_have_sheared_string_data>(
           false);
       return states::dy_owend;
     }
@@ -16619,6 +16719,26 @@ class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
     bool was_static{};
     bool free_data{};
   };
+  template <class FN_static_runer, class FN_dy_owned_runer,
+            class FN_dy_sharead_runer,typename...Ts>
+  inline void run_state_fn(  FN_static_runer &&static_runer,
+                                     FN_dy_owned_runer &&dy_owned_runer,
+                                     FN_dy_sharead_runer &&dy_sharead_runer,Ts&&...args) {
+      switch(get_state()) {
+      case states::Static:
+        std::forward<FN_static_runer>(static_runer)(std::forward<Ts>(args)...);
+        break;
+      case states::dy_owend:
+        std::forward<FN_dy_owned_runer>(dy_owned_runer)(
+            std::forward<Ts>(args)...);
+        break; 
+      case states::dy_sheared:
+        std::forward<FN_dy_sharead_runer>(dy_sharead_runer)(
+            std::forward<Ts>(args)...);
+        break;
+      }
+  }
+
   inline static void free_memory_at_old(mjz_String_memory_class *This,
                                         String_temp_data_t *old_This) {
     [[mjz_assume(This && old_This)]];
@@ -16641,13 +16761,13 @@ class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
   }
   inline _NODISCARD succsess_t realloc_memory(size_t new_cap, bool force_shrink,
                                               bool can_throw_) {
-    bool move_to_static_mem {};
+    bool move_to_static_mem{};
     if (is_dynamic() && !force_shrink) {
       move_to_static_mem = false;
     } else {
       move_to_static_mem = B().can_be_static(new_cap);
     }
-      if (move_to_static_mem) {
+    if (move_to_static_mem) {
       if (is_static()) return true;
       String_temp_data_t past(this, true);
       size_t new_len = min(new_cap, past.m_length);
@@ -16664,7 +16784,8 @@ class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
             ? 0
             : B().get_static_flag<B_t::S_flag2_can_allocate_more_that_needed>();
     size_t pr_cap_ = m_capacity();
-    if (alloc_more) new_cap = to_optimal_cap(new_cap, pr_cap_, m_length());
+    if (alloc_more && pr_cap_!=new_cap)
+      new_cap = to_optimal_cap(new_cap, pr_cap_, m_length());
     String_temp_data_t past(this);
     if (past.was_static) {
       if (new_cap <= pr_cap_) {
@@ -16844,6 +16965,88 @@ class mjz_String_memory_class : public mjz_str_DB_t<Char_t_> {
 
   mjz_String_memory_class() { B().set_all_to_static(0); }
   ~mjz_String_memory_class() { String_temp_data_t deleter(this, true); }
+
+
+  using cr_t = Char_t_;
+  struct  owend_iterator{
+    cr_t*begin_ptr;
+    cr_t *end_ptr;
+    using r_it=   std::reverse_iterator<cr_t*>;
+    using cr_it=   std::reverse_iterator<const cr_t*>;
+    _NODISCARD inline constexpr cr_t *begin() { return begin_ptr; }
+    _NODISCARD inline constexpr const cr_t *begin() const { return begin_ptr; }
+    _NODISCARD inline constexpr const cr_t *cbegin() const { return begin_ptr; }
+    _NODISCARD inline constexpr cr_t *end() { return end_ptr; }
+    _NODISCARD inline constexpr const cr_t *end() const { return end_ptr; }
+    _NODISCARD inline constexpr const cr_t *cend() const { return end_ptr; }
+    _NODISCARD inline constexpr r_it rbegin( ) {return end();}
+    _NODISCARD inline constexpr cr_it rbegin() const { return end(); }
+    _NODISCARD inline constexpr cr_it crbegin() const { return end(); }
+    _NODISCARD inline constexpr r_it rend() { return begin(); }
+    _NODISCARD inline constexpr cr_it rend() const { return begin(); }
+    _NODISCARD inline constexpr cr_it crend() const { return begin(); }
+    _NODISCARD inline constexpr size_t size() const { return end() - begin(); }
+    _NODISCARD inline constexpr const cr_t *data() const { return begin(); }
+    _NODISCARD inline constexpr   cr_t *data()   { return begin(); }
+    static constexpr const bool has_view =
+        requires() {
+     typename     std::basic_string_view<cr_t, Traits>;
+        };
+    _NODISCARD inline constexpr std::basic_string_view<cr_t, Traits> to_view() const
+      requires(has_view)
+    {
+      return {data(), size()};
+    }
+    _NODISCARD inline constexpr operator std::basic_string_view<cr_t, Traits>()
+        const
+      requires(has_view)
+    {
+      return to_view();
+    }
+  };
+  struct const_iterator {
+  const  cr_t *begin_ptr;
+  const  cr_t *end_ptr; 
+    using cr_it = std::reverse_iterator<const cr_t *>; 
+    _NODISCARD inline constexpr const cr_t *begin() const { return begin_ptr; }
+    _NODISCARD inline constexpr const cr_t *cbegin() const { return begin_ptr; } 
+    _NODISCARD inline constexpr const cr_t *end() const { return end_ptr; }
+    _NODISCARD inline constexpr const cr_t *cend() const { return end_ptr; } 
+    _NODISCARD inline constexpr cr_it rbegin() const { return end(); }
+    _NODISCARD inline constexpr cr_it crbegin() const { return end(); } 
+    _NODISCARD inline constexpr cr_it rend() const { return begin(); }
+    _NODISCARD inline constexpr cr_it crend() const { return begin(); }
+    _NODISCARD inline constexpr size_t size() const { return end() - begin(); }
+    _NODISCARD inline constexpr const cr_t *data() const { return begin(); } 
+    static constexpr const bool has_view =
+        requires() { typename std::basic_string_view<cr_t, Traits>; };
+    _NODISCARD inline constexpr std::basic_string_view<cr_t, Traits> to_view()
+        const
+      requires(has_view)
+    {
+      return {data(), size()};
+    }
+    _NODISCARD inline constexpr operator std::basic_string_view<cr_t, Traits>()
+        const
+      requires(has_view)
+    {
+      return to_view();
+    }
+  };
+ _NODISCARD inline owend_iterator mget_it(bool can_throw=true)&{
+    if (!realloc_memory(m_capacity(), false, can_throw)) return {nullptr, nullptr};
+    cr_t *str = m_string();
+    return {.begin_ptr = str, .end_ptr = str+m_length()};
+ }
+ _NODISCARD inline const_iterator cget_it(bool can_throw = true) const & {
+   const cr_t *str = m_string();
+    return {.begin_ptr = str, .end_ptr = str + m_length()};
+ }
+
+  _NODISCARD inline owend_iterator get_it(bool can_throw = true) & {
+    return mget_it(can_throw);}
+ _NODISCARD inline const_iterator get_it(bool can_throw = true) const & {
+    return cget_it(can_throw);}
 };
 
 };  // namespace mjz_ard
@@ -18071,7 +18274,7 @@ inline void println_it_FE(const T &obj) {
   }
 }
 template <class T>
-inline void println_be_FE(T &&it,T &&end) {
+inline void println_be_FE(T &&it, T &&end) {
   if (it == end) return;
   for (;;) {
     std::cout << (*it) << '\n';
@@ -18081,7 +18284,7 @@ inline void println_be_FE(T &&it,T &&end) {
     break;
   }
 }
-  template <typename... argT>
+template <typename... argT>
 inline void println_FE(argT &&...args) {  // println_for_each
   auto list =
       std::initializer_list<std::function<void(void)>>{[&](void) -> void {

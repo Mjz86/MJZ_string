@@ -11,8 +11,14 @@ namespace mjz_ard {}  // namespace mjz_ard
  *string will be written
  * and the unique and sheared and weak ptr will be next
                        */
+
 int my_main::main(int argc, const char* const* const argv) {
  USE_MJZ_NS();
 
+ mjz_String_memory_class<char> s;
+ s.cget_it();
+ std::char_traits<char> t;
+ println((char)t.eof());
   return 0;
+
 }
