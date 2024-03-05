@@ -1,0 +1,270 @@
+mjz_ard::basic_string
+
+The mjz_ard::basic_string string class:
+
+1. Acting as a static string viewer: Stores a const char* and length to compile-time strings without allocation.  
+
+2. Small String Optimization (SSO): Stores strings up to 31 characters in stack instead of heap.
+
+3. Copy on Write (COW): Copies strings only when modified, reducing memory usage.
+
+4. Shared substrings: Allows multiple strings to share underlying string data.
+
+5. Null placement deferring: Defers null character placement until needed, reducing allocation.
+
+6. Large string hash storage: Stores hash of large strings in heap to avoid recomputation ( we track the correctness of the hash with an internal bit flag).
+
+7. Atomic heap data: Uses atomic operations for thread-safe heap access . safe reades.  safe but copying writes.
+
+8. Avoiding unnecessary hash computations on const non-large owned heap temporary strings by storing the hash.
+
+9. c string support:  It has the ability of c string support with cost of a potential string copy if the string is shared or immutable without having a null terminator.
+9.01.Note: all of the strings have  null characters at the end of allocated capacity  but we use a intenal bit flag to notify that a  *Substring* may not have null.
+
+10. Support for std::string_view: Improves compatibility by allowing string_view usage.
+
+11. ability of mimicing std::string_view :
+while ensuring lifetime safety we allow  the string to behave  like a string_view  that points 
+to static strings or strings that outlive the current string 
+and if the developer explicitly tells us to we behave  as a string view we behave  as one.
+if you dont explicitly tell we have other safe ways  to determine static ness 
+like the mjz_ard::operator""_str() family 
+this ensures safety and simplicity while  providing performance 
+and for professionals it allows even more performance 
+
+
+12. seamless string and substring sharing:
+by using reference count systems we  delay copying  
+13. smart copying behavior :
+for SSO optimizable strings we use stack string copy 
+for string view  strings we use just pointer and length changes 
+for owned strings  we use emplace  operations
+and for shared strings we use COW 
+and for string length  changes or
+ front /back characters  removal
+we use  the substring abilities that allow no copy substrings
+14. Support of the 3  ASCII, UTF-8, UTF-16 standards and  support for more standards (up to 16 different standards including ASCII ):
+Note:[if the mode  is in SSO only ASCII  characters can be up to 31 bytes  
+and the other standards are limited to 30 byte SSO size ]
+by using  some flag  bits we have  supports for up to 16 encodings standard 
+and ascii is the most optimall one but they all support  at least  30 bytes of usefull sso storage  (the null terminator is not counted but its there ).
+while providing efficient storage for ascii we allow  other standards  
+but remember  that other standards  my lead to slower used because  of their  dynamic  character  lengths 
+
+15.not throwing unexpected exceptions :
+by having  a state called  "invalid" we can make these  objects not throw by making  them invalid:
+a.string objects that get null from allocation 
+b.string objects that are not assigned after  std move
+c. other errors 
+this is provided because we sometimes dont expect something to throw  but with this approach  only if we dont check 
+
+16. custome Allocator support:
+warning : it doesn't store the Allocators.
+ but for all Allocators that pass the requirements  it can handle  them:
+a. passing the string's this ptr to allocator constructor 
+b. Allocators that don't need storage in the string and by themselves dont own the data 
+c. being  able to be crated and destroyed only for a function call to malloc/free
+d. using noexcept for all functions  and returning null on error  
+e. using c style malloc /free api functions in allocator objects 
+note that. by using  a static hash map and some  wrappers you can use the passed this ptr  as a key
+for the objects data but this approach  is not recommended 
+
+17. Credit to the implementations who did these  optimization before this implementation like:
+Fbstring's Null Trick,
+Std string  sso,
+Gcc string  cow,
+String view 's   static string ability ,
+Sheared ptr's  red count for string data sharing 
+Bit set 's bit flags 
+
+
+
+
+* Memory efficiency:  (SSO)  
+* Performance:  (COW)
+* Concurrency support:  (Atomic Heap Data reference count for shared strings)
+* Compatibility: acceptable 
+* Scalability: Maximum capacity of about 2⁶⁰ characters  
+* Stack usage: 32 bytes(64 bit systems)  , 16 bytes (32 bit systems), theoretical 8 bytes ( systems with 16 bit pointers)
+* Heap overhead for non SSO strings: (atomic + hash) 16 bytes  
+* heap usage fo SSO strings : no heap usage 
+* Max string size: 2⁶⁰ -16 for 64 bit systems and 2²⁸-16 for 32 bit systems( and theoretical  2  ^¹²  -16  for systems with 16 bit pointers) .
+* Multifunctionality: Acts as a std::string_view for const methods and does COW for non-const ones
+
+Optimization techniques focus on: reduced allocation, copied on modification, shared underlying data, deferred null placement, stored hash avoids recomputation, atomic access for threads, string_view compatibility and large string support.
+
+This class provides an optimized string with no duplicate allocation or computation through techniques like SSO, COW, shared substrings, deferred nulls, and precomputed hashes. It is memory efficient, fast, thread-safe, compatible and scales to large strings.
+
+
+there  is  a also   the   basic_rope  with these features( berif overview) :
+1. is acts like a union  of mjz_ard basic_string and std vector <mjz_ard basic_string>
+
+2. ists size is 32 bytes  in stack.
+  for strings smaller  that 32 kilobyte it
+is practically a mjz_ard  basic_string 
+but for bigger  strings it is  a vector  of mjz_ard  basic_string   to act like a rope
+
+3. by being  a collection of mjz ard basic_string es it automatically makes use of string optimizations provided by mjz ard basic_string 
+
+
+4 . it has at the first rope mode 1024 strings in memory so that even  with  510  modifications after it it remains not copyied
+and then moves to 2048 strings and so on until 1024*1024 then it merges the strings in to a single  one and tries  again 
+
+5. continues merging of small  strings and big strings in to one another  at the right  times allowes the rope to remain  as chash friendly as possible for a rope implementation 
+
+
+7.by utilizing  the shared substring behavior of string  the rope can do this for more  efficient  remove insert replace
+a. remove is creating two  substrings of the previous string that dont include the removed part ( the shared substring behavior of string makes the sub string part easier and has no copy )
+b.insert is just a 
+str to
+sub(str) , added , sub(str)
+substring operation with no copy if (added's  ownership  is moved in)
+c.replace is just an insert  with a smaller  first  substring 
+(again  no copy)
+ but this insertes at least one string to the vector  for each modification 
+ even if it was a sso string the vector has more  length 
+
+
+8. be careful with using methods on a rope that give back a pointer to continues memory 
+these methods are designed for string compatibility and you should avoid them when  using basic_rope
+and one example these is get_string_view() 
+these methods aren't const and they copy-merge forcefully any rope to a string and by doing  this the rope is transformed into its basic string  state
+
+but if you are sure it is in  basic_string  state it shouldn't cost   more than basic_string  as it is already a basic_string in disguise 
+
+
+9. rope has a protected string base and with a unused  flag state  in mjz_ard  basic_string  it makes the state of  pointer to dynamic string array  instead  of dynamic or stcak character array 
+for large  strings 
+this is why it can be about  as efficient as basic_string  for small  strings 
+
+10. by using the basic_string as its base it two is Concurrent and can share the underlying data with other ropes and strings ( each string part can be shared not all of it )
+
+11.the rope stores its underlying big data in a difference based maner and because of this it ensures that larger files get copied less often and the nessesery differences are recorded 
+
+12. while the rope is mainly focused on big strings it can handle small strings  like basic_string and can handle   static compile-time evaluated strings even better than basic_string  because of its difference  recording nature and the less copy full behavior 
+
+13. it has support for a wide variety of strings such as large  huge massive  small short medium static and even ram files and more...
+
+14. because of its differences recording techniques it can handle massive  strings  that change often  better  than basic_string 
+
+so in summary  rope has the  benefits  of string in small  strings and the benefits of string vector state for large  strings 
+but it has a sllower std::string_view  compatibility compared to basic_string because  of its nature 
+This is the non technical  explanation for mjz_ard basic_rope
+
+
+
+The memory  layout(in this sub memory  layout  used for little endian [ the big endian has some bit shifting to use the  4 most significant bits in the least significant byte ( control  character) as flags ]    64bit system):
+uintptr_t  m_data_first_charachter( ptr given by malloc+16 byte )
+uintptr_t m_begin
+uintptr_t m_length
+uintptr_t m_capacity
+If the M_capacity is a array of uint8_t ()[8]
+So at the end is the control byte  , the most important byte of all
+Inside  the control byte has   flags and capacity bits and the layout  of toes flags depends on the 2 most significant bits + the 3th most significant  bit
+If it's 
+[ 0  being the most significant bit ]
+01234567
+
+: [0] || [1] || [2] == 0
+In this case string is in SSO  ASCII  mode and the control byte( acts like fbstring's Null / cap -len char)
+the other 3,4,5,6,7 bits are used to represent a number (0..=31)
+and this number is  inner_capacity - length 
+and note that in this mode inner_capacity is always 31
+and for strings with 31 characters in length  this control  character becomes the null terminator 
+
+
+: [0] || [1] ==0 && [2]==1 :
+The bits 4,5,6,7  act as character encodings flags and the [3] bit is not used 
+SSO  mode with null char before the control byte  
+(Now the previous byte uses the null trick)
+so the sso size becomes 30  and this acceptable for non ascii sso strings 
+
+
+
+
+Other than 0
+:switch[0,1]  {/* 2 bits have 4 states and state 00 is used for sso heare is the other3:*/
+1.owned heap string 
+2.Sheared heap string
+3.string litterals view 
+}
+:
+Not sso
+And the length  has 4 flag bits
+And the capacity  has 4 flag bits (4,5,6,7 is used by capacity )
+
+Length flags 
+L0: has null Character  at the end
+L1: has a valid hash ( not used on string litteral view state)
+L2: a part of encodings standard 
+L3: above statements 
+C2:  ^^^
+C3:  ^^^
+
+So with 4 bits we can encode 16 standards including ASCII 
+
+and if the capacity is set to( 2 ^ 60   -14) we know  the state is "invalid"
+
+/* in basic_rope :*/
+ in the above states  if the capacity  is between 
+[2^60   -14,2^60   -1 ]
+We have a rope string (only  used by rope type)
+
+rpoe(note that we don't have the bits from capacity variable anymore):
+
+uintptr_t m_begin( ptr given by malloc+16 byte /* for the ability to reuse the string's character storage as string storage*/)
+uintptr_t  m_end
+uintptr_t m_end_of_capacity
+
+
+
+note:
+in string litteral view state  the capacity refers to the strlen provided for (first_charachter_ptr)
+note:
+sub string's  are made just by changing length and begin ptr
+
+ note :
+ this layout is the best thing i could do but maybe its the best we can do in 32bytes
+ by using just a character  called the control  character  that can have:
+0. makes states and is valid for ascii sso size of 31 bytes while having null terminator for sso string 
+1.can have control byte that is null for 31 ascii sso characters (inner_capacity -length ==0)
+2. the control byte is used to calculate the length 
+3. by having the max sso ascii control byte number ( 31 ) can have still valid 3, 0 flags 
+4. the control  character  has valid states for other standards in sso and helps to encode ones in non sso
+5. the control byte is used for dynamic capacity 's number storage and holds  3 more states for dynamic strings
+
+
+and has [
+a.32 ascii  sso states
+b.16 standards encoded in other  sso states( one bit is left but i dont have a good use for it )
+c. 3 string states * 2 encoding bit(2 other encoding bits are in the length flags) * 4 remaining bits for capacity 
+]
+=>
+[32,
+16(not including the unused bit state),
+192,
+]
+with add to 240
+(with 16 other states for not using the  unused [3] bit in sso non ascii  states)
+so that is the maximum we can hold  in a character  ( char has 256 states)
+
+note: the max capacity for both classes  is 2 to power of 60 those aren't 260
+LAST STATEMENT:
+Why i assume this is the best we can do in terms of memory? 
+ i thinked of at least 20 more layouts but this is the most optimall and i dont want to have string more than 32 bytes in size or strings with large stack /heap footprint
+and we couldn't use 2 control bytes for most states because of the 31size sso constraints
+and we shouldn't have strings with a size that is not a power of 2 for cashing
+and we should be able to support new standards 
+and we should  not copy all the time and try Share more
+and we should have   performant optimizations and layouts 
+and we should learn from string_view in static string design and have the ability of viewing longer lasting strings without  copying 
+and we should be able to share the underlying data of a string  if we dont change it
+
+
+
+
+this implementation forces on memory efficiency  at the cost of abit complexity and 
+it doesn't focus on unnecessary  features and by not coping all the it should be more permanent than others
+
+
+extract the information from the text into a blog
