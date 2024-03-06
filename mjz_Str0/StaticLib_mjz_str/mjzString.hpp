@@ -1170,6 +1170,101 @@ inline static constexpr auto functor(FN_destructor &&destructor_f) {
   return functor_t<FN_destructor, decltype(none)>(
       std::forward<FN_destructor>(destructor_f), std::move(none));
 }
+
+template <class destructor_FN_t>
+struct do_on_end_t {
+  inline constexpr do_on_end_t(do_on_end_t &&) noexcept = default;
+
+  inline constexpr do_on_end_t(do_on_end_t &) = delete;
+  do_on_end_t(const do_on_end_t &) = delete;
+  do_on_end_t() = delete;
+  destructor_FN_t fn;
+  inline constexpr do_on_end_t(destructor_FN_t &&run_at_destruction) noexcept(
+      requires(destructor_FN_t f) {
+        {
+          destructor_FN_t(std::forward<destructor_FN_t>(run_at_destruction))
+        } noexcept;
+        { f() } noexcept;
+      })
+      : fn(std::forward<destructor_FN_t>(run_at_destruction)) {}
+  template <class FN_constructor>
+  inline constexpr do_on_end_t(
+      destructor_FN_t &&run_at_destruction,
+      FN_constructor
+          &&do_on_construction) noexcept(requires(destructor_FN_t f) {
+                                           {
+                                             destructor_FN_t(
+                                                 std::forward<destructor_FN_t>(
+                                                     run_at_destruction))
+                                           } noexcept;
+                                           {
+                                             std::forward<FN_constructor>(
+                                                 do_on_construction)()
+                                           } noexcept;
+                                           { f() } noexcept;
+                                         })
+      : fn(std::forward<destructor_FN_t>(run_at_destruction)) {
+    std::forward<FN_constructor>(do_on_construction)();
+  }
+
+  inline constexpr ~do_on_end_t() noexcept {
+    static_assert(
+        requires() {
+          { fn() } noexcept;
+        }, "no exception for RAII lambdas ");
+    fn();
+  }
+};
+/*use with [[no_unique_address]]*/
+template <class destructor_FN_t>
+struct do_on_end_t_no_prams {
+  static_assert(
+      requires(destructor_FN_t f) {
+        { +f } -> std::convertible_to<const void *const>;
+      }, "no prameters");
+  static_assert(
+      requires() {
+        { destructor_FN_t()() } noexcept;
+      }, "no exception for RAII lambdas ");
+  inline constexpr do_on_end_t_no_prams(do_on_end_t_no_prams &&) noexcept =
+      default;
+
+  inline constexpr do_on_end_t_no_prams(do_on_end_t_no_prams &) = delete;
+  do_on_end_t_no_prams(const do_on_end_t_no_prams &) = delete;
+
+  inline constexpr do_on_end_t_no_prams() noexcept {};
+
+  inline constexpr do_on_end_t_no_prams(destructor_FN_t &&) noexcept {}
+  template <class FN_constructor>
+  inline constexpr do_on_end_t_no_prams(
+      destructor_FN_t &&,
+      FN_constructor
+          &&do_on_construction) noexcept(requires() {
+                                           {
+                                             std::forward<FN_constructor>(
+                                                 do_on_construction)()
+                                           } noexcept;
+                                         }) {
+    std::forward<FN_constructor>(do_on_construction)();
+  }
+
+  inline constexpr ~do_on_end_t_no_prams() noexcept { destructor_FN_t()(); }
+};
+
+/*use with [[no_unique_address]]*/
+struct do_on_end_begin_t {
+  template <class FN_constructor>
+  inline constexpr do_on_end_begin_t(
+      FN_constructor
+          &&do_on_construction) noexcept(requires() {
+                                           {
+                                             std::forward<FN_constructor>(
+                                                 do_on_construction)()
+                                           } noexcept;
+                                         }) {
+    std::forward<FN_constructor>(do_on_construction)();
+  }
+};
 }  // namespace mjz_RAII
 /*
 this argument shall not be used in any non mjz object or function as argument
